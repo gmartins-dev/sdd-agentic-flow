@@ -18,7 +18,7 @@ function run(args, cwd = temporary) {
 
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /install <pack>/);
-  assert.equal(run(['version']).stdout.trim(), '0.1.0');
+  assert.equal(run(['version']).stdout.trim(), '0.1.2');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 

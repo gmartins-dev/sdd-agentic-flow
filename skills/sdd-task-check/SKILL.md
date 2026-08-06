@@ -1,7 +1,7 @@
 ---
 name: sdd-task-check
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 ---

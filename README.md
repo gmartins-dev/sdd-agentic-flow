@@ -5,12 +5,21 @@
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.2.0 init
-npx sdd-agentic-flow@0.2.0 install core
-npx sdd-agentic-flow@0.2.0 doctor
+npx sdd-agentic-flow@0.3.0 init
+npx sdd-agentic-flow@0.3.0 install core
+npx sdd-agentic-flow@0.3.0 doctor
 ```
 
 Use `init --interactive` to choose a project name, agent target, language, source type, and workflow defaults. Existing `.sdd/config.yml` files are preserved.
+
+Choose a language profile explicitly when creating a project:
+
+```bash
+npx sdd-agentic-flow@0.3.0 init --language en-US
+npx sdd-agentic-flow@0.3.0 init --language pt-BR
+```
+
+See [language profiles](docs/language-profiles.md) for the profile contract.
 
 ## Why trust this toolkit?
 
@@ -28,7 +37,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive]                  Create local configuration
+init [--interactive] [--language ...] Create local configuration
 install <pack>                        Install a project-local pack
 doctor [--json] [--smoke]             Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
@@ -89,7 +98,7 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 
 ## Agent workflows
 
-Read [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
+Read the [skills usage guide](docs/sdd-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
 
 The skills are Markdown-first and installed locally. See [agent compatibility](docs/agent-compatibility.md) for validated workflows and limits.
 
@@ -97,7 +106,7 @@ The skills are Markdown-first and installed locally. See [agent compatibility](d
 
 The complete generic [task-management golden example](examples/golden/task-management/) shows a source item through validation. The primary README is English; read the practical [Portuguese introduction](README.pt-BR.md) and [language policy](docs/i18n.md) for the bilingual policy.
 
-The toolkit adapts a TLC baseline and combines Spec Driven Development, test-first development, Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), and [LICENSING.md](LICENSING.md).
+The toolkit adapts a TLC baseline and combines Spec Driven Development, test-first development, Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
 
 ## Safety boundaries
 

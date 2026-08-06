@@ -1,0 +1,7 @@
+version: 1
+
+language:
+  profile: pt-BR
+  human_outputs: pt-BR
+  technical_tokens: canonical
+  bilingual_mode: technical-canonical

@@ -11,12 +11,21 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 ## Início rápido
 
 ```bash
-npx sdd-agentic-flow@0.2.0 init
-npx sdd-agentic-flow@0.2.0 install core
-npx sdd-agentic-flow@0.2.0 doctor
+npx sdd-agentic-flow@0.3.0 init
+npx sdd-agentic-flow@0.3.0 install core
+npx sdd-agentic-flow@0.3.0 doctor
 ```
 
 Use `init --interactive` para escolher as opções iniciais. Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`.
+
+Para escolher o perfil de idioma diretamente:
+
+```bash
+npx sdd-agentic-flow@0.3.0 init --language en-US
+npx sdd-agentic-flow@0.3.0 init --language pt-BR
+```
+
+Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.
 
 ## Modos e desinstalação
 
@@ -32,3 +41,5 @@ A desinstalação preserva specs, relatórios, snapshots e código-fonte. Use `-
 ## Para quem é indicado?
 
 É indicado para times que usam SDD, entregam features em sprints, usam TDD/test-first, precisam de rastreabilidade e delegam tarefas para agentes com revisão. Não é otimizado para scripts descartáveis, agentes sem revisão humana ou pipelines automáticos de release/deploy.
+
+Para o fluxo completo, consulte o [guia de uso das skills em português](docs/sdd-skills-usage-guide.pt-BR.md) e o [guia em inglês](docs/sdd-skills-usage-guide.md).

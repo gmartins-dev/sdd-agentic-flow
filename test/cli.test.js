@@ -18,7 +18,7 @@ function run(args, cwd = temporary, input) {
 
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
-  assert.equal(run(['version']).stdout.trim(), '0.2.0');
+  assert.equal(run(['version']).stdout.trim(), '0.3.0');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -37,17 +37,63 @@ test('interactive init writes selected safe configuration and preserves existing
   const config = fs.readFileSync(path.join(cwd, '.sdd/config.yml'), 'utf8');
   assert.match(config, /name: task-app/);
   assert.match(config, /target: codex/);
+  assert.match(config, /profile: pt-BR/);
   assert.match(config, /allow_multi_worktree: true/);
   assert.match(run(['init', '--interactive'], cwd, input).stdout, /will not overwrite/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
 test('doctor JSON is parseable and smoke is isolated', () => {
-  const result = run(['doctor', '--json']);
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-doctor-'));
+  assert.equal(run(['init', '--language', 'pt-BR'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '0.2.0');
+  assert.equal(report.version, '0.3.0');
   assert.ok(Array.isArray(report.checks));
-  assert.equal(run(['doctor', '--smoke']).status, 0);
+  assert.equal(report.language.profile, 'pt-BR');
+  assert.equal(report.language.status, 'PASS');
+  assert.equal(run(['doctor', '--smoke'], cwd).status, 0);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('language flag generates profiles and invalid values fail', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-language-'));
+  assert.equal(run(['init', '--language', 'pt-BR'], cwd).status, 0);
+  const config = fs.readFileSync(path.join(cwd, '.sdd/config.yml'), 'utf8');
+  assert.match(config, /profile: pt-BR/);
+  assert.match(config, /bilingual_mode: technical-canonical/);
+  const invalidCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-invalid-'));
+  assert.equal(run(['init', '--language', 'de-DE'], invalidCwd).status, 1);
+  fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(invalidCwd, { recursive: true, force: true });
+});
+
+test('interactive language default and legacy config warning are supported', () => {
+  const interactiveCwd = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'sdd-agentic-flow-language-interactive-'),
+  );
+  const input = 'language-app\nmain\ngeneric\n\nlocal-files\nsingle\nfalse\nfalse\n';
+  assert.equal(
+    run(['init', '--interactive', '--language', 'pt-BR'], interactiveCwd, input).status,
+    0,
+  );
+  assert.match(
+    fs.readFileSync(path.join(interactiveCwd, '.sdd/config.yml'), 'utf8'),
+    /profile: pt-BR/,
+  );
+  fs.rmSync(interactiveCwd, { recursive: true, force: true });
+
+  const legacyCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-language-legacy-'));
+  fs.mkdirSync(path.join(legacyCwd, '.sdd'), { recursive: true });
+  fs.writeFileSync(
+    path.join(legacyCwd, '.sdd/config.yml'),
+    'language:\n  human_outputs: en-US\n  technical_tokens: canonical\n',
+  );
+  const report = JSON.parse(run(['doctor', '--json'], legacyCwd).stdout);
+  assert.equal(report.language.status, 'WARN');
+  assert.equal(report.language.profile, null);
+  fs.rmSync(legacyCwd, { recursive: true, force: true });
 });
 
 test('uninstall plans and removes only toolkit assets', () => {

@@ -6,9 +6,10 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
+const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
   'sdd-create-specs',
@@ -36,6 +37,7 @@ const PRIVATE_PATTERNS = [
 ].map((value) => Buffer.from(value, 'base64').toString('utf8'));
 
 function configFor(options = {}) {
+  const profile = options.profile || options.language || 'en-US';
   return `version: 1
 
 project:
@@ -46,8 +48,10 @@ agent:
   target: ${options.agent || 'generic'}
 
 language:
-  human_outputs: ${options.language || 'en-US'}
+  profile: ${profile}
+  human_outputs: ${profile}
   technical_tokens: canonical
+  bilingual_mode: technical-canonical
 
 specs:
   root: .specs/features
@@ -78,6 +82,87 @@ safety:
   no_push_by_default: true
   no_merge_or_deploy: true
 `;
+}
+
+function configValue(content, key) {
+  const match = content.match(new RegExp(`^\\s+${key}:\\s*(.+)$`, 'm'));
+  return match ? match[1].trim().replace(/^['"]|['"]$/g, '') : null;
+}
+
+function languageProfilePath(cwd, profile, isPackage) {
+  return isPackage
+    ? path.join(PACKAGE_ROOT, 'shared', 'language-profiles', `${profile}.md`)
+    : path.join(
+        cwd,
+        '.agents',
+        'skills',
+        'sdd-agentic-flow-shared',
+        'language-profiles',
+        `${profile}.md`,
+      );
+}
+
+function languageReport(cwd) {
+  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const isPackage = (() => {
+    try {
+      return (
+        JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')).name ===
+        'sdd-agentic-flow'
+      );
+    } catch {
+      return false;
+    }
+  })();
+  const content = fs.existsSync(configPath)
+    ? fs.readFileSync(configPath, 'utf8')
+    : isPackage
+      ? configFor()
+      : null;
+  if (!content) {
+    return {
+      status: 'WARN',
+      profile: null,
+      human_outputs: null,
+      technical_tokens: null,
+      bilingual_mode: null,
+      message: 'language profile is not configured',
+    };
+  }
+  const profile = configValue(content, 'profile');
+  const humanOutputs = configValue(content, 'human_outputs');
+  const technicalTokens = configValue(content, 'technical_tokens');
+  const bilingualMode = configValue(content, 'bilingual_mode');
+  if (!profile) {
+    return {
+      status: 'WARN',
+      profile: null,
+      human_outputs: humanOutputs,
+      technical_tokens: technicalTokens,
+      bilingual_mode: bilingualMode,
+      message: 'language.profile is missing; using legacy language settings',
+    };
+  }
+  const valid =
+    LANGUAGE_PROFILES.includes(profile) &&
+    humanOutputs === profile &&
+    technicalTokens === 'canonical' &&
+    bilingualMode === 'technical-canonical';
+  const profileFile = languageProfilePath(cwd, profile, isPackage);
+  const installed = fs.existsSync(profileFile);
+  const status = valid && installed ? 'PASS' : valid ? 'WARN' : 'FAIL';
+  return {
+    status,
+    profile,
+    human_outputs: humanOutputs,
+    technical_tokens: technicalTokens,
+    bilingual_mode: bilingualMode,
+    message: !valid
+      ? 'language profile values are invalid'
+      : installed
+        ? 'language profile is valid'
+        : 'language profile is configured but not installed',
+  };
 }
 
 function log(status, message) {
@@ -128,7 +213,7 @@ function validValue(value, allowed) {
   return allowed.includes(value) ? value : null;
 }
 
-async function initInteractive(cwd) {
+async function initInteractive(cwd, languageDefault = 'en-US') {
   if (fs.existsSync(path.join(cwd, '.sdd', 'config.yml'))) {
     log('WARN', '.sdd/config.yml already exists; interactive init will not overwrite it');
     return;
@@ -164,7 +249,7 @@ async function initInteractive(cwd) {
       name: await ask('Project name', 'example-project'),
       branch: await ask('Default branch', 'main'),
       agent: await ask('Agent target', 'generic', ['generic', 'codex', 'cursor', 'claude-code']),
-      language: await ask('Human output language', 'en-US', ['en-US', 'pt-BR']),
+      language: await ask('Human output language', languageDefault, LANGUAGE_PROFILES),
       source: await ask('Source type', 'local-files', ['local-files', 'github-guidance']),
       flow: await ask('Default flow', 'single', ['single', 'multi']),
       multiWorktree: (await ask('Allow multi-worktree', 'false', ['true', 'false'])) === 'true',
@@ -272,6 +357,7 @@ function doctorChecks(cwd) {
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : configFor();
+  const language = languageReport(cwd);
 
   if (isPackage) {
     const manifest = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
@@ -359,6 +445,7 @@ function doctorChecks(cwd) {
       'Project readiness',
     );
   }
+  add('language_profile', language.status, language.message, 'Language');
   const safe =
     /no_commit_by_default:\s*true/.test(safetyConfig) &&
     /no_push_by_default:\s*true/.test(safetyConfig) &&
@@ -384,22 +471,27 @@ function renderDoctor(checks) {
 }
 
 function smokeCheck() {
-  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
+  let temporary;
   try {
-    init(temporary);
-    install('core', temporary);
-    init(temporary);
-    install('core', temporary);
-    const required = [
-      '.sdd/config.yml',
-      '.agents/skills',
-      '.agents/skills/sdd-agentic-flow-shared',
-      '.specs/features',
-    ].every((relative) => fs.existsSync(path.join(temporary, relative)));
-    const state = severity(doctorChecks(temporary));
-    if (!required || state === 'FAIL')
-      throw new Error('expected files or project checks are missing');
-    fs.rmSync(temporary, { recursive: true, force: true });
+    for (const profile of LANGUAGE_PROFILES) {
+      temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
+      init(temporary, { profile });
+      install('core', temporary);
+      init(temporary, { profile });
+      install('core', temporary);
+      const required = [
+        '.sdd/config.yml',
+        '.agents/skills',
+        '.agents/skills/sdd-agentic-flow-shared',
+        `.agents/skills/sdd-agentic-flow-shared/language-profiles/${profile}.md`,
+        '.specs/features',
+      ].every((relative) => fs.existsSync(path.join(temporary, relative)));
+      const state = severity(doctorChecks(temporary));
+      if (!required || state === 'FAIL' || languageReport(temporary).profile !== profile)
+        throw new Error(`expected ${profile} files or project checks are missing`);
+      fs.rmSync(temporary, { recursive: true, force: true });
+      temporary = null;
+    }
     return {
       name: 'smoke',
       status: 'PASS',
@@ -423,6 +515,7 @@ function doctor(cwd, options = {}) {
     status: severity(checks),
     version: VERSION,
     checks: checks.map(({ section, ...check }) => check),
+    language: languageReport(cwd),
   };
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else renderDoctor(checks);
@@ -465,7 +558,7 @@ function uninstall(args, cwd) {
 
 function help() {
   process.stdout.write(
-    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive]\n  install <pack>\n  doctor [--json] [--smoke]\n  uninstall --plan | --apply [--include-config]\n  help\n  version\n`,
+    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR]\n  install <pack>\n  doctor [--json] [--smoke]\n  uninstall --plan | --apply [--include-config]\n  help\n  version\n`,
   );
 }
 
@@ -473,10 +566,21 @@ async function main() {
   const [command = 'help', ...args] = process.argv.slice(2);
   if (command === 'list') list();
   else if (command === 'init') {
-    if (args.includes('--help')) process.stdout.write('usage: init [--interactive]\n');
-    else if (!args.length) init(process.cwd());
-    else if (args.length === 1 && args[0] === '--interactive') await initInteractive(process.cwd());
-    else fail('usage: init [--interactive]');
+    if (args.includes('--help'))
+      process.stdout.write('usage: init [--interactive] [--language en-US|pt-BR]\n');
+    else {
+      let interactive = false;
+      let language = 'en-US';
+      for (let index = 0; index < args.length; index += 1) {
+        if (args[index] === '--interactive') interactive = true;
+        else if (args[index] === '--language' && LANGUAGE_PROFILES.includes(args[index + 1])) {
+          language = args[index + 1];
+          index += 1;
+        } else return fail('usage: init [--interactive] [--language en-US|pt-BR]');
+      }
+      if (interactive) await initInteractive(process.cwd(), language);
+      else init(process.cwd(), { profile: language });
+    }
   } else if (command === 'install')
     args.length === 1 ? install(args[0], process.cwd()) : fail('install requires one pack name');
   else if (command === 'doctor') {

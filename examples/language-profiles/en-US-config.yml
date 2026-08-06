@@ -1,0 +1,7 @@
+version: 1
+
+language:
+  profile: en-US
+  human_outputs: en-US
+  technical_tokens: canonical
+  bilingual_mode: technical-canonical

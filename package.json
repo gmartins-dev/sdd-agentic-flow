@@ -35,7 +35,15 @@
     "build": "node --check ./bin/sdd-agentic-flow.js",
     "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./test/cli.test.js",
     "test": "node --test ./test/cli.test.js",
-    "check": "bash ./scripts/check-skills.sh && npm run build && npm run lint && npm test",
+    "check": "npm run lint:check && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && npm run build && npm run lint && npm test",
+    "lint:check": "biome check .",
+    "lint:fix": "biome check . --write",
+    "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
+    "lint:yaml:fix": "prettier --write \".github/workflows/**/*.{yml,yaml}\"",
+    "docs:lint": "markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd/**\"",
+    "docs:check": "npm run docs:lint && git ls-files \"*.md\" \":!.specs/**\" | xargs markdown-link-check -c .markdown-link-check.json",
+    "docs:fix": "git ls-files \"*.md\" \":!.specs/**\" | xargs prettier --write && markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd/**\" --fix",
+    "lint:fix:all": "npm run lint:fix && npm run lint:yaml:fix && npm run docs:fix",
     "sanitize": "bash ./scripts/sanitize-private-context.sh",
     "pack:dry": "env NPM_CONFIG_CACHE=${NPM_CONFIG_CACHE:-/tmp/sdd-agentic-flow-npm-cache} npm pack --dry-run"
   },
@@ -54,5 +62,11 @@
   "license": "MIT",
   "bin": {
     "sdd-agentic-flow": "bin/sdd-agentic-flow.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.7",
+    "markdown-link-check": "^3.15.0",
+    "markdownlint-cli": "^0.44.0",
+    "prettier": "^3.9.6"
   }
 }

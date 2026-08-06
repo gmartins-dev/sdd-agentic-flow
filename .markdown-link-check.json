@@ -1,0 +1,8 @@
+{
+  "timeout": "10s",
+  "retryOn429": true,
+  "aliveStatusCodes": [200, 206, 429],
+  "ignorePatterns": [
+    { "pattern": "^https://www.npmjs.com/auth/" }
+  ]
+}

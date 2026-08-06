@@ -6,3 +6,7 @@ npm-debug.log*
 .agents/
 *.tgz
 skill-creator-workspaces/
+
+# Local/private files
+.npmrc
+.local/

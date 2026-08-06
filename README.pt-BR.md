@@ -2,7 +2,11 @@
 
 Versão prática em português. Leia o [README principal em inglês](README.md) para a referência completa.
 
-`sdd-agentic-flow` é um toolkit local-first de Spec Driven Development para fluxos com agentes de código. Ele instala skills Markdown no projeto e mantém a decisão final com pessoas.
+`sdd-agentic-flow` é um toolkit local-first e zero-dependência de Spec Driven Development para
+fluxos com agentes de código. Ele traz skills Markdown com contrato de capacidades, baselines
+condensadas de TLC e TDD, dimensionamento adaptativo por perfil de feature, e contexto de
+projeto opcionalmente auto-descoberto. Instala skills e configuração no projeto e mantém a
+decisão final com pessoas. Veja a [arquitetura](docs/architecture.md).
 
 ## Por que confiar?
 
@@ -11,18 +15,20 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 ## Início rápido
 
 ```bash
-npx sdd-agentic-flow@0.5.0 init
-npx sdd-agentic-flow@0.5.0 install core
-npx sdd-agentic-flow@0.5.0 doctor
+npx sdd-agentic-flow@0.6.0 init
+npx sdd-agentic-flow@0.6.0 install core
+npx sdd-agentic-flow@0.6.0 doctor
 ```
 
-Use `init --interactive` para escolher as opções iniciais. Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`.
+Use `init --interactive` para escolher as opções iniciais, incluindo o perfil de feature
+(`small_fix`, `medium_feature`, `large_feature`, `epic`). Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`. O `init` também
+auto-descobre `.sdd/context/project-context.md`; rode `discover [--force]` para atualizar.
 
 Para escolher o perfil de idioma diretamente:
 
 ```bash
-npx sdd-agentic-flow@0.5.0 init --language en-US
-npx sdd-agentic-flow@0.5.0 init --language pt-BR
+npx sdd-agentic-flow@0.6.0 init --language en-US
+npx sdd-agentic-flow@0.6.0 init --language pt-BR
 ```
 
 Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.

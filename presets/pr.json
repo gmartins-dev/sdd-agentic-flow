@@ -1,6 +1,6 @@
 {
   "name": "pr",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Read-first PR workflow.",
   "skills": ["sdd-route", "sdd-create-pr", "sdd-pr-review", "sdd-pr-fix"],
   "shared": true,

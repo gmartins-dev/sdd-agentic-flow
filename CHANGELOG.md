@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.6.0
+
+Foundation Architecture Release.
+
+- Added capability contracts (`extends`, `requires`, `consumes`, `produces`, `baseline`,
+  `compatible_with`) to every skill's frontmatter; `compatible_with` is mechanically
+  cross-checked against `presets/*.json` membership by `scripts/check-skills.sh`.
+- Added a Baseline Registry (`shared/baselines/registry.yml`) with an independent
+  `baseline_version: 0.6.0` for the condensed TLC and TDD baselines this package ships.
+- Added Project Discovery: `sdd-agentic-flow discover [--force]` and automatic discovery
+  during `init` write `.sdd/context/project-context.md`, a read-only, auto-discovered
+  record of repository signals (README, AI instruction files, docs/ADR presence,
+  package identity, monorepo tooling, test config), separate from user-declared policy
+  in `.sdd/config.yml`.
+- Added Feature Profiles: `workflow.feature_profile` (`small_fix`, `medium_feature`,
+  `large_feature`, `epic`), selectable via `init --feature-profile` or the interactive
+  prompt, with guidance in `shared/references/feature-profiles.md`.
+- Added a Baseline Compliance gate to `doctor`: `baseline-tlc`, `adaptive-sizing`,
+  `traceability`, and `evidence-first` checks (presence and configuration checks, not
+  behavioral verification).
+- Added `docs/architecture.md`, `docs/compatibility-promise.md`, and
+  `docs/tlc-integration.md`; updated positioning in `README.md`/`README.pt-BR.md` and
+  `package.json` to reflect capability contracts, condensed baselines, and adaptive
+  sizing.
+- Deferred to v0.7-v0.9: decision guides, playbooks, skill cards, maturity-model
+  documentation, and adapters beyond `local-files`/`github` (Jira, Linear, Azure
+  DevOps). See `ROADMAP.md`.
+
 ## 0.5.0
 
 - Added the read-only `sdd-route` workflow navigation skill and invocation guidance.

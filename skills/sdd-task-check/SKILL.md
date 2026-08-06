@@ -1,9 +1,15 @@
 ---
 name: sdd-task-check
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
+extends: sdd-implement-task
+requires: [config, task-evidence]
+consumes: [domain-glossary, project-context]
+produces: [check-report]
+baseline: [tlc-spec-driven, tdd]
+compatible_with: [core, execution, full, github, local-files]
 ---
 
 # Check one SDD task
@@ -24,7 +30,7 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 ## Workflow
 
 1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve exactly one task.
-2. Read `.sdd/context/domain-glossary.md` when it exists. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
+2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
 3. Check that code tasks identify a behavior and public seam, use behavior-focused tests, record executed commands, and explain missing RED evidence.
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified.
 5. Run only configured, safe, task-relevant checks. Record commands not run and why; never turn missing evidence into a pass.

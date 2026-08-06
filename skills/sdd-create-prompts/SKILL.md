@@ -2,8 +2,14 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd/config.yml first and do not implement the work.
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   pack: planning
+extends: sdd-create-specs
+requires: [config, spec-package]
+consumes: [domain-glossary, project-context]
+produces: [task-prompts]
+baseline: [tlc-spec-driven, tdd]
+compatible_with: [full, planning]
 ---
 
 # Create SDD Implementation Prompts
@@ -27,7 +33,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 1. Read `.sdd/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
 3. Read `../sdd-agentic-flow-shared/references/tdd-baseline.md`, `../sdd-agentic-flow-shared/references/task-slicing.md`, and `../sdd-agentic-flow-shared/references/workflow-safety.md` before producing prompts.
-4. Read `.sdd/context/domain-glossary.md` when it exists.
+4. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist.
 5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd/prompts`.
 6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
 7. For code tasks, require behavior, public seam, test strategy, expected RED/GREEN commands, refactor scope, and TDD limitations.

@@ -1,5 +1,7 @@
 # TDD baseline
 
+Baseline version: 0.6.0
+
 This baseline governs implementation work in `sdd-agentic-flow`.
 
 It is inspired by and adapted from the public `tdd` skill in

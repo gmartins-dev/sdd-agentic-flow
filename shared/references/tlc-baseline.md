@@ -1,5 +1,7 @@
 # TLC baseline
 
+Baseline version: 0.6.0
+
 This package incorporates an adapted minimum methodology based on `tlc-spec-driven`.
 See `NOTICE` and `LICENSING.md` for attribution and licensing.
 

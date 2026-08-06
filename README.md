@@ -1,22 +1,29 @@
 # sdd-agentic-flow
 
-`sdd-agentic-flow` is a local-first, Markdown-first Spec Driven Development toolkit for coding-agent workflows. It installs explicit project-local skills and configuration; it does not replace human review.
+`sdd-agentic-flow` is a local-first, zero-dependency Spec Driven Development toolkit for
+coding-agent workflows. It ships capability-contracted Markdown skills built on condensed TLC
+and TDD baselines, adaptive feature-profile sizing, and optional auto-discovered project
+context. It installs explicit project-local skills and configuration; it does not replace human
+review. See [architecture](docs/architecture.md) for how the pieces fit together.
 
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.5.0 init
-npx sdd-agentic-flow@0.5.0 install core
-npx sdd-agentic-flow@0.5.0 doctor
+npx sdd-agentic-flow@0.6.0 init
+npx sdd-agentic-flow@0.6.0 install core
+npx sdd-agentic-flow@0.6.0 doctor
 ```
 
-Use `init --interactive` to choose a project name, agent target, language, source type, and workflow defaults. Existing `.sdd/config.yml` files are preserved.
+Use `init --interactive` to choose a project name, agent target, language, source type,
+feature profile, and workflow defaults. Existing `.sdd/config.yml` files are preserved. `init`
+also auto-discovers `.sdd/context/project-context.md`; re-run `discover [--force]` any time to
+refresh it. See [configuration](docs/configuration.md).
 
 Choose a language profile explicitly when creating a project:
 
 ```bash
-npx sdd-agentic-flow@0.5.0 init --language en-US
-npx sdd-agentic-flow@0.5.0 init --language pt-BR
+npx sdd-agentic-flow@0.6.0 init --language en-US
+npx sdd-agentic-flow@0.6.0 init --language pt-BR
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -37,7 +44,8 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language ...] Create local configuration
+init [--interactive] [--language ...] [--feature-profile ...]  Create local configuration
+discover [--force]                    Refresh auto-discovered project context
 install <pack>                        Install a project-local pack
 doctor [--json] [--smoke]             Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
@@ -88,7 +96,8 @@ Use `sdd-route` when the next step is unclear. It only recommends a route and po
 `sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD
 baseline for implementation. The TDD baseline uses behavior-focused tests at
 agreed public seams through RED → GREEN → REFACTOR loops and vertical slices.
-See [TDD baseline](docs/tdd-baseline.md).
+See [TDD baseline](docs/tdd-baseline.md) and [TLC integration](docs/tlc-integration.md)
+for what this package ships versus the external skills it adapts from.
 
 ## Uninstall and rollback
 
@@ -139,7 +148,8 @@ The complete generic [task-management golden example](examples/golden/task-manag
 
 The toolkit adapts TLC and TDD baselines and combines Spec Driven Development,
 Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),
-[NOTICE](NOTICE), [LICENSING.md](LICENSING.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
+[NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md),
+and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
 
 ## Safety boundaries
 

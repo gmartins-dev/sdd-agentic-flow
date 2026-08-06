@@ -1,0 +1,16 @@
+version: 1
+
+baselines:
+  - id: tlc-spec-driven
+    baseline_version: 0.6.0
+    role: planning
+    source: references/tlc-baseline.md
+    stages: [specify, discuss, design, tasks, execute, verify]
+    upstream_attribution: see NOTICE and LICENSING.md
+
+  - id: tdd
+    baseline_version: 0.6.0
+    role: implementation
+    source: references/tdd-baseline.md
+    loop: [red, green, refactor]
+    upstream_attribution: see NOTICE and LICENSING.md

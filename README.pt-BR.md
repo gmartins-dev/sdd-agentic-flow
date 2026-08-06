@@ -11,9 +11,9 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 ## Início rápido
 
 ```bash
-npx sdd-agentic-flow@0.4.0 init
-npx sdd-agentic-flow@0.4.0 install core
-npx sdd-agentic-flow@0.4.0 doctor
+npx sdd-agentic-flow@0.5.0 init
+npx sdd-agentic-flow@0.5.0 install core
+npx sdd-agentic-flow@0.5.0 doctor
 ```
 
 Use `init --interactive` para escolher as opções iniciais. Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`.
@@ -21,8 +21,8 @@ Use `init --interactive` para escolher as opções iniciais. Packs disponíveis:
 Para escolher o perfil de idioma diretamente:
 
 ```bash
-npx sdd-agentic-flow@0.4.0 init --language en-US
-npx sdd-agentic-flow@0.4.0 init --language pt-BR
+npx sdd-agentic-flow@0.5.0 init --language en-US
+npx sdd-agentic-flow@0.5.0 init --language pt-BR
 ```
 
 Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.
@@ -37,6 +37,14 @@ npx sdd-agentic-flow@latest uninstall --apply
 ```
 
 A desinstalação preserva specs, relatórios, snapshots e código-fonte. Use `--include-config` apenas para remover também `.sdd/config.yml`.
+
+## Fluxo principal
+
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
+
+Use `sdd-route` quando o próximo passo não estiver claro. Ele apenas recomenda uma skill local e não executa ações automaticamente. Veja o [modelo de invocação](docs/invocation-model.md) e [por que o toolkit existe](docs/why-this-exists.md).
+
+Perfis de idioma definem a saída humana; o glossário de domínio é opcional e registra termos do produto. O `init` não cria esse arquivo automaticamente. Veja [vocabulário de domínio](docs/domain-vocabulary.md).
 
 ## TDD baseline
 

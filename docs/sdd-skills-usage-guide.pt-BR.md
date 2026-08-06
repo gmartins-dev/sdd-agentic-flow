@@ -9,16 +9,16 @@ alterações e evidências no projeto para que uma pessoa revise cada etapa.
 Execute no diretório raiz do projeto:
 
 ```bash
-npx sdd-agentic-flow@0.4.0 init
-npx sdd-agentic-flow@0.4.0 install core
-npx sdd-agentic-flow@0.4.0 doctor
+npx sdd-agentic-flow@0.5.0 init
+npx sdd-agentic-flow@0.5.0 install core
+npx sdd-agentic-flow@0.5.0 doctor
 ```
 
 Use `init --interactive` para escolher projeto, agente, idioma, origem, fluxo e
 configurações de segurança. A CLI grava `.sdd/config.yml` e preserva uma
 configuração existente.
 
-Use `npx sdd-agentic-flow@0.4.0 list` para consultar os packs:
+Use `npx sdd-agentic-flow@0.5.0 list` para consultar os packs:
 
 | Pack                     | Uso                                                              |
 | ------------------------ | ---------------------------------------------------------------- |
@@ -172,9 +172,9 @@ compatibilidade com todo cliente.
 Execute os checks locais antes de aceitar o trabalho:
 
 ```bash
-npx sdd-agentic-flow@0.4.0 doctor
-npx sdd-agentic-flow@0.4.0 doctor --json
-npx sdd-agentic-flow@0.4.0 doctor --smoke
+npx sdd-agentic-flow@0.5.0 doctor
+npx sdd-agentic-flow@0.5.0 doctor --json
+npx sdd-agentic-flow@0.5.0 doctor --smoke
 ```
 
 A skill `task-check` revisa uma task de forma independente. A skill

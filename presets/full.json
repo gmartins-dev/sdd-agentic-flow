@@ -1,9 +1,10 @@
 {
   "name": "full",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "All public skills.",
   "skills": [
     "setup-sdd-agentic-flow",
+    "sdd-route",
     "sdd-create-specs",
     "sdd-create-prompts",
     "sdd-implement-task",

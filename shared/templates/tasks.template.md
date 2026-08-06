@@ -6,6 +6,18 @@ Acceptance criteria: {{acceptance_criteria}}
 
 Review boundary: {{review_boundary}}
 
+Slice type: {{vertical | horizontal | non-code}}
+
+Independently verifiable: {{yes | no}}
+
+Public seam: {{public_seam_or_na}}
+
+Dependencies: {{dependencies_or_none}}
+
+Horizontal-slice justification: {{justification_or_na}}
+
+Expand-contract strategy: {{strategy_or_na}}
+
 ## TDD baseline
 
 - Behavior under test: {{behavior_under_test}}

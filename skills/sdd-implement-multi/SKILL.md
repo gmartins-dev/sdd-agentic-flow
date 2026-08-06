@@ -1,7 +1,7 @@
 ---
 name: sdd-implement-multi
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   pack: multi-worktree
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 ---
@@ -10,7 +10,7 @@ description: Plan or coordinate implementation of multiple dependency-aware SDD 
 
 ## When to use
 
-Use when a feature has multiple explicitly selected tasks and the user asks for a dependency-aware execution plan or orchestration. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use when a feature has multiple explicitly selected tasks and the user asks for a dependency-aware execution plan or orchestration. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -25,7 +25,7 @@ Do not use for one task, vague feature requests, specification creation, PR work
 ## Workflow
 
 1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
-2. Resolve one feature, enumerate tasks, and build dependency waves from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing.
+2. Read `.sdd/context/domain-glossary.md` when it exists. Resolve one feature, enumerate tasks, and build dependency waves from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing.
 3. Default to a read-only plan. Before creating worktrees, delegating, or changing code, require explicit user authorization and verify isolation rules from configuration.
 4. Plan each ready task as an independently verifiable vertical slice with a public seam, targeted test command, and evidence owner. Justify horizontal work explicitly.
 5. Delegate or execute through `sdd-implement-task`; keep task scope, RED/GREEN evidence, and validation independent.

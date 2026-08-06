@@ -1,5 +1,7 @@
 # Workflow
 
+Use the local flow `Plan → Prompt → Implement → Check → PR → Review → Fix → Validate`. When the current phase is unclear, use `sdd-route` for a recommendation, then follow the recommended skill's `SKILL.md`.
+
 Create specs before implementation, implement one Task at a time, independently check
 Task evidence, and run feature validation after integration.
 

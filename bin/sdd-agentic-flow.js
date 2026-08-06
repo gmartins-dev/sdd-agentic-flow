@@ -6,12 +6,13 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
+  'sdd-route',
   'sdd-create-specs',
   'sdd-create-prompts',
   'sdd-implement-task',

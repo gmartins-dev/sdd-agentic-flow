@@ -14,35 +14,47 @@ for skill in "${skills[@]}"; do
   for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
-  grep -F -q 'version: 0.4.0' "$file"
+  grep -F -q 'version: 0.5.0' "$file"
   if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
     grep -F -q 'npx sdd-agentic-flow init' "$file"
   fi
 done
 
-for ref in tlc-baseline.md tdd-baseline.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md; do
+route_file="skills/sdd-route/SKILL.md"
+test -f "$route_file"
+for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth' 'version: 0.5.0'; do
+  grep -F -q -- "$marker" "$route_file"
+done
+
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md; do
   test -f "shared/references/$ref"
 done
 for profile in en-US pt-BR; do
   test -f "shared/language-profiles/$profile.md"
 done
-for template in context spec design tasks task-prompt check-report validation-report pr-description pr-review pr-fix; do
+for template in context spec design tasks task-prompt check-report validation-report pr-description pr-review pr-fix domain-glossary; do
   test -f "shared/templates/$template.template.md"
 done
 for skill in sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
   grep -F -q 'tdd-baseline.md' "skills/$skill/SKILL.md"
 done
+for skill in sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
+  grep -F -q 'task-slicing.md' "skills/$skill/SKILL.md"
+  grep -F -q 'domain-glossary.md' "skills/$skill/SKILL.md"
+done
 for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"
 done
 for preset in core planning execution pr multi-worktree full local-files github; do
-  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.4.0" || !Array.isArray(p.skills)) process.exit(1);'
+  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.5.0" || !Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
 done
-for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md
 grep -F -q 'TDD baseline' README.md
+grep -F -q 'Plan → Prompt → Implement → Check → PR → Review → Fix → Validate' README.md
+grep -F -q 'sdd-route' README.md docs/invocation-model.md
 grep -F -q 'mattpocock/skills' NOTICE LICENSING.md docs/tdd-baseline.md
 grep -F -q 'Prompt injection safety' shared/references/workflow-safety.md
 grep -F -q 'no postinstall' CONTRIBUTING.md

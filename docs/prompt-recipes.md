@@ -1,5 +1,11 @@
 # Prompt recipes
 
+## Route an unclear request
+
+```text
+Use the installed sdd-route skill to recommend the next local SDD skill. Read .sdd/config.yml and the relevant local artifacts. Do not modify files, install packs, or invoke another skill. State prerequisites and any human decision required.
+```
+
 ## Specify without implementation
 
 ```text

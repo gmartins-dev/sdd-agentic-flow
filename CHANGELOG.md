@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Added the read-only `sdd-route` workflow navigation skill and invocation guidance.
+- Added task-slicing and optional domain-vocabulary guidance.
+- Added routing, workflow, and domain documentation with a main-flow diagram.
+
 ## 0.4.0
 
 - Added an internal TDD baseline for behavior-focused implementation evidence.

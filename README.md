@@ -5,9 +5,9 @@
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.4.0 init
-npx sdd-agentic-flow@0.4.0 install core
-npx sdd-agentic-flow@0.4.0 doctor
+npx sdd-agentic-flow@0.5.0 init
+npx sdd-agentic-flow@0.5.0 install core
+npx sdd-agentic-flow@0.5.0 doctor
 ```
 
 Use `init --interactive` to choose a project name, agent target, language, source type, and workflow defaults. Existing `.sdd/config.yml` files are preserved.
@@ -15,8 +15,8 @@ Use `init --interactive` to choose a project name, agent target, language, sourc
 Choose a language profile explicitly when creating a project:
 
 ```bash
-npx sdd-agentic-flow@0.4.0 init --language en-US
-npx sdd-agentic-flow@0.4.0 init --language pt-BR
+npx sdd-agentic-flow@0.5.0 init --language en-US
+npx sdd-agentic-flow@0.5.0 init --language pt-BR
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -64,6 +64,25 @@ list                                  List packs
 
 The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `review`, and `full`. `full` means a coordinated local workflow, not unrestricted autonomy. See [execution modes](docs/execution-modes.md).
 
+## Main SDD flow
+
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
+
+```mermaid
+flowchart TD
+  setup[setup-sdd-agentic-flow] --> specs[sdd-create-specs]
+  specs --> prompts[sdd-create-prompts]
+  prompts --> implement[sdd-implement-task]
+  implement --> check[sdd-task-check]
+  check --> pr[sdd-create-pr]
+  pr --> review[sdd-pr-review]
+  review -->|findings accepted| fix[sdd-pr-fix]
+  fix --> review
+  review -->|ready| validate[sdd-validation]
+```
+
+Use `sdd-route` when the next step is unclear. It only recommends a route and points to the selected skill's `SKILL.md`; it does not invoke skills or change files. See [the invocation model](docs/invocation-model.md) and [why this exists](docs/why-this-exists.md).
+
 ## TDD baseline
 
 `sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD
@@ -90,24 +109,29 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 
 ## Skill map
 
-| Skill                    | Purpose                     | Input            | Output                 | Mutates files?       | Default mode | Recommended when            |
-| ------------------------ | --------------------------- | ---------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
-| `setup-sdd-agentic-flow` | Setup project configuration | Project context  | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
-| `sdd-create-specs`       | Plan feature specs          | Source item      | Feature spec set       | Yes, when authorized | plan         | Requirements need structure |
-| `sdd-create-prompts`     | Generate task prompts       | Specs/tasks      | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
-| `sdd-implement-task`     | Implement one task          | Approved task    | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
-| `sdd-implement-multi`    | Plan multi-task execution   | Task set         | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |
-| `sdd-task-check`         | Independent task check      | Task evidence    | Check report           | No                   | review       | Before accepting a task     |
-| `sdd-create-pr`          | Prepare PR                  | Completed change | PR package             | Yes, when authorized | guided       | Review package is needed    |
-| `sdd-pr-review`          | Review PR                   | PR/change set    | Findings               | No                   | review       | Reviewing a change          |
-| `sdd-pr-fix`             | Fix PR findings             | Findings         | Corrected local change | Yes, when authorized | apply        | Findings are accepted       |
-| `sdd-validation`         | Validate feature            | Feature evidence | Validation report      | No                   | review       | Before completion           |
+| Skill                    | Purpose                     | Input             | Output                 | Mutates files?       | Default mode | Recommended when            |
+| ------------------------ | --------------------------- | ----------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
+| `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
+| `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
+| `sdd-create-specs`       | Plan feature specs          | Source item       | Feature spec set       | Yes, when authorized | plan         | Requirements need structure |
+| `sdd-create-prompts`     | Generate task prompts       | Specs/tasks       | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
+| `sdd-implement-task`     | Implement one task          | Approved task     | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
+| `sdd-implement-multi`    | Plan multi-task execution   | Task set          | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |
+| `sdd-task-check`         | Independent task check      | Task evidence     | Check report           | No                   | review       | Before accepting a task     |
+| `sdd-create-pr`          | Prepare PR                  | Completed change  | PR package             | Yes, when authorized | guided       | Review package is needed    |
+| `sdd-pr-review`          | Review PR                   | PR/change set     | Findings               | No                   | review       | Reviewing a change          |
+| `sdd-pr-fix`             | Fix PR findings             | Findings          | Corrected local change | Yes, when authorized | apply        | Findings are accepted       |
+| `sdd-validation`         | Validate feature            | Feature evidence  | Validation report      | No                   | review       | Before completion           |
 
 ## Agent workflows
 
 Read the [skills usage guide](docs/sdd-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
 
 The skills are Markdown-first and installed locally. See [agent compatibility](docs/agent-compatibility.md) for validated workflows and limits.
+
+## Domain vocabulary
+
+Language profiles select human-facing output language; a domain glossary records product terms. The glossary is optional, never created by `init`, and may be proposed or written only with explicit authorization. See [domain vocabulary](docs/domain-vocabulary.md).
 
 ## Examples, language, and inspiration
 

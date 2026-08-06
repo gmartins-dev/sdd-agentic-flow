@@ -10,5 +10,7 @@
 
 Use `plan` when requirements are uncertain, `guided` for supervised edits, `apply` for bounded approved work, and `review` before acceptance. `full` does not mean fully autonomous.
 
+When the current mode or next skill is unclear, use `sdd-route` for a read-only recommendation. It does not select a mode, invoke another skill, or bypass an explicit authorization.
+
 For code tasks in `apply` and `full`, use the [TDD baseline](tdd-baseline.md):
 confirm a public seam, implement vertical slices, and retain evidence for review.

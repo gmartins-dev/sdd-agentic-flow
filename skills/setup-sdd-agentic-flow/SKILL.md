@@ -2,7 +2,7 @@
 name: setup-sdd-agentic-flow
 description: Initialize the public SDD Agentic Flow structure in a repository. Use when a user asks to set up, bootstrap, or configure this SDD workflow; create only the requested repository-local planning files and start from .sdd/config.yml.
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   pack: core
 ---
 
@@ -21,6 +21,7 @@ Do not use to implement a feature, generate a specification for an already confi
 - Repository root and the user's requested scope.
 - Existing `.sdd/config.yml`, if present.
 - Optional project name, artifact location, and workflow preferences.
+- An optional domain glossary request with explicit authorization.
 
 ## Workflow
 
@@ -29,7 +30,8 @@ Do not use to implement a feature, generate a specification for an already confi
 3. Read the safety guidance at `../sdd-agentic-flow-shared/references/workflow-safety.md` before creating files.
 4. If configuration is absent, show the smallest proposed `.sdd/config.yml` and obtain confirmation before writing it. Keep settings repository-local and explicit.
 5. Create only the configured directories and starter artifacts needed for the requested setup. Preserve existing content and do not replace a file without explicit approval.
-6. Validate paths and report the resulting configuration and created files.
+6. Do not create `.sdd/context/domain-glossary.md` automatically. Propose or create it only when explicitly authorized, using the shared template.
+7. Validate paths and report the resulting configuration and created files.
 
 ## Safety
 

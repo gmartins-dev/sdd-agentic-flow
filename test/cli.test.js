@@ -19,7 +19,7 @@ function run(args, cwd = temporary, input) {
 
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
-  assert.equal(run(['version']).stdout.trim(), '0.4.0');
+  assert.equal(run(['version']).stdout.trim(), '0.5.0');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -50,7 +50,7 @@ test('doctor JSON is parseable and smoke is isolated', () => {
   assert.equal(run(['install', 'core'], cwd).status, 0);
   const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '0.4.0');
+  assert.equal(report.version, '0.5.0');
   assert.ok(Array.isArray(report.checks));
   assert.equal(report.language.profile, 'pt-BR');
   assert.equal(report.language.status, 'PASS');
@@ -76,6 +76,27 @@ test('doctor validates the TDD baseline in package and installed shared layers',
     assert.equal(report.checks.find((check) => check.name === 'tdd-baseline').status, 'PASS');
     fs.rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test('routing skill is listed, installed by public packs, and removed by uninstall', () => {
+  assert.match(run(['list']).stdout, /sdd-route/);
+
+  for (const pack of ['core', 'planning', 'execution', 'pr']) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), `sdd-agentic-flow-route-${pack}-`));
+    assert.equal(run(['init'], cwd).status, 0);
+    assert.equal(run(['install', pack], cwd).status, 0);
+    assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/sdd-route/SKILL.md')));
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-route-uninstall-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  assert.equal(run(['uninstall', '--apply'], cwd).status, 0);
+  assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/sdd-route')));
+  assert.ok(fs.existsSync(path.join(cwd, '.sdd/config.yml')));
+  assert.ok(fs.existsSync(path.join(cwd, '.specs/features')));
+  fs.rmSync(cwd, { recursive: true, force: true });
 });
 
 test('language flag generates profiles and invalid values fail', () => {

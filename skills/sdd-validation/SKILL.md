@@ -1,7 +1,7 @@
 ---
 name: sdd-validation
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   pack: core
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 ---
@@ -10,7 +10,7 @@ description: Independently validate an accumulated SDD feature implementation ag
 
 ## When to use
 
-Use when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -24,11 +24,12 @@ Do not use to implement code, repair findings, validate only one task, create a 
 ## Workflow
 
 1. Read `.sdd/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise resolve exactly one feature and its configured validation paths and commands.
-2. Build a Markdown-first evidence matrix from requirements, scenarios, decisions, tasks, code, tests, and delivery scope.
+2. Read `.sdd/context/domain-glossary.md` when it exists. Build a Markdown-first evidence matrix from requirements, scenarios, decisions, tasks, code, tests, and delivery scope.
 3. Confirm task-level TDD evidence for code changes, including behavior, public seams, GREEN checks, explained deviations, and untested risks.
-4. Run only configured, safe, applicable validation gates. Record actual commands and results; evidence from prior runs is context, not proof.
-5. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current evidence and required gates pass.
-6. Produce a sanitized local report in `.sdd/reports` when configuration permits; never create `validation.md` under `.specs`.
+4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies.
+5. Run only configured, safe, applicable validation gates. Record actual commands and results; evidence from prior runs is context, not proof.
+6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current evidence and required gates pass.
+7. Produce a sanitized local report in `.sdd/reports` when configuration permits; never create `validation.md` under `.specs`.
 
 ## Safety
 

@@ -2,6 +2,15 @@
 
 Implement only this task. Preserve spec/design traceability and provide evidence.
 
+## Task slice
+
+- Slice type: {{vertical | horizontal | non-code}}
+- Independently verifiable: {{yes | no}}
+- Public seam: {{public_seam_or_na}}
+- Dependencies: {{dependencies_or_none}}
+- Horizontal-slice justification: {{justification_or_na}}
+- Expand-contract strategy: {{strategy_or_na}}
+
 ## TDD baseline
 
 - Behavior under test: {{behavior_under_test}}

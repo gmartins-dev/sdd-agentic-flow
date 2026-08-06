@@ -5,9 +5,6 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
-  "files": {
-    "ignore": ["node_modules/**", ".git/**", ".specs/**", ".sdd/**"]
-  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -17,7 +14,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "javascript": {

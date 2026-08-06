@@ -3,6 +3,7 @@
   "retryOn429": true,
   "aliveStatusCodes": [200, 206, 429],
   "ignorePatterns": [
-    { "pattern": "^https://www.npmjs.com/auth/" }
+    { "pattern": "^https://www.npmjs.com/auth/" },
+    { "pattern": "^\\.\\./sdd-agentic-flow-shared/" }
   ]
 }

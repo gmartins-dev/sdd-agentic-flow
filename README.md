@@ -40,14 +40,14 @@ list                                  List packs
 
 ## Packs
 
-| Pack | Purpose |
-| --- | --- |
-| `core` | Safe setup, specification, implementation, checking, and validation baseline. |
-| `planning` | Specs and task prompts. |
-| `execution` | Single-task and multi-task execution guidance. |
-| `pr` | PR preparation, review, and finding repair. |
-| `multi-worktree` | Multi-task orchestration guidance. |
-| `full` | All public skills. |
+| Pack             | Purpose                                                                       |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `core`           | Safe setup, specification, implementation, checking, and validation baseline. |
+| `planning`       | Specs and task prompts.                                                       |
+| `execution`      | Single-task and multi-task execution guidance.                                |
+| `pr`             | PR preparation, review, and finding repair.                                   |
+| `multi-worktree` | Multi-task orchestration guidance.                                            |
+| `full`           | All public skills.                                                            |
 
 `local-files` and `github` compose packs for those source contexts.
 
@@ -74,18 +74,18 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 
 ## Skill map
 
-| Skill | Purpose | Input | Output | Mutates files? | Default mode | Recommended when |
-| --- | --- | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | Setup project configuration | Project context | Local setup guidance | Yes, when authorized | guided | Starting a project |
-| `sdd-create-specs` | Plan feature specs | Source item | Feature spec set | Yes, when authorized | plan | Requirements need structure |
-| `sdd-create-prompts` | Generate task prompts | Specs/tasks | Agent-ready prompts | Yes, when authorized | plan | Work must be delegated |
-| `sdd-implement-task` | Implement one task | Approved task | Code and evidence | Yes, when authorized | apply | One bounded task is ready |
-| `sdd-implement-multi` | Plan multi-task execution | Task set | Execution plan | Yes, when authorized | guided | Tasks have dependencies |
-| `sdd-task-check` | Independent task check | Task evidence | Check report | No | review | Before accepting a task |
-| `sdd-create-pr` | Prepare PR | Completed change | PR package | Yes, when authorized | guided | Review package is needed |
-| `sdd-pr-review` | Review PR | PR/change set | Findings | No | review | Reviewing a change |
-| `sdd-pr-fix` | Fix PR findings | Findings | Corrected local change | Yes, when authorized | apply | Findings are accepted |
-| `sdd-validation` | Validate feature | Feature evidence | Validation report | No | review | Before completion |
+| Skill                    | Purpose                     | Input            | Output                 | Mutates files?       | Default mode | Recommended when            |
+| ------------------------ | --------------------------- | ---------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
+| `setup-sdd-agentic-flow` | Setup project configuration | Project context  | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
+| `sdd-create-specs`       | Plan feature specs          | Source item      | Feature spec set       | Yes, when authorized | plan         | Requirements need structure |
+| `sdd-create-prompts`     | Generate task prompts       | Specs/tasks      | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
+| `sdd-implement-task`     | Implement one task          | Approved task    | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
+| `sdd-implement-multi`    | Plan multi-task execution   | Task set         | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |
+| `sdd-task-check`         | Independent task check      | Task evidence    | Check report           | No                   | review       | Before accepting a task     |
+| `sdd-create-pr`          | Prepare PR                  | Completed change | PR package             | Yes, when authorized | guided       | Review package is needed    |
+| `sdd-pr-review`          | Review PR                   | PR/change set    | Findings               | No                   | review       | Reviewing a change          |
+| `sdd-pr-fix`             | Fix PR findings             | Findings         | Corrected local change | Yes, when authorized | apply        | Findings are accepted       |
+| `sdd-validation`         | Validate feature            | Feature evidence | Validation report      | No                   | review       | Before completion           |
 
 ## Agent workflows
 

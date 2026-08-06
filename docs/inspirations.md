@@ -1,6 +1,6 @@
 # Inspirations
 
-## Inspirations
+## Core inspirations
 
 - TLC / `tlc-spec-driven`
 - Spec Driven Development

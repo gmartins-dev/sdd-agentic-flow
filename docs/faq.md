@@ -11,7 +11,6 @@ No. Its safe defaults keep commits and remote operations manual.
 ## Can it use a different agent client?
 
 Yes. Skills are Markdown-first and documented for generic and project-local runtimes.
-# FAQ
 
 ## Does it contact a service?
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Added an internal TDD baseline for behavior-focused implementation evidence.
+- Added TDD checks, templates, skill guidance, documentation, and attribution.
+
 ## 0.3.0
 
 - Added `en-US` and `pt-BR` language profiles with canonical technical tokens.

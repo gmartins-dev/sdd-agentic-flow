@@ -5,9 +5,9 @@
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.3.0 init
-npx sdd-agentic-flow@0.3.0 install core
-npx sdd-agentic-flow@0.3.0 doctor
+npx sdd-agentic-flow@0.4.0 init
+npx sdd-agentic-flow@0.4.0 install core
+npx sdd-agentic-flow@0.4.0 doctor
 ```
 
 Use `init --interactive` to choose a project name, agent target, language, source type, and workflow defaults. Existing `.sdd/config.yml` files are preserved.
@@ -15,8 +15,8 @@ Use `init --interactive` to choose a project name, agent target, language, sourc
 Choose a language profile explicitly when creating a project:
 
 ```bash
-npx sdd-agentic-flow@0.3.0 init --language en-US
-npx sdd-agentic-flow@0.3.0 init --language pt-BR
+npx sdd-agentic-flow@0.4.0 init --language en-US
+npx sdd-agentic-flow@0.4.0 init --language pt-BR
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -64,6 +64,13 @@ list                                  List packs
 
 The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `review`, and `full`. `full` means a coordinated local workflow, not unrestricted autonomy. See [execution modes](docs/execution-modes.md).
 
+## TDD baseline
+
+`sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD
+baseline for implementation. The TDD baseline uses behavior-focused tests at
+agreed public seams through RED → GREEN → REFACTOR loops and vertical slices.
+See [TDD baseline](docs/tdd-baseline.md).
+
 ## Uninstall and rollback
 
 ```bash
@@ -106,7 +113,9 @@ The skills are Markdown-first and installed locally. See [agent compatibility](d
 
 The complete generic [task-management golden example](examples/golden/task-management/) shows a source item through validation. The primary README is English; read the practical [Portuguese introduction](README.pt-BR.md) and [language policy](docs/i18n.md) for the bilingual policy.
 
-The toolkit adapts a TLC baseline and combines Spec Driven Development, test-first development, Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
+The toolkit adapts TLC and TDD baselines and combines Spec Driven Development,
+Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),
+[NOTICE](NOTICE), [LICENSING.md](LICENSING.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
 
 ## Safety boundaries
 

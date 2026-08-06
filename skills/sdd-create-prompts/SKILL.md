@@ -2,7 +2,7 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd/config.yml first and do not implement the work.
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   pack: planning
 ---
 
@@ -26,10 +26,11 @@ Do not use to create a specification from scratch, execute implementation, make 
 
 1. Read `.sdd/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
-3. Read `../sdd-agentic-flow-shared/references/workflow-safety.md` before producing prompts.
+3. Read `../sdd-agentic-flow-shared/references/tdd-baseline.md` and `../sdd-agentic-flow-shared/references/workflow-safety.md` before producing prompts.
 4. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd/prompts`.
-5. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands.
-6. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
+5. For code tasks, require behavior, public seam, test strategy, expected RED/GREEN commands, refactor scope, and TDD limitations.
+6. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands.
+7. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
 
 ## Safety
 

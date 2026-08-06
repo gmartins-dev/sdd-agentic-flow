@@ -1,7 +1,7 @@
 ---
 name: sdd-task-check
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 ---
@@ -10,7 +10,7 @@ description: Independently check one implemented SDD task against its acceptance
 
 ## When to use
 
-Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md) and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -25,8 +25,9 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 
 1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve exactly one task.
 2. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
-3. Run only configured, safe, task-relevant checks. Record commands not run and why; never turn missing evidence into a pass.
-4. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps.
+3. Check that code tasks identify a behavior and public seam, use behavior-focused tests, record executed commands, and explain missing RED evidence.
+4. Run only configured, safe, task-relevant checks. Record commands not run and why; never turn missing evidence into a pass.
+5. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps.
 
 ## Safety
 

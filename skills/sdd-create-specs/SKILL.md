@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications; read .sdd/config.yml before producing artifacts.
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   pack: core
 ---
 

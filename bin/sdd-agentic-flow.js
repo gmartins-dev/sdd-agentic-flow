@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -358,18 +358,28 @@ function doctorChecks(cwd) {
     ? fs.readFileSync(configPath, 'utf8')
     : configFor();
   const language = languageReport(cwd);
+  const tddBaseline = isPackage
+    ? path.join(cwd, 'shared', 'references', 'tdd-baseline.md')
+    : path.join(
+        cwd,
+        '.agents',
+        'skills',
+        'sdd-agentic-flow-shared',
+        'references',
+        'tdd-baseline.md',
+      );
 
   if (isPackage) {
     const manifest = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
     const packageOk =
       fs.existsSync(path.join(cwd, 'bin/sdd-agentic-flow.js')) &&
-      !fs.existsSync(path.join(cwd, 'node_modules'));
+      Object.keys(manifest.dependencies || {}).length === 0;
     add(
       'package_integrity',
       packageOk ? 'PASS' : 'FAIL',
       packageOk
-        ? 'CLI present and no bundled dependencies'
-        : 'CLI missing or bundled dependencies found',
+        ? 'CLI present and no runtime dependencies'
+        : 'CLI missing or runtime dependencies found',
       'Package integrity',
     );
     add(
@@ -445,6 +455,14 @@ function doctorChecks(cwd) {
       'Project readiness',
     );
   }
+  add(
+    'tdd-baseline',
+    fs.existsSync(tddBaseline) ? 'PASS' : isPackage ? 'FAIL' : 'WARN',
+    fs.existsSync(tddBaseline)
+      ? 'shared/references/tdd-baseline.md found'
+      : 'shared/references/tdd-baseline.md not found',
+    'TDD baseline',
+  );
   add('language_profile', language.status, language.message, 'Language');
   const safe =
     /no_commit_by_default:\s*true/.test(safetyConfig) &&

@@ -4,4 +4,7 @@
 
 Installation and configuration are explicit local writes to `.agents/skills` and `.sdd/config.yml`. The CLI does not automatically commit, push, merge, deploy, or publish. `doctor`, `doctor --json`, and `doctor --smoke` provide local evidence; publishable files are scanned for blocked private-context markers.
 
+The TLC and TDD baselines are local references. They guide planning and code-task
+evidence without installing an external methodology package.
+
 These boundaries do not guarantee correctness or safety for every input or agent. Review generated work, preserve the licensing notices, and keep a human as the final decision maker.

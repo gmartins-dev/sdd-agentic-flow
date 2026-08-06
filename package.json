@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A safe, modular Spec Driven Development workflow for coding agents.",
   "type": "commonjs",
   "engines": {

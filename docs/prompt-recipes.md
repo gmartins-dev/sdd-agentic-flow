@@ -17,3 +17,9 @@ Use the installed sdd-task-check skill to review this task against its acceptanc
 ```text
 Use the installed sdd-implement-task skill for this approved task. Follow .sdd/config.yml. Make only the authorized local changes. Do not commit, push, merge, deploy, or publish. Run the smallest relevant checks.
 ```
+
+## Apply an approved code task with TDD evidence
+
+```text
+Use the installed sdd-implement-task skill and TDD baseline for this approved code task. Confirm the behavior, public seam, test command, and smallest vertical slice before editing. Record RED and GREEN evidence. If RED is impractical, explain the alternative validation and remaining risk. Do not commit, push, merge, deploy, or publish.
+```

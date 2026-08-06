@@ -5,6 +5,7 @@
 - TLC / `tlc-spec-driven`
 - Spec Driven Development
 - TDD / test-first development
+- `mattpocock/skills` public `tdd` skill
 - Markdown-first agent skills
 - safe-by-default local tooling
 - review discipline and anti-slop practices
@@ -14,6 +15,7 @@
 - TLC-style phase discipline
 - traceability, acceptance criteria, and evidence before completion
 - staged planning, implementation, review, and validation
+- behavior-focused TDD at public seams and vertical slices
 
 ## What this toolkit expands
 
@@ -23,4 +25,4 @@
 
 ## No endorsement
 
-Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), and the adapted [TLC baseline](../shared/references/tlc-baseline.md).
+Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md).

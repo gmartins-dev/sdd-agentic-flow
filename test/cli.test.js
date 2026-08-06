@@ -8,6 +8,7 @@ const { after, test } = require('node:test');
 const { spawnSync } = require('node:child_process');
 
 const cli = path.resolve(__dirname, '../bin/sdd-agentic-flow.js');
+const packageRoot = path.resolve(__dirname, '..');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-test-'));
 
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
@@ -18,7 +19,7 @@ function run(args, cwd = temporary, input) {
 
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
-  assert.equal(run(['version']).stdout.trim(), '0.3.0');
+  assert.equal(run(['version']).stdout.trim(), '0.4.0');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -49,12 +50,32 @@ test('doctor JSON is parseable and smoke is isolated', () => {
   assert.equal(run(['install', 'core'], cwd).status, 0);
   const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '0.3.0');
+  assert.equal(report.version, '0.4.0');
   assert.ok(Array.isArray(report.checks));
   assert.equal(report.language.profile, 'pt-BR');
   assert.equal(report.language.status, 'PASS');
   assert.equal(run(['doctor', '--smoke'], cwd).status, 0);
   fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor validates the TDD baseline in package and installed shared layers', () => {
+  const packageReport = JSON.parse(run(['doctor', '--json'], packageRoot).stdout);
+  assert.equal(packageReport.status, 'PASS');
+  assert.ok(packageReport.checks.some((check) => check.name === 'tdd-baseline'));
+
+  for (const pack of ['core', 'execution']) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), `sdd-agentic-flow-tdd-${pack}-`));
+    assert.equal(run(['init'], cwd).status, 0);
+    assert.equal(run(['install', pack], cwd).status, 0);
+    assert.ok(
+      fs.existsSync(
+        path.join(cwd, '.agents/skills/sdd-agentic-flow-shared/references/tdd-baseline.md'),
+      ),
+    );
+    const report = JSON.parse(run(['doctor', '--json'], cwd).stdout);
+    assert.equal(report.checks.find((check) => check.name === 'tdd-baseline').status, 'PASS');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
 });
 
 test('language flag generates profiles and invalid values fail', () => {

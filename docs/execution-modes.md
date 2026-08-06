@@ -9,3 +9,6 @@
 | `full`   | Coordinate local planning, execution, and validation | Explicitly authorized local changes only | Still no commit, push, merge, deploy, or publish by default |
 
 Use `plan` when requirements are uncertain, `guided` for supervised edits, `apply` for bounded approved work, and `review` before acceptance. `full` does not mean fully autonomous.
+
+For code tasks in `apply` and `full`, use the [TDD baseline](tdd-baseline.md):
+confirm a public seam, implement vertical slices, and retain evidence for review.

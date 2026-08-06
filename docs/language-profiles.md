@@ -44,7 +44,7 @@ sdd-agentic-flow doctor --json
 
 `doctor` reports a `Language` section. `doctor --json` includes a top-level
 `language` object with the selected profile and validation status. A project
-created before v0.3.0 may omit `language.profile`; the doctor reports this as a
+created before v0.4.0 may omit `language.profile`; the doctor reports this as a
 compatibility `WARN` and does not rewrite the file.
 
 ## Language policy

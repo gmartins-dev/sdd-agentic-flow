@@ -1,0 +1,6 @@
+# Notices
+
+`shared/references/tlc-baseline.md` adapts methodology from `tlc-spec-driven`,
+originally authored by Felipe Rodrigues / Tech Leads Club and made available under
+CC-BY-4.0. This package rewrites and extends that baseline for a public, local-first
+workflow. This attribution does not imply endorsement. See `LICENSING.md`.

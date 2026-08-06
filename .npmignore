@@ -1,0 +1,10 @@
+.git/
+.github/
+node_modules/
+*.log
+*.tgz
+.npmrc
+.sdd/
+.specs/
+.agents/
+skill-creator-workspaces/

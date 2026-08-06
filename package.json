@@ -1,0 +1,54 @@
+{
+  "name": "sdd-agentic-flow",
+  "version": "0.1.0",
+  "description": "A safe, modular Spec Driven Development workflow for coding agents.",
+  "bin": {
+    "sdd-agentic-flow": "./bin/sdd-agentic-flow.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gmartins-dev/sdd-agentic-flow.git"
+  },
+  "bugs": "https://github.com/gmartins-dev/sdd-agentic-flow/issues",
+  "homepage": "https://github.com/gmartins-dev/sdd-agentic-flow#readme",
+  "files": [
+    "bin",
+    "skills",
+    "shared",
+    "presets",
+    "examples",
+    "docs",
+    "scripts",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "LICENSING.md",
+    "LICENSES",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "ROADMAP.md"
+  ],
+  "scripts": {
+    "build": "node --check ./bin/sdd-agentic-flow.js",
+    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./test/cli.test.js",
+    "test": "node --test ./test/cli.test.js",
+    "check": "bash ./scripts/check-skills.sh && npm run build && npm run lint && npm test",
+    "sanitize": "bash ./scripts/sanitize-private-context.sh",
+    "pack:dry": "env NPM_CONFIG_CACHE=${NPM_CONFIG_CACHE:-/tmp/sdd-agentic-flow-npm-cache} npm pack --dry-run"
+  },
+  "keywords": [
+    "sdd",
+    "spec-driven-development",
+    "agentic-workflow",
+    "ai-agents",
+    "coding-agents",
+    "skills",
+    "tlc"
+  ],
+  "license": "MIT"
+}

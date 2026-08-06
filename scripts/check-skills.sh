@@ -14,7 +14,7 @@ for skill in "${skills[@]}"; do
   for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
-  grep -F -q 'version: 0.1.0' "$file"
+  grep -F -q 'version: 0.2.0' "$file"
   if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
     grep -F -q 'npx sdd-agentic-flow init' "$file"
   fi
@@ -27,9 +27,9 @@ for template in context spec design tasks task-prompt check-report validation-re
   test -f "shared/templates/$template.template.md"
 done
 for preset in core planning execution pr multi-worktree full local-files github; do
-  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.1.0" || !Array.isArray(p.skills)) process.exit(1);'
+  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.2.0" || !Array.isArray(p.skills)) process.exit(1);'
 done
-for file in README.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md examples/golden/invoice-approval/source-item.md; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/prompt-recipes.md docs/i18n.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md

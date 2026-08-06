@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A safe, modular Spec Driven Development workflow for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -21,6 +21,7 @@
     "docs",
     "scripts",
     "README.md",
+    "README.pt-BR.md",
     "LICENSE",
     "NOTICE",
     "LICENSING.md",
@@ -44,6 +45,9 @@
     "agentic-workflow",
     "ai-agents",
     "coding-agents",
+    "ai-development",
+    "software-engineering",
+    "tdd",
     "skills",
     "tlc"
   ],

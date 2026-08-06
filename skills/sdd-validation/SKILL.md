@@ -1,7 +1,7 @@
 ---
 name: sdd-validation
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   pack: core
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 ---

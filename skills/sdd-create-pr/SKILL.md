@@ -1,7 +1,7 @@
 ---
 name: sdd-create-pr
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   pack: pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 ---

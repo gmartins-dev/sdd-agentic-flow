@@ -1,11 +1,12 @@
 # Agent compatibility
 
-| Target | v0.1 status |
-| --- | --- |
-| Generic Markdown agent | Supported |
-| Project-local agent runtime | Supported |
-| Codex | Compatible via manual installation |
-| Claude Code | Compatible via manual installation |
-| Cursor | Compatible via manual installation |
+Validated manually with Codex CLI, Claude Code, and Cursor-style agent workflows.
+Designed to remain agent-client agnostic because skills are Markdown-first and installed locally.
+Compatibility with every agent client is not guaranteed.
 
-Skills are Markdown-first and do not require proprietary agent features.
+| Agent/Harness | Status | Notes |
+| --- | --- | --- |
+| Codex CLI | Manually validated | Local repo workflow |
+| Claude Code | Manually validated | Markdown skill workflow |
+| Cursor | Manually validated | Use installed docs/skills as project context |
+| Generic | Supported by design | Markdown-first local files |

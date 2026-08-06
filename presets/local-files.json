@@ -1,1 +1,1 @@
-{"name":"local-files","version":"0.1.0","description":"Core workflow for local source files.","skills":["setup-sdd-agentic-flow","sdd-create-specs","sdd-implement-task","sdd-task-check","sdd-validation"],"shared":true,"adapter":"local-files","status":"stable"}
+{"name":"local-files","version":"0.2.0","description":"Core workflow for local source files.","skills":["setup-sdd-agentic-flow","sdd-create-specs","sdd-implement-task","sdd-task-check","sdd-validation"],"shared":true,"adapter":"local-files","status":"stable"}

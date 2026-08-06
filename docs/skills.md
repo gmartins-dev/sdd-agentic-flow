@@ -6,3 +6,5 @@ users do not need that development-time tool.
 
 Skills resolve shared references from their installed sibling directory and should
 return `Blocked` when configuration, task identity, or required evidence is absent.
+
+See the public [skill map](../README.md#skill-map) for purpose, inputs, outputs, mutation behavior, execution modes, and recommended use.

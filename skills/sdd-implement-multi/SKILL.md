@@ -1,7 +1,7 @@
 ---
 name: sdd-implement-multi
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   pack: multi-worktree
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 ---

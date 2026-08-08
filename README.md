@@ -1,14 +1,24 @@
-# sdd-agentic-flow
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/imgs/tagline-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="public/imgs/tagline-light.svg">
+    <img alt="SDD-agentic-flow Logo" src="public/imgs/tagline-light.svg" style="max-width: 100%; height: auto;" width="600">
+  </picture>
+</p>
 
-*[Leia em português](README.pt-BR.md)*
+**sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit designed for coding-agent workflows.
 
-`sdd-agentic-flow` is a local-first, zero-dependency Spec Driven Development toolkit for
-coding-agent workflows. It ships capability-contracted Markdown skills built on condensed TLC
-and TDD baselines, adaptive feature-profile sizing, and optional auto-discovered project
-context. Skill installation is explicit and, by default, user-local with zero project
-footprint; project configuration (`.sdd/config.yml`) is always explicit and project-local. It
-does not replace human review. See [architecture](docs/architecture.md) for how the pieces fit
-together.
+It empowers AI-assisted development through structured specs, clear boundaries, and human governance:
+
+* **Capability-Contracted Skills:** Markdown skills built on condensed TLC (Type-Driven Development / Specification) and TDD baselines.
+* **Adaptive Sizing:** Dynamic feature-profile sizing with optional auto-discovered project context.
+* **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) remains explicit and isolated to your project.
+* **Human-in-the-Loop:** Built for continuous flow is designed to structure and guide AI workflows; it does not replace human code review and governance.
+
+📖 Read the [Architecture Overview](docs/architecture.md) to see how the core components work together.
+
+---
+🇧🇷 *[Disponível também em português](README.pt-BR.md)*
 
 ## Quick start
 

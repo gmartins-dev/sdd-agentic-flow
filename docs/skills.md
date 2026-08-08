@@ -1,5 +1,9 @@
 # Skills
 
+Deciding which skill to use? See the [skills catalog](skills-catalog.md) — Purpose, When to
+use/not to use, Inputs/Outputs, Dependencies, Conflicts, Baseline, Pack(s), and flow position
+for each of the 11 public skills.
+
 See the [invocation model](invocation-model.md) for orchestration guidance. `sdd-route` is read-only: it recommends a local next skill but does not invoke it.
 
 Each public skill reads `.sdd/config.yml`, uses the internal TLC baseline, and leaves

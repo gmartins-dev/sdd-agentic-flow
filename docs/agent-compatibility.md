@@ -1,12 +1,22 @@
 # Agent compatibility
 
-Validated manually with Codex CLI, Claude Code, and Cursor-style agent workflows.
-Designed to remain agent-client agnostic because skills are Markdown-first and installed locally.
-Compatibility with every agent client is not guaranteed.
+`sdd-agentic-flow` is designed to remain agent-client agnostic: skills are Markdown-first,
+installed locally, and read no vendor-specific API. This matrix separates two different claims:
 
-| Agent/Harness | Status              | Notes                                        |
-| ------------- | ------------------- | -------------------------------------------- |
-| Codex CLI     | Manually validated  | Local repo workflow                          |
-| Claude Code   | Manually validated  | Markdown skill workflow                      |
-| Cursor        | Manually validated  | Use installed docs/skills as project context |
-| Generic       | Supported by design | Markdown-first local files                   |
+- **Skill format / scope support**: whether the CLI knows this agent's skill directory
+  conventions (see [installation scope](installation-scope.md)) — mechanically true for the 4
+  agents below, since `bin/sdd-agentic-flow.js` writes to them.
+- **Manually validated**: whether an actual workflow was manually exercised against that
+  agent's harness. Cells marked "not verified" are an honest gap, not a claim.
+
+| Agent/Harness             | Skill format | User scope         | Project scope         | Auto-discovery        | Manually validated  |
+| --------------------------- | -------------- | --------------------- | ------------------------ | ------------------------ | ---------------------- |
+| Codex CLI                 | Markdown SKILL.md | `~/.agents/skills/` | `.agents/skills/` (searches parent directories) | Yes (per Codex docs) | Yes                   |
+| Claude Code                | Markdown SKILL.md | `~/.claude/skills/<name>/SKILL.md` | `.claude/skills/<name>/SKILL.md` | Yes (per Claude Code docs) | Yes                 |
+| Cursor                     | Markdown SKILL.md | `~/.agents/skills/`, `~/.cursor/skills/` | `.agents/skills/`, `.cursor/skills/` | Yes (per Cursor docs) | Yes                    |
+| VS Code + GitHub Copilot   | Markdown SKILL.md | `~/.copilot/skills/` | `.agents/skills/`, `.github/skills/`, `.claude/skills/` | Yes, via `chat.agentSkillsLocations` setting | not verified |
+| Generic / other Markdown-first agent | Supported by design | project-local files only | project-local files only | not verified | not verified |
+
+Compatibility with every agent client is not guaranteed. See
+[installation-scope.md](installation-scope.md) for the full directory table, sources, and the
+`--agent` flag; see [publishing.md](publishing.md) for when each validation was last performed.

@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A local-first, zero-dependency Spec Driven Development skill toolkit with capability-contracted skills, condensed TLC/TDD baselines, and adaptive feature sizing for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -32,20 +32,22 @@
     "ROADMAP.md"
   ],
   "scripts": {
-    "build": "node --check ./bin/sdd-agentic-flow.js",
-    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./test/cli.test.js",
-    "test": "node --test ./test/cli.test.js",
+    "build": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js",
+    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js && node --check ./test/cli.test.js && node --check ./test/version-compat.test.js",
+    "test": "node --test",
     "check": "npm run lint:check && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && npm run build && npm run lint && npm test",
     "lint:check": "biome check .",
     "lint:fix": "biome check . --write",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
     "lint:yaml:fix": "prettier --write \".github/workflows/**/*.{yml,yaml}\"",
     "docs:lint": "markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd/**\"",
-    "docs:check": "npm run docs:lint && git ls-files \"*.md\" \":!.specs/**\" | xargs markdown-link-check -c .markdown-link-check.json",
+    "docs:diagrams": "node scripts/check-mermaid.js",
+    "docs:check": "npm run docs:lint && git ls-files \"*.md\" \":!.specs/**\" | xargs markdown-link-check -c .markdown-link-check.json && npm run docs:diagrams",
     "docs:fix": "git ls-files \"*.md\" \":!.specs/**\" | xargs prettier --write && markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd/**\" --fix",
     "lint:fix:all": "npm run lint:fix && npm run lint:yaml:fix && npm run docs:fix",
     "sanitize": "bash ./scripts/sanitize-private-context.sh",
-    "pack:dry": "env NPM_CONFIG_CACHE=${NPM_CONFIG_CACHE:-/tmp/sdd-agentic-flow-npm-cache} npm pack --dry-run"
+    "pack:dry": "node scripts/pack-dry.js",
+    "release:check": "bash scripts/release-checklist.sh"
   },
   "keywords": [
     "sdd",
@@ -65,6 +67,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
+    "@mermaid-js/mermaid-cli": "^11.16.0",
     "markdown-link-check": "^3.15.0",
     "markdownlint-cli": "^0.44.0",
     "prettier": "^3.9.6"

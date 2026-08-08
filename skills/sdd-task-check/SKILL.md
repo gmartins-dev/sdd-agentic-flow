@@ -1,7 +1,7 @@
 ---
 name: sdd-task-check
 metadata:
-  version: 0.8.0
+  version: 0.9.0
   pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 extends: sdd-implement-task
@@ -12,6 +12,7 @@ baseline: [tlc-spec-driven, tdd]
 compatible_with: [core, execution, full, github, local-files]
 depends_on: []
 conflicts: []
+requires_cli: null
 ---
 
 # Check one SDD task

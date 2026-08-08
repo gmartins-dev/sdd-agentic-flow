@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd/config.yml before producing artifacts.
 metadata:
-  version: 0.8.0
+  version: 0.9.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -12,6 +12,7 @@ baseline: [tlc-spec-driven]
 compatible_with: [core, full, github, local-files, planning]
 depends_on: []
 conflicts: []
+requires_cli: null
 ---
 
 # Create SDD Specifications

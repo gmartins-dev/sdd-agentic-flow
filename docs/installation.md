@@ -9,11 +9,18 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Use `init --interactive` when selecting initial project defaults. Installation writes only
-project-local configuration and selected skills.
+Use `init --interactive` when selecting initial project defaults. `init` always writes
+project-local configuration (`.sdd/config.yml`, `.sdd/context/project-context.md`) — that part
+is unaffected by install scope.
+
+`install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill
+directories (e.g. `~/.claude/skills`) and creates **zero files in the project**. Pass
+`--scope project` to install into `.agents/skills/` inside the project instead — the
+pre-v0.9.0 behavior. See [installation scope](installation-scope.md) for the full two-scope
+model, the supported agents, and `--plan`/`--agent`.
 
 Use `init --language en-US` or `init --language pt-BR` to select a profile without the
 interactive prompts. The default is `en-US`.
 
 Run `npx sdd-agentic-flow list` before installation to inspect pack membership. The installer
-writes only under `.agents/skills`; it never downloads or overwrites assets.
+never downloads or overwrites assets.

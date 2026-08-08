@@ -2,7 +2,7 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd/config.yml first and do not implement the work.
 metadata:
-  version: 0.8.0
+  version: 0.9.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -12,6 +12,7 @@ baseline: [tlc-spec-driven, tdd]
 compatible_with: [full, planning]
 depends_on: []
 conflicts: []
+requires_cli: null
 ---
 
 # Create SDD Implementation Prompts

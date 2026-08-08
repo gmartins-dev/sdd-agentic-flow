@@ -15,8 +15,8 @@ what the pack actually installs.
 
 `✓` does **not** mean **Verified**: it is not a claim that the skill was manually exercised
 against that pack's target agent or workflow. Manual verification is tracked separately in
-[docs/publishing.md](publishing.md) ("Codex CLI, Claude Code, and Cursor-style workflows were
-manually validated as of v0.6.0").
+[agent compatibility](agent-compatibility.md), which lists, per agent, whether user/project
+scope and auto-discovery have actually been exercised.
 
 | Skill                     | core | planning | execution | pr  | multi-worktree | full | local-files | github |
 | -------------------------- | :--: | :------: | :-------: | :-: | :-------------: | :--: | :---------: | :----: |

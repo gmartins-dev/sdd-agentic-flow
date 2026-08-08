@@ -6,6 +6,12 @@ Install a pack, keep `.sdd/config.yml` in project context, and select a skill ex
 npx sdd-agentic-flow install core
 ```
 
+`install core` defaults to `--scope user`, writing to `~/.agents/skills/` (Codex CLI's global
+skill directory, which it discovers by searching parent directories). Add
+`--scope project` to install into `.agents/skills/` inside this repository instead — the
+`--agent` flag only changes which global directories `--scope user` writes to. See
+[installation scope](installation-scope.md).
+
 ```text
 Use the installed sdd-create-specs skill to turn this source item into an SDD feature spec.
 Follow .sdd/config.yml. Do not implement code or create commits. Stop if requirements are ambiguous. Report evidence and limitations.

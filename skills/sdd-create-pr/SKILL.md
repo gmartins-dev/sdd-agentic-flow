@@ -1,7 +1,7 @@
 ---
 name: sdd-create-pr
 metadata:
-  version: 0.8.0
+  version: 0.9.0
   pack: pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 extends: sdd-task-check
@@ -12,6 +12,7 @@ baseline: [tlc-spec-driven]
 compatible_with: [full, github, pr]
 depends_on: []
 conflicts: []
+requires_cli: null
 ---
 
 # Prepare an SDD pull request

@@ -14,7 +14,6 @@ for skill in "${skills[@]}"; do
   for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
-  grep -F -q 'version: 0.8.0' "$file"
   if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
     grep -F -q 'npx sdd-agentic-flow init' "$file"
   fi
@@ -22,16 +21,22 @@ done
 
 route_file="skills/sdd-route/SKILL.md"
 test -f "$route_file"
-for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth' 'version: 0.8.0'; do
+for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth'; do
   grep -F -q -- "$marker" "$route_file"
 done
 
 all_skills=(setup-sdd-agentic-flow sdd-route sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
-  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:'; do
+  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:'; do
     grep -F -q -- "$marker" "$file"
   done
+done
+
+# Milestone 4 (Skill Catalog): every skill must have an entry in docs/skills-catalog.md, so the
+# human-facing catalog cannot silently drop a skill without this check failing.
+for skill in "${all_skills[@]}"; do
+  grep -F -q -- "\`$skill\`" docs/skills-catalog.md
 done
 
 node <<'NODE'
@@ -39,6 +44,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { validateContractReferences, parseContractArray } =
   require(path.resolve(process.cwd(), 'bin/contract-graph.js'));
+const { parseVersion, compareVersions } =
+  require(path.resolve(process.cwd(), 'bin/version-compat.js'));
 
 const skillNames = [
   'setup-sdd-agentic-flow', 'sdd-route', 'sdd-create-specs',
@@ -50,12 +57,39 @@ const skills = skillNames.map((name) => ({
   name,
   frontmatter: frontmatterOf(fs.readFileSync(`skills/${name}/SKILL.md`, 'utf8')),
 }));
-const presets = fs
-  .readdirSync('presets')
-  .filter((file) => file.endsWith('.json'))
-  .map((file) => JSON.parse(fs.readFileSync(`presets/${file}`, 'utf8')));
+const presetFiles = fs.readdirSync('presets').filter((file) => file.endsWith('.json'));
+const presets = presetFiles.map((file) => JSON.parse(fs.readFileSync(`presets/${file}`, 'utf8')));
 
 let drift = false;
+
+// Version consistency: package.json is the single source of truth. Every skill's
+// metadata.version and every preset's "version" must match it exactly — derived and
+// compared with parseVersion/compareVersions (Milestone 3), never a hardcoded string, so this
+// check never needs manual editing on a version bump.
+const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+if (!parseVersion(packageVersion)) {
+  console.error(`package.json version '${packageVersion}' is not a valid x.y.z version`);
+  drift = true;
+}
+for (const { name, frontmatter } of skills) {
+  const match = frontmatter.match(/^\s*version:\s*(\S+)\s*$/m);
+  const skillVersion = match ? match[1] : null;
+  if (!skillVersion || compareVersions(skillVersion, packageVersion) !== 0) {
+    console.error(
+      `skills/${name}/SKILL.md metadata.version is '${skillVersion}', expected '${packageVersion}' (from package.json)`,
+    );
+    drift = true;
+  }
+}
+presetFiles.forEach((file, index) => {
+  const presetVersion = presets[index].version;
+  if (!presetVersion || compareVersions(presetVersion, packageVersion) !== 0) {
+    console.error(
+      `presets/${file} version is '${presetVersion}', expected '${packageVersion}' (from package.json)`,
+    );
+    drift = true;
+  }
+});
 
 // compatible_with vs presets/*.json membership.
 for (const { name, frontmatter } of skills) {
@@ -139,6 +173,14 @@ for (const skill of skills) {
 if (violation) process.exit(1);
 NODE
 
+# Milestone 2 (Platform Abstraction): the CLI must never shell out to Bash/POSIX-specific
+# commands or use shell-string interpolation. `execFileSync('git', [...])` with an argument
+# array is the only allowed external process.
+if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.exec\(|mkdir -p|rm -rf|cp -R" bin/*.js; then
+  echo "shell-out or POSIX-shell-specific usage detected in bin/*.js" >&2
+  exit 1
+fi
+
 for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
@@ -152,6 +194,15 @@ done
 test -f "shared/baselines/registry.yml"
 grep -F -q 'tlc-spec-driven' shared/baselines/registry.yml
 grep -F -q 'tdd' shared/baselines/registry.yml
+# Upstream version pins (v0.9.0): each baseline entry must declare which upstream skill
+# version/tag it was adapted from, mechanically, not only in NOTICE/docs prose that could
+# drift unnoticed.
+for marker in 'upstream_version:' 'upstream_source:'; do
+  count="$(grep -F -c -- "$marker" shared/baselines/registry.yml)"
+  [[ "$count" -eq 2 ]]
+done
+grep -F -q 'upstream_version' NOTICE
+grep -F -q 'v1.2.3' NOTICE docs/tdd-baseline.md
 for profile in en-US pt-BR; do
   test -f "shared/language-profiles/$profile.md"
 done
@@ -172,9 +223,9 @@ for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"
 done
 for preset in core planning execution pr multi-worktree full local-files github; do
-  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.8.0" || !Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
+  node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
 done
-for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/tlc-integration.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/upgrading.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md

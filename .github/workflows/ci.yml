@@ -12,12 +12,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [20, 24]
+        node: [18, 20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - run: npm install
+      - run: npm run check
+      - run: npm run pack:dry
+
+  check-platforms:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - run: npm install
       - run: npm run check
       - run: npm run pack:dry

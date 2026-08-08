@@ -26,3 +26,7 @@
 ## No endorsement
 
 Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md).
+
+Both upstream sources are pinned to a specific version, tracked in
+`shared/baselines/registry.yml`, and updated deliberately rather than silently — see
+[TLC integration](tlc-integration.md#upstream-version-pins).

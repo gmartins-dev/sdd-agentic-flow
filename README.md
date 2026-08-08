@@ -5,8 +5,10 @@
 `sdd-agentic-flow` is a local-first, zero-dependency Spec Driven Development toolkit for
 coding-agent workflows. It ships capability-contracted Markdown skills built on condensed TLC
 and TDD baselines, adaptive feature-profile sizing, and optional auto-discovered project
-context. It installs explicit project-local skills and configuration; it does not replace human
-review. See [architecture](docs/architecture.md) for how the pieces fit together.
+context. Skill installation is explicit and, by default, user-local with zero project
+footprint; project configuration (`.sdd/config.yml`) is always explicit and project-local. It
+does not replace human review. See [architecture](docs/architecture.md) for how the pieces fit
+together.
 
 ## Quick start
 
@@ -36,7 +38,7 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 - The CLI is small, local-first, and has zero runtime dependencies.
 - It has no telemetry, postinstall script, or outbound CLI network access by default.
 - It does not automatically commit, push, merge, deploy, or publish.
-- Installation is explicit into `.agents/skills`; configuration is explicit in `.sdd/config.yml`.
+- Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd/config.yml`. See [installation scope](docs/installation-scope.md).
 - `doctor` and `doctor --smoke` validate local setup, while publishable files are checked for blocked private-context markers.
 - Licensing and TLC attribution are documented in [NOTICE](NOTICE) and [LICENSING.md](LICENSING.md).
 - Human review remains the final authority.
@@ -49,14 +51,14 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 init [--interactive] [--language ...] [--feature-profile ...]  Create local configuration
 discover [--force]                    Refresh auto-discovered project context
 context [status|refresh]              Show or refresh project context provenance
-install <pack>                        Install a project-local pack
-doctor [--json] [--smoke]             Validate package or project setup
+install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
+doctor [--json] [--smoke] [--contracts]  Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
-uninstall --apply [--include-config]  Remove installed toolkit assets
+uninstall --apply [--include-config] [--scope user|project] [--agent ...]  Remove installed toolkit assets
 list                                  List packs
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory.
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md).
 
 ## Packs
 
@@ -110,7 +112,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`. See [uninstall](docs/uninstall.md).
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
 
 ## Who is this for?
 
@@ -121,6 +123,10 @@ This toolkit is optimized for teams adopting Spec Driven Development; sprint fea
 It is not optimized for quick one-off scripts, fully autonomous no-review agents, automatic deploy/release pipelines, or workflows that do not want specs, task boundaries, review gates, and validation checkpoints.
 
 ## Skill map
+
+For the long-form version of this table — Purpose, When to use/not to use, Inputs/Outputs,
+Dependencies, Conflicts, Baseline, Pack(s), and flow position for each skill — see the
+[skills catalog](docs/skills-catalog.md).
 
 | Skill                    | Purpose                     | Input             | Output                 | Mutates files?       | Default mode | Recommended when            |
 | ------------------------ | --------------------------- | ----------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
@@ -138,7 +144,7 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 
 ## Agent workflows
 
-Read the [skills usage guide](docs/sdd-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
+Read the [skills usage guide](docs/sdd-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
 
 The skills are Markdown-first and installed locally. See [agent compatibility](docs/agent-compatibility.md) for validated workflows and limits.
 
@@ -149,6 +155,16 @@ Language profiles select human-facing output language; a domain glossary records
 ## Examples, language, and inspiration
 
 The complete generic [task-management golden example](examples/golden/task-management/) shows a source item through validation. The primary README is English; read the practical [Portuguese introduction](README.pt-BR.md) and [language policy](docs/i18n.md) for the bilingual policy.
+
+### Golden flows
+
+5 flows are proved as integration tests in `test/cli.test.js`, not just documentation — each
+has a `walkthrough.md` describing the commands the test runs and the result it checks:
+[greenfield](examples/golden/task-management/walkthrough.md),
+[existing-code mode](examples/golden/existing-code-mode/walkthrough.md),
+[project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md),
+[PR (create → review → fix → review)](examples/golden/pr-flow/walkthrough.md), and
+[version migration (v0.8.0 → v0.9.0)](examples/golden/version-migration/walkthrough.md).
 
 The toolkit adapts TLC and TDD baselines and combines Spec Driven Development,
 Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),

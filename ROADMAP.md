@@ -21,11 +21,20 @@
   additive to the unchanged `discover [--force]`. Deliberately no Context Indexing, Context
   Query, knowledge graph, RAG, or vector database — those remain out of scope for the core
   product, to protect the toolkit's focused SDD-flow identity.
+- **v0.9:** Installation, Portability & Public Readiness Release — `install` defaults to a
+  zero-project-footprint `--scope user`, with an Agent Integration Layer for 4 officially
+  supported agents (Codex CLI, Cursor, Claude Code, VS Code + GitHub Copilot); a cross-platform
+  CI matrix (Node 18–24 on Linux, full pipeline on macOS/Windows) and a centralized platform
+  layer in the CLI; a vendored `requires_cli` version-compatibility gate; the skill catalog
+  (`docs/skills-catalog.md`); 5 golden flows proved as integration tests; and
+  `docs/upgrading.md`/`docs/troubleshooting.md`/`docs/environment-compatibility.md` closing the
+  documentation gaps the beta had accumulated. See `CHANGELOG.md` for the full list. Skill
+  cards ✅ delivered — see below.
 
 The project remains in beta and active construction. Future beta scope is open and
 will be defined from validated needs rather than assumed in advance.
 
-- **v0.8–v0.9:** skill cards, maturity model documentation, and adapters beyond
-  `local-files`/`github` (Jira, Linear, Azure DevOps) remain open for this range.
+- **Still open, not decided or scheduled:** maturity model documentation, and adapters beyond
+  `local-files`/`github` (Jira, Linear, Azure DevOps).
 - **v1.0:** public go-live, with an explicit stability commitment for skill contracts
   and baseline versions (see [compatibility promise](docs/compatibility-promise.md)).

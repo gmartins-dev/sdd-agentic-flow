@@ -22,6 +22,24 @@ this package is inspired by are **external, separately-installed skills** — se
 [inspirations](inspirations.md), [NOTICE](../NOTICE), and [LICENSING.md](../LICENSING.md) for
 attribution. Nothing in `sdd-agentic-flow` requires either to be installed.
 
+## Upstream version pins
+
+Both condensed baselines are adapted from a specific point-in-time version of their upstream
+skill, pinned explicitly so drift is visible and any future re-sync is a deliberate decision,
+never silent:
+
+| Baseline          | Upstream source                                                                                                  | Pinned version                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `tlc-spec-driven`  | [`tech-leads-club/agent-skills`](https://github.com/tech-leads-club/agent-skills/blob/main/packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md) | `metadata.version: 3.3.0` (the upstream skill's own version field) |
+| `tdd`               | [`mattpocock/skills`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                | repository release tag [`v1.2.3`](https://github.com/mattpocock/skills/releases/tag/v1.2.3) — the `tdd` skill itself carries no `metadata.version`, so the repository's own release versioning is the closest available signal |
+
+Both pins live machine-readably in `shared/baselines/registry.yml` as `upstream_version` (plus
+`upstream_source` and `upstream_version_checked_at`) on each baseline entry — never only in
+prose here. When the upstream skill/repository publishes a new version, update
+`upstream_version` there first, then decide whether `shared/references/tlc-baseline.md` /
+`tdd-baseline.md` need to follow, and record either outcome ("re-synced" or "reviewed, no
+change needed") under a "Baseline changes" note in [CHANGELOG.md](../CHANGELOG.md).
+
 ## Internal implementation mapping
 
 `sdd-create-specs` owns Specify through Tasks. `sdd-implement-task` and `sdd-implement-multi`

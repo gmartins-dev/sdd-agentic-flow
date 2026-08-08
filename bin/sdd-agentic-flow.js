@@ -7,8 +7,9 @@ const path = require('node:path');
 const readline = require('node:readline/promises');
 const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
+const { satisfiesRange } = require('./version-compat');
 
-const VERSION = '0.8.0';
+const VERSION = '0.9.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -34,7 +35,78 @@ const REQUIRED_CONTRACT_FIELDS = [
   'baseline',
   'compatible_with',
 ];
-const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts'];
+const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts', 'requires_cli'];
+
+// Agent Integration Layer (Milestone 1): user-scope (global, per-agent) skill directories,
+// each verified against the agent's own documentation (see docs/installation-scope.md).
+// Segments are joined onto a home directory, never hardcoded as absolute paths, so this
+// stays cross-platform (Milestone 2) — the only place in the CLI that resolves os.homedir().
+const AGENT_USER_DIR_SEGMENTS = {
+  codex: [['.agents', 'skills']],
+  cursor: [
+    ['.agents', 'skills'],
+    ['.cursor', 'skills'],
+  ],
+  'claude-code': [['.claude', 'skills']],
+  'vscode-copilot': [['.copilot', 'skills']],
+};
+const KNOWN_AGENTS = Object.keys(AGENT_USER_DIR_SEGMENTS);
+// Default (no --agent): the 3 fixed targets documented in docs/installation-scope.md —
+// covers Codex CLI + Cursor (+ Copilot's `.agents/skills` fallback), Claude Code, and
+// GitHub Copilot's own `.copilot/skills` convention.
+const DEFAULT_USER_DIR_SEGMENTS = [
+  ['.agents', 'skills'],
+  ['.claude', 'skills'],
+  ['.copilot', 'skills'],
+];
+
+function userSkillsDirsFor(agent, homeDir = os.homedir()) {
+  if (agent && !KNOWN_AGENTS.includes(agent)) return null;
+  const segments = agent ? AGENT_USER_DIR_SEGMENTS[agent] : DEFAULT_USER_DIR_SEGMENTS;
+  const seen = new Set();
+  const dirs = [];
+  for (const parts of segments) {
+    const dir = path.join(homeDir, ...parts);
+    if (seen.has(dir)) continue;
+    seen.add(dir);
+    dirs.push(dir);
+  }
+  return dirs;
+}
+
+// Milestone 2 (Platform Abstraction): the only place that reads process.env for shell
+// detection. Informational only — never used to decide CLI behavior, only surfaced via
+// `doctor`'s Platform section (see docs/environment-compatibility.md).
+function detectShellInfo(env = process.env) {
+  if (env.SHELL) return path.basename(env.SHELL);
+  if (env.PSModulePath) return 'powershell';
+  if (env.ComSpec) return path.basename(env.ComSpec);
+  return 'unknown';
+}
+
+function filesystemWritable() {
+  const probe = path.join(
+    os.tmpdir(),
+    `.sdd-agentic-flow-write-check-${process.pid}-${Date.now()}`,
+  );
+  try {
+    fs.writeFileSync(probe, 'ok');
+    fs.rmSync(probe, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function gitAvailable() {
+  try {
+    execFileSync('git', ['--version'], { stdio: ['ignore', 'ignore', 'ignore'] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const PRIVATE_PATTERNS = [
   'QmVyZXNoaXQ=',
   'QmFtYXE=',
@@ -101,6 +173,13 @@ safety:
 function configValue(content, key) {
   const match = content.match(new RegExp(`^\\s+${key}:\\s*(.+)$`, 'm'));
   return match ? match[1].trim().replace(/^['"]|['"]$/g, '') : null;
+}
+
+function resolveConfiguredAgent(cwd) {
+  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  if (!fs.existsSync(configPath)) return null;
+  const target = configValue(fs.readFileSync(configPath, 'utf8'), 'target');
+  return target && KNOWN_AGENTS.includes(target) ? target : null;
 }
 
 function languageProfilePath(cwd, profile, isPackage) {
@@ -462,46 +541,122 @@ async function initInteractive(
   }
 }
 
-function copyIfMissing(source, destination, summary) {
+function copyIfMissing(source, destination, summary, options = {}) {
   if (fs.existsSync(destination)) {
     summary.preserved += 1;
     return;
   }
+  summary.installed += 1;
+  if (options.planned) options.planned.push(destination);
+  if (options.dryRun) return;
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.copyFileSync(source, destination);
-  summary.installed += 1;
 }
 
-function copyTree(source, destination, summary) {
+function copyTree(source, destination, summary, options = {}) {
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
     const from = path.join(source, entry.name);
     const to = path.join(destination, entry.name);
-    if (entry.isDirectory()) copyTree(from, to, summary);
-    else copyIfMissing(from, to, summary);
+    if (entry.isDirectory()) copyTree(from, to, summary, options);
+    else copyIfMissing(from, to, summary, options);
   }
 }
 
-function install(pack, cwd) {
-  const preset = readPreset(pack);
-  if (!preset) return fail(`unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.`);
-  const target = path.join(cwd, '.agents', 'skills');
-  const summary = { installed: 0, preserved: 0 };
+function installPresetToTarget(preset, target, summary, options = {}) {
   for (const skill of preset.skills)
-    copyTree(path.join(PACKAGE_ROOT, 'skills', skill), path.join(target, skill), summary);
+    copyTree(path.join(PACKAGE_ROOT, 'skills', skill), path.join(target, skill), summary, options);
   if (preset.shared)
     copyTree(
       path.join(PACKAGE_ROOT, 'shared'),
       path.join(target, 'sdd-agentic-flow-shared'),
       summary,
+      options,
     );
   if (preset.adapter)
     copyIfMissing(
       path.join(PACKAGE_ROOT, 'docs', 'adapters.md'),
       path.join(target, 'sdd-agentic-flow-shared', 'docs', 'adapters.md'),
       summary,
+      options,
     );
-  log('PASS', `installed ${pack}: ${summary.installed} files`);
-  if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
+}
+
+function install(pack, cwd, options = {}) {
+  const preset = readPreset(pack);
+  if (!preset) return fail(`unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.`);
+  const scope = options.scope || 'user';
+  if (scope !== 'user' && scope !== 'project')
+    return fail('unknown scope: use --scope user or --scope project');
+  if (options.agent && !KNOWN_AGENTS.includes(options.agent))
+    return fail(`unknown agent: ${options.agent}. Supported: ${KNOWN_AGENTS.join(', ')}.`);
+
+  if (scope === 'project') {
+    const target = path.join(cwd, '.agents', 'skills');
+    if (options.plan) {
+      const planned = [];
+      installPresetToTarget(
+        preset,
+        target,
+        { installed: 0, preserved: 0 },
+        { dryRun: true, planned },
+      );
+      log('PLAN', 'scope: project');
+      if (!planned.length) log('PLAN', 'no new files (already installed)');
+      for (const file of planned) log('PLAN', `create ${path.relative(cwd, file)}`);
+      return;
+    }
+    const summary = { installed: 0, preserved: 0 };
+    installPresetToTarget(preset, target, summary);
+    log('PASS', `installed ${pack}: ${summary.installed} files`);
+    if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
+    return;
+  }
+
+  // scope: user — never touches the consumer project (docs/installation-scope.md).
+  const agent = options.agent || resolveConfiguredAgent(cwd);
+  const targets = userSkillsDirsFor(agent, options.homeDir);
+  if (options.plan) {
+    log('PLAN', 'scope: user');
+    log('PLAN', 'Repository changes: none');
+    for (const target of targets) {
+      const planned = [];
+      installPresetToTarget(
+        preset,
+        target,
+        { installed: 0, preserved: 0 },
+        { dryRun: true, planned },
+      );
+      log('PLAN', `target: ${target}`);
+      if (!planned.length) log('PLAN', '  no new files (already installed)');
+      for (const file of planned) log('PLAN', `  create ${file}`);
+    }
+    return;
+  }
+  const totals = { installed: 0, preserved: 0 };
+  for (const target of targets) {
+    const summary = { installed: 0, preserved: 0 };
+    installPresetToTarget(preset, target, summary);
+    totals.installed += summary.installed;
+    totals.preserved += summary.preserved;
+  }
+  log(
+    'PASS',
+    `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
+  );
+  if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
+  log('PASS', 'Repository changes: none');
+}
+
+function installationStatus(target) {
+  if (!fs.existsSync(target)) return false;
+  // A shared skills directory (e.g. `~/.agents/skills`) can hold unrelated skills from other
+  // tools — only report an installation when one of *this* package's own official skill names
+  // is present with a valid SKILL.md, or the shared reference layer is present, never on any
+  // directory that merely looks skill-shaped.
+  return (
+    OFFICIAL_SKILLS.some((name) => fs.existsSync(path.join(target, name, 'SKILL.md'))) ||
+    fs.existsSync(path.join(target, 'sdd-agentic-flow-shared', 'references', 'tlc-baseline.md'))
+  );
 }
 
 function hasCoreSkills(cwd) {
@@ -754,6 +909,54 @@ function doctorChecks(cwd) {
     safe ? 'offline, no-commit safety is the default' : 'required safety defaults are missing',
     'Safety',
   );
+  {
+    add('platform_os', 'PASS', `OS: ${process.platform}, Node ${process.version}`, 'Platform');
+    const writable = filesystemWritable();
+    add(
+      'platform_filesystem',
+      writable ? 'PASS' : 'FAIL',
+      writable ? 'Filesystem writable' : 'Filesystem not writable',
+      'Platform',
+    );
+    add('platform_shell', 'INFO', `Shell: ${detectShellInfo()}`, 'Platform');
+    const git = gitAvailable();
+    add(
+      'platform_git',
+      git ? 'PASS' : 'INFO',
+      git ? 'Git: available' : 'Git: not available',
+      'Platform',
+    );
+  }
+  {
+    const projectTarget = path.join(cwd, '.agents', 'skills');
+    const projectInstalled = installationStatus(projectTarget);
+    add(
+      'installation_project',
+      projectInstalled ? 'PASS' : 'INFO',
+      projectInstalled
+        ? `project-scope installation found at ${path.relative(cwd, projectTarget) || '.'}`
+        : 'no project-scope installation found (opt in with `install <pack> --scope project`)',
+      'Installation',
+    );
+    for (const target of userSkillsDirsFor(null)) {
+      const installed = installationStatus(target);
+      add(
+        `installation_user_${target}`,
+        installed ? 'PASS' : 'INFO',
+        installed
+          ? `user-scope installation found at ${target}`
+          : `no user-scope installation found at ${target}`,
+        'Installation',
+      );
+    }
+    if (!projectInstalled)
+      add(
+        'installation_no_project_footprint',
+        'PASS',
+        '✓ No project files created by installation',
+        'Installation',
+      );
+  }
   return checks;
 }
 
@@ -769,6 +972,12 @@ function installedSkillDirs(cwd) {
     .readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && entry.name !== 'sdd-agentic-flow-shared')
     .map((entry) => entry.name);
+}
+
+function parseScalarField(frontmatter, field) {
+  const match = frontmatter.match(new RegExp(`^${field}:\\s*(\\S+)\\s*$`, 'm'));
+  if (!match || match[1] === 'null') return null;
+  return match[1].replace(/^['"]|['"]$/g, '');
 }
 
 function contractsCheck(cwd) {
@@ -834,6 +1043,12 @@ function contractsCheck(cwd) {
           failures.push(`${name} and ${target} declare a conflict but are both installed`);
       }
     }
+
+    for (const { name, frontmatter } of parsed) {
+      const requiresCli = parseScalarField(frontmatter, 'requires_cli');
+      if (requiresCli && !satisfiesRange(VERSION, requiresCli))
+        failures.push(`${name}: requires CLI ${requiresCli}, installed CLI is ${VERSION}`);
+    }
   }
   if (failures.length)
     return {
@@ -874,9 +1089,9 @@ function smokeCheck() {
     for (const profile of LANGUAGE_PROFILES) {
       temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
       init(temporary, { profile });
-      install('core', temporary);
+      install('core', temporary, { scope: 'project' });
       init(temporary, { profile });
-      install('core', temporary);
+      install('core', temporary, { scope: 'project' });
       const required = [
         '.sdd/config.yml',
         '.sdd/context/project-context.md',
@@ -922,25 +1137,44 @@ function doctor(cwd, options = {}) {
   if (result.status === 'FAIL') process.exitCode = 1;
 }
 
+function describePath(cwd, target) {
+  const relative = path.relative(cwd, target);
+  return relative.startsWith('..') || path.isAbsolute(relative) ? target : relative;
+}
+
 function uninstall(args, cwd) {
+  const usage =
+    'usage: uninstall --plan | uninstall --apply [--include-config] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]';
   const plan = args.includes('--plan');
   const apply = args.includes('--apply');
   const includeConfig = args.includes('--include-config');
-  if (
-    plan === apply ||
-    args.some((arg) => !['--plan', '--apply', '--include-config'].includes(arg)) ||
-    (includeConfig && !apply)
-  ) {
-    return fail('usage: uninstall --plan | uninstall --apply [--include-config]');
+  let scope = null;
+  let agent = null;
+  const rest = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (['--plan', '--apply', '--include-config'].includes(arg)) continue;
+    if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
+      scope = args[index + 1];
+      index += 1;
+    } else if (arg === '--agent' && KNOWN_AGENTS.includes(args[index + 1])) {
+      agent = args[index + 1];
+      index += 1;
+    } else rest.push(arg);
   }
-  const targets = [
-    ...OFFICIAL_SKILLS.map((skill) => path.join(cwd, '.agents', 'skills', skill)),
-    path.join(cwd, '.agents', 'skills', 'sdd-agentic-flow-shared'),
-  ];
+  if (plan === apply || rest.length || (includeConfig && !apply)) return fail(usage);
+  const scopes = scope ? [scope] : ['project', 'user'];
+  const roots = [];
+  if (scopes.includes('project')) roots.push(path.join(cwd, '.agents', 'skills'));
+  if (scopes.includes('user')) roots.push(...userSkillsDirsFor(agent));
+  const targets = roots.flatMap((root) => [
+    ...OFFICIAL_SKILLS.map((skill) => path.join(root, skill)),
+    path.join(root, 'sdd-agentic-flow-shared'),
+  ]);
   if (includeConfig) targets.push(path.join(cwd, '.sdd', 'config.yml'));
   const existing = targets.filter((target) => fs.existsSync(target));
   if (plan) {
-    for (const target of existing) log('PLAN', `remove ${path.relative(cwd, target)}`);
+    for (const target of existing) log('PLAN', `remove ${describePath(cwd, target)}`);
     if (!existing.length) log('PLAN', 'nothing installed by sdd-agentic-flow was found');
     log(
       'PLAN',
@@ -950,7 +1184,7 @@ function uninstall(args, cwd) {
   }
   for (const target of existing) {
     fs.rmSync(target, { recursive: true, force: true });
-    log('PASS', `removed ${path.relative(cwd, target)}`);
+    log('PASS', `removed ${describePath(cwd, target)}`);
   }
   if (!existing.length) log('WARN', 'nothing installed by sdd-agentic-flow was found');
   log('PASS', 'preserved project specs, reports, snapshots, source code, and unknown paths');
@@ -958,7 +1192,7 @@ function uninstall(args, cwd) {
 
 function help() {
   process.stdout.write(
-    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  discover [--force]\n  context [status|refresh]\n  install <pack>\n  doctor [--json] [--smoke] [--contracts]\n  uninstall --plan | --apply [--include-config]\n  help\n  version\n`,
+    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  discover [--force]\n  context [status|refresh]\n  install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan]\n  doctor [--json] [--smoke] [--contracts]\n  uninstall --plan | --apply [--include-config] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]\n  help\n  version\n`,
   );
 }
 
@@ -998,9 +1232,29 @@ async function main() {
       return fail('usage: context [status|refresh]');
     if (sub === 'status') contextStatus(process.cwd());
     else contextRefresh(process.cwd());
-  } else if (command === 'install')
-    args.length === 1 ? install(args[0], process.cwd()) : fail('install requires one pack name');
-  else if (command === 'doctor') {
+  } else if (command === 'install') {
+    const usage =
+      'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan]';
+    let pack = null;
+    let scope = 'user';
+    let agent = null;
+    let plan = false;
+    let valid = true;
+    for (let index = 0; index < args.length; index += 1) {
+      const arg = args[index];
+      if (arg === '--plan') plan = true;
+      else if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
+        scope = args[index + 1];
+        index += 1;
+      } else if (arg === '--agent' && KNOWN_AGENTS.includes(args[index + 1])) {
+        agent = args[index + 1];
+        index += 1;
+      } else if (!arg.startsWith('--') && pack === null) pack = arg;
+      else valid = false;
+    }
+    if (!valid || !pack) return fail(usage);
+    install(pack, process.cwd(), { scope, agent, plan });
+  } else if (command === 'doctor') {
     const valid = args.every(
       (arg) => arg === '--json' || arg === '--smoke' || arg === '--contracts',
     );

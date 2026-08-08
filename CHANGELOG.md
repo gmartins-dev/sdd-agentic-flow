@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.9.0
+
+Installation, Portability & Public Readiness Release.
+
+- **Breaking capability-contract change (default behavior, not a contract field):**
+  `install <pack>` now defaults to `--scope user` — it writes only to per-agent global skill
+  directories (e.g. `~/.claude/skills`) and creates **zero files in the consumer project**.
+  The pre-v0.9.0 behavior (write into `.agents/skills/` inside the project) is now opt-in via
+  `--scope project`. `uninstall` gained the matching `--scope`/`--agent` flags and now removes
+  from both scopes by default. See `docs/installation-scope.md` and `docs/upgrading.md` for
+  the exact migration story — nothing already installed is touched or removed by this change.
+- Added an **Agent Integration Layer** covering 4 officially supported agents — Codex CLI,
+  Cursor, Claude Code, and VS Code + GitHub Copilot — each with a global skill directory
+  verified against that agent's own documentation. New `install --agent <name>` restricts
+  `--scope user` writes to one agent's directories; `.sdd/config.yml`'s existing `agent.target`
+  field is now read back as the default when `--agent` is omitted. New `install --plan` dry-run
+  mirrors `uninstall --plan`.
+- New `doctor` **Installation** section: reports, per scope and per agent target, whether a
+  valid `sdd-agentic-flow` installation is present, plus an explicit `✓ No project files
+  created by installation` line — correctness-hardened so it only recognizes this package's
+  own official skills, never any unrelated skill that happens to share a directory convention.
+- New `doctor` **Platform** section: `OS`/`Node` version, filesystem writability, an
+  informational `Shell:` line (never used to change CLI behavior), and `Git: available`/`Git:
+  not available` (never `FAIL` — Git remains an optional integration, not a runtime
+  requirement). Centralized every `os.homedir()`/`process.platform`/`process.env` read into a
+  single block in `bin/sdd-agentic-flow.js`.
+- CI (`.github/workflows/ci.yml`) now runs the full `npm run check` pipeline on Node 18/20/22/24
+  (`ubuntu-latest`), plus a new `check-platforms` job running the same full pipeline on
+  `macos-latest` and `windows-latest`. Replaced the POSIX-only `env VAR=val npm pack --dry-run`
+  `pack:dry` script (broke under Windows' default `cmd.exe` npm script shell) with a
+  cross-platform `scripts/pack-dry.js`.
+- Added `bin/version-compat.js`: a minimal, **vendored** version-comparison primitive
+  (`parseVersion`/`compareVersions`/`satisfiesRange`, covering exact/`>=`/`^` ranges only) —
+  not the npm `semver` package, which would have broken the zero-runtime-dependency invariant.
+  Added a 9th, optional capability-contract field, `requires_cli` (a semver-style range,
+  `null` by default on all 11 skills), validated deterministically by `doctor --contracts`.
+- Added `docs/skills-catalog.md`: a Purpose/When-to-use/When-not-to-use/Inputs/Outputs/
+  Dependencies/Conflicts/Baseline/Pack(s)/Typical-flow-position entry for each of the 11
+  public skills, ordered like the main Flow. `scripts/check-skills.sh` now fails if any skill
+  loses its catalog entry.
+- Added 5 **golden flows** as real integration tests in `test/cli.test.js` (not just prose):
+  greenfield (init → install → spec artifacts → doctor), existing-code mode (Observed/Inferred/
+  Unknown labeling), the v0.8.0 project-context provenance/drift test (now formalized as one of
+  the 5), a PR-templates presence-contract flow, and a v0.8.0 → v0.9.0 install-scope migration
+  flow. Each has a `walkthrough.md` under `examples/golden/<flow>/`, written after its test
+  passed. Rewrote the `task-management` golden fixture's `spec.md`/`design.md`/`tasks.md` to
+  actually satisfy `shared/references/artifact-contracts.md`'s required headers (they didn't
+  before this release).
+- Added `docs/upgrading.md`, `docs/troubleshooting.md`, and `docs/environment-compatibility.md`
+  (new); extended `docs/compatibility-promise.md` with an explicit breaking-vs-additive policy
+  section; refreshed `docs/publishing.md` to drop its stale "For v0.7.0, also run..." line in
+  favor of `npm run release:check`; fixed `docs/installation.md` and both READMEs, which still
+  described the pre-v0.9.0 always-project-local install default.
+- Diagrams: added `@mermaid-js/mermaid-cli` as a **devDependency only** (never runtime) and a
+  new `npm run docs:diagrams` check (part of `npm run docs:check`) that renders every
+  ` ```mermaid ` block to catch syntax errors.
+- Added `scripts/release-checklist.sh` (`npm run release:check`): chains `npm run check`,
+  `npm run pack:dry`, `doctor --smoke`, a dynamic version-consistency check across
+  `package.json`/`skills/*/SKILL.md`/`presets/*.json` (using `version-compat.js`, not hardcoded
+  strings — `scripts/check-skills.sh`'s own version check was also converted from hardcoded
+  string equality to this), and a grep guard against a pinned `sdd-agentic-flow@<version>`
+  regressing back into the docs.
+- `ROADMAP.md`: marked "skill cards" delivered (`docs/skills-catalog.md`); adapters beyond
+  `local-files`/`github` and maturity-model documentation remain open, not decided.
+- **Pinned explicit upstream versions for both adapted baselines**, tracked machine-readably
+  in `shared/baselines/registry.yml` (`upstream_version`/`upstream_source` per baseline, plus
+  `upstream_version_checked_at`) instead of only in prose: `tlc-spec-driven` at its own
+  `metadata.version: 3.3.0`, and `tdd` (`mattpocock/skills`, which carries no version of its
+  own) at the repository's release tag `v1.2.3`. `NOTICE`, `LICENSING.md`, and
+  `docs/tlc-integration.md` (new "Upstream version pins" section) now cite these explicitly.
+  `scripts/check-skills.sh` fails if either pin is removed. Rationale: this package already
+  promised in `docs/tlc-integration.md`'s synchronization policy to update deliberately, never
+  silently, when the upstream skills change — that promise had no pinned starting point to
+  diff against; this closes that gap.
+- Rationale: this release does not add product surface area so much as it proves the
+  architectural shape reached in v0.8.0 is complete, safe by default for a stranger's
+  repository, and portable across the agents/platforms this package already claimed to
+  support — preparing the ground for v1.0.0, which is expected to be small and mostly freeze
+  what already exists.
+
 ## 0.8.0
 
 Flow Consolidation & Dynamic Project Context Release.

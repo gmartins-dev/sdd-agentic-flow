@@ -5,12 +5,16 @@ Versão prática em português. Leia o [README principal em inglês](README.md) 
 `sdd-agentic-flow` é um toolkit local-first e zero-dependência de Spec Driven Development para
 fluxos com agentes de código. Ele traz skills Markdown com contrato de capacidades, baselines
 condensadas de TLC e TDD, dimensionamento adaptativo por perfil de feature, e contexto de
-projeto opcionalmente auto-descoberto. Instala skills e configuração no projeto e mantém a
-decisão final com pessoas. Veja a [arquitetura](docs/architecture.md).
+projeto opcionalmente auto-descoberto. A instalação de skills é explícita e, por padrão,
+user-local — sem nenhum arquivo no projeto; a configuração (`.sdd/config.yml`) é sempre
+explícita e fica no projeto. A decisão final é sempre das pessoas. Veja a
+[arquitetura](docs/architecture.md).
 
 ## Por que confiar?
 
 O código é inspecionável, a CLI tem zero dependências runtime, não usa telemetria, postinstall ou rede externa por padrão, e não faz commit, push, merge, deploy ou publish automaticamente. Use `doctor` e `doctor --smoke` para validação local.
+
+Por padrão, `install` usa o escopo `user`: escreve apenas nos diretórios globais de skills de cada agente suportado (Codex CLI, Cursor, Claude Code, VS Code + GitHub Copilot) e não cria nenhum arquivo no projeto. Use `--scope project` para o comportamento anterior (grava em `.agents/skills/` dentro do projeto). Veja [installation-scope.md](docs/installation-scope.md).
 
 ## Início rápido
 
@@ -44,7 +48,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-A desinstalação preserva specs, relatórios, snapshots e código-fonte. Use `--include-config` apenas para remover também `.sdd/config.yml`.
+A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remove dos dois escopos por padrão. Use `--include-config` apenas para remover também `.sdd/config.yml`, ou `--scope`/`--agent` para restringir a remoção.
 
 ## Fluxo principal
 
@@ -66,6 +70,10 @@ public seams acordados, ciclos RED → GREEN → REFACTOR e vertical slices. Vej
 É indicado para times que usam SDD, entregam features em sprints, usam TDD/test-first, precisam de rastreabilidade e delegam tarefas para agentes com revisão. Não é otimizado para scripts descartáveis, agentes sem revisão humana ou pipelines automáticos de release/deploy.
 
 Para o fluxo completo, consulte o [guia de uso das skills em português](docs/sdd-skills-usage-guide.pt-BR.md) e o [guia em inglês](docs/sdd-skills-usage-guide.md).
+
+Veja o [catálogo de skills](docs/skills-catalog.md) para a versão detalhada — propósito, quando
+usar/não usar, entradas/saídas, dependências, conflitos, baseline e posição no fluxo de cada
+uma das 11 skills públicas.
 
 Veja também a [matriz de compatibilidade](docs/compatibility-matrix.md) (quais packs instalam
 quais skills) e os guias de decisão: [escolhendo um perfil de feature](docs/guides/choosing-a-feature-profile.md),

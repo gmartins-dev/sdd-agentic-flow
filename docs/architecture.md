@@ -52,6 +52,10 @@ Every skill's frontmatter declares:
   skill's output alongside its `extends` parent.
 - `conflicts` — optional list of skills that should not be installed together in the same pack.
   Empty by default.
+- `requires_cli` — optional (Milestone 3, v0.9.0): the minimum `sdd-agentic-flow` CLI version
+  this skill needs, as a range (`x.y.z`, `>=x.y.z`, or `^x.y.z`). `null` by default, meaning no
+  constraint. Validated by `doctor --contracts` using `bin/version-compat.js`. See
+  [compatibility promise](compatibility-promise.md#requires_cli).
 
 ### Field semantics at a glance
 
@@ -63,11 +67,14 @@ Every skill's frontmatter declares:
 | `requires` | "What input kinds must exist before this skill can act?" | `consumes` — a missing `requires` input blocks the skill; a missing `consumes` artifact does not. |
 | `consumes` | "What optional context artifacts does this skill read when present?" | `requires` — `consumes` is best-effort context, never a precondition. |
 | `produces` | "What artifact kind does this skill hand off when it finishes?" | `compatible_with` — `produces` is workflow output, `compatible_with` is pack membership. |
+| `requires_cli` | "What is the minimum CLI version this skill needs?" | `baseline` — `requires_cli` gates on the CLI's own version, not a methodology baseline. |
 
 `doctor --contracts` validates that every skill installed in a **consumer** repository
-(`.agents/skills/*/SKILL.md`) still carries all 6 required fields and reports on the 2 optional
-ones — `FAIL` if a required field is missing (signals a corrupted or hand-edited installed
-skill), `WARN` if `depends_on`/`conflicts` are absent. This complements
+(`.agents/skills/*/SKILL.md`) still carries all 6 required fields and reports on the 3 optional
+ones (`depends_on`, `conflicts`, `requires_cli`) — `FAIL` if a required field is missing
+(signals a corrupted or hand-edited installed skill), `WARN` if an optional field is absent,
+and a separate deterministic `FAIL` if a declared `requires_cli` range is not satisfied by the
+installed CLI's version. This complements
 `scripts/check-skills.sh`, which validates the same fields **at the source** (this repository)
 before anything is packed or installed.
 

@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.1.0
+
+**Breaking compatibility-reducing change (per the v1.0 stability commitment):** dropped Node.js
+18 and 20 as supported/required versions. `package.json`'s `"engines"` moves from `>=18` to
+`>=22` — Node 22 (Maintenance LTS), 24 (Active LTS), and 26 (Current) are now the required,
+CI-verified versions; see [environment-compatibility.md](docs/environment-compatibility.md) and
+Node's own [release schedule](https://nodejs.org/en/about/previous-releases). Node 18 reached
+end of life; keeping it as a floor was forcing this package's `devDependencies` chain
+(`markdown-link-check` and its own transitive dependencies — `marked`, `commander`, `chalk`,
+`proxy-agent`, `undici`) to stay pinned to increasingly old, CommonJS-only major versions to
+avoid `ERR_REQUIRE_ESM` crashes, which is exactly the kind of version-pinning debt this
+package's own `requires_cli` contract field exists to make visible rather than silently work
+around. Node 22+ ships native, unflagged `require()` of ES-module-only packages
+(`require(esm)`, stable since Node 22.12), which removes the need for any of those pins —
+this release deletes the `overrides` block entirely rather than keep growing it.
+
+- Fixed four real, independent CI bugs surfaced while investigating the above (all still
+  correct fixes regardless of the Node floor, kept in this release): `scripts/sanitize-private-context.sh`
+  used `mapfile` (bash 4+), which macOS's default bash 3.2 doesn't have — replaced with a
+  portable `while read` loop. `scripts/check-mermaid.js`'s `mmdc` (Puppeteer) failed to launch
+  Chromium on `ubuntu-latest` ("No usable sandbox!" — Ubuntu 24.04 disabled unprivileged user
+  namespaces) — added `scripts/mermaid-puppeteer-config.json` (`--no-sandbox
+  --disable-setuid-sandbox`, safe here because this only renders trusted, repo-local Markdown
+  for a devDependency-only syntax check). No `.gitattributes` existed, so `windows-latest`
+  (`core.autocrlf=true` by default) checked out every text file as CRLF, which Biome's
+  LF-only formatter read as a diff on every file — added `.gitattributes`
+  (`* text=auto eol=lf`). `execFileSync` couldn't spawn `mmdc.cmd` on Windows without
+  `shell: true` (Node's CVE-2024-27980 hardening) — scoped to `win32` only.
+- `.github/workflows/ci.yml` now runs `npm ci` instead of `npm install` in both jobs.
+  `npm install` re-resolves the dependency graph against `package.json`/`overrides` on every
+  run rather than strictly honoring `package-lock.json`, so a fresh CI machine could land on a
+  different (but still range-valid) resolution than an already-installed local tree — observed
+  directly during this investigation. `npm ci` installs exactly what's committed, and fails
+  fast if `package.json`/`package-lock.json` ever drift out of sync.
+- `check-platforms` already ran Node 22; it now meaningfully tests the floor version on
+  macOS/Windows rather than an arbitrary middle value from a wider matrix.
+
 ## 1.0.0
 
 Public Commitment / Go-Live Release. No new product features — this release audits the

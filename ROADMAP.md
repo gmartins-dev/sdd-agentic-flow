@@ -1,5 +1,12 @@
 # Roadmap
 
+- **v1.1 (2026-08-08):** dropped Node.js 18/20 as supported versions — CI-required minimum is
+  now Node 22 (Maintenance LTS), with 24 (Active LTS) and 26 (Current) also required; a
+  compatibility-reducing change under the v1.0 stability commitment, so it ships as a minor
+  release with a matching `CHANGELOG.md` entry rather than silently. Also fixed four
+  independent CI bugs (macOS `bash` 3.2 vs `mapfile`, Windows CRLF vs Biome, Windows `.cmd`
+  spawn without a shell, Puppeteer sandbox on `ubuntu-latest`) and switched CI from
+  `npm install` to `npm ci` for reproducible installs.
 - **v1.0 (2026-08-08):** public go-live — first public stability commitment. The CLI's
   documented argument surface and the environment support matrix now follow the same
   minor/major-only change rule already established for skill capability contracts (see the

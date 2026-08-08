@@ -9,7 +9,7 @@ together.
 
 | OS                        | Support level | Verified by                                             |
 | --------------------------- | ---------------- | ---------------------------------------------------------- |
-| Ubuntu LTS (`ubuntu-latest`) | Required       | CI `check` job, every push/PR, Node 18/20/22/24            |
+| Ubuntu LTS (`ubuntu-latest`) | Required       | CI `check` job, every push/PR, Node 22/24/26                |
 | Windows 10/11 (`windows-latest`) | Required   | CI `check-platforms` job, full `npm run check` pipeline    |
 | macOS (`macos-latest`)     | Required       | CI `check-platforms` job, full `npm run check` pipeline    |
 | Debian-family Linux (Debian, other Ubuntu releases) | Best effort | Not run in CI; follows from "any Node-supported Linux with a POSIX filesystem" |
@@ -22,12 +22,18 @@ POSIX-compatible filesystem — this is not a closed list of individually tested
 
 | Version | Support level | Verified by                       |
 | --------- | ---------------- | ------------------------------------ |
-| 18        | Required        | CI `check` job matrix (`ubuntu-latest`) |
-| 20        | Required        | CI `check` job matrix (`ubuntu-latest`) |
-| 22        | Required        | CI `check` job matrix (`ubuntu-latest`); also the Node used in `check-platforms` |
-| 24        | Required        | CI `check` job matrix (`ubuntu-latest`) |
+| 22 (Maintenance LTS) | Required | CI `check` job matrix (`ubuntu-latest`); also the Node used in `check-platforms` |
+| 24 (Active LTS)      | Required | CI `check` job matrix (`ubuntu-latest`) |
+| 26 (Current)         | Required | CI `check` job matrix (`ubuntu-latest`) |
 
-`package.json` declares `"engines": { "node": ">=18" }`, matching the lowest tested version.
+`package.json` declares `"engines": { "node": ">=22" }`, matching the lowest tested version.
+Node 18 and 20 reached end of life and were dropped as a compatibility-reducing change in
+v1.1.0 (see [compatibility promise](compatibility-promise.md)); Node's own release schedule
+is at [nodejs.org/en/about/previous-releases](https://nodejs.org/en/about/previous-releases).
+Node 22+ also removed the underlying cause of most of the CI breakage that motivated this
+change: native, unflagged `require()` of ES-module-only packages (`require(esm)`, stable from
+Node 22.12), which the CJS tooling in this repo's `devDependencies` chain (`markdown-link-check`
+and its own transitive dependencies) needs.
 
 ## Shells
 

@@ -15,20 +15,22 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 ## Início rápido
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
-npx sdd-agentic-flow@0.7.0 install core
-npx sdd-agentic-flow@0.7.0 doctor
+npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` para escolher as opções iniciais, incluindo o perfil de feature
 (`small_fix`, `medium_feature`, `large_feature`, `epic`). Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`. O `init` também
-auto-descobre `.sdd/context/project-context.md`; rode `discover [--force]` para atualizar.
+auto-descobre `.sdd/context/project-context.md`; rode `discover [--force]` para atualizar, ou
+`context status`/`context refresh` para ver a proveniência gravada (quando/de qual revisão foi
+gerado) e atualizá-la sem precisar lembrar da flag.
 
 Para escolher o perfil de idioma diretamente:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init --language en-US
-npx sdd-agentic-flow@0.7.0 init --language pt-BR
+npx sdd-agentic-flow init --language en-US
+npx sdd-agentic-flow init --language pt-BR
 ```
 
 Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.
@@ -38,8 +40,8 @@ Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o cont
 Os modos documentados são `plan`, `guided`, `apply`, `review` e `full`; todos preservam limites locais e não publicam ou enviam alterações por padrão. Veja [execution modes](docs/execution-modes.md).
 
 ```bash
-npx sdd-agentic-flow@latest uninstall --plan
-npx sdd-agentic-flow@latest uninstall --apply
+npx sdd-agentic-flow uninstall --plan
+npx sdd-agentic-flow uninstall --apply
 ```
 
 A desinstalação preserva specs, relatórios, snapshots e código-fonte. Use `--include-config` apenas para remover também `.sdd/config.yml`.

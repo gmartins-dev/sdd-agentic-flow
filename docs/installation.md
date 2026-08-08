@@ -4,9 +4,9 @@ Install the package, run `npx sdd-agentic-flow init`, then install the smallest 
 that fits the project. Re-running installation preserves existing files.
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
-npx sdd-agentic-flow@0.7.0 install core
-npx sdd-agentic-flow@0.7.0 doctor
+npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when selecting initial project defaults. Installation writes only

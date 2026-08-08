@@ -8,7 +8,7 @@ read what `discover` finds.
 ## 1. Run `init`
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
+npx sdd-agentic-flow init
 ```
 
 This writes `.sdd/config.yml` (your declared policy — project name, source type, workflow
@@ -44,15 +44,35 @@ missed to the `## Notes` section by hand.
 ## 3. Refresh after the project changes
 
 ```bash
-npx sdd-agentic-flow@0.7.0 discover --force
+npx sdd-agentic-flow discover --force
 ```
 
 `--force` fully regenerates `project-context.md`, so copy out any manual notes first. Without
 `--force`, `discover` is a no-op if the file already exists — safe to run in CI or a pre-commit
 hook without side effects.
 
+The friendlier equivalent is:
+
+```bash
+npx sdd-agentic-flow context status    # see when it was generated and at which revision
+npx sdd-agentic-flow context refresh   # regenerate it unconditionally
+```
+
+`context status` reads the provenance recorded in the file (generated-at timestamp, repository
+revision, branch) and tells you plainly whether the repository has moved on since generation —
+useful after a brownfield repo has had significant changes since you last ran `init`/`discover`.
+`context refresh` does the same full regeneration as `discover --force`, without needing to
+remember the flag.
+
 ## 4. Install a pack and start the loop
 
 Once config and context exist, install a pack (`core` is the safe default) and follow the main
-SDD flow from the [README](../../README.md#main-sdd-flow), starting with
-`sdd-create-specs` against the existing codebase as evidence.
+SDD flow from the [README](../../README.md#main-sdd-flow), starting with `sdd-create-specs`.
+
+If the code you're bringing under SDD already exists with no prior spec and no requested
+outcome to start from, ask for `sdd-create-specs` in its **existing-code mode**: name an
+explicit scope (a module, feature, or bounded area — never the whole repository) and it will
+reconstruct `context.md`, `spec.md`, and `design.md` from the code and its tests, labeling
+every requirement and decision **Observed**, **Inferred**, or **Unknown** so you can confirm or
+correct each inference before relying on it. If instead you already have a requested outcome or
+ticket to implement, use the same skill's default source-item mode.

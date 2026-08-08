@@ -12,6 +12,15 @@
   (architecture/CI/platform signals), an agent-neutrality regression guard and action
   vocabulary, the first decision guides and a compatibility matrix, and the
   `sdd-reverse-engineer` skill.
+- **v0.8:** Flow Consolidation & Dynamic Project Context Release — resolved
+  `sdd-reverse-engineer`'s place in the Flow by merging it into `sdd-create-specs` as an
+  existing-code mode, restoring a single entry point for the Specification step (12 skills →
+  11). Also formalized Dynamic Project Context:
+  `project-context.md` now carries provenance (generated-at, repository revision, branch), with
+  new `context status`/`context refresh` commands to inspect and regenerate it explicitly,
+  additive to the unchanged `discover [--force]`. Deliberately no Context Indexing, Context
+  Query, knowledge graph, RAG, or vector database — those remain out of scope for the core
+  product, to protect the toolkit's focused SDD-flow identity.
 
 The project remains in beta and active construction. Future beta scope is open and
 will be defined from validated needs rather than assumed in advance.

@@ -3,7 +3,7 @@
 Install a pack, keep `.sdd/config.yml` in project context, and select a skill explicitly.
 
 ```bash
-npx sdd-agentic-flow@0.7.0 install core
+npx sdd-agentic-flow install core
 ```
 
 ```text

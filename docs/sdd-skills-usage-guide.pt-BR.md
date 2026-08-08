@@ -9,16 +9,16 @@ alterações e evidências no projeto para que uma pessoa revise cada etapa.
 Execute no diretório raiz do projeto:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
-npx sdd-agentic-flow@0.7.0 install core
-npx sdd-agentic-flow@0.7.0 doctor
+npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` para escolher projeto, agente, idioma, origem, fluxo e
 configurações de segurança. A CLI grava `.sdd/config.yml` e preserva uma
 configuração existente.
 
-Use `npx sdd-agentic-flow@0.7.0 list` para consultar os packs:
+Use `npx sdd-agentic-flow list` para consultar os packs:
 
 | Pack                     | Uso                                                              |
 | ------------------------ | ---------------------------------------------------------------- |
@@ -172,9 +172,9 @@ compatibilidade com todo cliente.
 Execute os checks locais antes de aceitar o trabalho:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 doctor
-npx sdd-agentic-flow@0.7.0 doctor --json
-npx sdd-agentic-flow@0.7.0 doctor --smoke
+npx sdd-agentic-flow doctor
+npx sdd-agentic-flow doctor --json
+npx sdd-agentic-flow doctor --smoke
 ```
 
 A skill `task-check` revisa uma task de forma independente. A skill
@@ -188,9 +188,9 @@ e reconcilie a especificação antes de continuar.
 Veja o plano de limpeza antes de aplicar:
 
 ```bash
-npx sdd-agentic-flow@latest uninstall --plan
-npx sdd-agentic-flow@latest uninstall --apply
-npx sdd-agentic-flow@latest uninstall --apply --include-config
+npx sdd-agentic-flow uninstall --plan
+npx sdd-agentic-flow uninstall --apply
+npx sdd-agentic-flow uninstall --apply --include-config
 ```
 
 A desinstalação remove as skills conhecidas do toolkit. Ela preserva código,

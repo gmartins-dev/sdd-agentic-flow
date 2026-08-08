@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.8.0
+
+Flow Consolidation & Dynamic Project Context Release.
+
+- **Breaking capability-contract change:** merged `sdd-reverse-engineer` into
+  `sdd-create-specs` as an **existing-code mode**, alongside its existing source-item mode.
+  `sdd-create-specs` now accepts either a requested outcome/ticket (source-item mode,
+  unchanged) or an explicit existing-code scope (existing-code mode), which carries over the
+  scope-confirmation gate, the Observed/Inferred/Unknown evidence-labeling discipline, and the
+  conditional `tasks.md` creation from the former `sdd-reverse-engineer` skill. Skill count:
+  12 → 11. `sdd-reverse-engineer` no longer exists as a standalone skill; any preset, config,
+  or automation referencing it directly must switch to `sdd-create-specs`.
+- Removed `sdd-reverse-engineer` from `presets/core.json` and `presets/full.json`.
+- Updated `shared/references/workflow-routing.md` so "existing undocumented code needing
+  specs" routes to `sdd-create-specs` (existing-code mode) instead of a separate skill.
+- Rationale: `sdd-reverse-engineer` was a parallel chain entry point competing with
+  `sdd-create-specs` for the same "Specification" step, which diluted the Flow's linear
+  identity and risked pulling the toolkit toward a general "AI engineering toolbox" rather
+  than a focused SDD flow. The capability is preserved; only its position in the chain
+  changed. See `docs/guides/adopting-in-a-brownfield-repo.md` for the updated guidance.
+- Formalized **Dynamic Project Context**: `.sdd/context/project-context.md` is now the
+  canonical, versioned Project Context artifact. It records its own provenance (generated-at
+  timestamp, repository revision, branch, discovery version), read via a local, read-only
+  `git rev-parse`, degrading gracefully to `not a git repository` / `unknown` outside a Git
+  repository or without `git` installed.
+- Added `context status` and `context refresh` commands. `context status` reports current
+  provenance and states factually (never a heuristic "stale" verdict) whether the repository
+  has changed since generation; `context refresh` regenerates the artifact unconditionally,
+  equivalent to `discover --force` without needing to remember the flag. `discover [--force]`
+  is unchanged and keeps working exactly as before — `context` is additive, not a
+  replacement.
+- `doctor`'s `project_context` check now notes repository revision drift in its message when
+  detected (still `PASS`; informational, not a failure).
+- Rationale: skills already consume `project-context.md` as a shared, read-only baseline and
+  layer only task-specific inspection on top of it (targeted discovery), so no skill
+  workflow changed. Context Indexing, Context Query, knowledge graphs, RAG, and vector
+  databases remain explicitly out of scope for the core product — this release only makes
+  the existing Discovery mechanism versioned, inspectable, and explicitly regenerable.
+
 ## 0.7.0
 
 Operational Excellence (start).

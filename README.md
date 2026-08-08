@@ -1,5 +1,7 @@
 # sdd-agentic-flow
 
+*[Leia em português](README.pt-BR.md)*
+
 `sdd-agentic-flow` is a local-first, zero-dependency Spec Driven Development toolkit for
 coding-agent workflows. It ships capability-contracted Markdown skills built on condensed TLC
 and TDD baselines, adaptive feature-profile sizing, and optional auto-discovered project
@@ -9,9 +11,9 @@ review. See [architecture](docs/architecture.md) for how the pieces fit together
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
-npx sdd-agentic-flow@0.7.0 install core
-npx sdd-agentic-flow@0.7.0 doctor
+npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` to choose a project name, agent target, language, source type,
@@ -22,8 +24,8 @@ refresh it. See [configuration](docs/configuration.md).
 Choose a language profile explicitly when creating a project:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init --language en-US
-npx sdd-agentic-flow@0.7.0 init --language pt-BR
+npx sdd-agentic-flow init --language en-US
+npx sdd-agentic-flow init --language pt-BR
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -46,6 +48,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ```text
 init [--interactive] [--language ...] [--feature-profile ...]  Create local configuration
 discover [--force]                    Refresh auto-discovered project context
+context [status|refresh]              Show or refresh project context provenance
 install <pack>                        Install a project-local pack
 doctor [--json] [--smoke]             Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
@@ -80,9 +83,7 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 flowchart TD
   setup[setup-sdd-agentic-flow] --> route[sdd-route]
   route --> specs[sdd-create-specs]
-  route --> reverse[sdd-reverse-engineer]
   specs --> prompts[sdd-create-prompts]
-  reverse --> prompts
   prompts --> implement[sdd-implement-task]
   implement --> check[sdd-task-check]
   check --> pr[sdd-create-pr]
@@ -105,8 +106,8 @@ for what this package ships versus the external skills it adapts from.
 ## Uninstall and rollback
 
 ```bash
-npx sdd-agentic-flow@latest uninstall --plan
-npx sdd-agentic-flow@latest uninstall --apply
+npx sdd-agentic-flow uninstall --plan
+npx sdd-agentic-flow uninstall --apply
 ```
 
 Uninstall removes only known installed toolkit skill directories. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`. See [uninstall](docs/uninstall.md).
@@ -125,8 +126,7 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 | ------------------------ | --------------------------- | ----------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
 | `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
 | `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
-| `sdd-create-specs`       | Plan feature specs          | Source item       | Feature spec set       | Yes, when authorized | plan         | Requirements need structure |
-| `sdd-reverse-engineer`   | Document existing code      | Existing codebase | Feature spec set       | Yes, when authorized | plan         | Undocumented code needs specs |
+| `sdd-create-specs`       | Plan feature specs          | Source item OR existing codebase | Feature spec set       | Yes, when authorized | plan         | Requirements need structure, or undocumented code needs specs |
 | `sdd-create-prompts`     | Generate task prompts       | Specs/tasks       | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
 | `sdd-implement-task`     | Implement one task          | Approved task     | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
 | `sdd-implement-multi`    | Plan multi-task execution   | Task set          | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |

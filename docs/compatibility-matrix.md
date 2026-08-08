@@ -23,7 +23,6 @@ manually validated as of v0.6.0").
 | `setup-sdd-agentic-flow`   |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
 | `sdd-route`                |  ✓   |    ✓     |     ✓     |  ✓  |        ✓         |  ✓   |     ✓       |   ✓    |
 | `sdd-create-specs`         |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-reverse-engineer`     |  ✓   |          |           |     |                  |  ✓   |             |        |
 | `sdd-create-prompts`       |      |    ✓     |           |     |                  |  ✓   |             |        |
 | `sdd-implement-task`       |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
 | `sdd-implement-multi`      |      |          |     ✓     |     |        ✓         |  ✓   |             |        |

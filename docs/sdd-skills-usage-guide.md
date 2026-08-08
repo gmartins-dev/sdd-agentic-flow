@@ -9,16 +9,16 @@ validation evidence in the project so a person can inspect each step.
 Run these commands from the project root:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 init
-npx sdd-agentic-flow@0.7.0 install core
-npx sdd-agentic-flow@0.7.0 doctor
+npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when you want to choose project, agent, language,
 source, flow, and safety settings. The CLI writes `.sdd/config.yml` and keeps
 an existing configuration unchanged.
 
-Use `npx sdd-agentic-flow@0.7.0 list` to inspect available packs:
+Use `npx sdd-agentic-flow list` to inspect available packs:
 
 | Pack                     | Use it for                                                                |
 | ------------------------ | ------------------------------------------------------------------------- |
@@ -170,9 +170,9 @@ but it does not guarantee compatibility with every client.
 Run local checks before accepting work:
 
 ```bash
-npx sdd-agentic-flow@0.7.0 doctor
-npx sdd-agentic-flow@0.7.0 doctor --json
-npx sdd-agentic-flow@0.7.0 doctor --smoke
+npx sdd-agentic-flow doctor
+npx sdd-agentic-flow doctor --json
+npx sdd-agentic-flow doctor --smoke
 ```
 
 The `task-check` skill reviews one task independently. The `validation` skill
@@ -186,9 +186,9 @@ stop and reconcile the specification before continuing.
 Preview cleanup first:
 
 ```bash
-npx sdd-agentic-flow@latest uninstall --plan
-npx sdd-agentic-flow@latest uninstall --apply
-npx sdd-agentic-flow@latest uninstall --apply --include-config
+npx sdd-agentic-flow uninstall --plan
+npx sdd-agentic-flow uninstall --apply
+npx sdd-agentic-flow uninstall --apply --include-config
 ```
 
 Uninstall removes known toolkit skills. It preserves source code, specs,

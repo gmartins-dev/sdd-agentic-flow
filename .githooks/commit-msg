@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Strips any Claude/Anthropic co-author trailer before a commit is finalized, so this
+# repository's contributor graph never attributes Claude/Anthropic. Enable locally with:
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+message_file="$1"
+
+if grep -qiE '^Co-Authored-By:.*(claude|anthropic)' "$message_file"; then
+  grep -viE '^Co-Authored-By:.*(claude|anthropic)' "$message_file" > "$message_file.tmp"
+  mv "$message_file.tmp" "$message_file"
+  echo "commit-msg hook: removed a Claude/Anthropic co-author trailer (see CLAUDE.md)" >&2
+fi

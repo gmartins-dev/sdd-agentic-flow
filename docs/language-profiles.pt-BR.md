@@ -20,6 +20,10 @@ chaves de configuração, modos, statuses e identificadores permanecem iguais.
 sdd-agentic-flow init --language en-US
 sdd-agentic-flow init --language pt-BR
 sdd-agentic-flow init --interactive --language pt-BR
+
+# --en e --br são atalhos para as duas formas de --language acima
+sdd-agentic-flow init --en
+sdd-agentic-flow init --br
 ```
 
 O perfil padrão é `en-US`. O `init` não sobrescreve `.sdd/config.yml`

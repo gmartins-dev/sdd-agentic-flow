@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.2.0
+
+CLI UX audit and upgrade. Prompted by an audit of the documented Quick Start flow
+(`init` → `install core` → `doctor`) and the other `npx sdd-agentic-flow` commands. All changes
+are additive per [compatibility-promise.md](docs/compatibility-promise.md) — no documented
+command or flag was removed, and no existing flag's default meaning changed.
+
+- **Bug fix: `doctor` false-`WARN`/false-message after the default, recommended install flow.**
+  `doctor`'s `skills`, `shared_layer`, `project_readiness`, `tdd-baseline`, and the four
+  baseline-compliance checks, plus `doctor --contracts` and the `language_profile` check, were
+  hardcoded to read `cwd/.agents/skills/...` — project scope only. Since `install`'s default
+  (and recommended) scope is `user`, running the exact Quick Start sequence from `README.md`
+  left `doctor` reporting overall `WARN` with six misleading messages, directly contradicting
+  `doctor`'s own `Installation` section, which correctly showed the user-scope install as
+  `PASS`. Added `resolveSkillsRoot(cwd)` (checks project scope first, then every resolved
+  user-scope target, same resolution `install` itself uses) and routed all of the above checks
+  through it. `bin/sdd-agentic-flow.js`.
+- **`--br`/`--en` aliases for `init`'s `--language` flag**: `init --br` is shorthand for
+  `init --language pt-BR`, `init --en` for `init --language en-US`. Left-to-right scan, same as
+  the existing `install`/`uninstall` flag parsing — whichever of `--language`/`--br`/`--en`
+  appears last wins.
+- **Real per-command help**: `sdd-agentic-flow help <command>` and
+  `sdd-agentic-flow <command> --help` now render the same detailed usage block (description,
+  `USAGE`, `OPTIONS`, `EXAMPLES`) for `init`, `install`, `doctor`, `uninstall`, `discover`,
+  `context`, and `list` — previously only `init --help` existed, and it printed a bare one-line
+  usage string; `install --help`/`doctor --help`/`uninstall --help`/`discover --help`/
+  `context --help` all used to `FAIL` with exit code 1 as an unrecognized flag. `help` with no
+  argument still shows the full command reference, reorganized with a `QUICK START` block and a
+  `MORE HELP` pointer to the new per-command form; every line from the previous reference is
+  still present.
+- **Bare `npx sdd-agentic-flow` (no command) now shows a contextual, read-only status screen**
+  instead of silently aliasing to `help`'s full reference (the un-narrated previous behavior of
+  `argv`'s `command = 'help'` default). It reports whether `.sdd/config.yml`, installed core
+  skills (and which scope), and the generated project context exist, points at exactly one
+  suggested next command based on that state, and lists the same quick commands as the Quick
+  Start section — never a prompt, never an implicit action, always exit `0`. Per
+  `docs/compatibility-promise.md`'s "what still stays free to change without notice" clause,
+  this is a human-readable-text-only change, not a change to any documented flag's behavior;
+  `help`, `--help`, and `-h` are unaffected and keep returning the full reference exactly as
+  before.
+
 ## 1.1.0
 
 **Breaking compatibility-reducing change (per the v1.0 stability commitment):** dropped Node.js

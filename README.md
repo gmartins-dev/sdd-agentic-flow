@@ -28,6 +28,11 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
+Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already
+set up, and one suggested next command) instead of the full reference — it never runs anything
+on its own. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` /
+`<command> --help` for one command's usage and examples.
+
 See [installation](docs/installation.md) for the full install guide, including pack selection
 and re-running installation safely.
 
@@ -41,6 +46,9 @@ Choose a language profile explicitly when creating a project:
 ```bash
 npx sdd-agentic-flow init --language en-US
 npx sdd-agentic-flow init --language pt-BR
+# --en / --br are shorthand for the two flags above
+npx sdd-agentic-flow init --en
+npx sdd-agentic-flow init --br
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -61,7 +69,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language ...] [--feature-profile ...]  Create local configuration
+init [--interactive] [--language ...|--en|--br] [--feature-profile ...]  Create local configuration
 discover [--force]                    Refresh auto-discovered project context
 context [status|refresh]              Show or refresh project context provenance
 install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
@@ -69,9 +77,10 @@ doctor [--json] [--smoke] [--contracts]  Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
 uninstall --apply [--include-config] [--scope user|project] [--agent ...]  Remove installed toolkit assets
 list                                  List packs
+help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples.
 
 ## Packs
 

@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
 const { satisfiesRange } = require('./version-compat');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -186,9 +186,7 @@ function languageProfilePath(cwd, profile, isPackage) {
   return isPackage
     ? path.join(PACKAGE_ROOT, 'shared', 'language-profiles', `${profile}.md`)
     : path.join(
-        cwd,
-        '.agents',
-        'skills',
+        resolveSkillsRoot(cwd),
         'sdd-agentic-flow-shared',
         'language-profiles',
         `${profile}.md`,
@@ -659,14 +657,28 @@ function installationStatus(target) {
   );
 }
 
-function hasCoreSkills(cwd) {
-  return [
-    'setup-sdd-agentic-flow',
-    'sdd-create-specs',
-    'sdd-implement-task',
-    'sdd-task-check',
-    'sdd-validation',
-  ].every((skill) => fs.existsSync(path.join(cwd, '.agents', 'skills', skill, 'SKILL.md')));
+const CORE_SKILLS = [
+  'setup-sdd-agentic-flow',
+  'sdd-create-specs',
+  'sdd-implement-task',
+  'sdd-task-check',
+  'sdd-validation',
+];
+
+function hasCoreSkillsAt(root) {
+  return CORE_SKILLS.every((skill) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
+}
+
+// doctor's project-local checks (skills/shared_layer/tdd-baseline/baseline-compliance) must
+// agree with where `install` actually wrote files — project scope by default only under
+// --scope project, otherwise the resolved user-scope target(s) — or they contradict doctor's
+// own Installation section for the default (recommended) install flow.
+function resolveSkillsRoot(cwd) {
+  const projectRoot = path.join(cwd, '.agents', 'skills');
+  if (hasCoreSkillsAt(projectRoot)) return projectRoot;
+  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd)))
+    if (hasCoreSkillsAt(dir)) return dir;
+  return projectRoot;
 }
 
 function filesIn(directory) {
@@ -714,16 +726,10 @@ function doctorChecks(cwd) {
     ? fs.readFileSync(configPath, 'utf8')
     : configFor();
   const language = languageReport(cwd);
+  const skillsRoot = isPackage ? null : resolveSkillsRoot(cwd);
   const tddBaseline = isPackage
     ? path.join(cwd, 'shared', 'references', 'tdd-baseline.md')
-    : path.join(
-        cwd,
-        '.agents',
-        'skills',
-        'sdd-agentic-flow-shared',
-        'references',
-        'tdd-baseline.md',
-      );
+    : path.join(skillsRoot, 'sdd-agentic-flow-shared', 'references', 'tdd-baseline.md');
 
   if (isPackage) {
     const manifest = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
@@ -788,25 +794,25 @@ function doctorChecks(cwd) {
     );
     add(
       'skills',
-      fs.existsSync(path.join(cwd, '.agents', 'skills')) && hasCoreSkills(cwd) ? 'PASS' : 'WARN',
-      hasCoreSkills(cwd) ? 'core skills installed' : 'core skills not fully installed',
+      fs.existsSync(skillsRoot) && hasCoreSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
+      hasCoreSkillsAt(skillsRoot) ? 'core skills installed' : 'core skills not fully installed',
       'Skills',
     );
     add(
       'shared_layer',
       fs.existsSync(
-        path.join(cwd, '.agents/skills/sdd-agentic-flow-shared/references/tlc-baseline.md'),
+        path.join(skillsRoot, 'sdd-agentic-flow-shared', 'references', 'tlc-baseline.md'),
       )
         ? 'PASS'
         : 'WARN',
-      fs.existsSync(path.join(cwd, '.agents/skills/sdd-agentic-flow-shared'))
+      fs.existsSync(path.join(skillsRoot, 'sdd-agentic-flow-shared'))
         ? 'shared layer installed'
         : 'shared layer not installed',
       'Shared layer',
     );
     add(
       'project_readiness',
-      fs.existsSync(configPath) && hasCoreSkills(cwd) ? 'PASS' : 'WARN',
+      fs.existsSync(configPath) && hasCoreSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
       'project readiness is based on config and core skills',
       'Project readiness',
     );
@@ -843,7 +849,7 @@ function doctorChecks(cwd) {
   const sharedRef = (name) =>
     isPackage
       ? path.join(cwd, 'shared', 'references', name)
-      : path.join(cwd, '.agents', 'skills', 'sdd-agentic-flow-shared', 'references', name);
+      : path.join(skillsRoot, 'sdd-agentic-flow-shared', 'references', name);
   const tlcBaseline = sharedRef('tlc-baseline.md');
   add(
     'baseline-tlc',
@@ -965,8 +971,7 @@ function frontmatterOf(content) {
   return match ? match[1] : null;
 }
 
-function installedSkillDirs(cwd) {
-  const root = path.join(cwd, '.agents', 'skills');
+function installedSkillDirs(root) {
   if (!fs.existsSync(root)) return [];
   return fs
     .readdirSync(root, { withFileTypes: true })
@@ -981,7 +986,8 @@ function parseScalarField(frontmatter, field) {
 }
 
 function contractsCheck(cwd) {
-  const skills = installedSkillDirs(cwd);
+  const root = resolveSkillsRoot(cwd);
+  const skills = installedSkillDirs(root);
   if (!skills.length) {
     return {
       name: 'capability_contracts',
@@ -994,7 +1000,7 @@ function contractsCheck(cwd) {
   const warnings = [];
   const parsed = [];
   for (const skill of skills) {
-    const skillPath = path.join(cwd, '.agents', 'skills', skill, 'SKILL.md');
+    const skillPath = path.join(root, skill, 'SKILL.md');
     const content = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf8') : null;
     const frontmatter = content ? frontmatterOf(content) : null;
     if (!frontmatter) {
@@ -1010,14 +1016,7 @@ function contractsCheck(cwd) {
     parsed.push({ name: skill, frontmatter });
   }
   if (parsed.length) {
-    const registryPath = path.join(
-      cwd,
-      '.agents',
-      'skills',
-      'sdd-agentic-flow-shared',
-      'baselines',
-      'registry.yml',
-    );
+    const registryPath = path.join(root, 'sdd-agentic-flow-shared', 'baselines', 'registry.yml');
     const knownBaselineIds = fs.existsSync(registryPath)
       ? [...fs.readFileSync(registryPath, 'utf8').matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)].map(
           (match) => match[1],
@@ -1190,25 +1189,237 @@ function uninstall(args, cwd) {
   log('PASS', 'preserved project specs, reports, snapshots, source code, and unknown paths');
 }
 
-function help() {
+const COMMAND_HELP = {
+  init: `sdd-agentic-flow init
+
+Create local SDD configuration for the current project (.sdd/config.yml,
+.sdd/context/project-context.md, .sdd/snapshots, .sdd/reports, .specs/features).
+Existing .sdd/config.yml is preserved; init never overwrites it.
+
+USAGE
+  sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
+                         [--feature-profile small_fix|medium_feature|large_feature|epic]
+
+OPTIONS
+  --interactive          Prompt for project name, agent target, language, source type,
+                         flow, and feature profile instead of using defaults.
+  --language <profile>   Human-facing output language: en-US or pt-BR.
+  --en                   Alias for --language en-US.
+  --br                   Alias for --language pt-BR.
+  --feature-profile <p>  Adaptive sizing: small_fix | medium_feature | large_feature | epic.
+
+EXAMPLES
+  sdd-agentic-flow init
+  sdd-agentic-flow init --br
+  sdd-agentic-flow init --interactive
+`,
+  install: `sdd-agentic-flow install <pack>
+
+Install a skill pack. Defaults to --scope user: writes only to per-agent global
+skill directories (e.g. ~/.claude/skills) and creates zero files in the project.
+Pass --scope project to install into .agents/skills/ inside the project instead.
+
+USAGE
+  sdd-agentic-flow install <pack> [--scope user|project]
+                                   [--agent codex|cursor|claude-code|vscode-copilot]
+                                   [--plan]
+
+OPTIONS
+  --scope user|project  Install target: global per-agent dirs (default) or the project.
+  --agent <name>         Restrict a user-scope install to a single agent's directory.
+  --plan                 Print what would be installed without writing any file.
+
+EXAMPLES
+  sdd-agentic-flow install core
+  sdd-agentic-flow install core --plan
+  sdd-agentic-flow install core --scope project
+  sdd-agentic-flow install core --agent codex
+
+Run \`sdd-agentic-flow list\` to see available packs.
+`,
+  doctor: `sdd-agentic-flow doctor
+
+Validate local setup: configuration, installed skills (project and user scope),
+baselines, language profile, safety defaults, and platform/environment.
+
+USAGE
+  sdd-agentic-flow doctor [--json] [--smoke] [--contracts]
+
+OPTIONS
+  --json       Print machine-readable JSON only (no human-readable report).
+  --smoke      Also run an isolated init/install/doctor smoke test in a temp dir.
+  --contracts  Also validate installed skills' capability contracts.
+
+EXAMPLES
+  sdd-agentic-flow doctor
+  sdd-agentic-flow doctor --json
+  sdd-agentic-flow doctor --smoke --contracts
+`,
+  uninstall: `sdd-agentic-flow uninstall
+
+Remove toolkit assets installed by this package. Always preserves
+.specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths.
+Requires an explicit --plan or --apply; running with neither fails.
+
+USAGE
+  sdd-agentic-flow uninstall --plan
+  sdd-agentic-flow uninstall --apply [--include-config]
+                                      [--scope user|project]
+                                      [--agent codex|cursor|claude-code|vscode-copilot]
+
+OPTIONS
+  --plan                Show only what would be removed; makes no changes.
+  --apply                Actually remove the listed assets.
+  --include-config       Also remove .sdd/config.yml (--apply only).
+  --scope user|project  Limit to one scope (default: both).
+  --agent <name>         Limit user-scope removal to a single agent's directory.
+
+EXAMPLES
+  sdd-agentic-flow uninstall --plan
+  sdd-agentic-flow uninstall --apply
+  sdd-agentic-flow uninstall --apply --include-config
+`,
+  discover: `sdd-agentic-flow discover
+
+Auto-discover project signals (README, AI instruction files, docs/adr, monorepo
+tooling, test/CI/ORM/feature-flag config) into .sdd/context/project-context.md.
+Also run automatically by init. Preserves an existing file unless --force is given.
+
+USAGE
+  sdd-agentic-flow discover [--force]
+
+OPTIONS
+  --force   Regenerate .sdd/context/project-context.md even if it already exists.
+
+EXAMPLES
+  sdd-agentic-flow discover
+  sdd-agentic-flow discover --force
+`,
+  context: `sdd-agentic-flow context [status|refresh]
+
+Inspect or refresh the generated project-context artifact's provenance
+(when it was generated, at which repository revision/branch).
+
+USAGE
+  sdd-agentic-flow context
+  sdd-agentic-flow context status
+  sdd-agentic-flow context refresh
+
+EXAMPLES
+  sdd-agentic-flow context status
+  sdd-agentic-flow context refresh
+`,
+  list: `sdd-agentic-flow list
+
+List available skill packs and their status.
+
+USAGE
+  sdd-agentic-flow list
+`,
+};
+
+function help(command) {
+  if (command) {
+    const topic = COMMAND_HELP[command];
+    if (!topic) return fail(`unknown command: ${command}. Run \`sdd-agentic-flow help\`.`);
+    process.stdout.write(topic);
+    return;
+  }
   process.stdout.write(
-    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  discover [--force]\n  context [status|refresh]\n  install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan]\n  doctor [--json] [--smoke] [--contracts]\n  uninstall --plan | --apply [--include-config] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]\n  help\n  version\n`,
+    `sdd-agentic-flow ${VERSION}
+
+Spec Driven Development toolkit for AI coding agents.
+
+QUICK START
+  npx sdd-agentic-flow
+  npx sdd-agentic-flow init
+  npx sdd-agentic-flow install core
+  npx sdd-agentic-flow doctor
+
+COMMANDS
+  list                                   List packs
+  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...]  Create local configuration
+  discover [--force]                     Refresh auto-discovered project context
+  context [status|refresh]               Show or refresh project context provenance
+  install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
+  doctor [--json] [--smoke] [--contracts]  Validate package or project setup
+  uninstall --plan | --apply [--include-config] [--scope user|project] [--agent ...]  Remove installed toolkit assets
+  help [command]                         Show this reference, or detailed help for one command
+  version                                Show CLI version
+
+MORE HELP
+  npx sdd-agentic-flow help <command>
+  npx sdd-agentic-flow <command> --help
+`,
+  );
+}
+
+// Bare `npx sdd-agentic-flow` (no command): a contextual, read-only status screen — never an
+// interactive prompt or an implicit action. Detects state and points at exactly one next
+// command; `help`/`--help`/`-h` are unaffected and keep returning the full reference above.
+function welcome(cwd) {
+  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configFound = fs.existsSync(configPath);
+  const projectScopeRoot = path.join(cwd, '.agents', 'skills');
+  const skillsRoot = resolveSkillsRoot(cwd);
+  const skillsInstalled = hasCoreSkillsAt(skillsRoot);
+  const contextFound = fs.existsSync(path.join(cwd, '.sdd', 'context', 'project-context.md'));
+
+  process.stdout.write(
+    `sdd-agentic-flow ${VERSION}\n` +
+      'A local-first, zero-dependency Spec Driven Development toolkit for coding-agent workflows.\n\n' +
+      'Status\n',
+  );
+  log(
+    configFound ? 'PASS' : 'INFO',
+    configFound ? '.sdd/config.yml found' : '.sdd/config.yml not found',
+  );
+  log(
+    skillsInstalled ? 'PASS' : 'INFO',
+    skillsInstalled
+      ? `core skills installed (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
+      : 'no skills installed yet (project or user scope)',
+  );
+  log(
+    contextFound ? 'PASS' : 'INFO',
+    contextFound ? 'project context generated' : 'project context not generated yet',
+  );
+
+  const nextStep = !configFound
+    ? 'npx sdd-agentic-flow init'
+    : !skillsInstalled
+      ? 'npx sdd-agentic-flow install core'
+      : 'npx sdd-agentic-flow doctor';
+  process.stdout.write(
+    '\nSuggested next step\n' +
+      `  ${nextStep}\n\n` +
+      'Quick commands\n' +
+      '  npx sdd-agentic-flow init              Create local configuration\n' +
+      '  npx sdd-agentic-flow install core       Install the core skill pack\n' +
+      '  npx sdd-agentic-flow doctor             Validate local setup\n' +
+      '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
+      'Run `npx sdd-agentic-flow help` for the full command reference.\n',
   );
 }
 
 async function main() {
-  const [command = 'help', ...args] = process.argv.slice(2);
-  if (command === 'list') list();
-  else if (command === 'init') {
+  const [command, ...args] = process.argv.slice(2);
+  if (!command) return welcome(process.cwd());
+  if (command === 'list') {
+    if (args.includes('--help')) process.stdout.write(COMMAND_HELP.list);
+    else list();
+  } else if (command === 'init') {
     const usage =
-      'usage: init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]';
-    if (args.includes('--help')) process.stdout.write(`${usage}\n`);
+      'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic]';
+    if (args.includes('--help')) process.stdout.write(`${COMMAND_HELP.init}`);
     else {
       let interactive = false;
       let language = 'en-US';
       let featureProfile = 'medium_feature';
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
+        else if (args[index] === '--en') language = 'en-US';
+        else if (args[index] === '--br') language = 'pt-BR';
         else if (args[index] === '--language' && LANGUAGE_PROFILES.includes(args[index + 1])) {
           language = args[index + 1];
           index += 1;
@@ -1224,17 +1435,22 @@ async function main() {
       else init(process.cwd(), { profile: language, featureProfile });
     }
   } else if (command === 'discover') {
-    if (!args.every((arg) => arg === '--force')) return fail('usage: discover [--force]');
-    discoverProject(process.cwd(), { force: args.includes('--force') });
+    if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);
+    else if (!args.every((arg) => arg === '--force')) return fail('usage: discover [--force]');
+    else discoverProject(process.cwd(), { force: args.includes('--force') });
   } else if (command === 'context') {
-    const sub = args[0] || 'status';
-    if (args.length > 1 || (sub !== 'status' && sub !== 'refresh'))
-      return fail('usage: context [status|refresh]');
-    if (sub === 'status') contextStatus(process.cwd());
-    else contextRefresh(process.cwd());
+    if (args.includes('--help')) process.stdout.write(COMMAND_HELP.context);
+    else {
+      const sub = args[0] || 'status';
+      if (args.length > 1 || (sub !== 'status' && sub !== 'refresh'))
+        return fail('usage: context [status|refresh]');
+      if (sub === 'status') contextStatus(process.cwd());
+      else contextRefresh(process.cwd());
+    }
   } else if (command === 'install') {
     const usage =
       'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan]';
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.install);
     let pack = null;
     let scope = 'user';
     let agent = null;
@@ -1255,6 +1471,7 @@ async function main() {
     if (!valid || !pack) return fail(usage);
     install(pack, process.cwd(), { scope, agent, plan });
   } else if (command === 'doctor') {
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);
     const valid = args.every(
       (arg) => arg === '--json' || arg === '--smoke' || arg === '--contracts',
     );
@@ -1270,11 +1487,13 @@ async function main() {
         smoke: args.includes('--smoke'),
         contracts: args.includes('--contracts'),
       });
-  } else if (command === 'uninstall') uninstall(args, process.cwd());
-  else if (command === 'help' || command === '--help' || command === '-h') help();
+  } else if (command === 'uninstall') {
+    if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
+    else uninstall(args, process.cwd());
+  } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
   else if (command === 'version' || command === '--version' || command === '-v')
     process.stdout.write(`${VERSION}\n`);
-  else fail(`unknown command: ${command}`);
+  else fail(`unknown command: ${command}. Run \`sdd-agentic-flow help\`.`);
 }
 
 main().catch((error) => fail(error.message, 2));

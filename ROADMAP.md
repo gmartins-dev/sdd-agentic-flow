@@ -1,5 +1,15 @@
 # Roadmap
 
+- **v1.2 (2026-08-08):** CLI UX audit and upgrade. Fixed a real bug where `doctor` (and
+  `doctor --contracts`, and the language-profile check) reported false `WARN`s after the
+  documented Quick Start flow (`init` → `install core`, default `--scope user`), because those
+  checks were hardcoded to project scope and never looked at the resolved user-scope install
+  location. Added `--br`/`--en` as shorthand aliases for `init --language pt-BR`/`en-US`; real
+  per-command help (`help <command>` / `<command> --help`, previously only `init --help`
+  existed and the other five commands `FAIL`ed on `--help`); and a contextual, read-only status
+  screen for bare `npx sdd-agentic-flow` (no command) instead of silently aliasing to the full
+  `help` reference. All changes are additive under the v1.0 stability commitment — no
+  documented command or flag was removed or had its default meaning changed.
 - **v1.1 (2026-08-08):** dropped Node.js 18/20 as supported versions — CI-required minimum is
   now Node 22 (Maintenance LTS), with 24 (Active LTS) and 26 (Current) also required; a
   compatibility-reducing change under the v1.0 stability commitment, so it ships as a minor

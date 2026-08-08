@@ -1,7 +1,7 @@
 ---
 name: sdd-pr-review
 metadata:
-  version: 1.1.0
+  version: 1.2.0
   pack: pr
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 extends: sdd-create-pr

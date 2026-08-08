@@ -24,6 +24,11 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
+Rodar `npx sdd-agentic-flow` sem nenhum comando mostra uma tela de status contextual (o que já
+está configurado e uma sugestão de próximo comando) em vez da referência completa — nada é
+executado automaticamente. Use `npx sdd-agentic-flow help` para a referência completa, ou
+`help <comando>` / `<comando> --help` para o uso e exemplos de um comando específico.
+
 Veja [installation.md](docs/installation.md) (em inglês) para o guia completo de instalação.
 
 Use `init --interactive` para escolher as opções iniciais, incluindo o perfil de feature
@@ -37,6 +42,9 @@ Para escolher o perfil de idioma diretamente:
 ```bash
 npx sdd-agentic-flow init --language en-US
 npx sdd-agentic-flow init --language pt-BR
+# --en / --br são atalhos para as duas flags acima
+npx sdd-agentic-flow init --en
+npx sdd-agentic-flow init --br
 ```
 
 Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.

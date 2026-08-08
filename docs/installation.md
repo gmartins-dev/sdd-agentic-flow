@@ -19,8 +19,8 @@ directories (e.g. `~/.claude/skills`) and creates **zero files in the project**.
 pre-v0.9.0 behavior. See [installation scope](installation-scope.md) for the full two-scope
 model, the supported agents, and `--plan`/`--agent`.
 
-Use `init --language en-US` or `init --language pt-BR` to select a profile without the
-interactive prompts. The default is `en-US`.
+Use `init --language en-US` or `init --language pt-BR` (or the `--en`/`--br` shorthands) to
+select a profile without the interactive prompts. The default is `en-US`.
 
 Run `npx sdd-agentic-flow list` before installation to inspect pack membership. The installer
 never downloads or overwrites assets.

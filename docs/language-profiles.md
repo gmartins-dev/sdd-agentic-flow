@@ -20,6 +20,10 @@ names, configuration keys, modes, statuses, and identifiers remain unchanged.
 sdd-agentic-flow init --language en-US
 sdd-agentic-flow init --language pt-BR
 sdd-agentic-flow init --interactive --language pt-BR
+
+# --en and --br are shorthand for the two --language forms above
+sdd-agentic-flow init --en
+sdd-agentic-flow init --br
 ```
 
 The default profile is `en-US`. `init` does not overwrite an existing

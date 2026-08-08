@@ -14,6 +14,7 @@ It empowers AI-assisted development through structured specs, clear boundaries, 
 - **Adaptive Sizing:** Dynamic feature-profile sizing with optional auto-discovered project context.
 - **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) remains explicit and isolated to your project.
 - **Human-in-the-Loop:** Built for continuous flow is designed to structure and guide AI workflows; it does not replace human code review and governance.
+- **Language-agnostic:** The CLI runs on Node.js, but your project doesn't have to. Java, PHP, C#, Python, Go, Rust, Node.js — the CLI only installs Markdown skills and local config; it never adds a dependency to your project.
 
 📖 Read the [Architecture Overview](docs/architecture.md) to see how the core components work together.
 
@@ -21,6 +22,12 @@ It empowers AI-assisted development through structured specs, clear boundaries, 
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*
 
 ## Quick start
+
+Requires Node.js >= 22 to run the CLI (see [environment compatibility](docs/environment-compatibility.md)).
+That requirement is about the CLI only — **your project does not need to be a Node.js
+project.** `sdd-agentic-flow` installs Markdown skills and local config files; it never adds a
+`package.json`, `node_modules`, or a runtime dependency to your project, whatever language it's
+written in (Java, PHP, C#, Python, Go, Rust, Node.js, or anything else).
 
 ```bash
 npx sdd-agentic-flow init

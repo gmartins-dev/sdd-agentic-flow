@@ -10,6 +10,10 @@ user-local — sem nenhum arquivo no projeto; a configuração (`.sdd/config.yml
 explícita e fica no projeto. A decisão final é sempre das pessoas. Veja a
 [arquitetura](docs/architecture.md).
 
+**Agnóstico de linguagem:** a CLI roda em Node.js, mas seu projeto não precisa. Java, PHP, C#,
+Python, Go, Rust, Node.js — a CLI só instala skills em Markdown e configuração local; ela nunca
+adiciona uma dependência ao seu projeto.
+
 ## Por que confiar?
 
 O código é inspecionável, a CLI tem zero dependências runtime, não usa telemetria, postinstall ou rede externa por padrão, e não faz commit, push, merge, deploy ou publish automaticamente. Use `doctor` e `doctor --smoke` para validação local.
@@ -17,6 +21,12 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 Por padrão, `install` usa o escopo `user`: escreve apenas nos diretórios globais de skills de cada agente suportado (Codex CLI, Cursor, Claude Code, VS Code + GitHub Copilot) e não cria nenhum arquivo no projeto. Use `--scope project` para o comportamento anterior (grava em `.agents/skills/` dentro do projeto). Veja [installation-scope.md](docs/installation-scope.md).
 
 ## Início rápido
+
+Requer Node.js >= 22 para rodar a CLI (veja [environment-compatibility.md](docs/environment-compatibility.md), em inglês).
+Esse requisito é só da CLI — **seu projeto não precisa ser um projeto Node.js.** O
+`sdd-agentic-flow` instala skills em Markdown e arquivos de configuração local; ele nunca
+adiciona `package.json`, `node_modules` ou qualquer dependência ao seu projeto, seja ele Java,
+PHP, C#, Python, Go, Rust, Node.js ou qualquer outra linguagem.
 
 ```bash
 npx sdd-agentic-flow init

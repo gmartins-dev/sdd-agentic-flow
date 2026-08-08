@@ -5,6 +5,16 @@ integration, never a runtime requirement (see [trust model](trust-model.md)). Th
 matches `.github/workflows/ci.yml`, which is the mechanical source of truth — update both
 together.
 
+## CLI runtime vs. your project's language
+
+Node.js is a requirement to *run the CLI* (`npx sdd-agentic-flow ...`) — it is not a
+requirement for the project you use the CLI in. The CLI only writes Markdown skills and local
+config files (`.sdd/config.yml`, per-agent skill directories); it never adds a `package.json`,
+`node_modules`, or any language-specific dependency to your project. A Java, PHP, C#, Python,
+Go, or Rust project (or any other language) uses `sdd-agentic-flow` exactly the same way a
+Node.js project does: run the CLI once via `npx`, then let the installed skills guide the coding
+agent inside your project, whatever language it's written in.
+
 ## Operating systems
 
 | OS                        | Support level | Verified by                                             |

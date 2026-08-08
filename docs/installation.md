@@ -1,5 +1,9 @@
 # Installation
 
+Requires Node.js >= 22 to run the CLI (see [environment compatibility](environment-compatibility.md)
+for the full matrix). That requirement is about the CLI only — the project you're installing
+into can be written in any language; the CLI never adds a dependency to it.
+
 Install the package, run `npx sdd-agentic-flow init`, then install the smallest pack
 that fits the project. Re-running installation preserves existing files.
 

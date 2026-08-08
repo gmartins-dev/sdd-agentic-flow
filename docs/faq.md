@@ -1,5 +1,18 @@
 # FAQ
 
+## Does my project need to be a Node.js project?
+
+No. Node.js is required to run the `sdd-agentic-flow` CLI itself, not the project you use it
+in. The CLI only installs Markdown skills and local config files; it never adds a
+`package.json`, `node_modules`, or a runtime dependency to your project. It works the same way
+for Java, PHP, C#, Python, Go, Rust, Node.js, or any other language — see
+[environment compatibility](environment-compatibility.md).
+
+## What if I don't have Node.js installed?
+
+Install Node.js >= 22 (see [nodejs.org](https://nodejs.org)) to run the CLI via `npx`. That's
+the only supported installation path today; there is no standalone binary that skips Node.js.
+
 ## Does this require tlc-spec-driven?
 
 No. The package includes an internal adapted baseline.

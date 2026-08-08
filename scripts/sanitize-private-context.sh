@@ -17,7 +17,11 @@ patterns=(
 )
 private_id_patterns=('ADO-[0-9]+' 'US-[0-9]+' 'Task-[0-9]+' 'AB#[0-9]+')
 
-mapfile -t files < <(cd "$root" && npm --cache "$cache" pack --dry-run --json | node -e '
+# Portable read loop instead of `mapfile` (bash 4+ only) — macOS ships bash 3.2.
+files=()
+while IFS= read -r line; do
+  files+=("$line")
+done < <(cd "$root" && npm --cache "$cache" pack --dry-run --json | node -e '
 let text=""; process.stdin.on("data", c => text += c); process.stdin.on("end", () => {
   for (const pack of JSON.parse(text)) for (const file of pack.files || []) console.log(file.path);
 });')

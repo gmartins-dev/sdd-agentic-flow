@@ -19,6 +19,11 @@ const mmdc = path.join(
   '.bin',
   process.platform === 'win32' ? 'mmdc.cmd' : 'mmdc',
 );
+// GitHub Actions' ubuntu-latest disables unprivileged user namespaces (AppArmor), which
+// Chromium's sandbox needs — Puppeteer fails to launch with "No usable sandbox!" otherwise.
+// Safe here: this only renders trusted, repo-local Markdown to catch mermaid syntax errors,
+// never untrusted content, and never runs as part of the distributed CLI.
+const puppeteerConfig = path.join(__dirname, 'mermaid-puppeteer-config.json');
 
 function trackedMarkdownFiles() {
   const output = execFileSync('git', ['ls-files', '*.md', ':!.specs/**'], {
@@ -46,7 +51,15 @@ function main() {
       try {
         execFileSync(
           mmdc,
-          ['-i', path.join(root, file), '-o', path.join(tempDir, 'out.svg'), '-q'],
+          [
+            '-i',
+            path.join(root, file),
+            '-o',
+            path.join(tempDir, 'out.svg'),
+            '-q',
+            '-p',
+            puppeteerConfig,
+          ],
           { stdio: 'pipe' },
         );
         console.log(`PASS ${file}`);

@@ -60,7 +60,9 @@ function main() {
             '-p',
             puppeteerConfig,
           ],
-          { stdio: 'pipe' },
+          // Windows can't spawn a `.cmd` shim directly without a shell (EINVAL) since Node's
+          // CVE-2024-27980 hardening; POSIX doesn't need it, so scope to win32 only.
+          { stdio: 'pipe', shell: process.platform === 'win32' },
         );
         console.log(`PASS ${file}`);
       } catch (error) {

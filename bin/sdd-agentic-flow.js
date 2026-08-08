@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
 const { satisfiesRange } = require('./version-compat');
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -298,6 +298,8 @@ function init(cwd, options = {}) {
   log('PASS', 'created .sdd/config.yml');
   log('PASS', 'initialized local SDD directories');
   discoverProject(cwd, { force: false });
+  if (!options.quiet)
+    process.stdout.write('\nSuggested next step\n  npx sdd-agentic-flow install core\n');
   return true;
 }
 
@@ -579,6 +581,17 @@ function installPresetToTarget(preset, target, summary, options = {}) {
     );
 }
 
+function printInstallNextSteps() {
+  process.stdout.write(
+    '\nSuggested next step\n' +
+      '  npx sdd-agentic-flow doctor\n\n' +
+      'Then ask your coding agent to run the `sdd-route` skill whenever the next step is\n' +
+      'unclear — it recommends one skill from the main flow (Plan -> Prompt -> Implement ->\n' +
+      'Check -> PR -> Review -> Fix -> Validate) without changing files. Full guide:\n' +
+      'docs/sdd-skills-usage-guide.md.\n',
+  );
+}
+
 function install(pack, cwd, options = {}) {
   const preset = readPreset(pack);
   if (!preset) return fail(`unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.`);
@@ -607,6 +620,7 @@ function install(pack, cwd, options = {}) {
     installPresetToTarget(preset, target, summary);
     log('PASS', `installed ${pack}: ${summary.installed} files`);
     if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
+    if (!options.quiet) printInstallNextSteps();
     return;
   }
 
@@ -643,6 +657,7 @@ function install(pack, cwd, options = {}) {
   );
   if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
   log('PASS', 'Repository changes: none');
+  if (!options.quiet) printInstallNextSteps();
 }
 
 function installationStatus(target) {
@@ -1087,10 +1102,10 @@ function smokeCheck() {
   try {
     for (const profile of LANGUAGE_PROFILES) {
       temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
-      init(temporary, { profile });
-      install('core', temporary, { scope: 'project' });
-      init(temporary, { profile });
-      install('core', temporary, { scope: 'project' });
+      init(temporary, { profile, quiet: true });
+      install('core', temporary, { scope: 'project', quiet: true });
+      init(temporary, { profile, quiet: true });
+      install('core', temporary, { scope: 'project', quiet: true });
       const required = [
         '.sdd/config.yml',
         '.sdd/context/project-context.md',
@@ -1143,16 +1158,17 @@ function describePath(cwd, target) {
 
 function uninstall(args, cwd) {
   const usage =
-    'usage: uninstall --plan | uninstall --apply [--include-config] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]';
+    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]';
   const plan = args.includes('--plan');
   const apply = args.includes('--apply');
-  const includeConfig = args.includes('--include-config');
+  const full = args.includes('--full');
+  const includeConfig = args.includes('--include-config') || full;
   let scope = null;
   let agent = null;
   const rest = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (['--plan', '--apply', '--include-config'].includes(arg)) continue;
+    if (['--plan', '--apply', '--include-config', '--full'].includes(arg)) continue;
     if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
       scope = args[index + 1];
       index += 1;
@@ -1161,7 +1177,7 @@ function uninstall(args, cwd) {
       index += 1;
     } else rest.push(arg);
   }
-  if (plan === apply || rest.length || (includeConfig && !apply)) return fail(usage);
+  if (plan === apply || rest.length || ((includeConfig || full) && !apply)) return fail(usage);
   const scopes = scope ? [scope] : ['project', 'user'];
   const roots = [];
   if (scopes.includes('project')) roots.push(path.join(cwd, '.agents', 'skills'));
@@ -1171,13 +1187,25 @@ function uninstall(args, cwd) {
     path.join(root, 'sdd-agentic-flow-shared'),
   ]);
   if (includeConfig) targets.push(path.join(cwd, '.sdd', 'config.yml'));
+  // --full additionally clears regenerable local state (context, snapshots, reports).
+  // .specs/features is never a target here, in any mode: it holds hand-authored specs, the
+  // same "preserved like source code" invariant documented throughout uninstall.md/upgrading.md.
+  if (full) {
+    targets.push(
+      path.join(cwd, '.sdd', 'context', 'project-context.md'),
+      path.join(cwd, '.sdd', 'snapshots'),
+      path.join(cwd, '.sdd', 'reports'),
+    );
+  }
   const existing = targets.filter((target) => fs.existsSync(target));
   if (plan) {
     for (const target of existing) log('PLAN', `remove ${describePath(cwd, target)}`);
     if (!existing.length) log('PLAN', 'nothing installed by sdd-agentic-flow was found');
     log(
       'PLAN',
-      'preserves .specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths',
+      full
+        ? 'preserves .specs/features, source code, and unknown paths'
+        : 'preserves .specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths',
     );
     return;
   }
@@ -1186,7 +1214,12 @@ function uninstall(args, cwd) {
     log('PASS', `removed ${describePath(cwd, target)}`);
   }
   if (!existing.length) log('WARN', 'nothing installed by sdd-agentic-flow was found');
-  log('PASS', 'preserved project specs, reports, snapshots, source code, and unknown paths');
+  log(
+    'PASS',
+    full
+      ? 'preserved project specs, source code, and unknown paths'
+      : 'preserved project specs, reports, snapshots, source code, and unknown paths',
+  );
 }
 
 const COMMAND_HELP = {
@@ -1258,12 +1291,12 @@ EXAMPLES
   uninstall: `sdd-agentic-flow uninstall
 
 Remove toolkit assets installed by this package. Always preserves
-.specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths.
+.specs/features, source code, and unknown paths — never removed by any flag.
 Requires an explicit --plan or --apply; running with neither fails.
 
 USAGE
   sdd-agentic-flow uninstall --plan
-  sdd-agentic-flow uninstall --apply [--include-config]
+  sdd-agentic-flow uninstall --apply [--include-config] [--full]
                                       [--scope user|project]
                                       [--agent codex|cursor|claude-code|vscode-copilot]
 
@@ -1271,6 +1304,10 @@ OPTIONS
   --plan                Show only what would be removed; makes no changes.
   --apply                Actually remove the listed assets.
   --include-config       Also remove .sdd/config.yml (--apply only).
+  --full                 Full/clean-reinstall reset (--apply only): also removes
+                         .sdd/context/project-context.md, .sdd/snapshots, and
+                         .sdd/reports (regenerable state). Implies --include-config.
+                         Never removes .specs/features.
   --scope user|project  Limit to one scope (default: both).
   --agent <name>         Limit user-scope removal to a single agent's directory.
 
@@ -1278,6 +1315,7 @@ EXAMPLES
   sdd-agentic-flow uninstall --plan
   sdd-agentic-flow uninstall --apply
   sdd-agentic-flow uninstall --apply --include-config
+  sdd-agentic-flow uninstall --apply --full
 `,
   discover: `sdd-agentic-flow discover
 
@@ -1343,7 +1381,7 @@ COMMANDS
   context [status|refresh]               Show or refresh project context provenance
   install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
   doctor [--json] [--smoke] [--contracts]  Validate package or project setup
-  uninstall --plan | --apply [--include-config] [--scope user|project] [--agent ...]  Remove installed toolkit assets
+  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...]  Remove installed toolkit assets
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
 

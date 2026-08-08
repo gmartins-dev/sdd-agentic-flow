@@ -189,11 +189,14 @@ Preview cleanup first:
 npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 npx sdd-agentic-flow uninstall --apply --include-config
+npx sdd-agentic-flow uninstall --apply --full
 ```
 
 Uninstall removes known toolkit skills. It preserves source code, specs,
 reports, snapshots, and unknown paths. `--include-config` also removes
-`.sdd/config.yml`. See [uninstall](uninstall.md).
+`.sdd/config.yml`. `--full` is a complete reset for a clean reinstall: it also
+removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports`
+(never `.specs/features`). See [uninstall](uninstall.md).
 
 ## 10. Safety boundaries
 

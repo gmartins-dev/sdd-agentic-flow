@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.3.0
+
+Uninstall completeness and post-command guidance. Prompted by a user trying to fully reset a
+project for a clean reinstall and finding no single command for it, and by a broader ask for
+clearer CLI feedback. All changes are additive per
+[compatibility-promise.md](docs/compatibility-promise.md) — no documented command or flag was
+removed, and no existing flag's default meaning changed.
+
+- **New `uninstall --apply --full` flag**: a complete-reset path for a clean reinstall. It
+  implies `--include-config` and additionally removes `.sdd/context/project-context.md`,
+  `.sdd/snapshots`, and `.sdd/reports` — regenerable local state that plain `--apply` and
+  `--apply --include-config` always left behind. `.specs/features` is still never removed by
+  any flag combination, in any scope: it holds hand-authored specs, the same "preserved like
+  source code" invariant already documented for every other `uninstall` mode. `--full` is
+  `--apply`-only, same convention as `--include-config` — combining it with `--plan` fails.
+  `bin/sdd-agentic-flow.js`, [uninstall](docs/uninstall.md).
+- **Doc fix: `docs/upgrading.md` overstated what's preserved.** It read "`install`/`uninstall`
+  never touch `.sdd/config.yml`", which was already inaccurate — `uninstall --apply
+  --include-config` has always removed it on request. Reworded to describe the actual,
+  flag-gated behavior.
+- **`init` and `install` now print a short "Suggested next step" line after a successful,
+  non-`--plan` run** — `init` points at `install core`; `install` points at `doctor` plus a
+  one-line pointer to the `sdd-route` skill and the main flow (Plan → Prompt → Implement →
+  Check → PR → Review → Fix → Validate). Both were previously silent about what to do next
+  beyond the static `README.md` Quick Start. Suppressed via an internal `quiet` option during
+  `doctor --smoke`'s isolated init/install calls, so the smoke check's own output stays
+  unpolluted. Per `docs/compatibility-promise.md`'s "what still stays free to change without
+  notice" clause, this is human-readable-text-only — no flag or exit-code behavior changed.
+
 ## 1.2.0
 
 CLI UX audit and upgrade. Prompted by an audit of the documented Quick Start flow

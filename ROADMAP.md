@@ -1,5 +1,16 @@
 # Roadmap
 
+- **v1.3 (2026-08-08):** Uninstall completeness and post-command guidance. Added
+  `uninstall --apply --full` for a genuine clean-reinstall reset — it removes
+  `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` on top of what
+  `--include-config` already covered, while `.specs/features` stays permanently protected, same
+  as source code, under every flag combination. `init` and `install` now print a short
+  "Suggested next step" line on success (pointing at `install core`, then `doctor` and
+  `sdd-route`), suppressed during `doctor --smoke`'s internal calls so its own output stays
+  clean. Also fixed a `docs/upgrading.md` line that overstated `.sdd/config.yml` as never
+  touched by `uninstall`, when `--include-config`/`--full` always removed it on request. All
+  changes are additive under the v1.0 stability commitment — no documented command or flag was
+  removed or had its default meaning changed.
 - **v1.2 (2026-08-08):** CLI UX audit and upgrade. Fixed a real bug where `doctor` (and
   `doctor --contracts`, and the language-profile check) reported false `WARN`s after the
   documented Quick Start flow (`init` → `install core`, default `--scope user`), because those

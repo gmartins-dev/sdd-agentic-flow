@@ -2,10 +2,13 @@
 
 ## What is always preserved
 
-`install`/`uninstall` never touch `.sdd/config.yml` or `.specs/features/**` — see
-[uninstall](uninstall.md) for the exact preservation list. Re-running `install <pack>` is
-always safe: it is idempotent, and only writes files that are missing (`copyIfMissing`); it
-never overwrites an existing file. This holds across every version.
+`install` never touches `.sdd/config.yml`. `uninstall` only removes it when explicitly asked
+(`--include-config` or `--full`); its default (`--apply` with neither flag) leaves it alone too.
+`.specs/features/**` is never removed by either command, under any flag combination — see
+[uninstall](uninstall.md) for the exact preservation list, including the `--full` reset for a
+clean reinstall. Re-running `install <pack>` is always safe: it is idempotent, and only writes
+files that are missing (`copyIfMissing`); it never overwrites an existing file. This holds
+across every version.
 
 ## When is re-running `install` safe?
 

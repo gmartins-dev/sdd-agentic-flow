@@ -68,7 +68,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remove dos dois escopos por padrão. Use `--include-config` apenas para remover também `.sdd/config.yml`, ou `--scope`/`--agent` para restringir a remoção.
+A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remove dos dois escopos por padrão. Use `--include-config` apenas para remover também `.sdd/config.yml`, ou `--scope`/`--agent` para restringir a remoção. Para um reset completo antes de uma reinstalação limpa, use `uninstall --apply --full` — remove também `.sdd/context/project-context.md`, `.sdd/snapshots` e `.sdd/reports` (todos regeneráveis); `.specs/features` nunca é removido por nenhuma combinação de flags.
 
 ## Fluxo principal
 

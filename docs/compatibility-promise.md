@@ -85,7 +85,7 @@ internal convention.
   `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
   `init [--interactive] [--language ...]`, `install <pack> [--scope user|project] [--agent
   ...] [--plan]`, `doctor [--json] [--smoke] [--contracts]`, `uninstall --plan | --apply
-  [--include-config] [--scope user|project] [--agent ...]` — now follows the same rule as a
+  [--include-config] [--full] [--scope user|project] [--agent ...]` — now follows the same rule as a
   skill's capability contract: it only changes in a **minor** or **major** release, never a
   patch. Removing a command or flag, or changing what it defaults to, is a breaking change and
   requires a major release (or a documented, opt-in migration path). Adding a new command or

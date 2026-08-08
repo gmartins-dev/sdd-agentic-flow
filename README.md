@@ -82,7 +82,7 @@ context [status|refresh]              Show or refresh project context provenance
 install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
 doctor [--json] [--smoke] [--contracts]  Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
-uninstall --apply [--include-config] [--scope user|project] [--agent ...]  Remove installed toolkit assets
+uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...]  Remove installed toolkit assets
 list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
@@ -144,7 +144,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full` — it also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
 
 ## Who is this for?
 

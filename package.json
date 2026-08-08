@@ -75,6 +75,7 @@
   "overrides": {
     "markdown-link-check": {
       "marked": "^15.0.0"
-    }
+    },
+    "undici": "^6.28.0"
   }
 }

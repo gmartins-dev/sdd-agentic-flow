@@ -1,0 +1,4 @@
+# Force LF everywhere, including on Windows checkouts (`core.autocrlf=true` is the default on
+# GitHub Actions' windows-latest runner image) — Biome's formatter enforces LF and has no
+# platform-aware exception, so a CRLF checkout reads as a formatting diff on every text file.
+* text=auto eol=lf

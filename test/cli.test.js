@@ -733,7 +733,9 @@ test('a real npm pack tarball installs and its extracted CLI passes init/discove
     const pack = spawnSync(
       'npm',
       ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
-      { cwd: packageRoot, encoding: 'utf8' },
+      // Windows can't spawn the `npm.cmd` shim directly without a shell (EINVAL/null status)
+      // since Node's CVE-2024-27980 hardening; POSIX doesn't need it.
+      { cwd: packageRoot, encoding: 'utf8', shell: process.platform === 'win32' },
     );
     assert.equal(pack.status, 0, pack.stderr);
     const jsonStart = pack.stdout.indexOf('[');
@@ -795,7 +797,9 @@ test('a packed tarball CLI completes the full install lifecycle with zero projec
     const pack = spawnSync(
       'npm',
       ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
-      { cwd: packageRoot, encoding: 'utf8' },
+      // Windows can't spawn the `npm.cmd` shim directly without a shell (EINVAL/null status)
+      // since Node's CVE-2024-27980 hardening; POSIX doesn't need it.
+      { cwd: packageRoot, encoding: 'utf8', shell: process.platform === 'win32' },
     );
     assert.equal(pack.status, 0, pack.stderr);
     const jsonStart = pack.stdout.indexOf('[');

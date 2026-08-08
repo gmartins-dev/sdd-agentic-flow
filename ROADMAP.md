@@ -1,5 +1,14 @@
 # Roadmap
 
+- **v1.0 (2026-08-08):** public go-live — first public stability commitment. The CLI's
+  documented argument surface and the environment support matrix now follow the same
+  minor/major-only change rule already established for skill capability contracts (see the
+  "v1.0 stability commitment" section in [compatibility promise](docs/compatibility-promise.md)).
+  No new product features; this release audits and freezes what v0.6–v0.9 already built.
+- **v1.x (open):** future work adopted from validated need, not assumed in advance — candidates
+  include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
+  maturity-model documentation. Nothing in this line is committed or scheduled.
+
 - **v0.1:** local-first core and full public skill pack.
 - **v0.2:** Adoption & Trust Release: interactive setup, local validation, rollback, agent docs, and public examples.
 - **v0.3:** Language Profiles & Brazilian Workflow Release.
@@ -29,12 +38,8 @@
   (`docs/skills-catalog.md`); 5 golden flows proved as integration tests; and
   `docs/upgrading.md`/`docs/troubleshooting.md`/`docs/environment-compatibility.md` closing the
   documentation gaps the beta had accumulated. See `CHANGELOG.md` for the full list. Skill
-  cards ✅ delivered — see below.
+  cards ✅ delivered (`docs/skills-catalog.md`).
 
-The project remains in beta and active construction. Future beta scope is open and
-will be defined from validated needs rather than assumed in advance.
-
-- **Still open, not decided or scheduled:** maturity model documentation, and adapters beyond
-  `local-files`/`github` (Jira, Linear, Azure DevOps).
-- **v1.0:** public go-live, with an explicit stability commitment for skill contracts
-  and baseline versions (see [compatibility promise](docs/compatibility-promise.md)).
+With v1.0.0, the project leaves beta: the CLI argument surface and environment support matrix
+now carry the stability commitment described at the top of this file. Future v1.x scope
+remains open and will be defined from validated needs rather than assumed in advance.

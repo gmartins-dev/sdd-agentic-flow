@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.0.0
+
+Public Commitment / Go-Live Release. No new product features — this release audits the
+architecture v0.6.0–v0.9.0 built, closes the pointwise gaps the audit found, and freezes a
+public stability commitment. Verified against seven objective gates:
+
+- **G1 — Identity:** confirmed `README.md`, `docs/why-this-exists.md`, and
+  `docs/design-principles.md` describe the product consistently, and that no out-of-scope term
+  (Context Indexing, Context Query, RAG, vector DB, Memory Layer, Plugin SDK, Policy Engine)
+  appears outside an explicit exclusion. No corrections needed.
+- **G2 — Flow:** confirmed the 5 golden-flow integration tests are green and the skill roster
+  matches `shared/references/workflow-routing.md`. Found and fixed one real drift: the
+  `README.md` "Main SDD flow" mermaid diagram was missing `sdd-implement-multi` (present in
+  `skills/`, in the routing table, and in the skill map table, but not in the diagram) — added
+  it as the multi-task branch off `sdd-create-prompts`.
+- **G3 — Contracts:** `scripts/check-skills.sh` and `doctor --contracts --json` both `PASS`
+  against a real packed-and-installed consumer. Confirmed the `tlc-spec-driven`/`tdd` upstream
+  version pins in `shared/baselines/registry.yml` are mechanically enforced and re-checked the
+  real upstream sources — both unchanged since the v0.9.0 pin (`3.3.0` and `v1.2.3`), so no
+  pending re-sync decision to record.
+- **G4 — Compatibility:** confirmed `docs/environment-compatibility.md` matches
+  `.github/workflows/ci.yml` cell-for-cell (Node 18/20/22/24 on `ubuntu-latest`, full pipeline
+  on `macos-latest`/`windows-latest`), and `docs/agent-compatibility.md` accurately reports
+  validated vs. not-verified agents. No corrections needed.
+- **G5 — Installation:** confirmed the existing `npm pack` integration test is green. Added a
+  new integration test, from a real packed-and-extracted tarball, that runs `init` → `install
+  core` (default `--scope user`) → `doctor` → `context status` → `uninstall --plan` →
+  `uninstall --apply` end to end with no manual input, asserting zero files are written to
+  `cwd` by the default-scope install.
+- **G6 — Documentation:** `npm run docs:check` passes. Added a documented-CLI-command-exists
+  check to `scripts/release-checklist.sh` (extracts every `npx sdd-agentic-flow <cmd>` cited in
+  `README.md`/`README.pt-BR.md`/`docs/**` and confirms it exists in the CLI dispatch). Manually
+  walked the README → docs journey and found two orphaned docs with no inbound link from
+  either README — `docs/installation.md` and `docs/design-principles.md` — and linked both
+  from the English and Portuguese READMEs.
+- **G7 — Public commitment:** added a "v1.0 stability commitment" section to
+  `docs/compatibility-promise.md` — from v1.0.0, the documented CLI argument surface and the
+  `docs/environment-compatibility.md` support matrix follow the same minor/major-only change
+  rule already used for skill capability contracts; removed the pre-1.0 disclaimer that the
+  CLI argument surface carried no semantic-versioning guarantee, since it is no longer true.
+  `ROADMAP.md` updated: `v1.0` moved to the top with its release date, `v1.x` opened for
+  future, undecided work (adapters beyond `local-files`/`github`, maturity-model docs).
+
 ## 0.9.0
 
 Installation, Portability & Public Readiness Release.

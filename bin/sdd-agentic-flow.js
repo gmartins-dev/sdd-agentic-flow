@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
 const { satisfiesRange } = require('./version-compat');
 
-const VERSION = '0.9.0';
+const VERSION = '1.0.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];

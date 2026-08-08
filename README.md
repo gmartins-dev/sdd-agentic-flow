@@ -18,6 +18,9 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
+See [installation](docs/installation.md) for the full install guide, including pack selection
+and re-running installation safely.
+
 Use `init --interactive` to choose a project name, agent target, language, source type,
 feature profile, and workflow defaults. Existing `.sdd/config.yml` files are preserved. `init`
 also auto-discovers `.sdd/context/project-context.md`; re-run `discover [--force]` any time to
@@ -87,6 +90,8 @@ flowchart TD
   route --> specs[sdd-create-specs]
   specs --> prompts[sdd-create-prompts]
   prompts --> implement[sdd-implement-task]
+  prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
+  implementmulti -->|delegates per task| implement
   implement --> check[sdd-task-check]
   check --> pr[sdd-create-pr]
   pr --> review[sdd-pr-review]
@@ -95,7 +100,8 @@ flowchart TD
   review -->|ready| validate[sdd-validation]
 ```
 
-Use `sdd-route` when the next step is unclear. It only recommends a route and points to the selected skill's `SKILL.md`; it does not invoke skills or change files. See [the invocation model](docs/invocation-model.md) and [why this exists](docs/why-this-exists.md).
+Use `sdd-route` when the next step is unclear. It only recommends a route and points to the selected skill's `SKILL.md`; it does not invoke skills or change files. See [the invocation model](docs/invocation-model.md), [why this exists](docs/why-this-exists.md),
+and [design principles](docs/design-principles.md).
 
 ## TDD baseline
 

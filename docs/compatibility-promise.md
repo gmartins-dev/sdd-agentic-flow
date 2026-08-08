@@ -60,7 +60,8 @@ This section makes explicit a rule that was already implicit in prior releases.
 capability-contract changes are permitted in a **minor** release, always documented in
 [CHANGELOG.md](../CHANGELOG.md) under an explicit "Breaking capability-contract change" note.
 From v1.0.0 onward, this changes to a stricter stability commitment for skill contracts and
-baseline versions — see the v1.0.0 release plan for the exact gate that enforces it.
+baseline versions: breaking capability-contract changes now require a **major** release, the
+same as the CLI argument surface and environment matrix below.
 
 ## Adapters stay documentation-level
 
@@ -75,9 +76,44 @@ Copilot); `scripts/check-skills.sh` enforces this as a regression guard over eve
 `skills/*/SKILL.md` body. Skills describe behavior with a small vocabulary of vendor-neutral
 verbs instead — see [action vocabulary](../shared/references/action-vocabulary.md).
 
+## v1.0 stability commitment
+
+Starting at v1.0.0, `sdd-agentic-flow` makes a public compatibility commitment, not just an
+internal convention.
+
+- **CLI argument surface.** The *documented* CLI surface — every command and flag listed in
+  `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
+  `init [--interactive] [--language ...]`, `install <pack> [--scope user|project] [--agent
+  ...] [--plan]`, `doctor [--json] [--smoke] [--contracts]`, `uninstall --plan | --apply
+  [--include-config] [--scope user|project] [--agent ...]` — now follows the same rule as a
+  skill's capability contract: it only changes in a **minor** or **major** release, never a
+  patch. Removing a command or flag, or changing what it defaults to, is a breaking change and
+  requires a major release (or a documented, opt-in migration path). Adding a new command or
+  flag, or a new optional value to an existing flag, is additive and allowed in a minor
+  release, following the same breaking-vs-additive split already defined above for
+  capability contracts.
+- **Environment compatibility.** The support matrix in
+  [environment-compatibility.md](environment-compatibility.md) — the OS/Node.js versions
+  listed as `Required` — is now part of the formal promise. Dropping a listed OS or Node.js
+  version is a compatibility-reducing change and requires a minor or major release, documented
+  in `CHANGELOG.md`, never a silent patch. Expanding the matrix (adding a newly released
+  Node.js version, for example) remains additive and can happen in a patch.
+- **What still stays free to change without notice:** the exact non-JSON, human-readable
+  output text of `doctor` and other commands, and the wording of log/warning/error messages.
+  Only *behavior* is frozen — process exit codes, whether a flag exists and what it accepts,
+  and the shape of `--json` output — never the literal prose of human-facing text. This is the
+  same distinction `doctor --json`/`doctor --contracts --json` already draw between mechanical
+  output (covered) and the plain-text report (not covered).
+
+This section replaces the pre-1.0 stance that the CLI argument surface carried no
+semantic-versioning guarantee. Before v1.0.0, that was true by design, to keep the beta free to
+correct mistakes (see the v0.9.0 `install --scope` default change for an example exercised
+under that older, looser rule). From v1.0.0 onward, it no longer applies.
+
 ## What this does not promise
 
-This is not a semantic-versioning guarantee for the CLI's argument surface or exact
-`doctor`/`.sdd/config.yml` output formatting — those can change with a documented
-`CHANGELOG.md` entry. It is a promise about the *shape and meaning* of skill contracts and
-baseline stages, not about byte-for-byte output stability.
+This is not a promise about exact `doctor`/`.sdd/config.yml` non-JSON output formatting or
+log/warning message wording — those can still change with a documented `CHANGELOG.md` entry.
+It is a promise about the *shape and meaning* of skill contracts, baseline stages, the
+documented CLI argument surface, and the environment support matrix (all covered above) — not
+about byte-for-byte human-readable output stability.

@@ -24,6 +24,8 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
+Veja [installation.md](docs/installation.md) (em inglês) para o guia completo de instalação.
+
 Use `init --interactive` para escolher as opções iniciais, incluindo o perfil de feature
 (`small_fix`, `medium_feature`, `large_feature`, `epic`). Packs disponíveis: `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files` e `github`. O `init` também
 auto-descobre `.sdd/context/project-context.md`; rode `discover [--force]` para atualizar, ou
@@ -54,7 +56,8 @@ A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remo
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
-Use `sdd-route` quando o próximo passo não estiver claro. Ele apenas recomenda uma skill local e não executa ações automaticamente. Veja o [modelo de invocação](docs/invocation-model.md) e [por que o toolkit existe](docs/why-this-exists.md).
+Use `sdd-route` quando o próximo passo não estiver claro. Ele apenas recomenda uma skill local e não executa ações automaticamente. Veja o [modelo de invocação](docs/invocation-model.md), [por que o toolkit existe](docs/why-this-exists.md),
+e os [princípios de design](docs/design-principles.md) (ambos em inglês).
 
 Perfis de idioma definem a saída humana; o glossário de domínio é opcional e registra termos do produto. O `init` não cria esse arquivo automaticamente. Veja [vocabulário de domínio](docs/domain-vocabulary.md).
 

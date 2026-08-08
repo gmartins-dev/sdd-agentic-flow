@@ -1,7 +1,7 @@
 ---
 name: sdd-pr-fix
 metadata:
-  version: 0.9.0
+  version: 1.0.0
   pack: pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 extends: sdd-pr-review

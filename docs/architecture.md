@@ -47,12 +47,44 @@ Every skill's frontmatter declares:
   both).
 - `compatible_with` — which packs install it; mechanically cross-checked against
   `presets/*.json` by `scripts/check-skills.sh` so this field cannot silently drift.
+- `depends_on` — optional, non-linear complements to `extends` (which is strictly a single
+  upstream chain link). Empty by default; a skill declares one here only when it needs another
+  skill's output alongside its `extends` parent.
+- `conflicts` — optional list of skills that should not be installed together in the same pack.
+  Empty by default.
+
+### Field semantics at a glance
+
+| Field | Answers | Not to be confused with |
+| --- | --- | --- |
+| `extends` | "What is the one upstream skill this continues from?" | `depends_on` — `extends` is a single required chain link, not an optional extra input. |
+| `depends_on` | "What other skill's *output* does this skill also need, beyond its `extends` parent?" | `requires` — `depends_on` names other **skills**; `requires` names **input kinds** (`config`, `task-identity`), never a skill. |
+| `conflicts` | "Which skills must never be installed alongside this one?" | `depends_on` — `conflicts` names an incompatibility, not a needed output. |
+| `requires` | "What input kinds must exist before this skill can act?" | `consumes` — a missing `requires` input blocks the skill; a missing `consumes` artifact does not. |
+| `consumes` | "What optional context artifacts does this skill read when present?" | `requires` — `consumes` is best-effort context, never a precondition. |
+| `produces` | "What artifact kind does this skill hand off when it finishes?" | `compatible_with` — `produces` is workflow output, `compatible_with` is pack membership. |
+
+`doctor --contracts` validates that every skill installed in a **consumer** repository
+(`.agents/skills/*/SKILL.md`) still carries all 6 required fields and reports on the 2 optional
+ones — `FAIL` if a required field is missing (signals a corrupted or hand-edited installed
+skill), `WARN` if `depends_on`/`conflicts` are absent. This complements
+`scripts/check-skills.sh`, which validates the same fields **at the source** (this repository)
+before anything is packed or installed.
+
+`doctor --contracts` also validates that `depends_on`/`conflicts` reference real skill names
+(and, for `conflicts`, that referenced skills are not actually co-installed), that `baseline`
+entries exist in `shared/baselines/registry.yml`, and that `depends_on`/`extends` form no cycle
+— surfacing any of these as a `FAIL` inside this same check rather than a new status value. It
+does not re-verify `compatible_with` against pack membership: a consumer repository has no
+local `presets/` directory to check against (`install` only copies `shared/`, never `presets/`);
+that exact-match check only runs at the source, in `scripts/check-skills.sh`.
 
 | Skill                    | extends           | requires                              | produces                 | baseline             |
 | ------------------------ | ------------------ | -------------------------------------- | ------------------------- | --------------------- |
 | `setup-sdd-agentic-flow` | —                   | config                                 | project-config, project-context | tlc-spec-driven  |
 | `sdd-route`               | —                   | config                                 | route-recommendation      | —                      |
 | `sdd-create-specs`        | —                   | config, source-item                    | spec-package               | tlc-spec-driven        |
+| `sdd-reverse-engineer`    | —                   | config, existing-codebase              | spec-package               | tlc-spec-driven        |
 | `sdd-create-prompts`      | sdd-create-specs    | config, spec-package                   | task-prompts                | tlc-spec-driven, tdd |
 | `sdd-implement-task`      | sdd-create-prompts  | config, task-identity                  | code-change+tdd-evidence    | tlc-spec-driven, tdd |
 | `sdd-implement-multi`     | sdd-create-prompts  | config, spec-package                   | execution-plan              | tlc-spec-driven, tdd |

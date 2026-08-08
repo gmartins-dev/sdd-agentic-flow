@@ -1,11 +1,12 @@
 {
   "name": "core",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Safe baseline workflow.",
   "skills": [
     "setup-sdd-agentic-flow",
     "sdd-route",
     "sdd-create-specs",
+    "sdd-reverse-engineer",
     "sdd-implement-task",
     "sdd-task-check",
     "sdd-validation"

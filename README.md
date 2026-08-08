@@ -9,9 +9,9 @@ review. See [architecture](docs/architecture.md) for how the pieces fit together
 ## Quick start
 
 ```bash
-npx sdd-agentic-flow@0.6.0 init
-npx sdd-agentic-flow@0.6.0 install core
-npx sdd-agentic-flow@0.6.0 doctor
+npx sdd-agentic-flow@0.7.0 init
+npx sdd-agentic-flow@0.7.0 install core
+npx sdd-agentic-flow@0.7.0 doctor
 ```
 
 Use `init --interactive` to choose a project name, agent target, language, source type,
@@ -22,8 +22,8 @@ refresh it. See [configuration](docs/configuration.md).
 Choose a language profile explicitly when creating a project:
 
 ```bash
-npx sdd-agentic-flow@0.6.0 init --language en-US
-npx sdd-agentic-flow@0.6.0 init --language pt-BR
+npx sdd-agentic-flow@0.7.0 init --language en-US
+npx sdd-agentic-flow@0.7.0 init --language pt-BR
 ```
 
 See [language profiles](docs/language-profiles.md) for the profile contract.
@@ -78,8 +78,11 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
 ```mermaid
 flowchart TD
-  setup[setup-sdd-agentic-flow] --> specs[sdd-create-specs]
+  setup[setup-sdd-agentic-flow] --> route[sdd-route]
+  route --> specs[sdd-create-specs]
+  route --> reverse[sdd-reverse-engineer]
   specs --> prompts[sdd-create-prompts]
+  reverse --> prompts
   prompts --> implement[sdd-implement-task]
   implement --> check[sdd-task-check]
   check --> pr[sdd-create-pr]
@@ -123,6 +126,7 @@ It is not optimized for quick one-off scripts, fully autonomous no-review agents
 | `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
 | `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
 | `sdd-create-specs`       | Plan feature specs          | Source item       | Feature spec set       | Yes, when authorized | plan         | Requirements need structure |
+| `sdd-reverse-engineer`   | Document existing code      | Existing codebase | Feature spec set       | Yes, when authorized | plan         | Undocumented code needs specs |
 | `sdd-create-prompts`     | Generate task prompts       | Specs/tasks       | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
 | `sdd-implement-task`     | Implement one task          | Approved task     | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
 | `sdd-implement-multi`    | Plan multi-task execution   | Task set          | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |
@@ -149,7 +153,13 @@ The complete generic [task-management golden example](examples/golden/task-manag
 The toolkit adapts TLC and TDD baselines and combines Spec Driven Development,
 Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),
 [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md),
+the [compatibility matrix](docs/compatibility-matrix.md),
 and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
+
+For decision help, see the guides on
+[choosing a feature profile](docs/guides/choosing-a-feature-profile.md),
+[adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and
+[condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).
 
 ## Safety boundaries
 

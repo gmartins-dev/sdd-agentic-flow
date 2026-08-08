@@ -7,14 +7,14 @@ cd "$root"
 node -e 'JSON.parse(require("fs").readFileSync("package.json"));'
 test -x bin/sdd-agentic-flow.js
 
-skills=(setup-sdd-agentic-flow sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
+skills=(setup-sdd-agentic-flow sdd-create-specs sdd-reverse-engineer sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
 for skill in "${skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
   for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
-  grep -F -q 'version: 0.6.0' "$file"
+  grep -F -q 'version: 0.7.0' "$file"
   if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
     grep -F -q 'npx sdd-agentic-flow init' "$file"
   fi
@@ -22,58 +22,124 @@ done
 
 route_file="skills/sdd-route/SKILL.md"
 test -f "$route_file"
-for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth' 'version: 0.6.0'; do
+for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth' 'version: 0.7.0'; do
   grep -F -q -- "$marker" "$route_file"
 done
 
-all_skills=(setup-sdd-agentic-flow sdd-route sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
+all_skills=(setup-sdd-agentic-flow sdd-route sdd-create-specs sdd-reverse-engineer sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
-  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:'; do
+  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:'; do
     grep -F -q -- "$marker" "$file"
   done
 done
 
 node <<'NODE'
 const fs = require('node:fs');
-const skills = [
-  'setup-sdd-agentic-flow', 'sdd-route', 'sdd-create-specs', 'sdd-create-prompts',
-  'sdd-implement-task', 'sdd-implement-multi', 'sdd-task-check', 'sdd-create-pr',
-  'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation',
+const path = require('node:path');
+const { validateContractReferences, parseContractArray } =
+  require(path.resolve(process.cwd(), 'bin/contract-graph.js'));
+
+const skillNames = [
+  'setup-sdd-agentic-flow', 'sdd-route', 'sdd-create-specs', 'sdd-reverse-engineer',
+  'sdd-create-prompts', 'sdd-implement-task', 'sdd-implement-multi', 'sdd-task-check',
+  'sdd-create-pr', 'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation',
 ];
+const frontmatterOf = (content) => (content.match(/^---\n([\s\S]*?)\n---/) || [, content])[1];
+const skills = skillNames.map((name) => ({
+  name,
+  frontmatter: frontmatterOf(fs.readFileSync(`skills/${name}/SKILL.md`, 'utf8')),
+}));
 const presets = fs
   .readdirSync('presets')
   .filter((file) => file.endsWith('.json'))
   .map((file) => JSON.parse(fs.readFileSync(`presets/${file}`, 'utf8')));
+
 let drift = false;
-for (const skill of skills) {
+
+// compatible_with vs presets/*.json membership.
+for (const { name, frontmatter } of skills) {
   const actual = presets
-    .filter((preset) => preset.skills.includes(skill))
+    .filter((preset) => preset.skills.includes(name))
     .map((preset) => preset.name)
     .sort();
-  const content = fs.readFileSync(`skills/${skill}/SKILL.md`, 'utf8');
-  const match = content.match(/compatible_with:\s*\[([^\]]*)\]/s);
-  if (!match) {
-    console.error(`missing compatible_with in skills/${skill}/SKILL.md`);
+  const declared = (parseContractArray(frontmatter, 'compatible_with') || []).sort();
+  if (!declared.length) {
+    console.error(`missing compatible_with in skills/${name}/SKILL.md`);
     drift = true;
     continue;
   }
-  const declared = match[1]
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .sort();
   if (JSON.stringify(actual) !== JSON.stringify(declared)) {
     console.error(
-      `compatible_with drift for ${skill}: presets=[${actual.join(', ')}] declared=[${declared.join(', ')}]`,
+      `compatible_with drift for ${name}: presets=[${actual.join(', ')}] declared=[${declared.join(', ')}]`,
     );
     drift = true;
   }
 }
+
+// depends_on/baseline referential integrity + depends_on and extends cycle detection.
+const registry = fs.readFileSync('shared/baselines/registry.yml', 'utf8');
+const knownBaselineIds = [...registry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)].map(
+  (match) => match[1],
+);
+const { failures, cycles } = validateContractReferences(skills, { knownBaselineIds });
+for (const failure of failures) {
+  console.error(failure);
+  drift = true;
+}
+for (const cycle of cycles) {
+  console.error(`contract cycle detected: ${cycle.join(' -> ')}`);
+  drift = true;
+}
+
+// conflicts referential validity (against the full catalog) + actual per-preset
+// co-install violations.
+for (const { name, frontmatter } of skills) {
+  for (const target of parseContractArray(frontmatter, 'conflicts') || []) {
+    if (!skillNames.includes(target)) {
+      console.error(`${name}: conflicts references unknown skill '${target}'`);
+      drift = true;
+    }
+  }
+}
+for (const preset of presets) {
+  const inPreset = new Set(preset.skills);
+  for (const { name, frontmatter } of skills) {
+    if (!inPreset.has(name)) continue;
+    for (const target of parseContractArray(frontmatter, 'conflicts') || [])
+      if (inPreset.has(target)) {
+        console.error(`preset ${preset.name} installs conflicting skills ${name} and ${target}`);
+        drift = true;
+      }
+  }
+}
+
 if (drift) process.exit(1);
 NODE
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md; do
+node <<'NODE'
+const fs = require('node:fs');
+const skills = fs
+  .readdirSync('skills', { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+const vendorPattern = /\b(claude|cursor|codex|gemini|copilot)\b/i;
+let violation = false;
+for (const skill of skills) {
+  const file = `skills/${skill}/SKILL.md`;
+  if (!fs.existsSync(file)) continue;
+  const stripped = fs
+    .readFileSync(file, 'utf8')
+    .replace(/<!--\s*compatibility-layer\s*-->[\s\S]*?<!--\s*\/compatibility-layer\s*-->/g, '');
+  if (vendorPattern.test(stripped)) {
+    console.error(`agent-neutrality violation in ${file}`);
+    violation = true;
+  }
+}
+if (violation) process.exit(1);
+NODE
+
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.6.0' "shared/references/$ref"
@@ -106,7 +172,7 @@ for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"
 done
 for preset in core planning execution pr multi-worktree full local-files github; do
-  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.6.0" || !Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
+  node -e 'const p=require("./presets/'"$preset"'.json"); if (p.version!=="0.7.0" || !Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
 done
 for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/tlc-integration.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
@@ -122,4 +188,4 @@ bash ./scripts/sanitize-private-context.sh
 cache="$(mktemp -d)"
 npm --cache "$cache" pack --dry-run >/dev/null
 rm -rf "$cache"
-echo "PASS skills, safety, licensing, and package checks"
+echo "PASS skills, safety, licensing, agent-neutrality, and package checks"

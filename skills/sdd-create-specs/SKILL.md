@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications; read .sdd/config.yml before producing artifacts.
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -10,6 +10,8 @@ consumes: [domain-glossary, project-context]
 produces: [spec-package]
 baseline: [tlc-spec-driven]
 compatible_with: [core, full, github, local-files, planning]
+depends_on: []
+conflicts: []
 ---
 
 # Create SDD Specifications
@@ -32,7 +34,7 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
 
 1. Read `.sdd/config.yml` first and use its artifact paths, naming rules, and configured scope. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to apply the common lifecycle and required decision points. Read `workflow.feature_profile` from `.sdd/config.yml` and apply `../sdd-agentic-flow-shared/references/feature-profiles.md` guidance to scope the package's depth.
-3. Read `../sdd-agentic-flow-shared/references/task-slicing.md` and `../sdd-agentic-flow-shared/references/workflow-safety.md` before handling inputs or writing artifacts.
+3. Read `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/artifact-contracts.md`, and `../sdd-agentic-flow-shared/references/workflow-safety.md` before handling inputs or writing artifacts.
 4. Read `.sdd/context/project-context.md` when it exists; treat it as read-only discovered output. Read `.sdd/context/domain-glossary.md` when it exists; propose or create it only with explicit authorization and a source or uncertainty note for every term.
 5. Inspect only evidence needed to state the current behavior, desired behavior, constraints, risks, and acceptance criteria. Mark unknowns as open questions rather than inventing facts.
 6. Create exactly `context.md`, `spec.md`, `design.md`, and `tasks.md`; never create `validation.md`. Keep requirements traceable to evidence, acceptance criteria observable, and code tasks vertically sliced where practical.

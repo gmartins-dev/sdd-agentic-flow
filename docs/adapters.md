@@ -7,6 +7,6 @@ are outside v0.1.
 No adapter is required for the core workflow. Source selection remains project-local
 and controlled by `.sdd/config.yml`.
 
-As of v0.6.0 this scope is unchanged: adapters stay documentation-level only, with no
+As of v0.7.0 this scope is unchanged: adapters stay documentation-level only, with no
 network calls, tracker API integrations, or methodological logic. See the
 [compatibility promise](compatibility-promise.md).

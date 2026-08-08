@@ -1,7 +1,7 @@
 ---
 name: sdd-pr-fix
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 extends: sdd-pr-review
@@ -10,6 +10,8 @@ consumes: []
 produces: [fix-evidence]
 baseline: [tlc-spec-driven]
 compatible_with: [full, github, pr]
+depends_on: []
+conflicts: []
 ---
 
 # Fix SDD pull-request findings

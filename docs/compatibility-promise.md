@@ -7,10 +7,13 @@
 - `package.json` version, every skill's `metadata.version`, and every `presets/*.json`
   `version` move together on each release.
 - A skill's capability contract (`extends`, `requires`, `consumes`, `produces`, `baseline`,
-  `compatible_with`) only changes on a minor or major release. Patch releases never change a
-  contract.
+  `compatible_with`, plus the optional `depends_on`/`conflicts`) only changes on a minor or
+  major release. Patch releases never change a contract.
 - `compatible_with` is mechanically derived from `presets/*.json` membership by
   `scripts/check-skills.sh`; it cannot drift from what a pack actually installs.
+- `doctor --contracts` mechanically re-validates the same contract fields against a **consumer**
+  repository's installed `.agents/skills/*/SKILL.md` files, so drift or hand-edits after
+  `install` are caught, not just drift at the source.
 
 ## Baseline versioning
 
@@ -25,6 +28,13 @@ ships versus the external skills it is inspired by.
 `local-files` and `github` (see [adapters](adapters.md)) do not add network calls or silent
 automation. Any future adapter follows the same rule: adapters carry no methodological logic and
 never weaken a baseline invariant.
+
+## Agent neutrality
+
+Skill bodies never name a specific coding agent or vendor (Claude, Cursor, Codex, Gemini,
+Copilot); `scripts/check-skills.sh` enforces this as a regression guard over every
+`skills/*/SKILL.md` body. Skills describe behavior with a small vocabulary of vendor-neutral
+verbs instead — see [action vocabulary](../shared/references/action-vocabulary.md).
 
 ## What this does not promise
 

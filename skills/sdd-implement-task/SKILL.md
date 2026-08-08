@@ -1,7 +1,7 @@
 ---
 name: sdd-implement-task
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: core
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 extends: sdd-create-prompts
@@ -10,6 +10,8 @@ consumes: [domain-glossary, project-context]
 produces: [code-change+tdd-evidence]
 baseline: [tlc-spec-driven, tdd]
 compatible_with: [core, execution, full, github, local-files]
+depends_on: []
+conflicts: []
 ---
 
 # Implement one SDD task

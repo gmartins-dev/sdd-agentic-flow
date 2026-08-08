@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: core
 extends: null
 requires: [config]
@@ -11,6 +11,8 @@ produces: [route-recommendation]
 baseline: []
 compatible_with:
   [core, execution, full, github, local-files, multi-worktree, planning, pr]
+depends_on: []
+conflicts: []
 ---
 
 # Route an SDD workflow

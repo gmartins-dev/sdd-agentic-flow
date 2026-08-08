@@ -1,7 +1,7 @@
 ---
 name: sdd-task-check
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 extends: sdd-implement-task
@@ -10,13 +10,15 @@ consumes: [domain-glossary, project-context]
 produces: [check-report]
 baseline: [tlc-spec-driven, tdd]
 compatible_with: [core, execution, full, github, local-files]
+depends_on: []
+conflicts: []
 ---
 
 # Check one SDD task
 
 ## When to use
 
-Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [artifact contracts](../sdd-agentic-flow-shared/references/artifact-contracts.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 

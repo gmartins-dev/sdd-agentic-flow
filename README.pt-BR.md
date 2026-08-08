@@ -15,9 +15,9 @@ O código é inspecionável, a CLI tem zero dependências runtime, não usa tele
 ## Início rápido
 
 ```bash
-npx sdd-agentic-flow@0.6.0 init
-npx sdd-agentic-flow@0.6.0 install core
-npx sdd-agentic-flow@0.6.0 doctor
+npx sdd-agentic-flow@0.7.0 init
+npx sdd-agentic-flow@0.7.0 install core
+npx sdd-agentic-flow@0.7.0 doctor
 ```
 
 Use `init --interactive` para escolher as opções iniciais, incluindo o perfil de feature
@@ -27,8 +27,8 @@ auto-descobre `.sdd/context/project-context.md`; rode `discover [--force]` para 
 Para escolher o perfil de idioma diretamente:
 
 ```bash
-npx sdd-agentic-flow@0.6.0 init --language en-US
-npx sdd-agentic-flow@0.6.0 init --language pt-BR
+npx sdd-agentic-flow@0.7.0 init --language en-US
+npx sdd-agentic-flow@0.7.0 init --language pt-BR
 ```
 
 Veja os [perfis de idioma](docs/language-profiles.pt-BR.md) para conhecer o contrato.
@@ -64,3 +64,8 @@ public seams acordados, ciclos RED → GREEN → REFACTOR e vertical slices. Vej
 É indicado para times que usam SDD, entregam features em sprints, usam TDD/test-first, precisam de rastreabilidade e delegam tarefas para agentes com revisão. Não é otimizado para scripts descartáveis, agentes sem revisão humana ou pipelines automáticos de release/deploy.
 
 Para o fluxo completo, consulte o [guia de uso das skills em português](docs/sdd-skills-usage-guide.pt-BR.md) e o [guia em inglês](docs/sdd-skills-usage-guide.md).
+
+Veja também a [matriz de compatibilidade](docs/compatibility-matrix.md) (quais packs instalam
+quais skills) e os guias de decisão: [escolhendo um perfil de feature](docs/guides/choosing-a-feature-profile.md),
+[adotando em um repositório existente](docs/guides/adopting-in-a-brownfield-repo.md), e
+[baselines condensadas vs. completas](docs/guides/condensed-vs-full-tlc-tdd.md).

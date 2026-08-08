@@ -1,6 +1,6 @@
 {
   "name": "local-files",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Core workflow for local source files.",
   "skills": [
     "setup-sdd-agentic-flow",

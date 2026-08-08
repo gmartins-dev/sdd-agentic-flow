@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.7.0
+
+Operational Excellence (start).
+
+- Added `depends_on` and `conflicts` (optional) to every skill's capability contract, and a
+  `doctor --contracts` check that validates all 8 contract fields against skills installed in a
+  **consumer** repository — complementing `scripts/check-skills.sh`'s existing source-side
+  validation.
+- Added light Artifact Contracts: `shared/references/artifact-contracts.md` documents the
+  required sections for `spec.md`, `design.md`, `tasks.md`, task prompts, check reports, and PR
+  packages, with a presence check in `doctor`.
+- Extended Project Discovery with architecture (`domain/`, `hexagonal/`, `ports/`, `adapters/`
+  folder naming), CI/CD (`.github/workflows`, `.gitlab-ci.yml`, `.circleci`), and platform
+  (ORM/feature-flag config) signals in `.sdd/context/project-context.md`.
+- Added an agent-neutrality regression guard to `scripts/check-skills.sh` (fails the build if a
+  vendor/agent name appears in a skill body) and
+  `shared/references/action-vocabulary.md`, the vendor-neutral verb vocabulary skills use.
+- Added the first 3 decision guides (`docs/guides/`) and `docs/compatibility-matrix.md`,
+  extending `docs/compatibility-promise.md`.
+- Added `sdd-reverse-engineer`, an alternative chain entry point for producing an SDD spec
+  package from existing, undocumented code (`core`, `full`).
+- Deferred to v0.8-v0.9: skill cards, maturity-model documentation, and adapters beyond
+  `local-files`/`github` (Jira, Linear, Azure DevOps). See `ROADMAP.md`.
+
 ## 0.6.0
 
 Foundation Architecture Release.

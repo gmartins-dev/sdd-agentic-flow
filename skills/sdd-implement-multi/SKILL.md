@@ -1,7 +1,7 @@
 ---
 name: sdd-implement-multi
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   pack: multi-worktree
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 extends: sdd-create-prompts
@@ -10,6 +10,8 @@ consumes: [domain-glossary, project-context]
 produces: [execution-plan]
 baseline: [tlc-spec-driven, tdd]
 compatible_with: [execution, full, multi-worktree]
+depends_on: []
+conflicts: []
 ---
 
 # Coordinate SDD tasks

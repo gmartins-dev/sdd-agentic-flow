@@ -6,6 +6,7 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | ------------------------------------- | ---------------------------------- |
 | No `.sdd/config.yml`                  | `setup-sdd-agentic-flow`           |
 | Ambiguous or unstructured request     | `sdd-create-specs`                 |
+| Existing undocumented code needing specs | `sdd-reverse-engineer`          |
 | Ready spec without task prompts       | `sdd-create-prompts`               |
 | One ready task                        | `sdd-implement-task`               |
 | Multiple dependent tasks              | `sdd-implement-multi`              |

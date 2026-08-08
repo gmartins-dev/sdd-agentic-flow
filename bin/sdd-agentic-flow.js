@@ -5,8 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline/promises');
+const { validateContractReferences, parseContractArray } = require('./contract-graph');
 
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -15,6 +16,7 @@ const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
   'sdd-route',
   'sdd-create-specs',
+  'sdd-reverse-engineer',
   'sdd-create-prompts',
   'sdd-implement-task',
   'sdd-implement-multi',
@@ -24,6 +26,15 @@ const OFFICIAL_SKILLS = [
   'sdd-pr-fix',
   'sdd-validation',
 ];
+const REQUIRED_CONTRACT_FIELDS = [
+  'extends',
+  'requires',
+  'consumes',
+  'produces',
+  'baseline',
+  'compatible_with',
+];
+const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts'];
 const PRIVATE_PATTERNS = [
   'QmVyZXNoaXQ=',
   'QmFtYXE=',
@@ -247,6 +258,23 @@ function scanProjectSignals(cwd) {
       'pytest.ini',
       'pyproject.toml',
     ]),
+    architecturalFolders: existingPaths(cwd, [
+      'domain',
+      'src/domain',
+      'hexagonal',
+      'src/hexagonal',
+      'ports',
+      'src/ports',
+      'adapters',
+      'src/adapters',
+    ]),
+    ciConfigs: existingPaths(cwd, ['.github/workflows', '.gitlab-ci.yml', '.circleci']),
+    ormConfigs: existingPaths(cwd, [
+      'prisma/schema.prisma',
+      'drizzle.config.ts',
+      'drizzle.config.js',
+    ]),
+    featureFlagConfigs: existingPaths(cwd, ['.launchdarkly.yml', 'unleash.yml']),
   };
 }
 
@@ -281,6 +309,19 @@ ${bullets(signals.workspaceConfigs, 'no monorepo tooling config found (pnpm-work
 ## Testing signals
 
 ${bullets(signals.testConfigs, 'no known test config found')}
+
+## Architecture signals
+
+${bullets(signals.architecturalFolders, 'no domain/hexagonal/ports/adapters folder naming found')}
+
+## CI/CD signals
+
+${bullets(signals.ciConfigs, 'no CI configuration found (.github/workflows, .gitlab-ci.yml, .circleci)')}
+
+## Platform signals
+
+${bullets(signals.ormConfigs, 'no ORM config found (prisma/schema.prisma, drizzle.config.*)')}
+${bullets(signals.featureFlagConfigs, 'no feature-flag config found (.launchdarkly.yml, unleash.yml)')}
 
 ## Notes
 
@@ -607,6 +648,15 @@ function doctorChecks(cwd) {
       : 'shared/references/task-slicing.md not found',
     'Baseline compliance',
   );
+  const artifactContractsRef = sharedRef('artifact-contracts.md');
+  add(
+    'artifact-contracts',
+    fs.existsSync(artifactContractsRef) ? 'PASS' : isPackage ? 'FAIL' : 'WARN',
+    fs.existsSync(artifactContractsRef)
+      ? 'artifact contracts guidance present'
+      : 'shared/references/artifact-contracts.md not found',
+    'Baseline compliance',
+  );
   const requiresEvidence = /require_evidence_before_completion:\s*true/.test(safetyConfig);
   add(
     'evidence-first',
@@ -628,6 +678,106 @@ function doctorChecks(cwd) {
     'Safety',
   );
   return checks;
+}
+
+function frontmatterOf(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  return match ? match[1] : null;
+}
+
+function installedSkillDirs(cwd) {
+  const root = path.join(cwd, '.agents', 'skills');
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== 'sdd-agentic-flow-shared')
+    .map((entry) => entry.name);
+}
+
+function contractsCheck(cwd) {
+  const skills = installedSkillDirs(cwd);
+  if (!skills.length) {
+    return {
+      name: 'capability_contracts',
+      status: 'WARN',
+      message: 'no installed skills found under .agents/skills to validate',
+      section: 'Capability contracts',
+    };
+  }
+  const failures = [];
+  const warnings = [];
+  const parsed = [];
+  for (const skill of skills) {
+    const skillPath = path.join(cwd, '.agents', 'skills', skill, 'SKILL.md');
+    const content = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf8') : null;
+    const frontmatter = content ? frontmatterOf(content) : null;
+    if (!frontmatter) {
+      failures.push(`${skill}: SKILL.md missing or has no frontmatter`);
+      continue;
+    }
+    for (const field of REQUIRED_CONTRACT_FIELDS)
+      if (!new RegExp(`^${field}:`, 'm').test(frontmatter))
+        failures.push(`${skill}: missing required field '${field}'`);
+    for (const field of OPTIONAL_CONTRACT_FIELDS)
+      if (!new RegExp(`^${field}:`, 'm').test(frontmatter))
+        warnings.push(`${skill}: optional field '${field}' absent`);
+    parsed.push({ name: skill, frontmatter });
+  }
+  if (parsed.length) {
+    const registryPath = path.join(
+      cwd,
+      '.agents',
+      'skills',
+      'sdd-agentic-flow-shared',
+      'baselines',
+      'registry.yml',
+    );
+    const knownBaselineIds = fs.existsSync(registryPath)
+      ? [...fs.readFileSync(registryPath, 'utf8').matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)].map(
+          (match) => match[1],
+        )
+      : null;
+    if (knownBaselineIds === null)
+      warnings.push(
+        'could not read sdd-agentic-flow-shared/baselines/registry.yml to validate baseline references',
+      );
+
+    const { failures: refFailures, cycles } = validateContractReferences(parsed, {
+      knownBaselineIds,
+    });
+    failures.push(...refFailures);
+    for (const cycle of cycles) failures.push(`contract cycle detected: ${cycle.join(' -> ')}`);
+
+    const installedSet = new Set(parsed.map((skill) => skill.name));
+    for (const { name, frontmatter } of parsed) {
+      for (const target of parseContractArray(frontmatter, 'conflicts') || []) {
+        if (!OFFICIAL_SKILLS.includes(target))
+          failures.push(`${name}: conflicts references unknown skill '${target}'`);
+        else if (installedSet.has(target))
+          failures.push(`${name} and ${target} declare a conflict but are both installed`);
+      }
+    }
+  }
+  if (failures.length)
+    return {
+      name: 'capability_contracts',
+      status: 'FAIL',
+      message: `contract corruption: ${failures.join('; ')}`,
+      section: 'Capability contracts',
+    };
+  if (warnings.length)
+    return {
+      name: 'capability_contracts',
+      status: 'WARN',
+      message: `optional fields absent: ${warnings.join('; ')}`,
+      section: 'Capability contracts',
+    };
+  return {
+    name: 'capability_contracts',
+    status: 'PASS',
+    message: `capability contracts valid for ${skills.length} installed skill(s)`,
+    section: 'Capability contracts',
+  };
 }
 
 function renderDoctor(checks) {
@@ -683,6 +833,7 @@ function smokeCheck() {
 function doctor(cwd, options = {}) {
   const checks = doctorChecks(cwd);
   if (options.smoke) checks.push(smokeCheck());
+  if (options.contracts) checks.push(contractsCheck(cwd));
   const result = {
     status: severity(checks),
     version: VERSION,
@@ -730,7 +881,7 @@ function uninstall(args, cwd) {
 
 function help() {
   process.stdout.write(
-    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  discover [--force]\n  install <pack>\n  doctor [--json] [--smoke]\n  uninstall --plan | --apply [--include-config]\n  help\n  version\n`,
+    `sdd-agentic-flow ${VERSION}\n\nCommands:\n  list\n  init [--interactive] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  discover [--force]\n  install <pack>\n  doctor [--json] [--smoke] [--contracts]\n  uninstall --plan | --apply [--include-config]\n  help\n  version\n`,
   );
 }
 
@@ -767,15 +918,21 @@ async function main() {
   } else if (command === 'install')
     args.length === 1 ? install(args[0], process.cwd()) : fail('install requires one pack name');
   else if (command === 'doctor') {
-    const valid = args.every((arg) => arg === '--json' || arg === '--smoke');
+    const valid = args.every(
+      (arg) => arg === '--json' || arg === '--smoke' || arg === '--contracts',
+    );
     if (!valid) {
       if (args.includes('--json'))
         process.stdout.write(
-          `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: 'usage: doctor [--json] [--smoke]' }] })}\n`,
+          `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: 'usage: doctor [--json] [--smoke] [--contracts]' }] })}\n`,
         );
-      else fail('usage: doctor [--json] [--smoke]');
+      else fail('usage: doctor [--json] [--smoke] [--contracts]');
     } else
-      doctor(process.cwd(), { json: args.includes('--json'), smoke: args.includes('--smoke') });
+      doctor(process.cwd(), {
+        json: args.includes('--json'),
+        smoke: args.includes('--smoke'),
+        contracts: args.includes('--contracts'),
+      });
   } else if (command === 'uninstall') uninstall(args, process.cwd());
   else if (command === 'help' || command === '--help' || command === '-h') help();
   else if (command === 'version' || command === '--version' || command === '-v')

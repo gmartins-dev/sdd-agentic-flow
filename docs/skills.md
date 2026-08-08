@@ -16,3 +16,9 @@ Skills resolve shared references from their installed sibling directory and shou
 return `Blocked` when configuration, task identity, or required evidence is absent.
 
 See the public [skill map](../README.md#skill-map) for purpose, inputs, outputs, mutation behavior, execution modes, and recommended use.
+
+See the [compatibility matrix](compatibility-matrix.md) for exactly which packs install which
+skill. For decision help, see the guides on
+[choosing a feature profile](guides/choosing-a-feature-profile.md),
+[adopting in a brownfield repo](guides/adopting-in-a-brownfield-repo.md), and
+[condensed vs. full TLC/TDD](guides/condensed-vs-full-tlc-tdd.md).

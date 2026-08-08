@@ -19,7 +19,7 @@ function run(args, cwd = temporary, input) {
 
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
-  assert.equal(run(['version']).stdout.trim(), '0.6.0');
+  assert.equal(run(['version']).stdout.trim(), '0.7.0');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -72,13 +72,31 @@ test('init auto-discovers project context and discover refreshes it', () => {
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
+test('discover detects architecture, CI, and platform signals', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-discover2-'));
+  fs.mkdirSync(path.join(cwd, 'src/domain'), { recursive: true });
+  fs.mkdirSync(path.join(cwd, '.github/workflows'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.github/workflows/ci.yml'), 'name: ci\n');
+  fs.mkdirSync(path.join(cwd, 'prisma'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'prisma/schema.prisma'), 'datasource db {}\n');
+  assert.equal(run(['init'], cwd).status, 0);
+  const context = fs.readFileSync(path.join(cwd, '.sdd/context/project-context.md'), 'utf8');
+  assert.match(context, /## Architecture signals/);
+  assert.match(context, /src\/domain/);
+  assert.match(context, /## CI\/CD signals/);
+  assert.match(context, /\.github\/workflows/);
+  assert.match(context, /## Platform signals/);
+  assert.match(context, /prisma\/schema\.prisma/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
 test('doctor JSON is parseable and smoke is isolated', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-doctor-'));
   assert.equal(run(['init', '--language', 'pt-BR'], cwd).status, 0);
   assert.equal(run(['install', 'core'], cwd).status, 0);
   const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '0.6.0');
+  assert.equal(report.version, '0.7.0');
   assert.ok(Array.isArray(report.checks));
   assert.equal(report.language.profile, 'pt-BR');
   assert.equal(report.language.status, 'PASS');
@@ -87,7 +105,117 @@ test('doctor JSON is parseable and smoke is isolated', () => {
   assert.equal(report.checks.find((check) => check.name === 'adaptive-sizing').status, 'PASS');
   assert.equal(report.checks.find((check) => check.name === 'traceability').status, 'PASS');
   assert.equal(report.checks.find((check) => check.name === 'evidence-first').status, 'PASS');
+  assert.equal(report.checks.find((check) => check.name === 'artifact-contracts').status, 'PASS');
+  assert.ok(
+    fs.existsSync(
+      path.join(cwd, '.agents/skills/sdd-agentic-flow-shared/references/artifact-contracts.md'),
+    ),
+  );
   assert.equal(run(['doctor', '--smoke'], cwd).status, 0);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor --contracts validates installed capability contracts', () => {
+  assert.match(run(['help']).stdout, /--contracts/);
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  const warnReport = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const warnCheck = warnReport.checks.find((check) => check.name === 'capability_contracts');
+  assert.equal(warnCheck.status, 'WARN');
+  assert.match(warnCheck.message, /no installed skills/);
+
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const passReport = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  assert.equal(
+    passReport.checks.find((check) => check.name === 'capability_contracts').status,
+    'PASS',
+  );
+
+  const corruptedSkill = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const original = fs.readFileSync(corruptedSkill, 'utf8');
+  fs.writeFileSync(corruptedSkill, original.replace(/^produces:.*$/m, ''));
+  const failReport = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const failCheck = failReport.checks.find((check) => check.name === 'capability_contracts');
+  assert.equal(failCheck.status, 'FAIL');
+  assert.match(failCheck.message, /sdd-create-specs/);
+  assert.match(failCheck.message, /produces/);
+
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor --contracts detects dangling depends_on references', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-dangling-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const original = fs.readFileSync(skillPath, 'utf8');
+  fs.writeFileSync(skillPath, original.replace('depends_on: []', 'depends_on: [not-a-real-skill]'));
+  const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const check = report.checks.find((c) => c.name === 'capability_contracts');
+  assert.equal(check.status, 'FAIL');
+  assert.match(check.message, /depends_on references unknown skill 'not-a-real-skill'/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor --contracts detects a depends_on cycle between installed skills', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-cycle-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const specsPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const reversePath = path.join(cwd, '.agents/skills/sdd-reverse-engineer/SKILL.md');
+  fs.writeFileSync(
+    specsPath,
+    fs
+      .readFileSync(specsPath, 'utf8')
+      .replace('depends_on: []', 'depends_on: [sdd-reverse-engineer]'),
+  );
+  fs.writeFileSync(
+    reversePath,
+    fs
+      .readFileSync(reversePath, 'utf8')
+      .replace('depends_on: []', 'depends_on: [sdd-create-specs]'),
+  );
+  const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const check = report.checks.find((c) => c.name === 'capability_contracts');
+  assert.equal(check.status, 'FAIL');
+  assert.match(check.message, /contract cycle detected/);
+  assert.match(check.message, /sdd-create-specs/);
+  assert.match(check.message, /sdd-reverse-engineer/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor --contracts flags conflicting skills that are both installed', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-conflict-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const original = fs.readFileSync(skillPath, 'utf8');
+  fs.writeFileSync(
+    skillPath,
+    original.replace('conflicts: []', 'conflicts: [sdd-reverse-engineer]'),
+  );
+  const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const check = report.checks.find((c) => c.name === 'capability_contracts');
+  assert.equal(check.status, 'FAIL');
+  assert.match(check.message, /sdd-create-specs and sdd-reverse-engineer declare a conflict/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('doctor --contracts detects an unknown baseline id', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-baseline-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  assert.equal(run(['install', 'core'], cwd).status, 0);
+  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const original = fs.readFileSync(skillPath, 'utf8');
+  fs.writeFileSync(
+    skillPath,
+    original.replace('baseline: [tlc-spec-driven]', 'baseline: [not-a-real-baseline]'),
+  );
+  const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
+  const check = report.checks.find((c) => c.name === 'capability_contracts');
+  assert.equal(check.status, 'FAIL');
+  assert.match(check.message, /baseline references unknown baseline id 'not-a-real-baseline'/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
@@ -142,6 +270,18 @@ test('routing skill is listed, installed by public packs, and removed by uninsta
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
+test('reverse-engineer skill is installed by core/full and removed by uninstall', () => {
+  for (const pack of ['core', 'full']) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), `sdd-agentic-flow-reverse-${pack}-`));
+    assert.equal(run(['init'], cwd).status, 0);
+    assert.equal(run(['install', pack], cwd).status, 0);
+    assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/sdd-reverse-engineer/SKILL.md')));
+    assert.equal(run(['uninstall', '--apply'], cwd).status, 0);
+    assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/sdd-reverse-engineer')));
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 test('language flag generates profiles and invalid values fail', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-language-'));
   assert.equal(run(['init', '--language', 'pt-BR'], cwd).status, 0);
@@ -194,4 +334,63 @@ test('invalid packs and flags fail', () => {
   assert.equal(run(['install', 'missing-pack']).status, 1);
   assert.equal(run(['uninstall']).status, 1);
   assert.equal(run(['doctor', '--unknown']).status, 1);
+});
+
+test('a real npm pack tarball installs and its extracted CLI passes init/discover/install/doctor', (t) => {
+  if (spawnSync('tar', ['--version']).status !== 0) {
+    t.skip('tar CLI not available in this environment');
+    return;
+  }
+
+  const packDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-pack-'));
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-pack-cache-'));
+  const extractDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-extract-'));
+  const consumerDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-pack-consumer-'));
+
+  try {
+    const pack = spawnSync(
+      'npm',
+      ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
+      { cwd: packageRoot, encoding: 'utf8' },
+    );
+    assert.equal(pack.status, 0, pack.stderr);
+    const jsonStart = pack.stdout.indexOf('[');
+    const [meta] = JSON.parse(pack.stdout.slice(jsonStart));
+    const tarballPath = path.join(packDir, meta.filename);
+    assert.ok(fs.existsSync(tarballPath));
+
+    const extract = spawnSync('tar', ['-xzf', tarballPath, '-C', extractDir]);
+    assert.equal(extract.status, 0, extract.stderr);
+
+    const installedCli = path.join(extractDir, 'package', 'bin', 'sdd-agentic-flow.js');
+    assert.ok(fs.existsSync(installedCli));
+    assert.notEqual(installedCli, cli);
+
+    assert.ok(!fs.existsSync(path.join(extractDir, 'package', 'test')));
+
+    const runPacked = (args, input) =>
+      spawnSync(process.execPath, [installedCli, ...args], {
+        cwd: consumerDir,
+        input,
+        encoding: 'utf8',
+      });
+
+    assert.equal(runPacked(['version']).stdout.trim(), '0.7.0');
+    assert.equal(runPacked(['init']).status, 0);
+    assert.equal(runPacked(['discover']).status, 0);
+    assert.equal(runPacked(['install', 'core']).status, 0);
+
+    const doctorResult = runPacked(['doctor', '--contracts', '--json']);
+    assert.equal(doctorResult.status, 0);
+    const report = JSON.parse(doctorResult.stdout);
+    assert.equal(
+      report.checks.find((check) => check.name === 'capability_contracts').status,
+      'PASS',
+    );
+    assert.equal(report.checks.find((check) => check.name === 'skills').status, 'PASS');
+    assert.equal(report.checks.find((check) => check.name === 'shared_layer').status, 'PASS');
+  } finally {
+    for (const dir of [packDir, cacheDir, extractDir, consumerDir])
+      fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

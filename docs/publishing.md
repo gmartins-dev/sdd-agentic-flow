@@ -9,7 +9,7 @@ npm publish --dry-run --access public
 npm publish --access public
 ```
 
-For v0.6.0, also run `npm run check`, `npm run pack:dry`, `sdd-agentic-flow doctor --json`, and `sdd-agentic-flow doctor --smoke`. Codex CLI, Claude Code, and Cursor-style workflows have been manually validated for this release; validate any additional target before adding a compatibility claim.
+For v0.7.0, also run `npm run check`, `npm run pack:dry`, `sdd-agentic-flow doctor --json`, and `sdd-agentic-flow doctor --smoke`. Codex CLI, Claude Code, and Cursor-style workflows were manually validated as of v0.6.0; re-validate before adding a new compatibility claim beyond that baseline.
 
 Automated provenance and release automation are future work.
 

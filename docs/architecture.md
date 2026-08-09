@@ -90,7 +90,9 @@ that exact-match check only runs at the source, in `scripts/check-skills.sh`.
 | ------------------------ | ------------------ | -------------------------------------- | ------------------------- | --------------------- |
 | `setup-sdd-agentic-flow` | —                   | config                                 | project-config, project-context | tlc-spec-driven  |
 | `sdd-route`               | —                   | config                                 | route-recommendation      | —                      |
+| `sdd-brainstorm`          | —                   | config                                 | spec-ready-brief           | —                      |
 | `sdd-create-specs`        | —                   | config, source-item                    | spec-package               | tlc-spec-driven        |
+| `sdd-explain-me`          | sdd-create-specs    | config, spec-package                   | explanation                | —                      |
 | `sdd-create-prompts`      | sdd-create-specs    | config, spec-package                   | task-prompts                | tlc-spec-driven, tdd |
 | `sdd-implement-task`      | sdd-create-prompts  | config, task-identity                  | code-change+tdd-evidence    | tlc-spec-driven, tdd |
 | `sdd-implement-multi`     | sdd-create-prompts  | config, spec-package                   | execution-plan              | tlc-spec-driven, tdd |

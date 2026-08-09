@@ -1,5 +1,62 @@
 # Changelog
 
+## 1.5.0
+
+Skill system consolidation. Prompted by a real audit of the 11 skills shipped in 1.4.0: the
+"evidence before claims" principle already existed, reworded slightly differently, in 6 of
+them (a maintenance drift, not a missing principle), `sdd-route` duplicated the routing table
+`shared/references/workflow-routing.md` already owned, and the flow had no stage before
+`sdd-create-specs` for an idea that isn't spec-ready yet. This release consolidates what already
+existed and closes those two real gaps — it is not a "more skills" release; 13 skills is the
+result, not the goal.
+
+- **Two new shared references formalize what the 11 skills already did in practice, once.**
+  `shared/references/skill-authoring-standard.md` documents the six required `SKILL.md`
+  sections every skill already followed, plus the `Status`/`Next recommended skill`/`Reason`
+  output convention (previously only `sdd-route`'s template) now expected from every skill's
+  `## Output`. `shared/references/evidence-standard.md` extracts the "evidence before claims"
+  principle into one place; `sdd-create-specs`, `sdd-implement-task`, `sdd-task-check`,
+  `sdd-validation`, `sdd-pr-review`, and `sdd-pr-fix` now reference it while keeping their own
+  domain vocabulary (Observed/Inferred/Unknown, "never turn missing evidence into a pass",
+  "evidence from prior runs is context, not proof", and so on) as a local application of the
+  shared rule, not a restatement of it.
+- **`sdd-route` no longer duplicates the routing table.** It now reads
+  `shared/references/workflow-routing.md` as the single source of truth instead of carrying its
+  own copy that could silently drift from it.
+- **`sdd-task-check` and `sdd-validation` now cross-reference each other explicitly** in their
+  `## When not to use` sections (one task before handoff/PR vs. an already-accumulated feature),
+  not only through the `extends` chain and a single description sentence.
+- **`sdd-brainstorm` (new)** — the flow's missing stage before `sdd-create-specs`, for an idea
+  that is still vague or a problem whose solution approach isn't decided yet. Runs in an
+  exploratory mode (ask one systematic question at a time until the problem is clear) or a
+  design mode (challenge assumptions, explore alternatives), and only ever hands off a
+  `brief.md` to `sdd-create-specs` — it never writes `spec.md`, `design.md`, or `tasks.md`
+  itself.
+- **`sdd-explain-me` (new)** — an on-demand, never-required skill that explains an
+  already-specified or already-implemented feature in plain language for a reader with no prior
+  context, distinct from `spec.md` (normative), `design.md` (technical), and `tasks.md`
+  (operational). New `shared/templates/explanation.template.md`.
+- **`sdd-implement-multi` gained an explicit dependency-independence analysis step** before any
+  parallel-execution recommendation — checking shared files, contracts, types, and implied
+  ordering — instead of relying only on the existing "never share a mutable worktree" safety
+  rule to catch a bad parallelization call after the fact.
+- **New lightweight handoff convention, not a new skill** (an explicit product decision this
+  release): `shared/templates/handoff.template.md`, which any skill may suggest when a user
+  pauses or resumes work across sessions or agents. Documented in
+  `shared/references/sdd-global-guidance.md`.
+- **`presets/planning.json` and `presets/full.json`** now install `sdd-brainstorm` and
+  `sdd-explain-me`; `docs/skills-catalog.md`, `docs/compatibility-matrix.md`,
+  `docs/architecture.md`, and the README skill map/flow diagram were all updated to match, and
+  `bin/sdd-agentic-flow.js`'s `OFFICIAL_SKILLS` list now includes both so `uninstall` and
+  install-detection cover them correctly.
+- **New golden flow**: `examples/golden/idea-to-spec/`, proved by
+  `test/cli.test.js`'s `golden flow: idea to spec` test — a converged `sdd-brainstorm` brief
+  handing off into a real `sdd-create-specs` package.
+- **Frontmatter key order normalized across all 13 skills** (`name` → `description` →
+  `metadata` → ...). The 1.4.0 audit that flagged this found the inconsistency was wider than
+  initially assumed — 7 of the 11 skills, not only `sdd-create-pr` — so this release normalizes
+  all of them to one order rather than fixing a single file.
+
 ## 1.4.0
 
 CLI UX & Guided Onboarding. Prompted by a broader push to make the CLI feel like a mature,

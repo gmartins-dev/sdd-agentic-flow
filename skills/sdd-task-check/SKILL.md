@@ -1,9 +1,9 @@
 ---
 name: sdd-task-check
-metadata:
-  version: 1.4.0
-  pack: core
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
+metadata:
+  version: 1.5.0
+  pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
 consumes: [domain-glossary, project-context]
@@ -23,7 +23,7 @@ Use after implementing one task and before commit or PR handoff. Read [the TLC b
 
 ## When not to use
 
-Do not use to implement fixes, review an entire feature, approve a PR, or infer an ambiguous task identity.
+Do not use to implement fixes, review an entire feature, approve a PR, or infer an ambiguous task identity. To validate a whole feature already integrated, use `sdd-validation` instead of repeating this process task by task.
 
 ## Inputs
 
@@ -36,7 +36,7 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
 3. Check that code tasks identify a behavior and public seam, use behavior-focused tests, record executed commands, and explain missing RED evidence.
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified.
-5. Run only configured, safe, task-relevant checks. Record commands not run and why; never turn missing evidence into a pass.
+5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands not run and why; never turn missing evidence into a pass.
 6. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps.
 
 ## Safety

@@ -1,8 +1,15 @@
 {
   "name": "planning",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Specification and task-prompt planning.",
-  "skills": ["setup-sdd-agentic-flow", "sdd-route", "sdd-create-specs", "sdd-create-prompts"],
+  "skills": [
+    "setup-sdd-agentic-flow",
+    "sdd-route",
+    "sdd-brainstorm",
+    "sdd-create-specs",
+    "sdd-explain-me",
+    "sdd-create-prompts"
+  ],
   "shared": true,
   "status": "stable"
 }

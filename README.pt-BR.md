@@ -106,7 +106,7 @@ Para o fluxo completo, consulte o [guia de uso das skills em português](docs/sd
 
 Veja o [catálogo de skills](docs/skills-catalog.md) para a versão detalhada — propósito, quando
 usar/não usar, entradas/saídas, dependências, conflitos, baseline e posição no fluxo de cada
-uma das 11 skills públicas.
+uma das 13 skills públicas.
 
 Veja também a [matriz de compatibilidade](docs/compatibility-matrix.md) (quais packs instalam
 quais skills) e os guias de decisão: [escolhendo um perfil de feature](docs/guides/choosing-a-feature-profile.md),

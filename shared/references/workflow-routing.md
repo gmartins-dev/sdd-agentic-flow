@@ -5,8 +5,10 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | Situation                             | Recommended skill                  |
 | ------------------------------------- | ---------------------------------- |
 | No `.sdd/config.yml`                  | `setup-sdd-agentic-flow`           |
+| Idea not yet defined (vague goal, or a clear problem with no decided approach) | `sdd-brainstorm` |
 | Ambiguous or unstructured request     | `sdd-create-specs`                 |
 | Existing undocumented code needing specs | `sdd-create-specs` (existing-code mode) |
+| Specified feature needing a pedagogical explanation | `sdd-explain-me`     |
 | Ready spec without task prompts       | `sdd-create-prompts`               |
 | One ready task                        | `sdd-implement-task`               |
 | Multiple dependent tasks              | `sdd-implement-multi`              |

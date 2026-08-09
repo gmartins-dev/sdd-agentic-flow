@@ -124,7 +124,10 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 ```mermaid
 flowchart TD
   setup[setup-sdd-agentic-flow] --> route[sdd-route]
-  route --> specs[sdd-create-specs]
+  route --> brainstorm[sdd-brainstorm]
+  brainstorm -->|converged| specs[sdd-create-specs]
+  route --> specs
+  specs -.->|on demand| explain[sdd-explain-me]
   specs --> prompts[sdd-create-prompts]
   prompts --> implement[sdd-implement-task]
   prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
@@ -175,7 +178,9 @@ Dependencies, Conflicts, Baseline, Pack(s), and flow position for each skill —
 | ------------------------ | --------------------------- | ----------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
 | `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
 | `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
+| `sdd-brainstorm`         | Shape a vague idea           | Rough idea         | Spec-ready brief        | Yes, when converged   | guided       | The idea isn't spec-ready yet |
 | `sdd-create-specs`       | Plan feature specs          | Source item OR existing codebase | Feature spec set       | Yes, when authorized | plan         | Requirements need structure, or undocumented code needs specs |
+| `sdd-explain-me`         | Explain a specified feature | Spec package        | Plain-language explanation | Yes, when authorized | guided    | Someone needs context without reading every artifact |
 | `sdd-create-prompts`     | Generate task prompts       | Specs/tasks       | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
 | `sdd-implement-task`     | Implement one task          | Approved task     | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
 | `sdd-implement-multi`    | Plan multi-task execution   | Task set          | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |

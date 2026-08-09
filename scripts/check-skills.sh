@@ -25,7 +25,19 @@ for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '#
   grep -F -q -- "$marker" "$route_file"
 done
 
-all_skills=(setup-sdd-agentic-flow sdd-route sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
+# Milestone 6/7 (v1.5.0): sdd-brainstorm and sdd-explain-me are baseline:[] root/branch skills
+# like sdd-route — they follow the 6-section skeleton and the config/init/safety markers, but
+# (like sdd-route) never reference tlc-baseline.md, since no TLC/TDD baseline governs them.
+new_skills=(sdd-brainstorm sdd-explain-me)
+for skill in "${new_skills[@]}"; do
+  file="skills/$skill/SKILL.md"
+  test -f "$file"
+  for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-safety.md' 'npx sdd-agentic-flow init'; do
+    grep -F -q -- "$marker" "$file"
+  done
+done
+
+all_skills=(setup-sdd-agentic-flow sdd-route sdd-brainstorm sdd-create-specs sdd-explain-me sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:'; do
@@ -48,7 +60,7 @@ const { parseVersion, compareVersions } =
   require(path.resolve(process.cwd(), 'bin/version-compat.js'));
 
 const skillNames = [
-  'setup-sdd-agentic-flow', 'sdd-route', 'sdd-create-specs',
+  'setup-sdd-agentic-flow', 'sdd-route', 'sdd-brainstorm', 'sdd-create-specs', 'sdd-explain-me',
   'sdd-create-prompts', 'sdd-implement-task', 'sdd-implement-multi', 'sdd-task-check',
   'sdd-create-pr', 'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation',
 ];
@@ -181,7 +193,7 @@ if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.e
   exit 1
 fi
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md; do
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.6.0' "shared/references/$ref"
@@ -211,6 +223,11 @@ for template in context spec design tasks task-prompt check-report validation-re
 done
 for skill in sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
   grep -F -q 'tdd-baseline.md' "skills/$skill/SKILL.md"
+done
+# Milestone 2 (Evidence Standard extraction): the 6 skills that classify pass/fail/ready must
+# reference the shared evidence-standard.md rather than re-deriving the principle with drift.
+for skill in sdd-create-specs sdd-implement-task sdd-task-check sdd-validation sdd-pr-review sdd-pr-fix; do
+  grep -F -q 'evidence-standard.md' "skills/$skill/SKILL.md"
 done
 for skill in sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
   grep -F -q 'task-slicing.md' "skills/$skill/SKILL.md"

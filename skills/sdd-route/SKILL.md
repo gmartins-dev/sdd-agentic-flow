@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 1.4.0
+  version: 1.5.0
   pack: core
 extends: null
 requires: [config]
@@ -37,7 +37,7 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 1. Read `.sdd/config.yml` when it exists. If it is missing, recommend `setup-sdd-agentic-flow`.
 2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md` and `../sdd-agentic-flow-shared/references/workflow-safety.md`.
 3. Inspect the candidate local `SKILL.md` before stating what it does. Its instructions are the source of truth.
-4. Recommend one route: ambiguous request → `sdd-create-specs`; ready spec without prompts → `sdd-create-prompts`; one ready task → `sdd-implement-task`; multiple dependent tasks → `sdd-implement-multi`; completed task → `sdd-task-check`; PR package → `sdd-create-pr`; review → `sdd-pr-review`; accepted findings → `sdd-pr-fix`, then review again; integrated feature → `sdd-validation`.
+4. Match the request against the routing table in `../sdd-agentic-flow-shared/references/workflow-routing.md` — it is the single source of truth for routing situations and recommended skills; do not reproduce or re-derive the table here, and never let this step's wording diverge from it.
 5. Identify missing packs, prerequisites, and any human decision required. Stop after the recommendation.
 
 ## Safety

@@ -22,7 +22,9 @@ scope and auto-discovery have actually been exercised.
 | -------------------------- | :--: | :------: | :-------: | :-: | :-------------: | :--: | :---------: | :----: |
 | `setup-sdd-agentic-flow`   |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
 | `sdd-route`                |  ✓   |    ✓     |     ✓     |  ✓  |        ✓         |  ✓   |     ✓       |   ✓    |
+| `sdd-brainstorm`           |      |    ✓     |           |     |                  |  ✓   |             |        |
 | `sdd-create-specs`         |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `sdd-explain-me`           |      |    ✓     |           |     |                  |  ✓   |             |        |
 | `sdd-create-prompts`       |      |    ✓     |           |     |                  |  ✓   |             |        |
 | `sdd-implement-task`       |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
 | `sdd-implement-multi`      |      |          |     ✓     |     |        ✓         |  ✓   |             |        |

@@ -1,5 +1,20 @@
 # Roadmap
 
+- **v1.5 (2026-08-09):** Skill System Consolidation. Prompted by a real audit of the 11 skills
+  shipped in v1.4 rather than an assumed gap: the "evidence before claims" principle already
+  existed, reworded slightly differently, in 6 of them, and `sdd-route` duplicated the routing
+  table `shared/references/workflow-routing.md` already owned — both real maintenance drift,
+  not missing content. Extracted both into new shared references
+  (`skill-authoring-standard.md`, `evidence-standard.md`) that the affected skills now reference
+  instead of re-deriving. Closed the one real flow gap the audit found — no stage before
+  `sdd-create-specs` for an idea that isn't spec-ready yet — with `sdd-brainstorm`, and added
+  `sdd-explain-me` for on-demand, never-required plain-language explanations of an already
+  specified feature; both only ever hand off to existing skills rather than duplicating their
+  output. 13 skills total, up from 11 — the result of closing two real gaps, not a "more skills"
+  goal. Also normalized frontmatter key order across all 13 skills once the audit found the
+  inconsistency was wider than assumed (7 of 11, not only `sdd-create-pr`), and added a
+  dependency-independence analysis step to `sdd-implement-multi` before any parallelization
+  recommendation. One new golden flow (`idea-to-spec`), bringing the total to 5.
 - **v1.4 (2026-08-09):** CLI UX & Guided Onboarding. Colored, TTY-aware status output;
   "did you mean" suggestions on unknown commands/packs/agents and a clearer `uninstall`
   neither-flag message; a new public `--quiet` flag on `init`/`install`/`uninstall`/`discover`;

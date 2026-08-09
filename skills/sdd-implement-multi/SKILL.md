@@ -1,9 +1,9 @@
 ---
 name: sdd-implement-multi
-metadata:
-  version: 1.4.0
-  pack: multi-worktree
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
+metadata:
+  version: 1.5.0
+  pack: multi-worktree
 extends: sdd-create-prompts
 requires: [config, spec-package]
 consumes: [domain-glossary, project-context]
@@ -34,15 +34,16 @@ Do not use for one task, vague feature requests, specification creation, PR work
 ## Workflow
 
 1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
-2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Resolve one feature, enumerate tasks, and build dependency waves from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing.
-3. Default to a read-only plan. Before creating worktrees, delegating, or changing code, require explicit user authorization and verify isolation rules from configuration.
-4. Plan each ready task as an independently verifiable vertical slice with a public seam, targeted test command, and evidence owner. Justify horizontal work explicitly.
-5. Delegate or execute through `sdd-implement-task`; keep task scope, RED/GREEN evidence, and validation independent.
-6. Collect results into a concise ledger and stop at blockers. Do not treat orchestration completion as feature validation or merge readiness.
+2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Resolve one feature, enumerate tasks, and build a candidate dependency-wave grouping from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing.
+3. Before recommending that any two tasks run in parallel, analyze whether they are genuinely independent: check for files either task writes that the other also touches, shared contracts or types, shared runtime or test state, and any ordering the tasks' own evidence implies even if not stated as a formal dependency. Only place tasks in the same parallel wave when this analysis confirms real independence; when it does not, keep them sequential regardless of what the candidate grouping in step 2 suggested. This is the analysis the worktree-isolation rule in `## Safety` depends on — decide eligibility here, do not restate the rule itself.
+4. Default to a read-only plan. Before creating worktrees, delegating, or changing code, require explicit user authorization and verify isolation rules from configuration.
+5. Plan each ready task as an independently verifiable vertical slice with a public seam, targeted test command, and evidence owner. Justify horizontal work explicitly.
+6. Delegate or execute through `sdd-implement-task`; keep task scope, RED/GREEN evidence, and validation independent.
+7. Collect results into a concise ledger and stop at blockers. Do not treat orchestration completion as feature validation or merge readiness.
 
 ## Safety
 
-Never share a mutable worktree between concurrent tasks. Preserve existing changes and do not create branches, worktrees, commits, pushes, PRs, tracker updates, or network mutations by default.
+Never share a mutable worktree between concurrent tasks — this is the isolation rule the dependency analysis in `## Workflow` step 3 exists to protect. Preserve existing changes and do not create branches, worktrees, commits, pushes, PRs, tracker updates, or network mutations by default.
 
 ## Output
 

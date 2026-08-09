@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd/config.yml before producing artifacts.
 metadata:
-  version: 1.4.0
+  version: 1.5.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -39,7 +39,7 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
 3. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to apply the common lifecycle and required decision points. Read `workflow.feature_profile` from `.sdd/config.yml` and apply `../sdd-agentic-flow-shared/references/feature-profiles.md` guidance to scope the package's depth.
 4. Read `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/artifact-contracts.md`, and `../sdd-agentic-flow-shared/references/workflow-safety.md` before handling inputs or writing artifacts.
 5. Read `.sdd/context/project-context.md` when it exists; treat it as read-only discovered output. In source-item mode, also read `.sdd/context/domain-glossary.md` when it exists; propose or create it only with explicit authorization and a source or uncertainty note for every term.
-6. Inspect the evidence:
+6. Inspect the evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`:
    - **Source-item mode:** inspect only evidence needed to state the current behavior, desired behavior, constraints, risks, and acceptance criteria. Mark unknowns as open questions rather than inventing facts.
    - **Existing-code mode:** inspect the named code, its tests, and its call sites within the confirmed scope. Classify every finding as **Observed** (directly shown by code or a passing test), **Inferred** (a reasonable reading of the code that no test directly confirms), or **Unknown** (a gap neither the code nor its tests answer). Never present an Inferred or Unknown finding as Observed.
 7. Create the artifacts:

@@ -1,6 +1,6 @@
 # Skills catalog
 
-A product-level view of the 11 public skills, one section each, ordered like the
+A product-level view of the 13 public skills, one section each, ordered like the
 [main SDD flow](../README.md#main-sdd-flow) rather than alphabetically. Each entry restates
 its skill's capability contract (`extends`/`requires`/`consumes`/`produces`/`baseline`/
 `compatible_with`/`depends_on`/`conflicts`/`requires_cli`) in prose — see
@@ -63,6 +63,39 @@ automatically.
 **Typical flow position:** between any two steps — recommends the next skill whenever the
 phase is unclear; not itself a step in the linear chain.
 
+## `sdd-brainstorm`
+
+**Purpose:** Explore a vague idea into a converged, spec-ready problem statement, or shape a
+solution once the problem is already clear.
+
+**When to use:** Use when a user has an idea that is not yet ready for `sdd-create-specs` —
+either the problem itself is still vague, or the problem is clear but the solution approach is
+not decided.
+
+**When not to use:** Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — always
+delegated to `sdd-create-specs`. Do not use once the problem and approach are already decided,
+for a single ready task, or for explaining an already-specified feature (`sdd-explain-me`).
+
+**Inputs:** The user's idea in whatever shape it currently exists; `.sdd/config.yml`,
+`project-context.md`, and `domain-glossary.md` when present; relevant existing code or docs the
+idea touches. Required input kind: `config`.
+
+**Outputs:** `spec-ready-brief` (`.specs/features/<feature>/brief.md`, written only once the
+idea converges).
+
+**Dependencies:** `extends: null` (chain entry point, alongside `sdd-create-specs`, `sdd-route`,
+`setup-sdd-agentic-flow`); `depends_on: []`.
+
+**Conflicts:** none.
+
+**Baseline:** none (`baseline: []`) — brainstorming is exploration, not methodology work; the
+resulting brief is handed to `sdd-create-specs`, which does apply the TLC baseline.
+
+**Pack(s):** `planning`, `full`.
+
+**Typical flow position:** before `sdd-create-specs` — the stage for an idea too vague or
+undecided for a specification package to start from.
+
 ## `sdd-create-specs`
 
 **Purpose:** Create or update a repository-local, evidence-based SDD specification package,
@@ -124,6 +157,38 @@ kinds: `config`, `spec-package`.
 **Pack(s):** `planning`, `full`.
 
 **Typical flow position:** between `sdd-create-specs` and `sdd-implement-task`.
+
+## `sdd-explain-me`
+
+**Purpose:** Explain an already-specified or already-implemented SDD feature in plain language,
+for a reader with no prior context.
+
+**When to use:** Use on demand, when the feature's author or someone joining without prior
+context wants to understand what a feature does and why, without reading every technical
+artifact.
+
+**When not to use:** Do not use to author or replace `spec.md`, `design.md`, or `tasks.md` — it
+only explains an existing package. Do not use before a spec package exists (`sdd-create-specs`
+first) or for an idea still being shaped (`sdd-brainstorm` first).
+
+**Inputs:** One feature identifier with an existing spec package; `.sdd/config.yml`, the
+feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation;
+`project-context.md`/`domain-glossary.md` when present. Required input kinds: `config`,
+`spec-package`.
+
+**Outputs:** `explanation` (`.specs/features/<feature>/explanation.md`).
+
+**Dependencies:** `extends: sdd-create-specs`; `depends_on: []`. Read-only against the spec
+package.
+
+**Conflicts:** none.
+
+**Baseline:** none (`baseline: []`) — pedagogical, not methodology work.
+
+**Pack(s):** `planning`, `full`.
+
+**Typical flow position:** optional branch from `sdd-create-specs`, never a required step; used
+on demand at any point once a spec package exists.
 
 ## `sdd-implement-task`
 

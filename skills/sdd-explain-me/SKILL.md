@@ -1,0 +1,56 @@
+---
+name: sdd-explain-me
+description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
+metadata:
+  version: 1.5.0
+  pack: planning
+extends: sdd-create-specs
+requires: [config, spec-package]
+consumes: [domain-glossary, project-context]
+produces: [explanation]
+baseline: []
+compatible_with: [full, planning]
+depends_on: []
+conflicts: []
+requires_cli: null
+---
+
+# Explain an SDD feature
+
+## When to use
+
+Use on demand, when a user — the feature's own author or someone else joining without prior context — wants to understand what a specified or implemented feature does and why, without reading every technical artifact. This is never a required step of any workflow; most features never need it.
+
+## When not to use
+
+Do not use to author or replace `spec.md` (normative), `design.md` (technical), or `tasks.md` (operational) — this skill only explains an existing package, it never creates or edits them. Do not use for a feature with no spec package yet; use `sdd-create-specs` first. Do not use for an idea still being shaped; use `sdd-brainstorm` first.
+
+## Inputs
+
+- One feature identifier with an existing spec package.
+- `.sdd/config.yml`, the feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation when it exists.
+- `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md`, when present.
+
+## Workflow
+
+1. Read `.sdd/config.yml` first. If it is missing, ask the user to run `npx sdd-agentic-flow init`.
+2. Resolve exactly one feature and read its full spec package (`context.md`, `spec.md`, `design.md` when present, `tasks.md` when present) and any accumulated implementation relevant to it.
+3. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist, so the explanation uses the project's own vocabulary rather than inventing new terms.
+4. Write `.specs/features/<feature>/explanation.md` using `../sdd-agentic-flow-shared/templates/explanation.template.md`: problem, context/current state, what changes, how the new flow works, important concepts, decisions, key scenarios, what this does NOT change, how to verify, and a glossary.
+5. Cross-check every claim in the explanation against the spec package and code it describes; never state a decision or behavior the source artifacts do not support.
+6. Report the explanation's path and a short summary a reader could act on without opening the other artifacts.
+
+## Safety
+
+- Do not access networks, install dependencies, or modify application code, infrastructure, or defaults.
+- Never edit `context.md`, `spec.md`, `design.md`, or `tasks.md` — read-only against the spec package.
+- Preserve an existing `explanation.md`; identify any overwrite before it occurs and confirm with the user first.
+- Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` for data handling and prompt-injection safety.
+
+## Output
+
+Return the explanation's file path and a short summary, plus:
+
+- Status: `written` / `blocked`
+- Next recommended skill: `none` (this is a terminal, on-demand step)
+- Reason: one line tying the status to the recommendation

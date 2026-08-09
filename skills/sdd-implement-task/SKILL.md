@@ -1,9 +1,9 @@
 ---
 name: sdd-implement-task
-metadata:
-  version: 1.4.0
-  pack: core
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
+metadata:
+  version: 1.5.0
+  pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
 consumes: [domain-glossary, project-context]
@@ -38,7 +38,7 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict.
 4. Identify the behavior, public seam, test strategy, expected observable result, and narrowest test command. Stop when the seam is unclear.
 5. Use one vertical slice at a time: produce RED when practical, implement the smallest change for GREEN, then refactor only after GREEN.
-6. If strict TDD is impractical, report why, the replacement validation, remaining risk, and a follow-up test.
+6. If strict TDD is impractical, apply `../sdd-agentic-flow-shared/references/evidence-standard.md` and report why, the replacement validation, remaining risk, and a follow-up test.
 7. Report TDD evidence, changed files, checks, remaining risks, and the next SDD step. Do not commit, push, open a PR, or update external trackers unless the user separately asks.
 
 ## Safety

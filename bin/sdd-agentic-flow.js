@@ -12,7 +12,7 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -20,7 +20,9 @@ const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'
 const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
   'sdd-route',
+  'sdd-brainstorm',
   'sdd-create-specs',
+  'sdd-explain-me',
   'sdd-create-prompts',
   'sdd-implement-task',
   'sdd-implement-multi',

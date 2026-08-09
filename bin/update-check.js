@@ -5,8 +5,13 @@
 // runs when `doctor --check-updates` is passed, makes exactly one bounded-timeout request, and
 // never throws or hangs — any failure (offline, non-2xx, malformed body, timeout) degrades to an
 // informational row rather than affecting doctor's overall PASS/WARN/FAIL status or exit code.
-// Uses Node's built-in global `fetch`/`AbortSignal.timeout` (stable since Node 18, and this
-// package's `engines` already requires >=22) — no runtime dependency added.
+// Uses Node's built-in global `fetch` (stable since Node 18, and this package's `engines`
+// already requires >=22) — no runtime dependency added. Deliberately does NOT use
+// `AbortSignal.timeout()`: that helper's internal timer is unref'd by design (so it never keeps
+// a process alive on its own), which means in an otherwise-quiet process the event loop can see
+// "nothing left to do" and exit before the timeout ever fires — the request would then just hang
+// forever instead of degrading to INFO. A manually managed, ref'd `setTimeout`/`AbortController`
+// guarantees the bounded wait actually elapses.
 
 const { compareVersions } = require('./version-compat');
 
@@ -23,8 +28,10 @@ async function checkForUpdate({
   registryUrl = process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL || DEFAULT_REGISTRY_URL,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetchImpl(registryUrl, { signal: AbortSignal.timeout(timeoutMs) });
+    const response = await fetchImpl(registryUrl, { signal: controller.signal });
     if (!response.ok) throw new Error(`registry responded ${response.status}`);
     const body = await response.json();
     const latest = typeof body?.version === 'string' ? body.version : null;
@@ -52,6 +59,8 @@ async function checkForUpdate({
       message: 'could not check for updates (offline or registry unreachable)',
       section: 'Package updates',
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -1,9 +1,17 @@
 name: Release
 
 # Runs only after ci.yml has completed successfully on main — never on a red CI run, because
-# this workflow only starts once ci.yml has already finished. Idempotent: does nothing unless
-# package.json's version is newer than the latest existing tag, so ordinary pushes to main that
-# are not a version bump are no-ops.
+# this workflow only starts once ci.yml has already finished.
+#
+# Tag/GitHub-release creation and npm publish are gated INDEPENDENTLY, not by one shared
+# condition — deliberately, after a real incident (v1.6.2): a retry (`gh run rerun --failed`)
+# re-executes the whole job from scratch, and a naive single "should_release" gate based only on
+# tag existence would skip `npm publish` on that retry too, because the tag from the failed
+# attempt's earlier, already-succeeded step still exists. Tag/release creation is gated on tag
+# non-existence (below); npm publish is gated on the exact version not already being on the npm
+# registry (see "Check whether this version is already on npm") — so a retry after a
+# publish-only failure still republishes, while a routine push that changed nothing still does
+# nothing on either side.
 #
 # npm publish runs in THIS SAME job, right after tag/release creation, rather than in a separate
 # workflow listening for `release: published`. That was the original design, but it does not
@@ -65,19 +73,41 @@ jobs:
           " "${{ steps.pkg.outputs.version }}" "${{ steps.latest_tag.outputs.tag }}")"
           echo "should_release=$result" >> "$GITHUB_OUTPUT"
 
+      - name: Check whether this exact tag already exists
+        id: tag_exists
+        run: |
+          version="${{ steps.pkg.outputs.version }}"
+          if git rev-parse "refs/tags/v${version}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check whether this version is already published on npm
+        id: npm_check
+        run: |
+          version="${{ steps.pkg.outputs.version }}"
+          if npm view "sdd-agentic-flow@${version}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Guards tag/release creation AND npm publish: an accidental package.json bump with no
+      # matching changelog entry should never produce either. Runs unconditionally (cheap, local
+      # grep) so its result is available on a retry too, not only on the version's first attempt.
       - name: Require a matching CHANGELOG.md section (guards against an accidental bump)
-        if: steps.decide.outputs.should_release == 'true'
         id: changelog
         run: |
           if node scripts/extract-changelog-section.js "${{ steps.pkg.outputs.version }}" > /tmp/release-notes.md; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::package.json is at ${{ steps.pkg.outputs.version }} but CHANGELOG.md has no matching '## ${{ steps.pkg.outputs.version }}' section — skipping tag/release. If this version bump was intentional, add the changelog entry and push again."
+            echo "::warning::package.json is at ${{ steps.pkg.outputs.version }} but CHANGELOG.md has no matching '## ${{ steps.pkg.outputs.version }}' section — skipping tag/release and npm publish. If this version bump was intentional, add the changelog entry and push again."
           fi
 
       - name: Create annotated tag and GitHub release
-        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        if: steps.decide.outputs.should_release == 'true' && steps.tag_exists.outputs.exists == 'false' && steps.changelog.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -89,20 +119,36 @@ jobs:
           git push origin "$tag"
           gh release create "$tag" --title "$tag" --notes-file /tmp/release-notes.md
 
+      # This version is "legit" to publish if it's either the version freshly detected as new
+      # this run (should_release), or a tag already exists for it (a retry picking up after tag
+      # creation succeeded but npm publish didn't, in an earlier attempt) — but NOT some older,
+      # already-superseded version that merely never made it to npm for an unrelated reason.
+      - name: Decide whether npm publish should run
+        id: should_publish
+        run: |
+          if [[ "${{ steps.npm_check.outputs.published }}" == "false" \
+                && "${{ steps.changelog.outputs.found }}" == "true" \
+                && ( "${{ steps.decide.outputs.should_release }}" == "true" \
+                     || "${{ steps.tag_exists.outputs.exists }}" == "true" ) ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1; pin to latest rather than trust
       # whatever version the runner's Node 22 image happens to bundle.
       - name: Ensure npm CLI supports Trusted Publishing (OIDC)
-        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        if: steps.should_publish.outputs.value == 'true'
         run: npm install -g npm@latest
 
       - name: Install dependencies
-        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        if: steps.should_publish.outputs.value == 'true'
         run: npm ci
 
       - name: Sanity-check the package contents before publishing
-        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        if: steps.should_publish.outputs.value == 'true'
         run: npm run pack:dry
 
       - name: Publish to npm
-        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        if: steps.should_publish.outputs.value == 'true'
         run: npm publish --access public --provenance

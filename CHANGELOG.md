@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.6.2
+
+Fixes a real gap in v1.6.1's automated `npm publish`: it never actually ran. The workflow
+(`publish-npm.yml`) listened for the GitHub `release: published` event, but GitHub does not fire
+that event for a release created by another workflow's own `GITHUB_TOKEN` — the same
+recursion-prevention rule already observed with a tag push not re-triggering `ci.yml`. `npm
+publish` now runs in-process inside `.github/workflows/release.yml` itself, right after tag and
+GitHub release creation, in the same job — sidestepping the trigger limitation entirely, still
+with no `NPM_TOKEN` stored (`id-token: write` / OIDC). `publish-npm.yml` is removed: npmjs.com
+allows only one Trusted Publisher per package, and `release.yml` is the one registered, so a
+second workflow that could never authenticate was dead code. `docs/publishing.md` updated to
+match. This is the first version actually published through the fully automated pipeline, end
+to end, with zero manual steps after the version-bump push.
+
 ## 1.6.1
 
 `npm publish` is now automated too, closing the one gap v1.6.0 deliberately left manual. A new

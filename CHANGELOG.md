@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.4.0
+
+CLI UX & Guided Onboarding. Prompted by a broader push to make the CLI feel like a mature,
+predictable product rather than a collection of commands, informed by patterns studied in
+`anomalyco/opencode` and `vercel-labs/skills` (adopted for their approach, not their feature
+set). All changes are additive per [compatibility-promise.md](docs/compatibility-promise.md) —
+no documented command or flag was removed, and no existing flag's default meaning changed. Stays
+zero-runtime-dependency throughout (see [trust-model.md](docs/trust-model.md)): every addition
+below is hand-rolled, no new npm dependency was introduced.
+
+- **Colored status output, hand-rolled.** `PASS`/`WARN`/`FAIL`/`INFO`/`PLAN`/`PACK` now render
+  in color when writing to a real terminal. Disabled automatically whenever the target stream
+  isn't a TTY (every piped/CI/agent invocation, byte-identical to pre-1.4.0 output) or the
+  `NO_COLOR` env var is set (any value). New `bin/ui.js`, wired into `log()`/`fail()`.
+- **Actionable "did you mean" suggestions** on 5 failure paths: an unknown top-level command, an
+  unknown `help <command>` topic, an unknown `install <pack>`, an unknown `install --agent`, and
+  `uninstall` called with neither `--plan` nor `--apply` now also names `uninstall --plan` as the
+  safe first step. `bin/ui.js`'s `didYouMean()`, `bin/sdd-agentic-flow.js`.
+- **New public `--quiet` flag on `init`, `install`, `uninstall`, and `discover`.** Previously an
+  internal-only option used solely to keep `doctor --smoke`'s isolated calls clean; now
+  documented. Suppresses the "Suggested next step" line on `init`/`install` and the trailing
+  "preserves ..." explanatory line on `uninstall`. `discover --quiet` is accepted for flag
+  symmetry but currently has no decorative output to suppress.
+- **Partial core-skill install detection.** `doctor` and the bare-invocation status screen used
+  to treat skill installation as binary (all 5 `CORE_SKILLS` present, or none). Both now surface
+  a distinct WARN when *some but not all* are present — e.g. an interrupted install — naming
+  exactly which are missing and pointing at `install core` to repair. `bin/sdd-agentic-flow.js`'s
+  new `coreSkillsPresence()`.
+- **`doctor` prints a one-line fix hint** under any `WARN`/`FAIL` row whose fix is a single,
+  unambiguous command (`config`, `skills`, `shared_layer`, `language_profile`). Human-readable
+  output only — `--json` shape unchanged for these rows.
+- **New opt-in `doctor --check-updates` flag.** Makes exactly one request to the npm registry to
+  check for a newer version, only when explicitly passed — the sole, explicit exception to "no
+  outbound CLI network access by default" (see [trust-model.md](docs/trust-model.md)). Bounded
+  3-second timeout; any failure (offline, unreachable, malformed response) degrades to an
+  informational row and never affects `doctor`'s overall status or exit code. New
+  `bin/update-check.js`. This is an additive `--json` shape change (a new `update_check` row,
+  present only when the flag is passed) per compatibility-promise.md's additive-changes rule.
+- **Bare `npx sdd-agentic-flow` now offers a numbered interactive menu** after the existing
+  read-only status screen, but only when the process is genuinely interactive: both stdout and
+  stdin are a real TTY, and `process.env.CI` is unset. Every other invocation — piped, scripted,
+  CI, agent-invoked, or an explicit command — is byte-for-byte unchanged from before this
+  release. Selecting a menu entry runs the exact same code path the equivalent typed command
+  uses; the uninstall entry only ever runs `--plan` (never `--apply`), explaining afterward how
+  to run `--apply` explicitly. New `bin/menu.js`.
+- **Two exit-code bug fixes:** `doctor --json` with invalid flags used to print a `FAIL`-shaped
+  JSON body without setting a non-zero exit code; it now correctly exits `1`. `init --interactive`
+  with invalid input used to fall through to the generic exit code `2` reserved for unexpected
+  internal errors, indistinguishable from a real crash; it now exits `1` like every other
+  input-validation failure in this CLI.
+- **Exit codes documented for the first time**: `0` success, `1` handled/validation failure, `2`
+  unexpected/internal error (already existed via `main()`'s top-level catch, just undocumented).
+  See README.md and [compatibility-promise.md](docs/compatibility-promise.md).
+
 ## 1.3.0
 
 Uninstall completeness and post-command guidance. Prompted by a user trying to fully reset a

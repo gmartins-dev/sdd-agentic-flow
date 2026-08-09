@@ -8,8 +8,11 @@ const readline = require('node:readline/promises');
 const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
 const { satisfiesRange } = require('./version-compat');
+const { styleStatus, didYouMean } = require('./ui');
+const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
+const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -257,11 +260,11 @@ function languageReport(cwd) {
 }
 
 function log(status, message) {
-  process.stdout.write(`${status} ${message}\n`);
+  process.stdout.write(`${styleStatus(status, process.stdout)} ${message}\n`);
 }
 
 function fail(message, code = 1) {
-  process.stderr.write(`FAIL ${message}\n`);
+  process.stderr.write(`${styleStatus('FAIL', process.stderr)} ${message}\n`);
   process.exitCode = code;
 }
 
@@ -269,6 +272,19 @@ function readPreset(name) {
   const filename = path.join(PRESETS_DIR, `${name}.json`);
   if (!fs.existsSync(filename)) return null;
   return JSON.parse(fs.readFileSync(filename, 'utf8'));
+}
+
+function presetNames() {
+  return fs
+    .readdirSync(PRESETS_DIR)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => file.replace(/\.json$/, ''))
+    .sort();
+}
+
+function suggest(input, candidates) {
+  const match = didYouMean(input, candidates);
+  return match ? ` Did you mean \`${match}\`?` : '';
 }
 
 function list() {
@@ -492,6 +508,7 @@ async function initInteractive(
   cwd,
   languageDefault = 'en-US',
   featureProfileDefault = 'medium_feature',
+  quiet = false,
 ) {
   if (fs.existsSync(path.join(cwd, '.sdd', 'config.yml'))) {
     log('WARN', '.sdd/config.yml already exists; interactive init will not overwrite it');
@@ -535,7 +552,12 @@ async function initInteractive(
       multiWorktree: (await ask('Allow multi-worktree', 'false', ['true', 'false'])) === 'true',
       stackedPrs: (await ask('Allow stacked PRs', 'false', ['true', 'false'])) === 'true',
     };
-    init(cwd, options);
+    init(cwd, { ...options, quiet });
+  } catch (error) {
+    // Invalid interactive input is a validation failure, exit 1 — same as every other bad-input
+    // case in this CLI — not the generic exit-2 bucket main()'s own top-level catch reserves for
+    // genuinely unexpected/internal errors.
+    fail(error.message, 1);
   } finally {
     if (rl) rl.close();
   }
@@ -594,12 +616,17 @@ function printInstallNextSteps() {
 
 function install(pack, cwd, options = {}) {
   const preset = readPreset(pack);
-  if (!preset) return fail(`unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.`);
+  if (!preset)
+    return fail(
+      `unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.${suggest(pack, presetNames())}`,
+    );
   const scope = options.scope || 'user';
   if (scope !== 'user' && scope !== 'project')
     return fail('unknown scope: use --scope user or --scope project');
   if (options.agent && !KNOWN_AGENTS.includes(options.agent))
-    return fail(`unknown agent: ${options.agent}. Supported: ${KNOWN_AGENTS.join(', ')}.`);
+    return fail(
+      `unknown agent: ${options.agent}. Supported: ${KNOWN_AGENTS.join(', ')}.${suggest(options.agent, KNOWN_AGENTS)}`,
+    );
 
   if (scope === 'project') {
     const target = path.join(cwd, '.agents', 'skills');
@@ -682,6 +709,14 @@ const CORE_SKILLS = [
 
 function hasCoreSkillsAt(root) {
   return CORE_SKILLS.every((skill) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
+}
+
+// Distinguishes "none installed" from "interrupted/partial install" — deliberately scoped to
+// CORE_SKILLS (the atomic install unit), not the full OFFICIAL_SKILLS list: checking against
+// every official skill would false-positive-WARN any user who installed a smaller, valid pack.
+function coreSkillsPresence(root) {
+  const present = CORE_SKILLS.filter((skill) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
+  return { present, missing: CORE_SKILLS.filter((skill) => !present.includes(skill)) };
 }
 
 // doctor's project-local checks (skills/shared_layer/tdd-baseline/baseline-compliance) must
@@ -807,12 +842,16 @@ function doctorChecks(cwd) {
       fs.existsSync(configPath) ? '.sdd/config.yml found' : '.sdd/config.yml not found',
       'Config',
     );
-    add(
-      'skills',
-      fs.existsSync(skillsRoot) && hasCoreSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
-      hasCoreSkillsAt(skillsRoot) ? 'core skills installed' : 'core skills not fully installed',
-      'Skills',
-    );
+    (() => {
+      const presence = coreSkillsPresence(skillsRoot);
+      const skillsMessage =
+        presence.missing.length === 0
+          ? 'core skills installed'
+          : presence.present.length === 0
+            ? 'core skills not fully installed'
+            : `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present; missing: ${presence.missing.join(', ')}) — re-run \`sdd-agentic-flow install core\` to repair`;
+      add('skills', presence.missing.length === 0 ? 'PASS' : 'WARN', skillsMessage, 'Skills');
+    })();
     add(
       'shared_layer',
       fs.existsSync(
@@ -1086,6 +1125,16 @@ function contractsCheck(cwd) {
   };
 }
 
+// Only checks whose fix is a single, unambiguous command get a hint — checks that already
+// embed their fix instruction directly in the message text (project_context, the
+// installation_* rows, baseline-compliance) are left untouched to avoid duplication.
+const FIX_HINTS = {
+  config: 'sdd-agentic-flow init',
+  skills: 'sdd-agentic-flow install core',
+  shared_layer: 'sdd-agentic-flow install core',
+  language_profile: 'sdd-agentic-flow init --language <profile>',
+};
+
 function renderDoctor(checks) {
   let section = null;
   for (const check of checks) {
@@ -1094,6 +1143,8 @@ function renderDoctor(checks) {
       process.stdout.write(`\n${section}\n`);
     }
     log(check.status, check.message);
+    if ((check.status === 'WARN' || check.status === 'FAIL') && FIX_HINTS[check.name])
+      process.stdout.write(`  fix: ${FIX_HINTS[check.name]}\n`);
   }
 }
 
@@ -1136,10 +1187,11 @@ function smokeCheck() {
   }
 }
 
-function doctor(cwd, options = {}) {
+async function doctor(cwd, options = {}) {
   const checks = doctorChecks(cwd);
   if (options.smoke) checks.push(smokeCheck());
   if (options.contracts) checks.push(contractsCheck(cwd));
+  if (options.checkUpdates) checks.push(await checkForUpdate({ currentVersion: VERSION }));
   const result = {
     status: severity(checks),
     version: VERSION,
@@ -1157,18 +1209,18 @@ function describePath(cwd, target) {
 }
 
 function uninstall(args, cwd) {
-  const usage =
-    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot]';
+  const usage = USAGE.uninstall;
   const plan = args.includes('--plan');
   const apply = args.includes('--apply');
   const full = args.includes('--full');
   const includeConfig = args.includes('--include-config') || full;
+  const quiet = args.includes('--quiet');
   let scope = null;
   let agent = null;
   const rest = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (['--plan', '--apply', '--include-config', '--full'].includes(arg)) continue;
+    if (['--plan', '--apply', '--include-config', '--full', '--quiet'].includes(arg)) continue;
     if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
       scope = args[index + 1];
       index += 1;
@@ -1177,7 +1229,12 @@ function uninstall(args, cwd) {
       index += 1;
     } else rest.push(arg);
   }
-  if (plan === apply || rest.length || ((includeConfig || full) && !apply)) return fail(usage);
+  if (plan === apply || rest.length || ((includeConfig || full) && !apply))
+    return fail(
+      plan === apply && !plan
+        ? `${usage} — run \`sdd-agentic-flow uninstall --plan\` first; it never removes anything.`
+        : usage,
+    );
   const scopes = scope ? [scope] : ['project', 'user'];
   const roots = [];
   if (scopes.includes('project')) roots.push(path.join(cwd, '.agents', 'skills'));
@@ -1201,12 +1258,13 @@ function uninstall(args, cwd) {
   if (plan) {
     for (const target of existing) log('PLAN', `remove ${describePath(cwd, target)}`);
     if (!existing.length) log('PLAN', 'nothing installed by sdd-agentic-flow was found');
-    log(
-      'PLAN',
-      full
-        ? 'preserves .specs/features, source code, and unknown paths'
-        : 'preserves .specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths',
-    );
+    if (!quiet)
+      log(
+        'PLAN',
+        full
+          ? 'preserves .specs/features, source code, and unknown paths'
+          : 'preserves .specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths',
+      );
     return;
   }
   for (const target of existing) {
@@ -1214,13 +1272,41 @@ function uninstall(args, cwd) {
     log('PASS', `removed ${describePath(cwd, target)}`);
   }
   if (!existing.length) log('WARN', 'nothing installed by sdd-agentic-flow was found');
-  log(
-    'PASS',
-    full
-      ? 'preserved project specs, source code, and unknown paths'
-      : 'preserved project specs, reports, snapshots, source code, and unknown paths',
-  );
+  if (!quiet)
+    log(
+      'PASS',
+      full
+        ? 'preserved project specs, source code, and unknown paths'
+        : 'preserved project specs, reports, snapshots, source code, and unknown paths',
+    );
 }
+
+// Single source of truth for each command's one-line usage string, referenced both by main()'s
+// fail(usage) calls and by the matching COMMAND_HELP entry's USAGE block below — introduced
+// alongside --quiet (v1.4.0) specifically because it lands in 4 of these strings at once, which
+// is exactly the kind of change that causes hand-duplicated copies to drift.
+const USAGE = {
+  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--quiet]',
+  install:
+    'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--quiet]',
+  doctor: 'usage: doctor [--json] [--smoke] [--contracts] [--check-updates]',
+  uninstall:
+    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--quiet]',
+  discover: 'usage: discover [--force] [--quiet]',
+  context: 'usage: context [status|refresh]',
+};
+
+const KNOWN_COMMANDS = [
+  'list',
+  'init',
+  'discover',
+  'context',
+  'install',
+  'doctor',
+  'uninstall',
+  'help',
+  'version',
+];
 
 const COMMAND_HELP = {
   init: `sdd-agentic-flow init
@@ -1232,6 +1318,7 @@ Existing .sdd/config.yml is preserved; init never overwrites it.
 USAGE
   sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
+                         [--quiet]
 
 OPTIONS
   --interactive          Prompt for project name, agent target, language, source type,
@@ -1240,6 +1327,7 @@ OPTIONS
   --en                   Alias for --language en-US.
   --br                   Alias for --language pt-BR.
   --feature-profile <p>  Adaptive sizing: small_fix | medium_feature | large_feature | epic.
+  --quiet                Suppress the "Suggested next step" line on success.
 
 EXAMPLES
   sdd-agentic-flow init
@@ -1255,12 +1343,13 @@ Pass --scope project to install into .agents/skills/ inside the project instead.
 USAGE
   sdd-agentic-flow install <pack> [--scope user|project]
                                    [--agent codex|cursor|claude-code|vscode-copilot]
-                                   [--plan]
+                                   [--plan] [--quiet]
 
 OPTIONS
   --scope user|project  Install target: global per-agent dirs (default) or the project.
   --agent <name>         Restrict a user-scope install to a single agent's directory.
   --plan                 Print what would be installed without writing any file.
+  --quiet                Suppress the "Suggested next step" line on success.
 
 EXAMPLES
   sdd-agentic-flow install core
@@ -1276,17 +1365,21 @@ Validate local setup: configuration, installed skills (project and user scope),
 baselines, language profile, safety defaults, and platform/environment.
 
 USAGE
-  sdd-agentic-flow doctor [--json] [--smoke] [--contracts]
+  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--check-updates]
 
 OPTIONS
-  --json       Print machine-readable JSON only (no human-readable report).
-  --smoke      Also run an isolated init/install/doctor smoke test in a temp dir.
-  --contracts  Also validate installed skills' capability contracts.
+  --json           Print machine-readable JSON only (no human-readable report).
+  --smoke          Also run an isolated init/install/doctor smoke test in a temp dir.
+  --contracts      Also validate installed skills' capability contracts.
+  --check-updates  Make one request to the npm registry to check for a newer version.
+                   The sole, explicit, opt-in exception to "no outbound network access
+                   by default" (see docs/trust-model.md) — never run automatically.
 
 EXAMPLES
   sdd-agentic-flow doctor
   sdd-agentic-flow doctor --json
   sdd-agentic-flow doctor --smoke --contracts
+  sdd-agentic-flow doctor --check-updates
 `,
   uninstall: `sdd-agentic-flow uninstall
 
@@ -1299,6 +1392,7 @@ USAGE
   sdd-agentic-flow uninstall --apply [--include-config] [--full]
                                       [--scope user|project]
                                       [--agent codex|cursor|claude-code|vscode-copilot]
+                                      [--quiet]
 
 OPTIONS
   --plan                Show only what would be removed; makes no changes.
@@ -1310,6 +1404,7 @@ OPTIONS
                          Never removes .specs/features.
   --scope user|project  Limit to one scope (default: both).
   --agent <name>         Limit user-scope removal to a single agent's directory.
+  --quiet                Suppress the trailing "preserves ..." explanatory line.
 
 EXAMPLES
   sdd-agentic-flow uninstall --plan
@@ -1324,10 +1419,12 @@ tooling, test/CI/ORM/feature-flag config) into .sdd/context/project-context.md.
 Also run automatically by init. Preserves an existing file unless --force is given.
 
 USAGE
-  sdd-agentic-flow discover [--force]
+  sdd-agentic-flow discover [--force] [--quiet]
 
 OPTIONS
   --force   Regenerate .sdd/context/project-context.md even if it already exists.
+  --quiet   Accepted for symmetry with the other commands; discover currently has
+            no decorative output to suppress.
 
 EXAMPLES
   sdd-agentic-flow discover
@@ -1359,7 +1456,10 @@ USAGE
 function help(command) {
   if (command) {
     const topic = COMMAND_HELP[command];
-    if (!topic) return fail(`unknown command: ${command}. Run \`sdd-agentic-flow help\`.`);
+    if (!topic)
+      return fail(
+        `unknown command: ${command}. Run \`sdd-agentic-flow help\`.${suggest(command, KNOWN_COMMANDS)}`,
+      );
     process.stdout.write(topic);
     return;
   }
@@ -1376,12 +1476,12 @@ QUICK START
 
 COMMANDS
   list                                   List packs
-  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...]  Create local configuration
-  discover [--force]                     Refresh auto-discovered project context
+  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--quiet]  Create local configuration
+  discover [--force] [--quiet]           Refresh auto-discovered project context
   context [status|refresh]               Show or refresh project context provenance
-  install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
-  doctor [--json] [--smoke] [--contracts]  Validate package or project setup
-  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...]  Remove installed toolkit assets
+  install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
+  doctor [--json] [--smoke] [--contracts] [--check-updates]  Validate package or project setup
+  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
 
@@ -1392,15 +1492,24 @@ MORE HELP
   );
 }
 
-// Bare `npx sdd-agentic-flow` (no command): a contextual, read-only status screen — never an
-// interactive prompt or an implicit action. Detects state and points at exactly one next
-// command; `help`/`--help`/`-h` are unaffected and keep returning the full reference above.
+// Bare `npx sdd-agentic-flow` (no command) always prints this read-only status screen first —
+// it detects state and points at exactly one next command, and never mutates anything on its
+// own. When the process is genuinely interactive (both stdout and stdin are a real TTY, and
+// process.env.CI is not set — see bin/menu.js's shouldShowInteractiveMenu), main() additionally
+// offers a numbered menu below this screen (runInteractiveMenu); selecting an entry runs the
+// exact same runCommand() the equivalent explicit CLI command uses, never a second, weaker
+// implementation, and the destructive-adjacent "uninstall" entry only ever runs `--plan`,
+// explaining afterward how to run `--apply` explicitly. In every other case — piped, scripted,
+// CI, agent-invoked, or an explicit `help`/`--help`/`-h`/any explicit command — behavior is
+// unchanged from before v1.4.0: this screen only, no prompt, no implicit action, exit 0.
 function welcome(cwd) {
   const configPath = path.join(cwd, '.sdd', 'config.yml');
   const configFound = fs.existsSync(configPath);
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
   const skillsRoot = resolveSkillsRoot(cwd);
-  const skillsInstalled = hasCoreSkillsAt(skillsRoot);
+  const presence = coreSkillsPresence(skillsRoot);
+  const skillsInstalled = presence.missing.length === 0;
+  const skillsPartial = !skillsInstalled && presence.present.length > 0;
   const contextFound = fs.existsSync(path.join(cwd, '.sdd', 'context', 'project-context.md'));
 
   process.stdout.write(
@@ -1413,10 +1522,12 @@ function welcome(cwd) {
     configFound ? '.sdd/config.yml found' : '.sdd/config.yml not found',
   );
   log(
-    skillsInstalled ? 'PASS' : 'INFO',
+    skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO',
     skillsInstalled
       ? `core skills installed (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
-      : 'no skills installed yet (project or user scope)',
+      : skillsPartial
+        ? `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present) — re-run \`sdd-agentic-flow install core\` to repair`
+        : 'no skills installed yet (project or user scope)',
   );
   log(
     contextFound ? 'PASS' : 'INFO',
@@ -1440,24 +1551,26 @@ function welcome(cwd) {
   );
 }
 
-async function main() {
-  const [command, ...args] = process.argv.slice(2);
-  if (!command) return welcome(process.cwd());
+// The command dispatch body, extracted verbatim from main() (v1.4.0) so the interactive menu
+// (see runInteractiveMenu below) can route a numbered selection through the exact same code
+// path a typed command uses — never a second, weaker implementation of command behavior.
+async function runCommand(command, args, cwd) {
   if (command === 'list') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.list);
     else list();
   } else if (command === 'init') {
-    const usage =
-      'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic]';
+    const usage = USAGE.init;
     if (args.includes('--help')) process.stdout.write(`${COMMAND_HELP.init}`);
     else {
       let interactive = false;
       let language = 'en-US';
       let featureProfile = 'medium_feature';
+      let quiet = false;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
         else if (args[index] === '--en') language = 'en-US';
         else if (args[index] === '--br') language = 'pt-BR';
+        else if (args[index] === '--quiet') quiet = true;
         else if (args[index] === '--language' && LANGUAGE_PROFILES.includes(args[index + 1])) {
           language = args[index + 1];
           index += 1;
@@ -1469,69 +1582,124 @@ async function main() {
           index += 1;
         } else return fail(usage);
       }
-      if (interactive) await initInteractive(process.cwd(), language, featureProfile);
-      else init(process.cwd(), { profile: language, featureProfile });
+      if (interactive) await initInteractive(cwd, language, featureProfile, quiet);
+      else init(cwd, { profile: language, featureProfile, quiet });
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);
-    else if (!args.every((arg) => arg === '--force')) return fail('usage: discover [--force]');
-    else discoverProject(process.cwd(), { force: args.includes('--force') });
+    else if (!args.every((arg) => arg === '--force' || arg === '--quiet'))
+      return fail(USAGE.discover);
+    else
+      discoverProject(cwd, {
+        force: args.includes('--force'),
+        quiet: args.includes('--quiet'),
+      });
   } else if (command === 'context') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.context);
     else {
       const sub = args[0] || 'status';
       if (args.length > 1 || (sub !== 'status' && sub !== 'refresh'))
         return fail('usage: context [status|refresh]');
-      if (sub === 'status') contextStatus(process.cwd());
-      else contextRefresh(process.cwd());
+      if (sub === 'status') contextStatus(cwd);
+      else contextRefresh(cwd);
     }
   } else if (command === 'install') {
-    const usage =
-      'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan]';
+    const usage = USAGE.install;
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.install);
     let pack = null;
     let scope = 'user';
     let agent = null;
     let plan = false;
+    let quiet = false;
     let valid = true;
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
       if (arg === '--plan') plan = true;
+      else if (arg === '--quiet') quiet = true;
       else if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
         scope = args[index + 1];
         index += 1;
-      } else if (arg === '--agent' && KNOWN_AGENTS.includes(args[index + 1])) {
+      } else if (arg === '--agent' && args[index + 1] !== undefined) {
+        // Deferred to install() itself (like `pack`) so an invalid value produces the more
+        // specific, did-you-mean-enabled "unknown agent" message instead of the generic usage
+        // failure below.
         agent = args[index + 1];
         index += 1;
       } else if (!arg.startsWith('--') && pack === null) pack = arg;
       else valid = false;
     }
     if (!valid || !pack) return fail(usage);
-    install(pack, process.cwd(), { scope, agent, plan });
+    install(pack, cwd, { scope, agent, plan, quiet });
   } else if (command === 'doctor') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);
     const valid = args.every(
-      (arg) => arg === '--json' || arg === '--smoke' || arg === '--contracts',
+      (arg) =>
+        arg === '--json' || arg === '--smoke' || arg === '--contracts' || arg === '--check-updates',
     );
     if (!valid) {
-      if (args.includes('--json'))
+      if (args.includes('--json')) {
         process.stdout.write(
-          `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: 'usage: doctor [--json] [--smoke] [--contracts]' }] })}\n`,
+          `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: USAGE.doctor }] })}\n`,
         );
-      else fail('usage: doctor [--json] [--smoke] [--contracts]');
+        process.exitCode = 1;
+      } else fail(USAGE.doctor);
     } else
-      doctor(process.cwd(), {
+      await doctor(cwd, {
         json: args.includes('--json'),
         smoke: args.includes('--smoke'),
         contracts: args.includes('--contracts'),
+        checkUpdates: args.includes('--check-updates'),
       });
   } else if (command === 'uninstall') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
-    else uninstall(args, process.cwd());
+    else uninstall(args, cwd);
   } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
   else if (command === 'version' || command === '--version' || command === '-v')
     process.stdout.write(`${VERSION}\n`);
-  else fail(`unknown command: ${command}. Run \`sdd-agentic-flow help\`.`);
+  else
+    fail(
+      `unknown command: ${command}. Run \`sdd-agentic-flow help\`.${suggest(command, KNOWN_COMMANDS)}`,
+    );
+}
+
+// Only offered when the process is genuinely interactive on both streams and process.env.CI is
+// unset (see bin/menu.js's shouldShowInteractiveMenu) — inert under CI, pipes, scripts, and
+// agent invocations, where main() never gets here. Selecting an entry runs the exact same
+// runCommand() a typed command uses; the "uninstall" entry is structurally --plan only (see
+// bin/menu.js's MENU_ACTIONS), so the menu can never trigger a destructive action directly.
+async function runInteractiveMenu(cwd) {
+  process.stdout.write('\nWhat would you like to do?\n');
+  MENU_ACTIONS.forEach((action, index) => {
+    log('INFO', `${index + 1}. ${action.label}`);
+  });
+  process.stdout.write('  0. Exit (press Enter, 0, or q)\n\n');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  let raw;
+  try {
+    raw = await rl.question('Select an option: ');
+  } finally {
+    rl.close();
+  }
+  const selection = resolveMenuSelection(raw, MENU_ACTIONS);
+  if (!selection) return;
+  process.stdout.write(`\nRunning: sdd-agentic-flow ${selection.command.join(' ')}\n\n`);
+  await runCommand(selection.command[0], selection.command.slice(1), cwd);
+  if (selection.command[0] === 'uninstall')
+    process.stdout.write(
+      '\nTo actually remove these, run `sdd-agentic-flow uninstall --apply` explicitly.\n',
+    );
+}
+
+async function main() {
+  const [command, ...args] = process.argv.slice(2);
+  const cwd = process.cwd();
+  if (!command) {
+    welcome(cwd);
+    if (shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env))
+      return runInteractiveMenu(cwd);
+    return;
+  }
+  return runCommand(command, args, cwd);
 }
 
 main().catch((error) => fail(error.message, 2));

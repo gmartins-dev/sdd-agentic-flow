@@ -39,8 +39,12 @@ npx sdd-agentic-flow doctor
 
 Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already
 set up, and one suggested next command) instead of the full reference — it never runs anything
-on its own. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` /
-`<command> --help` for one command's usage and examples.
+on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also
+offers a numbered menu below the status screen; selecting an entry runs the exact same command
+the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`),
+never applies. Piped output, scripts, CI, and agent invocations always see just the status
+screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or
+`help <command>` / `<command> --help` for one command's usage and examples.
 
 See [installation](docs/installation.md) for the full install guide, including pack selection
 and re-running installation safely.
@@ -66,7 +70,7 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 
 - The source, CLI, docs, skills, and checks are open source and inspectable.
 - The CLI is small, local-first, and has zero runtime dependencies.
-- It has no telemetry, postinstall script, or outbound CLI network access by default.
+- It has no telemetry, postinstall script, or outbound CLI network access by default — the sole exception is the opt-in `doctor --check-updates` flag, which makes exactly one npm-registry request only when passed.
 - It does not automatically commit, push, merge, deploy, or publish.
 - Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd/config.yml`. See [installation scope](docs/installation-scope.md).
 - `doctor` and `doctor --smoke` validate local setup, while publishable files are checked for blocked private-context markers.
@@ -78,18 +82,23 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language ...|--en|--br] [--feature-profile ...]  Create local configuration
-discover [--force]                    Refresh auto-discovered project context
+init [--interactive] [--language ...|--en|--br] [--feature-profile ...] [--quiet]  Create local configuration
+discover [--force] [--quiet]          Refresh auto-discovered project context
 context [status|refresh]              Show or refresh project context provenance
-install <pack> [--scope user|project] [--agent ...] [--plan]  Install a pack (default: user scope, zero project footprint)
-doctor [--json] [--smoke] [--contracts]  Validate package or project setup
+install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
+doctor [--json] [--smoke] [--contracts] [--check-updates]  Validate package or project setup
 uninstall --plan                      Show only toolkit assets that would be removed
-uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...]  Remove installed toolkit assets
+uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
 list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples.
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` makes one request to the npm registry to check for a newer version — the sole, explicit, opt-in exception to "no network access by default"; see [the trust model](docs/trust-model.md). `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall`/`discover` to suppress decorative success output.
+
+Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion.
+Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set
+`NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically.
+Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error.
 
 ## Packs
 
@@ -146,7 +155,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full` — it also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full` — it also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
 
 ## Who is this for?
 
@@ -213,7 +222,7 @@ For decision help, see the guides on
 
 ## Safety boundaries
 
-The CLI does not call external APIs, require a tracker, sync remotely, update itself, or perform Git/release operations. It is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them.
+The CLI does not call external APIs, require a tracker, sync remotely, update itself, or perform Git/release operations — except the opt-in `doctor --check-updates` flag, which checks for a newer version (and never installs it for you) only when explicitly passed. It is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them.
 
 ## Publishing
 

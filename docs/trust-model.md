@@ -2,6 +2,11 @@
 
 `sdd-agentic-flow` is inspectable local tooling: its CLI, skills, configuration, docs, and validation scripts are part of the package. It has zero runtime dependencies and no telemetry, postinstall hook, or outbound CLI network access by default.
 
+The one explicit, opt-in exception is `doctor --check-updates` (v1.4.0): only when that flag is
+passed, the CLI makes a single request to the npm registry to check for a newer version, bounded
+by a 3-second timeout. No other command makes a network call, and this one never runs
+automatically, on any other flag, or on bare invocation — see `bin/update-check.js`.
+
 Installation and configuration are explicit local writes. By default (`install`'s `user`
 scope), skills are written only to per-agent global directories outside the project — see
 [installation scope](installation-scope.md) for the two scopes and their ownership boundary.

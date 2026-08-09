@@ -27,7 +27,9 @@ Yes. Skills are Markdown-first and documented for generic and project-local runt
 
 ## Does it contact a service?
 
-No. The CLI has no outbound network operation by default.
+No, with one explicit exception: `doctor --check-updates` makes a single request to the npm
+registry to check for a newer version, only when you pass that flag. No other command, and no
+automatic/background check on any other invocation, ever makes a network call.
 
 ## Can it remove its files?
 

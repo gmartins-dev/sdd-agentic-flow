@@ -28,7 +28,17 @@ invariant as source code. If you also want those gone, delete them yourself
 review with a plain `--plan` first if you want to see what a following `--apply --full` will
 touch beyond it.
 
+Add `--quiet` to any of the above to suppress the trailing "preserves ..." explanatory line —
+the per-target `PLAN`/`PASS`/`WARN` action lines are unaffected.
+
 Run `doctor` after removal to verify the remaining project state.
 
 See [upgrading](upgrading.md) for what's preserved and what changes when you update to a new
 CLI version.
+
+## From the interactive menu
+
+Running `npx sdd-agentic-flow` with no command at a real interactive terminal offers a numbered
+menu after the status screen. Its uninstall entry only ever runs `uninstall --plan` — the
+read-only preview above — and never `--apply`; it explains afterward how to run `--apply`
+yourself. The menu is inert (never shown) under CI, pipes, scripts, or agent invocations.

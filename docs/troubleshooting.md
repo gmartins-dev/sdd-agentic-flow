@@ -28,6 +28,17 @@ separately whether a project-scope and each user-scope installation exist.
 `sdd-agentic-flow install core --scope project` (writes into this project). See
 [installation scope](installation-scope.md).
 
+### `skills`: "partial core skill install detected (N/5 present; missing: ...)"
+
+**Cause:** an interrupted or manually-tampered install left some but not all of the 5 core
+skills in place — different from "none installed," which just means `install` was never run.
+Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) surface this as a
+`WARN`, distinct from the plain "not fully installed" message.
+
+**Diagnose:** `sdd-agentic-flow doctor` — the message names exactly which skills are missing.
+
+**Fix:** `sdd-agentic-flow install core` again (idempotent; fills in only what's missing).
+
 ### `project_readiness`: based on config and core skills
 
 **Cause:** derived from `config` and `skills` above — fix those first.
@@ -192,6 +203,30 @@ required range, and your installed CLI version.
 
 **Fix:** upgrade `sdd-agentic-flow` (`npx sdd-agentic-flow@latest ...`, or update your global
 install), then re-run `install <pack>`.
+
+### `update_check`: "could not check for updates (offline or registry unreachable)"
+
+**Cause:** `doctor --check-updates` (opt-in only — never runs automatically) couldn't reach the
+npm registry within its 3-second timeout: offline, a firewall/proxy, or a genuinely down
+registry. This is always `INFO`, never `WARN`/`FAIL`, and never affects `doctor`'s overall
+status or exit code.
+
+**Diagnose:** `sdd-agentic-flow doctor --check-updates --json` — the `update_check` row's
+message is exactly this text on failure.
+
+**Fix:** none needed if you're offline intentionally. Otherwise check your network/proxy and
+re-run; there is no retry or background check — each invocation makes exactly one attempt.
+
+## Output, colors, and exit codes
+
+**Garbled or unwanted colored output:** set `NO_COLOR=1` (any value) to force plain text, or
+pipe output anywhere — colors are automatically disabled whenever stdout/stderr isn't a real
+terminal, so CI logs and redirected output are already plain text by default.
+
+**Exit codes:** `0` success, `1` a handled/validation failure (bad flags, invalid input, an
+overall `doctor` `FAIL`), `2` an unexpected/internal error. Scripts should treat `1` and `2`
+differently only if they need to distinguish "you gave it bad input" from "something broke
+internally" — both are non-zero failures.
 
 ## For package maintainers (`doctor` run inside this repository)
 

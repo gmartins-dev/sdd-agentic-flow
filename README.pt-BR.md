@@ -16,7 +16,7 @@ adiciona uma dependência ao seu projeto.
 
 ## Por que confiar?
 
-O código é inspecionável, a CLI tem zero dependências runtime, não usa telemetria, postinstall ou rede externa por padrão, e não faz commit, push, merge, deploy ou publish automaticamente. Use `doctor` e `doctor --smoke` para validação local.
+O código é inspecionável, a CLI tem zero dependências runtime, não usa telemetria, postinstall ou rede externa por padrão — a única exceção é a flag opcional `doctor --check-updates`, que faz exatamente uma requisição ao registro do npm apenas quando é explicitamente passada —, e não faz commit, push, merge, deploy ou publish automaticamente. Use `doctor` e `doctor --smoke` para validação local.
 
 Por padrão, `install` usa o escopo `user`: escreve apenas nos diretórios globais de skills de cada agente suportado (Codex CLI, Cursor, Claude Code, VS Code + GitHub Copilot) e não cria nenhum arquivo no projeto. Use `--scope project` para o comportamento anterior (grava em `.agents/skills/` dentro do projeto). Veja [installation-scope.md](docs/installation-scope.md).
 
@@ -36,8 +36,20 @@ npx sdd-agentic-flow doctor
 
 Rodar `npx sdd-agentic-flow` sem nenhum comando mostra uma tela de status contextual (o que já
 está configurado e uma sugestão de próximo comando) em vez da referência completa — nada é
-executado automaticamente. Use `npx sdd-agentic-flow help` para a referência completa, ou
-`help <comando>` / `<comando> --help` para o uso e exemplos de um comando específico.
+executado automaticamente. Em um terminal genuinamente interativo (um TTY real, sem a variável
+de ambiente `CI` definida), um menu numerado também aparece abaixo da tela de status; escolher
+uma opção roda exatamente o mesmo comando que a chamada explícita equivalente rodaria, e a opção
+de desinstalar sempre é apenas uma prévia (`--plan`), nunca aplica de fato. Saída redirecionada,
+scripts, CI e chamadas por agentes sempre veem só a tela de status, sem alteração. Use
+`npx sdd-agentic-flow help` para a referência completa, ou `help <comando>` / `<comando> --help`
+para o uso e exemplos de um comando específico.
+
+Comandos de sucesso aceitam `--quiet` (`init`, `install`, `uninstall`, `discover`) para
+suprimir a saída decorativa. Comandos, packs e nomes de agente desconhecidos recebem uma
+sugestão "Did you mean `<mais próximo>`?". A saída colorida aparece automaticamente em um
+terminal real; defina `NO_COLOR=1` para forçar texto simples, ou redirecione a saída, que
+desativa cores automaticamente. Códigos de saída: `0` sucesso, `1` falha de validação tratada,
+`2` erro interno inesperado.
 
 Veja [installation.md](docs/installation.md) (em inglês) para o guia completo de instalação.
 
@@ -68,7 +80,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remove dos dois escopos por padrão. Use `--include-config` apenas para remover também `.sdd/config.yml`, ou `--scope`/`--agent` para restringir a remoção. Para um reset completo antes de uma reinstalação limpa, use `uninstall --apply --full` — remove também `.sdd/context/project-context.md`, `.sdd/snapshots` e `.sdd/reports` (todos regeneráveis); `.specs/features` nunca é removido por nenhuma combinação de flags.
+A desinstalação preserva specs, relatórios, snapshots e código-fonte, e remove dos dois escopos por padrão. Use `--include-config` apenas para remover também `.sdd/config.yml`, ou `--scope`/`--agent` para restringir a remoção. Para um reset completo antes de uma reinstalação limpa, use `uninstall --apply --full` — remove também `.sdd/context/project-context.md`, `.sdd/snapshots` e `.sdd/reports` (todos regeneráveis); `.specs/features` nunca é removido por nenhuma combinação de flags. Adicione `--quiet` para suprimir a linha explicativa final ("preserves ...").
 
 ## Fluxo principal
 

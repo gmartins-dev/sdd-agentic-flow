@@ -83,14 +83,15 @@ internal convention.
 
 - **CLI argument surface.** The *documented* CLI surface — every command and flag listed in
   `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
-  `init [--interactive] [--language ...]`, `install <pack> [--scope user|project] [--agent
-  ...] [--plan]`, `doctor [--json] [--smoke] [--contracts]`, `uninstall --plan | --apply
-  [--include-config] [--full] [--scope user|project] [--agent ...]` — now follows the same rule as a
-  skill's capability contract: it only changes in a **minor** or **major** release, never a
-  patch. Removing a command or flag, or changing what it defaults to, is a breaking change and
-  requires a major release (or a documented, opt-in migration path). Adding a new command or
-  flag, or a new optional value to an existing flag, is additive and allowed in a minor
-  release, following the same breaking-vs-additive split already defined above for
+  `init [--interactive] [--language ...] [--quiet]`, `install <pack> [--scope user|project]
+  [--agent ...] [--plan] [--quiet]`, `doctor [--json] [--smoke] [--contracts]
+  [--check-updates]`, `uninstall --plan | --apply [--include-config] [--full] [--scope
+  user|project] [--agent ...] [--quiet]`, `discover [--force] [--quiet]` — now follows the same
+  rule as a skill's capability contract: it only changes in a **minor** or **major** release,
+  never a patch. Removing a command or flag, or changing what it defaults to, is a breaking
+  change and requires a major release (or a documented, opt-in migration path). Adding a new
+  command or flag, or a new optional value to an existing flag, is additive and allowed in a
+  minor release, following the same breaking-vs-additive split already defined above for
   capability contracts.
 - **Environment compatibility.** The support matrix in
   [environment-compatibility.md](environment-compatibility.md) — the OS/Node.js versions
@@ -98,12 +99,23 @@ internal convention.
   version is a compatibility-reducing change and requires a minor or major release, documented
   in `CHANGELOG.md`, never a silent patch. Expanding the matrix (adding a newly released
   Node.js version, for example) remains additive and can happen in a patch.
+- **Process exit codes**, frozen since v1.0.0 and made explicit here as of v1.4.0: `0` success,
+  `1` a handled/validation failure (bad flags, invalid input, an overall `doctor` `FAIL`), `2` an
+  unexpected/internal error propagating out of `main()`'s top-level catch. A command failing
+  with `1` where it previously exited `0`, or vice versa, is a breaking change under this
+  section.
+- **`--json` output shape**, also frozen. v1.4.0 adds one additive row: `doctor --check-updates
+  --json` includes a new `{ name: "update_check", status, message }` entry in `checks`, present
+  only when `--check-updates` is explicitly passed — every other invocation's `--json` shape is
+  unchanged. Same precedent as the existing `--smoke`/`--contracts` rows.
 - **What still stays free to change without notice:** the exact non-JSON, human-readable
-  output text of `doctor` and other commands, and the wording of log/warning/error messages.
-  Only *behavior* is frozen — process exit codes, whether a flag exists and what it accepts,
-  and the shape of `--json` output — never the literal prose of human-facing text. This is the
-  same distinction `doctor --json`/`doctor --contracts --json` already draw between mechanical
-  output (covered) and the plain-text report (not covered).
+  output text of `doctor` and other commands, and the wording of log/warning/error messages —
+  including whether that text is colored (colors are disabled automatically for any non-TTY
+  stream, and always when `NO_COLOR` is set — see README.md). Only *behavior* is frozen —
+  process exit codes, whether a flag exists and what it accepts, and the shape of `--json`
+  output — never the literal prose of human-facing text. This is the same distinction
+  `doctor --json`/`doctor --contracts --json` already draw between mechanical output (covered)
+  and the plain-text report (not covered).
 
 This section replaces the pre-1.0 stance that the CLI argument surface carried no
 semantic-versioning guarantee. Before v1.0.0, that was true by design, to keep the beta free to

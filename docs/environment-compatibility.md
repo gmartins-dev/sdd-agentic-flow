@@ -65,3 +65,11 @@ The "Platform" section of `doctor` reports, for the current environment: `OS: <p
 <version>` (`PASS`), `Filesystem writable` (`PASS`/`FAIL`), `Shell: <detected>` (`INFO`, never
 `FAIL`), and `Git: available`/`Git: not available` (`PASS`/`INFO`, never `FAIL` — a missing Git
 binary or a non-Git directory both degrade gracefully rather than blocking the command).
+
+## Interactive menu requirements
+
+The numbered menu offered after bare `npx sdd-agentic-flow`'s status screen (v1.4.0) requires a
+genuinely interactive terminal: both stdout and stdin must be a real TTY, and the `CI` env var
+must be unset. It is automatically inert — never shown — under CI runners, piped/redirected
+output, scripts, and agent invocations, all of which keep receiving the exact same read-only
+status screen as every other command.

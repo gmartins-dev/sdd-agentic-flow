@@ -1,5 +1,15 @@
 # Roadmap
 
+- **v1.4 (2026-08-09):** CLI UX & Guided Onboarding. Colored, TTY-aware status output;
+  "did you mean" suggestions on unknown commands/packs/agents and a clearer `uninstall`
+  neither-flag message; a new public `--quiet` flag on `init`/`install`/`uninstall`/`discover`;
+  partial core-skill install detection in `doctor` and the bare-invocation screen; `doctor` fix
+  hints; a new opt-in `doctor --check-updates` (the sole, explicit exception to "no network
+  access by default"); a numbered interactive menu on bare invocation, offered only when the
+  process is genuinely interactive (real TTY on both streams, no `CI` env var) and never
+  affecting piped/scripted/CI/agent invocations; and two exit-code bug fixes. Stays
+  zero-runtime-dependency throughout — every addition is hand-rolled, informed by patterns
+  studied in `anomalyco/opencode` and `vercel-labs/skills`.
 - **v1.3 (2026-08-08):** Uninstall completeness and post-command guidance. Added
   `uninstall --apply --full` for a genuine clean-reinstall reset — it removes
   `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` on top of what

@@ -28,3 +28,6 @@ select a profile without the interactive prompts. The default is `en-US`.
 
 Run `npx sdd-agentic-flow list` before installation to inspect pack membership. The installer
 never downloads or overwrites assets.
+
+Add `--quiet` to `init` or `install` to suppress the "Suggested next step" line printed on
+success.

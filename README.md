@@ -10,7 +10,7 @@
 
 It empowers AI-assisted development through structured specs, clear boundaries, and human governance:
 
-- **Capability-Contracted Skills:** Markdown skills built on condensed TLC (Type-Driven Development / Specification) and TDD baselines.
+- **Capability-Contracted Skills:** Markdown skills built on condensed TLC (tlc-spec-driven skill) and TDD baselines.
 - **Adaptive Sizing:** Dynamic feature-profile sizing with optional auto-discovered project context.
 - **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) remains explicit and isolated to your project.
 - **Human-in-the-Loop:** Built for continuous flow is designed to structure and guide AI workflows; it does not replace human code review and governance.

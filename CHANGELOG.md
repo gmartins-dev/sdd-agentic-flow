@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.6.1
+
+`npm publish` is now automated too, closing the one gap v1.6.0 deliberately left manual. A new
+`.github/workflows/publish-npm.yml` runs after a GitHub Release is published (which `release.yml`
+already creates automatically once `ci.yml` is green on `main`) and runs `npm publish
+--access public --provenance` using npm's **Trusted Publishing (OIDC)** — no `NPM_TOKEN` secret
+is stored in this repository; the workflow exchanges its GitHub Actions identity for a
+short-lived publish token, authorized only for this exact repository/workflow via a one-time
+Trusted Publisher registration on npmjs.com. Before publishing, it re-verifies `package.json`'s
+version against the release tag and re-runs `npm run check` + `npm run pack:dry` as
+defense-in-depth. **This is the first version published through the fully automated pipeline
+end to end: version bump → push → CI → tag/release → npm publish, with no manual step after the
+push.** `docs/publishing.md`, `README.md`, and `README.pt-BR.md` updated to match — `npm
+publish` is no longer manual-forever, a deliberate reversal of that v1.6.0 decision, requested
+and confirmed explicitly. Also fixes a real CI regression this change introduced:
+`docs/publishing.md`'s new links to npmjs.com made `markdown-link-check` fail (npmjs.com returns
+403 to the check's requests), fixed by broadening `.markdown-link-check.json`'s existing
+npmjs.com ignore pattern.
+
 ## 1.6.0
 
 Project & Repository Engineering Quality — the same rigor v1.5.0 applied to skill content,

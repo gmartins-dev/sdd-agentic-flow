@@ -2,7 +2,7 @@
 name: sdd-pr-fix
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 1.6.0
+  version: 1.6.1
   pack: pr
 extends: sdd-pr-review
 requires: [config, pr-reference, review-findings]

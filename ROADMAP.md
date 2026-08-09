@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.6.1 (2026-08-09):** `npm publish` automated via npm Trusted Publishing (OIDC) —
+  `.github/workflows/publish-npm.yml` runs after `release.yml` publishes a GitHub Release, no
+  `NPM_TOKEN` stored anywhere. Reverses v1.6.0's "manual forever" decision on `npm publish`
+  specifically, by explicit request; tag/GitHub-release automation from v1.6.0 is unchanged.
+  First version published through the fully automated pipeline end to end (push → CI → tag →
+  release → npm publish, zero manual steps after the push).
 - **v1.6 (2026-08-09):** Project & Repository Engineering Quality. Applies the same rigor v1.5
   brought to skill content to the project's own engineering, driven by a direct repository audit
   rather than an assumed gap list. **Process change, the headline item:** tag creation and the

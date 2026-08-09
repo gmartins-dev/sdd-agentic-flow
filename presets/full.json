@@ -1,6 +1,6 @@
 {
   "name": "full",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "All public skills.",
   "skills": [
     "setup-sdd-agentic-flow",

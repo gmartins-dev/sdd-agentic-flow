@@ -231,4 +231,7 @@ The CLI does not call external APIs, require a tracker, sync remotely, update it
 
 ## Publishing
 
-Review locally, then follow [docs/publishing.md](docs/publishing.md). The package never publishes itself.
+Review locally, then follow [docs/publishing.md](docs/publishing.md). Tag, GitHub release, and
+`npm publish` are automated in this repository's own CI — via `id-token: write` OIDC Trusted
+Publishing, no stored npm token — triggered only after `ci.yml` passes on `main`; this is
+maintainer-side release tooling, not something the CLI itself does when you run it.

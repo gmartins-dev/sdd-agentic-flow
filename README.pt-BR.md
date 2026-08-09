@@ -224,5 +224,8 @@ produção. Revise as saídas e as mudanças locais antes de aceitá-las.
 
 ## Publicação
 
-Revise localmente e depois siga [docs/publishing.md](docs/publishing.md) (em inglês). O pacote
-nunca se publica sozinho.
+Revise localmente e depois siga [docs/publishing.md](docs/publishing.md) (em inglês). Tag,
+GitHub release e `npm publish` são automatizados na CI deste repositório — via OIDC Trusted
+Publishing (`id-token: write`), sem token de npm armazenado — disparados só depois que `ci.yml`
+passa em `main`; isso é ferramental de release do lado do mantenedor, não algo que a própria CLI
+faz quando você a executa.

@@ -1,0 +1,54 @@
+name: Publish to npm
+
+# Runs after a GitHub Release is published — in this repository, that release is itself created
+# automatically by .github/workflows/release.yml, only after ci.yml has passed on main (see
+# release.yml's guard). Uses npm's Trusted Publishing (OIDC): no NPM_TOKEN secret exists in this
+# repository. npm exchanges this workflow's GitHub Actions OIDC identity for a short-lived
+# publish token, authorized only for the exact provider (owner/repo/workflow file) configured as
+# a Trusted Publisher on npmjs.com for this package — see docs/publishing.md for that one-time,
+# manual npmjs.com setup step, which this workflow cannot perform on its own.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: '!github.event.release.prerelease'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1; pin to latest rather than trust
+      # whatever version the runner's Node 22 image happens to bundle.
+      - name: Ensure npm CLI supports Trusted Publishing (OIDC)
+        run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - name: Verify package.json version matches the release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          pkg_version="$(node -e "console.log(require('./package.json').version)")"
+          tag_version="${TAG#v}"
+          if [ "$pkg_version" != "$tag_version" ]; then
+            echo "::error::package.json version ($pkg_version) does not match release tag ($TAG) — refusing to publish"
+            exit 1
+          fi
+
+      - run: npm run check
+      - run: npm run pack:dry
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance

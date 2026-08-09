@@ -3,8 +3,15 @@ name: Release
 # Runs only after ci.yml has completed successfully on main — never on a red CI run, because
 # this workflow only starts once ci.yml has already finished. Idempotent: does nothing unless
 # package.json's version is newer than the latest existing tag, so ordinary pushes to main that
-# are not a version bump are no-ops. npm publish is never run here — it stays a manual,
-# human-triggered step, always (see docs/publishing.md).
+# are not a version bump are no-ops.
+#
+# npm publish runs in THIS SAME job, right after tag/release creation, rather than in a separate
+# workflow listening for `release: published`. That was the original design (see
+# publish-npm.yml, kept as a fallback for a genuinely manually-created release) — it does not
+# work for the tag/release created below: GitHub does not fire `release: published` (or any
+# other webhook event) for actions taken with the default GITHUB_TOKEN, specifically to prevent
+# recursive workflow triggering. Publishing in-process sidesteps that limitation entirely and
+# needs no stored secret either way (see the Trusted Publishing / OIDC step below).
 on:
   workflow_run:
     workflows: ['CI']
@@ -21,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +39,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Read package.json version
         id: pkg
@@ -78,3 +87,21 @@ jobs:
           git tag -a "$tag" -m "$tag" "${{ github.event.workflow_run.head_sha }}"
           git push origin "$tag"
           gh release create "$tag" --title "$tag" --notes-file /tmp/release-notes.md
+
+      # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1; pin to latest rather than trust
+      # whatever version the runner's Node 22 image happens to bundle.
+      - name: Ensure npm CLI supports Trusted Publishing (OIDC)
+        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        run: npm ci
+
+      - name: Sanity-check the package contents before publishing
+        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        run: npm run pack:dry
+
+      - name: Publish to npm
+        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        run: npm publish --access public --provenance

@@ -1,12 +1,16 @@
 name: Publish to npm
 
-# Runs after a GitHub Release is published — in this repository, that release is itself created
-# automatically by .github/workflows/release.yml, only after ci.yml has passed on main (see
-# release.yml's guard). Uses npm's Trusted Publishing (OIDC): no NPM_TOKEN secret exists in this
-# repository. npm exchanges this workflow's GitHub Actions OIDC identity for a short-lived
-# publish token, authorized only for the exact provider (owner/repo/workflow file) configured as
-# a Trusted Publisher on npmjs.com for this package — see docs/publishing.md for that one-time,
-# manual npmjs.com setup step, which this workflow cannot perform on its own.
+# Fallback path only: fires on `release: published`, which only happens for a release created by
+# a real human (web UI, or `gh release create` run with a personal token) — GitHub does not fire
+# that event for releases created by another workflow's default GITHUB_TOKEN, which is how
+# .github/workflows/release.yml creates its releases. The normal, automated path publishes
+# in-process at the end of release.yml itself; this workflow exists only in case someone ever
+# creates a GitHub Release by hand for this package. Uses npm's Trusted Publishing (OIDC): no
+# NPM_TOKEN secret exists in this repository. npm exchanges this workflow's GitHub Actions OIDC
+# identity for a short-lived publish token, authorized only for the exact provider (owner/repo/
+# workflow file) configured as a Trusted Publisher on npmjs.com for this package — see
+# docs/publishing.md for that one-time, manual npmjs.com setup step, which no workflow in this
+# repository can perform on its own.
 on:
   release:
     types: [published]

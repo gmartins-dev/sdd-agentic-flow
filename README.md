@@ -16,7 +16,9 @@ It empowers AI-assisted development through structured specs, clear boundaries, 
 - **Human-in-the-Loop:** Built for continuous flow is designed to structure and guide AI workflows; it does not replace human code review and governance.
 - **Language-agnostic:** The CLI runs on Node.js, but your project doesn't have to. Java, PHP, C#, Python, Go, Rust, Node.js — the CLI only installs Markdown skills and local config; it never adds a dependency to your project.
 
-📖 Read the [Architecture Overview](docs/architecture.md) to see how the core components work together.
+📦 Install and run instantly with `npx sdd-agentic-flow`.
+
+📖 Explore the [Skills Usage Guide](docs/sdd-skills-usage-guide.md) to start running SDD workflows, or check the [Architecture Overview](docs/architecture.md) to see how the core components fit together.
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*

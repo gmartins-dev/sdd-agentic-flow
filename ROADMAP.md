@@ -1,5 +1,15 @@
 # Roadmap
 
+- **v1.5.1 (2026-08-09):** Docs-only patch — cites the open Agent Skills Standard
+  (`agentskills/agentskills`) in `docs/inspirations.md` as an interoperability reference and
+  points `docs/agent-compatibility.md`'s "Generic / other Markdown-first agent" row at it,
+  since this toolkit's `SKILL.md` format already matches that shape by construction. No CLI,
+  skill-content, or capability-contract change, so it ships as a patch, entirely outside
+  `compatibility-promise.md`'s scope. Everything else proposed alongside that standard —
+  `evals/`/`scripts`/`assets` skill subdirectories, `doctor --skills`, `skill validate`/`skill
+  test`, quality-gate tooling — stays out of scope; a dedicated skill test framework was
+  already deferred to v1.7+ in the v1.5.0 plan, and no "compliant"/"certified" claim is made
+  without a formal validator run.
 - **v1.5 (2026-08-09):** Skill System Consolidation. Prompted by a real audit of the 11 skills
   shipped in v1.4 rather than an assumed gap: the "evidence before claims" principle already
   existed, reworded slightly differently, in 6 of them, and `sdd-route` duplicated the routing

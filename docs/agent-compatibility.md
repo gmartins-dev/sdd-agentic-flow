@@ -20,3 +20,9 @@ installed locally, and read no vendor-specific API. This matrix separates two di
 Compatibility with every agent client is not guaranteed. See
 [installation-scope.md](installation-scope.md) for the full directory table, sources, and the
 `--agent` flag; see [publishing.md](publishing.md) for when each validation was last performed.
+
+The "Generic / other Markdown-first agent" row's "Supported by design" claim is not incidental:
+every `SKILL.md` this toolkit ships already matches the shape of the open
+[Agent Skills Standard](https://agentskills.io/home) — see
+[inspirations.md](inspirations.md#interoperability-references) for the citation and what this
+does and does not claim.

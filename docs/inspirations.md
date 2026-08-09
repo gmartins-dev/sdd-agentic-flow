@@ -23,6 +23,17 @@
 - local CLI, doctor, smoke validation, uninstall model, safety model, and agent-client-agnostic documentation
 - optional multi-worktree planning guidance
 
+## Interoperability references
+
+- Agent Skills Standard ([agentskills/agentskills](https://github.com/agentskills/agentskills),
+  [agentskills.io](https://agentskills.io/home)) — an open specification for `SKILL.md`
+  frontmatter, structure, and progressive-disclosure conventions shared across multiple AI
+  coding clients. `sdd-agentic-flow` was not designed against this standard, but every one of
+  its 13 skills already matches its core shape by construction: `name` equal to the skill
+  directory, kebab-case, and a `description` following a "what it does. Use when..." pattern.
+  Noted here as a compatibility reference, not a claim of formal compliance — no external
+  validator has been run against this toolkit's skills.
+
 ## No endorsement
 
 Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md).

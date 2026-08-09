@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.1
+
+Docs-only patch — no CLI, skill-content, or capability-contract change, so it's entirely
+outside `compatibility-promise.md`'s scope (that promise governs the CLI argument surface,
+skill capability contracts, and the environment matrix, not prose). Cites the open
+[Agent Skills Standard](https://github.com/agentskills/agentskills) in `docs/inspirations.md`
+as an interoperability reference: this toolkit's 13 skills already match its `SKILL.md` shape
+by construction, without having been designed against it. Adds a matching pointer from
+`docs/agent-compatibility.md`'s "Generic / other Markdown-first agent" row.
+
+Everything else proposed alongside that standard — `evals/`/`scripts/`/`assets/` skill
+subdirectories, `doctor --skills`, `skill validate`/`skill test` commands, quality-gate tooling
+— stays out of scope. A dedicated skill test framework was already deferred to v1.7+ in the
+v1.5.0 plan, and per `docs/design-principles.md`'s "concrete claims over broad compatibility...
+promises", no "compliant" or "certified" claim is made without a formal validator run.
+
 ## 1.5.0
 
 Skill system consolidation. Prompted by a real audit of the 11 skills shipped in 1.4.0: the

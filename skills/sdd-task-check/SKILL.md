@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.5.0
+  version: 1.5.1
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]

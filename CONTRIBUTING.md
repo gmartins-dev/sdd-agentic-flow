@@ -11,6 +11,30 @@ The local test suite shells out to the system `tar` CLI for one packaging-bounda
 extracts a real `npm pack` tarball and runs the extracted CLI); that test skips itself if `tar`
 is not on `PATH`.
 
+## Testing CLI changes locally, without publishing
+
+Two scripts let you try out a CLI change (wording, a new flag, onboarding flow) as if you were
+a user, without ever running `npm publish`:
+
+- **`npm run cli:dev -- <args>`** — fastest loop. Runs `bin/sdd-agentic-flow.js` straight from
+  source (no packing) against a persistent scratch project + isolated `HOME` under your temp
+  directory, so state (e.g. an `init`, then `install core`, then `doctor`) carries across runs
+  like a real evolving project. Pass `--fresh` to wipe both and start over. Use this while
+  iterating on a change — "did that wording come out right?"
+
+- **`npm run cli:sandbox -- <args>`** — full new-user simulation. Runs `npm pack` to build the
+  exact tarball `npm publish` would ship, then installs and runs it via
+  `npx "file:<tarball>"` in a brand-new project directory with an isolated `HOME` — real npm
+  package resolution and `bin` shim, not a shortcut. The sandbox directories are left in place
+  afterward so you can inspect what got written (e.g. `.agents/skills`, `.sdd/`); pass `--clean`
+  to remove them automatically. Run this before a release, or whenever you want to confirm a
+  change survives the actual packaging boundary.
+
+Both scripts are plain Node with no new dependency, matching `scripts/pack-dry.js`. The same
+pack → install → run recipe used by `cli:sandbox` is also exercised automatically by the tarball
+e2e tests in `test/cli.test.js` — use the script for interactive poking, the tests for
+regression coverage.
+
 ## Diagrams
 
 Diagrams use Mermaid as their textual, versionable source — always as inline ` ```mermaid `

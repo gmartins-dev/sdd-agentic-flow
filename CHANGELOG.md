@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.0
+
+Adds a way to try out CLI changes — onboarding wording, a new flag, changed command behavior —
+without ever running `npm publish`. `npm run cli:dev` runs `bin/sdd-agentic-flow.js` straight
+from source against a persistent scratch project and an isolated `HOME`, for the fastest
+possible edit-and-look loop; `--fresh` resets it. `npm run cli:sandbox` goes further: it runs a
+real `npm pack` — the exact tarball `npm publish` would ship — then installs and runs it via
+`npx "file:<tarball>"` in a brand-new project directory with its own isolated `HOME`, exercising
+the same npm package resolution and `bin` shim a first-time consumer gets, on demand instead of
+only inside `test/cli.test.js`'s tarball e2e tests. Both scripts are plain Node with no new
+dependency, matching the existing `scripts/pack-dry.js`. Documented in a new "Testing CLI
+changes locally, without publishing" section in `CONTRIBUTING.md`.
+
 ## 1.6.2
 
 Fixes a real gap in v1.6.1's automated `npm publish`: it never actually ran. The workflow

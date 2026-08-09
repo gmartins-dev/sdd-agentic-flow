@@ -6,12 +6,13 @@ name: Release
 # are not a version bump are no-ops.
 #
 # npm publish runs in THIS SAME job, right after tag/release creation, rather than in a separate
-# workflow listening for `release: published`. That was the original design (see
-# publish-npm.yml, kept as a fallback for a genuinely manually-created release) — it does not
+# workflow listening for `release: published`. That was the original design, but it does not
 # work for the tag/release created below: GitHub does not fire `release: published` (or any
 # other webhook event) for actions taken with the default GITHUB_TOKEN, specifically to prevent
 # recursive workflow triggering. Publishing in-process sidesteps that limitation entirely and
-# needs no stored secret either way (see the Trusted Publishing / OIDC step below).
+# needs no stored secret either way (see the Trusted Publishing / OIDC step below). npmjs.com
+# allows only one Trusted Publisher per package, registered to this workflow's filename
+# (release.yml) — see docs/publishing.md.
 on:
   workflow_run:
     workflows: ['CI']

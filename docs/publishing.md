@@ -24,27 +24,22 @@ release follow without a second manual step. `npm publish` is not part of this w
 ## `npm publish`: automatic via npm Trusted Publishing (OIDC)
 
 `.github/workflows/release.yml` publishes to npm itself, in the same job, right after it creates
-the tag and GitHub release — **not** via a separately-triggered workflow. That's a deliberate
-fix: the first real attempt at this (v1.6.1) used a separate `.github/workflows/publish-npm.yml`
-listening for `release: published`, but GitHub does not fire that webhook event for a release
+the tag and GitHub release. Publishing happens in-process rather than via a second,
+event-triggered workflow — a deliberate fix after the first real attempt (v1.6.1) used a
+separate workflow listening for `release: published`, which GitHub never fires for a release
 created by another workflow's own `GITHUB_TOKEN` (the same recursion-prevention rule that also
-stops a tag push from re-triggering `ci.yml`) — so it silently never ran. Publishing in-process
-sidesteps that entirely. `publish-npm.yml` still exists, but only as a fallback for the rare case
-of someone manually creating a GitHub Release for this package by hand (see its header comment).
+stops a tag push from re-triggering `ci.yml`), so it silently never ran.
 
-Both workflows authenticate the same way, using npm's **Trusted Publishing**: `id-token: write`
-lets each workflow exchange its own GitHub Actions OIDC identity for a short-lived npm publish
-token — **no `NPM_TOKEN` secret is stored in this repository.** npm only accepts that exchange
-from a provider (owner/repo/workflow filename) explicitly registered as a Trusted Publisher for
-this package. Because two different workflow files can each publish, **both must be registered**
-— see "One-time setup" below.
+It authenticates using npm's **Trusted Publishing**: `id-token: write` lets the job exchange its
+GitHub Actions OIDC identity for a short-lived npm publish token — **no `NPM_TOKEN` secret is
+stored in this repository.** npm only accepts that exchange from the one provider (owner/repo/
+workflow filename) registered as this package's Trusted Publisher — npmjs.com allows exactly one
+per package, so only `release.yml` is registered; see "One-time setup" below.
 
 Before publishing, `release.yml` re-installs dependencies and re-runs `npm run pack:dry` as a
 final sanity check of the package contents.
 
 ### One-time setup (manual, npmjs.com — cannot be automated from this repository)
-
-Repeat this twice — once per workflow filename that can publish:
 
 1. Sign in at [npmjs.com](https://www.npmjs.com) and open the
    [`sdd-agentic-flow` package page](https://www.npmjs.com/package/sdd-agentic-flow).
@@ -53,19 +48,16 @@ Repeat this twice — once per workflow filename that can publish:
 3. Fill in:
    - **Organization or user:** `gmartins-dev`
    - **Repository:** `sdd-agentic-flow`
-   - **Workflow filename:** `release.yml` for the first entry, **`publish-npm.yml`** for the
-     second (both, not either/or — `release.yml` is the one that actually runs on every
-     automated release; `publish-npm.yml` is the manual-release fallback)
-   - **Allowed actions:** the publish action only (this repository never needs anything beyond
-     `npm publish`)
-   - **Environment:** leave blank (neither workflow uses a GitHub Environment)
-4. Save each. No token, secret, or further repository change is needed — both workflow files
-   already request `id-token: write` and contain no credentials.
+   - **Workflow filename:** `release.yml` — this is the only workflow in this repository that
+     runs `npm publish`; npmjs.com allows only one Trusted Publisher per package
+   - **Allowed actions:** the publish action only
+   - **Environment:** leave blank (the workflow doesn't use a GitHub Environment)
+4. Save. No token, secret, or further repository change is needed — the workflow already
+   requests `id-token: write` and contains no credentials.
 
-Until `release.yml` specifically is registered, the automated pipeline's `npm publish` step
-fails cleanly (OIDC exchange rejected) — it never falls back to any other credential, so a
-release created before this setup is done simply does not publish, safely; the tag and GitHub
-release still succeed.
+Until this is registered, the automated pipeline's `npm publish` step fails cleanly (OIDC
+exchange rejected) — it never falls back to any other credential, so a release created before
+this setup is done simply does not publish, safely; the tag and GitHub release still succeed.
 
 ### Manual fallback
 

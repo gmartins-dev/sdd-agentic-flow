@@ -1,0 +1,80 @@
+name: Release
+
+# Runs only after ci.yml has completed successfully on main — never on a red CI run, because
+# this workflow only starts once ci.yml has already finished. Idempotent: does nothing unless
+# package.json's version is newer than the latest existing tag, so ordinary pushes to main that
+# are not a version bump are no-ops. npm publish is never run here — it stays a manual,
+# human-triggered step, always (see docs/publishing.md).
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read package.json version
+        id: pkg
+        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> "$GITHUB_OUTPUT"
+
+      - name: Find latest existing release tag
+        id: latest_tag
+        run: echo "tag=$(git tag --list 'v*' --sort=-v:refname | head -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether package.json is a new, unreleased version
+        id: decide
+        run: |
+          result="$(node -e "
+            const { compareVersions, parseVersion } = require('./bin/version-compat.js');
+            const [pkgVersion, latestTag] = process.argv.slice(1);
+            const latestVersion = latestTag ? latestTag.replace(/^v/, '') : null;
+            if (!parseVersion(pkgVersion)) {
+              console.error(\`package.json version '\${pkgVersion}' is not a valid x.y.z version\`);
+              process.exit(2);
+            }
+            console.log(!latestVersion || compareVersions(pkgVersion, latestVersion) > 0 ? 'true' : 'false');
+          " "${{ steps.pkg.outputs.version }}" "${{ steps.latest_tag.outputs.tag }}")"
+          echo "should_release=$result" >> "$GITHUB_OUTPUT"
+
+      - name: Require a matching CHANGELOG.md section (guards against an accidental bump)
+        if: steps.decide.outputs.should_release == 'true'
+        id: changelog
+        run: |
+          if node scripts/extract-changelog-section.js "${{ steps.pkg.outputs.version }}" > /tmp/release-notes.md; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::package.json is at ${{ steps.pkg.outputs.version }} but CHANGELOG.md has no matching '## ${{ steps.pkg.outputs.version }}' section — skipping tag/release. If this version bump was intentional, add the changelog entry and push again."
+          fi
+
+      - name: Create annotated tag and GitHub release
+        if: steps.decide.outputs.should_release == 'true' && steps.changelog.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.pkg.outputs.version }}"
+          tag="v${version}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "$tag" "${{ github.event.workflow_run.head_sha }}"
+          git push origin "$tag"
+          gh release create "$tag" --title "$tag" --notes-file /tmp/release-notes.md

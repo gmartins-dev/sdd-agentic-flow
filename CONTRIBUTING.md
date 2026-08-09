@@ -4,7 +4,8 @@ Keep changes small, documented, and covered by `npm run check` and `npm run sani
 
 Proposing a new skill? Read `shared/references/skill-authoring-standard.md` first — it documents
 the six required `SKILL.md` sections and the `Status`/`Next recommended skill`/`Reason` output
-convention every skill follows.
+convention every skill follows — and, for any skill that classifies a pass/fail/ready-style
+outcome, `shared/references/evidence-standard.md`.
 
 The local test suite shells out to the system `tar` CLI for one packaging-boundary test (it
 extracts a real `npm pack` tarball and runs the extracted CLI); that test skips itself if `tar`

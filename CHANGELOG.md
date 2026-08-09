@@ -1,5 +1,53 @@
 # Changelog
 
+## 1.6.0
+
+Project & Repository Engineering Quality — the same rigor v1.5.0 applied to skill content,
+applied here to the project's own engineering (CI, release tooling, governance, documentation
+parity). Driven by a direct repository audit, not an assumed gap list. No skill content changed.
+
+**Process change (the most important item in this release): tag and GitHub release are now
+automatic.** A new `.github/workflows/release.yml` workflow runs only after `.github/workflows/
+ci.yml` finishes successfully on `main` (`workflow_run`, filtered to `conclusion == 'success'`
+and `head_branch == 'main'`), so it never acts on red CI. It compares `package.json`'s version
+against the latest existing `vX.Y.Z` tag; if the new version is higher **and** `CHANGELOG.md` has
+a matching `## X.Y.Z` section, it creates an annotated tag, pushes it, and runs `gh release
+create` with notes extracted from that section (`scripts/extract-changelog-section.js`). A
+version bump with no matching changelog entry is skipped, with a workflow warning, rather than
+treated as an intentional release — and ordinary pushes to `main` that aren't a version bump are
+no-ops, so the workflow is idempotent. The human decision point moves from "authorize the
+tag/release" to "authorize the push of the version-bump commit to `main`" — once that commit is
+green on CI, tag and release follow without a second manual stop.
+**`npm publish` stays entirely manual, with no exception — it is not part of this workflow, and
+none is planned.** See `docs/publishing.md` for the full updated process.
+
+Also in this release:
+
+- **Security scanning (previously nonexistent):** `.github/workflows/codeql.yml` (CodeQL for
+  JavaScript, on push/PR to `main` and weekly), `npm audit --audit-level=high` as a blocking step
+  in the CI `check` job, and `.github/dependabot.yml` covering `github-actions` and `npm`.
+  Clearing the real high-severity advisories `npm audit` found required bumping
+  `markdownlint-cli` (0.44.0 → 0.49.1, a devDependency, zero runtime dependencies preserved);
+  that bump introduced a new table-formatting lint rule (`MD060`) that flagged many pre-existing
+  tables project-wide with no actual defect, so it's disabled in `.markdownlint.json`.
+- **Deduplicated version-consistency logic:** `scripts/release-checklist.sh` (manual pre-release
+  gate) and `scripts/check-skills.sh` (CI gate) each reimplemented the same `package.json` vs.
+  `skills/*/SKILL.md` vs. `presets/*.json` version-comparison walk independently. Both now call
+  the single `scripts/check-version-consistency.js`; each script's own error-message format and
+  exit code are unchanged.
+- **Governance:** `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `.github/ISSUE_TEMPLATE/`
+  (bug report, feature request), `.github/PULL_REQUEST_TEMPLATE.md`, `.github/CODEOWNERS`, and a
+  `SECURITY.md` supported-versions table plus an explicit disclosure SLA, now pointing at
+  GitHub's private vulnerability reporting instead of an unstated private channel.
+- **`README.pt-BR.md` structural parity:** added the 8 section equivalents that were missing
+  relative to `README.md` — Commands, Packs, Skill map, Agent workflows, Domain vocabulary,
+  Examples, Safety boundaries, Publishing — keeping every command/flag/skill name in English per
+  `docs/i18n.md`.
+- **Test coverage visible in CI:** `npm test` now runs `node --test --experimental-test-coverage`
+  (native to Node, the project's already-required minimum) — no new dependency.
+- **`CONTRIBUTING.md`:** the existing "proposing a new skill?" sentence now also references
+  `shared/references/evidence-standard.md` alongside `shared/references/skill-authoring-standard.md`.
+
 ## 1.5.1
 
 Docs-only patch — no CLI, skill-content, or capability-contract change, so it's entirely

@@ -1,5 +1,28 @@
 # Roadmap
 
+- **v1.6 (2026-08-09):** Project & Repository Engineering Quality. Applies the same rigor v1.5
+  brought to skill content to the project's own engineering, driven by a direct repository audit
+  rather than an assumed gap list. **Process change, the headline item:** tag creation and the
+  GitHub release are now automatic — a `.github/workflows/release.yml` workflow, triggered only
+  after `ci.yml` finishes successfully on `main`, tags and publishes a GitHub release once
+  `package.json`'s version is ahead of the latest tag and `CHANGELOG.md` has a matching section
+  (an accidental bump with no changelog entry is skipped, not released). The human decision point
+  moves from "authorize the tag/release" to "authorize the push of the version-bump commit to
+  `main`" — `npm publish` stays manual forever, with no exception, and is not part of this
+  workflow. Also: closed the real security-scanning gap (CodeQL, `npm audit --audit-level=high`
+  as a CI gate, Dependabot for `github-actions`+`npm`) — the `npm audit` fix required bumping
+  `markdownlint-cli` to clear real high-severity transitive advisories, which introduced a new
+  table-formatting lint rule (`MD060`) disabled in `.markdownlint.json` since it's unrelated
+  noise, not a real defect, across many already-existing tables. Deduplicated the
+  version-consistency check that `scripts/release-checklist.sh` and `scripts/check-skills.sh`
+  each reimplemented independently into `scripts/check-version-consistency.js`. Added the
+  open-source governance files a public repo was missing (`CODE_OF_CONDUCT.md`, issue/PR
+  templates, `CODEOWNERS`, a `SECURITY.md` supported-versions table and disclosure SLA). Closed
+  the `README.pt-BR.md` structural parity gap (8 missing section equivalents: Commands, Packs,
+  Skill map, Agent workflows, Domain vocabulary, Examples, Safety boundaries, Publishing).
+  Test coverage is now visible in CI via Node's native `--experimental-test-coverage`, no new
+  dependency. `CONTRIBUTING.md` now also references `shared/references/evidence-standard.md`
+  alongside `skill-authoring-standard.md`. No skill content changed — that stays v1.5's scope.
 - **v1.5.1 (2026-08-09):** Docs-only patch — cites the open Agent Skills Standard
   (`agentskills/agentskills`) in `docs/inspirations.md` as an interoperability reference and
   points `docs/agent-compatibility.md`'s "Generic / other Markdown-first agent" row at it,

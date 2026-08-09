@@ -75,33 +75,34 @@ const presets = presetFiles.map((file) => JSON.parse(fs.readFileSync(`presets/${
 let drift = false;
 
 // Version consistency: package.json is the single source of truth. Every skill's
-// metadata.version and every preset's "version" must match it exactly — derived and
-// compared with parseVersion/compareVersions (Milestone 3), never a hardcoded string, so this
-// check never needs manual editing on a version bump.
-const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+// metadata.version and every preset's "version" must match it exactly. The walk and
+// comparison live in scripts/check-version-consistency.js (Milestone 2, v1.6.0), shared with
+// scripts/release-checklist.sh, so this check never needs manual editing on a version bump.
+const { checkVersionConsistency } = require(
+  path.resolve(process.cwd(), 'scripts/check-version-consistency.js'),
+);
+const versionCheck = checkVersionConsistency();
+const packageVersion = versionCheck.packageVersion;
 if (!parseVersion(packageVersion)) {
   console.error(`package.json version '${packageVersion}' is not a valid x.y.z version`);
   drift = true;
 }
-for (const { name, frontmatter } of skills) {
-  const match = frontmatter.match(/^\s*version:\s*(\S+)\s*$/m);
-  const skillVersion = match ? match[1] : null;
-  if (!skillVersion || compareVersions(skillVersion, packageVersion) !== 0) {
+for (const entry of versionCheck.skills) {
+  if (entry.drifted) {
     console.error(
-      `skills/${name}/SKILL.md metadata.version is '${skillVersion}', expected '${packageVersion}' (from package.json)`,
+      `skills/${entry.name}/SKILL.md metadata.version is '${entry.version}', expected '${packageVersion}' (from package.json)`,
     );
     drift = true;
   }
 }
-presetFiles.forEach((file, index) => {
-  const presetVersion = presets[index].version;
-  if (!presetVersion || compareVersions(presetVersion, packageVersion) !== 0) {
+for (const entry of versionCheck.presets) {
+  if (entry.drifted) {
     console.error(
-      `presets/${file} version is '${presetVersion}', expected '${packageVersion}' (from package.json)`,
+      `${entry.file} version is '${entry.version}', expected '${packageVersion}' (from package.json)`,
     );
     drift = true;
   }
-});
+}
 
 // compatible_with vs presets/*.json membership.
 for (const { name, frontmatter } of skills) {

@@ -12,7 +12,7 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.5.1';
+const VERSION = '1.6.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];

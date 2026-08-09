@@ -19,26 +19,13 @@ node bin/sdd-agentic-flow.js doctor --smoke
 
 echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json) --"
 node <<'NODE'
-const fs = require('node:fs');
-const { compareVersions } = require('./bin/version-compat.js');
+const { checkVersionConsistency } = require('./scripts/check-version-consistency.js');
 
-const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
-const drifted = [];
-
-for (const skill of fs.readdirSync('skills', { withFileTypes: true })) {
-  if (!skill.isDirectory()) continue;
-  const file = `skills/${skill.name}/SKILL.md`;
-  const content = fs.readFileSync(file, 'utf8');
-  const match = content.match(/^\s*version:\s*(\S+)\s*$/m);
-  const found = match ? match[1] : null;
-  if (!found || compareVersions(found, packageVersion) !== 0) drifted.push(`${file} (version: ${found})`);
-}
-
-for (const file of fs.readdirSync('presets').filter((name) => name.endsWith('.json'))) {
-  const preset = JSON.parse(fs.readFileSync(`presets/${file}`, 'utf8'));
-  if (!preset.version || compareVersions(preset.version, packageVersion) !== 0)
-    drifted.push(`presets/${file} (version: ${preset.version})`);
-}
+const { packageVersion, skills, presets } = checkVersionConsistency();
+const drifted = [
+  ...skills.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
+  ...presets.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
+];
 
 if (drifted.length) {
   console.error(`version mismatch against package.json (${packageVersion}):`);

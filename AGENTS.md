@@ -12,7 +12,7 @@ Run `npx sdd-agentic-flow init`, then `install core`, then `doctor`. Start at [d
 
 ## Run an SDD workflow
 
-Follow [docs/sdd-skills-usage-guide.md](docs/sdd-skills-usage-guide.md) for the Plan → Prompt → Implement → Check → PR → Review → Fix → Validate chain. When the next step is unclear, invoke `sdd-route`. Read [docs/invocation-model.md](docs/invocation-model.md) for how skills are selected, not chained automatically. Agent-specific setup: [docs/using-with-cursor.md](docs/using-with-cursor.md), [docs/using-with-claude-code.md](docs/using-with-claude-code.md), [docs/using-with-codex.md](docs/using-with-codex.md), [docs/using-with-vscode-copilot.md](docs/using-with-vscode-copilot.md).
+Follow [docs/sdd-skills-usage-guide.md](docs/sdd-skills-usage-guide.md) for the Plan → Prompt → Implement → Check → PR → Review → Fix → Validate chain. After validation passes, invoke `sdd-release` on demand when you need a release-readiness check before tagging. When the next step is unclear, invoke `sdd-route`. Read [docs/invocation-model.md](docs/invocation-model.md) for how skills are selected, not chained automatically. Agent-specific setup: [docs/using-with-cursor.md](docs/using-with-cursor.md), [docs/using-with-claude-code.md](docs/using-with-claude-code.md), [docs/using-with-codex.md](docs/using-with-codex.md), [docs/using-with-vscode-copilot.md](docs/using-with-vscode-copilot.md).
 
 ## Trust and safety boundaries
 
@@ -20,7 +20,7 @@ Read [docs/trust-model.md](docs/trust-model.md) for what the CLI does and does n
 
 ## Shared references vs docs
 
-Skills load canonical rules from `shared/references/` at install time (TDD baseline, safety, routing, evidence). Human-oriented explanations and CLI surfaces live under [docs/](docs/README.md). When a doc points at a shared reference, treat the shared file as the skill contract and the doc as the reader's guide.
+Skills load canonical rules from `shared/references/` at install time (TDD baseline, safety, routing, evidence, handoffs). Human-oriented explanations and CLI surfaces live under [docs/](docs/README.md). When a doc points at a shared reference, treat the shared file as the skill contract and the doc as the reader's guide.
 
 ## Language
 

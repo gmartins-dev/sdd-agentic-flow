@@ -52,7 +52,7 @@ representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainer via <https://github.com/gmartins-dev>. All
+reported to the maintainer at [github.com/gmartins-dev/sdd-agentic-flow/issues](https://github.com/gmartins-dev/sdd-agentic-flow/issues). All
 complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution

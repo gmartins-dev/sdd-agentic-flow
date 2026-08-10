@@ -10,7 +10,7 @@ first; it names the failing check.
 
 **Cause:** `init` was never run in this project.
 
-**Diagnose:** `sdd-agentic-flow doctor` — look for `WARN .sdd/config.yml not found`.
+**Diagnose:** `sdd-agentic-flow doctor`. Look for `WARN .sdd/config.yml not found`.
 
 **Fix:** `sdd-agentic-flow init` (or `init --interactive` to choose settings).
 
@@ -29,8 +29,8 @@ separately whether a project-scope and each user-scope installation exist.
 
 ### `skills`: "partial core skill install detected (N/5 present; missing: ...)"
 
-**Cause:** an interrupted or manually-tampered install left some but not all of the 5 core
-skills in place — different from "none installed," which just means `install` was never run.
+**Cause:** an interrupted or manually-tampered install left some but not all of the five skills in
+`CORE_SKILLS` in place. This differs from "none installed," which means `install` was never run.
 Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) surface this as a
 `WARN`, distinct from the plain "not fully installed" message.
 

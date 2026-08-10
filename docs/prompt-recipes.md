@@ -1,5 +1,7 @@
 # Prompt recipes
 
+Copy-paste patterns for common SDD steps. Adjust paths and task names to your project.
+
 ## Route an unclear request
 
 ```text
@@ -28,4 +30,10 @@ Use the installed sdd-implement-task skill for this approved task. Follow .sdd/c
 
 ```text
 Use the installed sdd-implement-task skill and TDD baseline for this approved code task. Confirm the behavior, public seam, test command, and smallest vertical slice before editing. Record RED and GREEN evidence. If RED is impractical, explain the alternative validation and remaining risk. Do not commit, push, merge, deploy, or publish.
+```
+
+## Check release readiness
+
+```text
+Use the installed sdd-release skill after validation passes. Follow .sdd/config.yml and the repository's version and changelog conventions. Do not create a git tag or run a publish command. Report gaps and the commands a human should run.
 ```

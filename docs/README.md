@@ -66,6 +66,8 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [why-this-exists.md](why-this-exists.md) | Problem statement |
 | [adapters.md](adapters.md) | Source adapters (`local-files`, `github`) |
 | [domain-vocabulary.md](domain-vocabulary.md) | Domain glossary and language profiles |
+| [handoff-standard.md](../shared/references/handoff-standard.md) | When skills write `handoff.md` across session boundaries |
+| [evidence-standard.md](../shared/references/evidence-standard.md) | Evidence and `Status:` field conventions |
 
 ## Language and i18n
 

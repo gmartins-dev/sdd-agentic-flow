@@ -17,5 +17,6 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | Change ready for review               | `sdd-pr-review`                    |
 | Accepted review findings              | `sdd-pr-fix`, then `sdd-pr-review` |
 | Integrated feature                    | `sdd-validation`                   |
+| Integrated and validated feature, release readiness unclear | `sdd-release` (on demand) |
 
 Routing recommends; it does not install packs, change files, invoke skills, or bypass human decisions.

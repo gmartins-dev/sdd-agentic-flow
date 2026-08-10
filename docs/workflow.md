@@ -2,7 +2,7 @@
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
-When the current phase is unclear, invoke `sdd-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
+When the current phase is unclear, invoke `sdd-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files. After `sdd-validation` passes, invoke `sdd-release` on demand when you need a release-readiness check before tagging.
 
 ## Where to read next
 

@@ -67,6 +67,7 @@ flowchart TD
   Implement --> Check[sdd-task-check]
   Check --> Review[sdd-pr-review]
   Review --> Validation[sdd-validation]
+  Validation -.->|on demand| Release[sdd-release]
   Check -->|findings| Fix[sdd-pr-fix]
   Fix --> Review
 ```
@@ -86,6 +87,8 @@ Siga o contrato da task e `.sdd/config.yml`. Altere somente os arquivos
 necessários. Execute os checks exigidos. Não faça commit, push, merge, deploy ou
 publish. Relate evidências e limitações.
 ```
+
+Depois que `sdd-validation` passar, use `sdd-release` sob demanda quando precisar checar prontidão de release antes de criar uma tag. Veja [prompt-recipes](prompt-recipes.md#check-release-readiness) (em inglês).
 
 ## 5. Use o fluxo de várias tarefas quando houver dependências
 
@@ -111,8 +114,8 @@ limites claros e a equipe puder revisar as evidências.
 
 ## 6. Mapa de skills
 
-| Skill                    | Entrada                | Saída                | Altera arquivos?  | Modo     |
-| ------------------------ | ---------------------- | -------------------- | ----------------- | -------- |
+| Skill | Entrada | Saída | Altera arquivos? | Modo |
+| --- | --- | --- | --- | --- |
 | `setup-sdd-agentic-flow` | Contexto do projeto    | Orientação de setup  | Quando autorizada | `guided` |
 | `sdd-create-specs`       | Source item            | Specs da feature     | Quando autorizada | `plan`   |
 | `sdd-create-prompts`     | Specs e tasks          | Prompts para agentes | Quando autorizada | `plan`   |

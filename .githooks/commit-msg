@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
-# Strips any Claude/Anthropic co-author trailer before a commit is finalized, so this
-# repository's contributor graph never attributes Claude/Anthropic. Enable locally with:
+# Strips AI-agent co-author trailers before a commit is finalized so this repository's
+# contributor graph never attributes coding agents or their vendors. Enable locally with:
 #   git config core.hooksPath .githooks
 set -euo pipefail
 
 message_file="$1"
 
-if grep -qiE '^Co-Authored-By:.*(claude|anthropic)' "$message_file"; then
-  grep -viE '^Co-Authored-By:.*(claude|anthropic)' "$message_file" > "$message_file.tmp"
+# Match Co-Authored-By lines that name known agent identities or vendor domains.
+agent_coauthor_pattern='^Co-Authored-By:.*(claude|anthropic|cursor|cursoragent|codex|openai|copilot|github\.com|gemini|google\.com|windsurf|cody|sourcegraph|aider|devin|agent@|noreply@.*\.(cursor|openai|anthropic))'
+
+if grep -qiE "$agent_coauthor_pattern" "$message_file"; then
+  grep -viE "$agent_coauthor_pattern" "$message_file" > "$message_file.tmp"
   mv "$message_file.tmp" "$message_file"
-  echo "commit-msg hook: removed a Claude/Anthropic co-author trailer (see CLAUDE.md)" >&2
+  echo "commit-msg hook: removed an AI-agent Co-Authored-By trailer (see CLAUDE.md)" >&2
+fi
+
+# Also strip any remaining Co-Authored-By line — this repo allows only the human maintainer.
+if grep -qiE '^Co-Authored-By:' "$message_file"; then
+  grep -viE '^Co-Authored-By:' "$message_file" > "$message_file.tmp"
+  mv "$message_file.tmp" "$message_file"
+  echo "commit-msg hook: removed Co-Authored-By trailer(s); sole author must be the maintainer (see CLAUDE.md)" >&2
 fi

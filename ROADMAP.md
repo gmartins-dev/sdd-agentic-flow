@@ -204,6 +204,12 @@ pre-assigned roadmap slot. There is no fixed number or sequence of versions betw
 v2.0; the next one is whatever the next real audit finds, decided when that work actually
 starts, not now.
 
+At this point, the strongest lever is not adding another mechanism — skills, contracts,
+evidence, handoff, routing, autonomy, guardrails, and `loop-state.md` already exist. It's making
+the mechanisms that already exist work together as one coherent system rather than growing the
+list further; a watched direction below only earns a real version when an audit finds a gap none
+of the existing pieces already cover.
+
 This replaces the earlier "v2.0 — Agentic SDD Platform (candidate)" outline that used to live in
 this section. That fuller sketch is preserved, unchanged, in
 `.local/gmm/sdd-agentic-flow/v2.0.0-implementation-plan.md` for whenever v2.0 is eventually
@@ -238,7 +244,11 @@ version's scope:
 **Out of scope, holds regardless of how many versions come before v2.0:** an agent
 runtime/scheduler, a hosted MCP platform, a model-provider abstraction/router, a heavy
 workflow-DAG engine, a proprietary skill format, a skill marketplace ahead of validated need,
-mandatory telemetry, any `while (...)`-shaped orchestration loop inside this CLI. Matches
+mandatory telemetry, any `while (...)`-shaped orchestration loop inside this CLI, unbounded or
+unattended-forever autonomous execution (autonomous stays guarded, bounded, and interruptible —
+see [autonomy guardrails](docs/autonomy-guardrails.md)), and quantitative token/speed/cost claims
+without a reproducible benchmark backing them (see the token economics note in
+[README.md](README.md)). Matches
 `docs/design-principles.md`: concrete claims over broad compatibility, security, or autonomy
 promises.
 

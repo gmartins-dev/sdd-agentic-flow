@@ -1,5 +1,15 @@
 # Roadmap
 
+- **v1.7.0 (2026-08-09):** Local CLI testing without publishing. `npm run cli:dev` runs
+  `bin/sdd-agentic-flow.js` straight from source against a persistent scratch project and an
+  isolated `HOME`, for the fastest possible edit-and-look loop (`--fresh` resets it). `npm run
+  cli:sandbox` goes further: a real `npm pack` — the exact tarball `npm publish` would ship —
+  installed and run via `npx "file:<tarball>"` in a brand-new project directory with its own
+  isolated `HOME`, exercising the same npm package resolution and `bin` shim a first-time
+  consumer gets, on demand instead of only inside `test/cli.test.js`'s tarball e2e tests. Both
+  scripts are plain Node with no new dependency, matching the existing `scripts/pack-dry.js`.
+  Purely a contributor-workflow change — no CLI-facing behavior, skill, or capability-contract
+  change, so it ships outside `compatibility-promise.md`'s scope.
 - **v1.6.2 (2026-08-09):** Fixes v1.6.1's `npm publish` automation, which tagged and released on
   GitHub correctly but never actually reached npm — `publish-npm.yml` listened for `release:
   published`, an event GitHub does not fire for a release created by another workflow's own
@@ -106,6 +116,134 @@
 - **v1.x (open):** future work adopted from validated need, not assumed in advance — candidates
   include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
   maturity-model documentation. Nothing in this line is committed or scheduled.
+
+## Strategic direction (v1.8 → v2.0) — candidates, not commitments
+
+The three candidates below follow the same rule as `v1.x (open)` above: validated against the
+current architecture, not a committed schedule. Each only becomes a real dated entry once it
+actually ships, following the same audit-first discipline v1.5 and v1.6 already used (a real gap
+found by reading the code, not an assumed one). No week or date estimates are given on purpose —
+every release above shipped once validated, not on a pre-set calendar, and a multi-month schedule
+would misrepresent how this project actually moves. Full implementation-level detail for
+whichever candidate is picked up next lives outside this file, in a dedicated
+`v{X.Y.Z}-implementation-plan.md` under `.local/gmm/sdd-agentic-flow/` — the same convention
+already used for v0.7.0 through v1.6.0.
+
+| Version | Question it answers | Answer |
+| --- | --- | --- |
+| v1.8 | How does the agent work better, with more autonomy? | `autonomy_level` + deterministic guardrails + ecosystem awareness |
+| v1.9 | How do we know it's working correctly? | Deeper skill contracts + verification + handoff |
+| v2.0 | How does this become a portable methodology? | Evidence graph + portable `.sdd/` context + cross-agent parity |
+
+### v1.8 — Autonomy & Ecosystem (candidate)
+
+**Goal & business value:** let the agent advance between skills without constant supervision,
+without trading "autonomy" for "magic" — every automatic advance stays auditable and reversible.
+
+**Deliverables:** `autonomy_level` (`manual`/`supervised`/`autonomous`) as a **new axis
+orthogonal to**, not a replacement for, the 5 existing `execution_modes`
+(`plan`/`guided`/`apply`/`review`/`full`, `docs/execution-modes.md`). 7 deterministic guardrails
+(completion status, evidence validation, verification gates, scope boundary, transition validity,
+resource sufficiency, human override) checked before any automatic transition. An `autonomy_profile`
+frontmatter extension across the 13 skills, validated by `scripts/check-skills.sh` the same way
+`extends`/`requires`/`consumes`/`produces`/`depends_on`/`conflicts` already are. New
+`.sdd/config.yml` fields plus `doctor --autonomy`, `context autonomy-state`, `autonomous-resume`;
+a `.sdd/autonomy/loop-state.md` execution-state file. MCP stays **awareness, not a platform**:
+skills may optionally detect and use an available MCP integration (e.g. GitHub) the same way they
+already treat the `local-files`/`github` adapters — no CLI hosting an MCP server — plus secret
+safety (never persist a secret into generated config). Agent Skills Standard: an alignment audit
+across the 13 skills documenting where the format already converges (most of it), without
+forcing compliance or a certification claim — same posture as v1.5.1.
+
+**Prerequisites/dependencies:** the existing skill-contract system; `bin/contract-graph.js`; the
+5 `execution_modes` already documented; the v1.0 stability commitment (any new config/CLI field
+must be additive).
+
+**Acceptance criteria:** `npm run check` passes; all 13 skills carry a valid `autonomy_profile`;
+no invalid `execution_mode`×`autonomy_level` combination goes unflagged; nothing documented today
+changes behavior.
+
+**Risks & mitigation:** CLI surface growing without a validated need → mitigated by extending
+`doctor` instead of adding new commands wherever possible; "autonomy" becoming an excuse to skip
+evidence → guardrails are blocking by design, not suggestions.
+
+**Out of scope for this version:** progressive-disclosure refactor of the skills, formal Agent
+Skills Standard compliance enforcement, an MCP-aware skill redesign, multi-agent orchestration —
+all move to v1.9/v2.0 only if validated.
+
+### v1.9 — Method & Reliability (candidate)
+
+**Goal & business value:** deepen what already exists instead of duplicating it — if there's a
+real gap, it's in already-shipped skills needing to be clearer and more verifiable, not in
+inventing new systems.
+
+**Deliverables:** progressive disclosure across the 13 skills (Agent Skills Standard-aligned):
+each `SKILL.md` under ~500 lines, detailed material moved into `references/`/`scripts/`/`assets/`,
+validated by an extension of `scripts/check-skills.sh`. `sdd-brainstorm` gains an explicit
+known/assumed/unknown/needs-research split before handing off to `sdd-create-specs` (implicit
+today). Git guardrails and parallel-agent guidance formalized (when branch/commit/worktree are
+allowed; when parallelizing is appropriate). A `handoff.md` standard for cross-session/cross-agent
+continuity, integrated with v1.8's `.sdd/autonomy/loop-state.md`. A new skill, `sdd-release`, to
+make version/changelog/publish auditable — today that discipline lives only in
+`scripts/release-checklist.sh` and the maintainer's own process. A first Token Economics
+benchmark: measure tokens/iterations/rework with vs. without the method on the same model — not a
+promise of model-to-model equivalence.
+
+**Prerequisites/dependencies:** v1.8's `autonomy_profile` and `loop-state.md`;
+`scripts/check-skills.sh` as the validation base.
+
+**Acceptance criteria:** all 13 skills pass a `check-skills.sh --progressive-disclosure` check (or
+equivalent); no skill's main body references more than it needs to; `sdd-release` covers
+everything `release-checklist.sh` already does today, with no regression.
+
+**Risks & mitigation:** refactoring all 13 skills at once is a large regression surface →
+validate against the existing 5 golden flows before/after migrating each skill individually, not
+in one batch.
+
+**Correction vs. the draft:** `sdd-explain-me` **already exists**, shipped in v1.5 — it is not a
+new v1.9 item. It only re-enters scope here if the progressive-disclosure audit finds a real,
+validated gap in it.
+
+**Out of scope:** a multi-agent orchestration engine, a skill dependency resolver, a skill
+marketplace, a bespoke agent framework.
+
+### v2.0 — Agentic SDD Platform (candidate)
+
+**Goal & business value:** a user can swap AI agents without relearning the methodology — that is
+v2.0's real acceptance test, not a feature checklist.
+
+**Deliverables:** a documented canonical workflow
+(`IDEA → EXPLORE → DEFINE → SPECIFY → PLAN → IMPLEMENT → VERIFY → REVIEW → RELEASE → HANDOFF`)
+with an adaptive variant sized to the change, without becoming a workflow engine. An evidence
+graph linking requirement → spec → task → code → test → validation → PR, exposed via
+`doctor --evidence-graph` — not a new, parallel `validate` command, since `doctor` already owns
+`--json`/`--contracts`/`--smoke`/`--check-updates`. `.sdd/` as portable cross-agent context,
+evolving what already exists (`config.yml`, `context/`, `reports/`, `snapshots/`, plus v1.8's
+`autonomy/loop-state.md`) rather than a parallel structure — the exact shape of any new
+execution-state file is an audit decision at implementation time, not decided here. Cross-agent
+portability documented as an extension of the adapter pattern already in place
+(`local-files`/`github`, `docs/adapters.md`) — adapters stay at the edge, carrying no
+methodological logic of their own. Closing whatever a "CLI 2.0" audit would still ask for on top
+of what already exists today (`doctor --json`, `--quiet`, `install --plan` /
+`uninstall --plan|--apply`, CI-safe detection, `doctor --check-updates`) — the real work here is
+closing v1.8/v1.9-specific gaps, not building CLI ergonomics from zero.
+
+**Prerequisites/dependencies:** v1.8's `autonomy_profile`/`loop-state.md`; v1.9's deepened skill
+contracts and progressive disclosure; the existing adapter pattern (`docs/adapters.md`).
+
+**Acceptance criteria:** a full workflow demonstrably runs end to end while swapping the agent
+mid-way without reconfiguring the method; `doctor` covers the evidence graph and compatibility
+checks without needing a second command; nothing breaks the v1.0 stability commitment.
+
+**Risks & mitigation:** the evidence graph could grow into an observability platform, which
+contradicts the toolkit's identity → mitigated by keeping it a file-based artifact, no new
+service or database, same rule as the non-goals below.
+
+**Out of scope (holds for the whole v1.8 → v2.0 line):** an agent runtime/scheduler, a hosted MCP
+platform, a model-provider abstraction/router, a heavy workflow-DAG engine, a proprietary skill
+format, a skill marketplace ahead of validated need, mandatory telemetry. Matches
+`docs/design-principles.md`: concrete claims over broad compatibility, security, or autonomy
+promises.
 
 - **v0.1:** local-first core and full public skill pack.
 - **v0.2:** Adoption & Trust Release: interactive setup, local validation, rollback, agent docs, and public examples.

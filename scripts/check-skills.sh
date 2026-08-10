@@ -105,6 +105,40 @@ for (const entry of versionCheck.presets) {
     drift = true;
   }
 }
+// v1.9.1: bin/sdd-agentic-flow.js's own VERSION const drifted from package.json during v1.9.0
+// with nothing catching it — check-version-consistency.js now walks bin/ too.
+if (versionCheck.cli.drifted) {
+  console.error(
+    `${versionCheck.cli.file} VERSION is '${versionCheck.cli.version}', expected '${packageVersion}' (from package.json)`,
+  );
+  drift = true;
+}
+
+// v1.9.1: bin/sdd-agentic-flow.js's OFFICIAL_SKILLS array (drives uninstall,
+// installationStatus(), and doctor --contracts' conflict validation) also drifted from the
+// real skill roster during v1.9.0 — sdd-release installed but uninstall never removed it.
+// Same drift-detection shape as compatible_with vs. presets/*.json above.
+{
+  const cliSource = fs.readFileSync('bin/sdd-agentic-flow.js', 'utf8');
+  const officialSkillsMatch = cliSource.match(/const OFFICIAL_SKILLS = \[([\s\S]*?)\];/);
+  const officialSkills = officialSkillsMatch
+    ? [...officialSkillsMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+    : [];
+  const missingFromOfficial = skillNames.filter((name) => !officialSkills.includes(name));
+  const extraInOfficial = officialSkills.filter((name) => !skillNames.includes(name));
+  if (missingFromOfficial.length) {
+    console.error(
+      `bin/sdd-agentic-flow.js: OFFICIAL_SKILLS is missing ${missingFromOfficial.join(', ')}`,
+    );
+    drift = true;
+  }
+  if (extraInOfficial.length) {
+    console.error(
+      `bin/sdd-agentic-flow.js: OFFICIAL_SKILLS has unknown skill(s) ${extraInOfficial.join(', ')}`,
+    );
+    drift = true;
+  }
+}
 
 // compatible_with vs presets/*.json membership.
 for (const { name, frontmatter } of skills) {
@@ -280,7 +314,7 @@ grep -F -q 'Plan → Prompt → Implement → Check → PR → Review → Fix �
 grep -F -q 'sdd-route' README.md docs/invocation-model.md
 grep -F -q 'mattpocock/skills' NOTICE LICENSING.md docs/tdd-baseline.md
 grep -F -q 'Prompt injection safety' shared/references/workflow-safety.md
-grep -F -q 'no postinstall' CONTRIBUTING.md
+grep -F -q 'postinstall' CONTRIBUTING.md
 bash ./scripts/sanitize-private-context.sh
 cache="$(mktemp -d)"
 npm --cache "$cache" pack --dry-run >/dev/null

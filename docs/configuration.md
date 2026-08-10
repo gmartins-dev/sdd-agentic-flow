@@ -12,6 +12,12 @@ overwriting it. See [language profiles](language-profiles.md).
 Keep `quality` gates enabled unless the project records an explicit exception. The `safety`
 keys keep commit, push, and merge/deploy disabled by default.
 
+There is no dedicated `release` section yet — `sdd-release` (see the
+[skills catalog](skills-catalog.md)) reads whatever version-bearing files and changelog
+conventions the project already uses, falling back to the most common pattern (a single
+manifest plus a root-level changelog) and saying so explicitly when nothing is declared,
+rather than assuming an undeclared convention silently.
+
 ## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
 
 `workflow.execution_mode` (`plan`/`guided`/`apply`/`review`/`full`, default `guided`) and

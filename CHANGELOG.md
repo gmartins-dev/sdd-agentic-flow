@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.9.1
+
+Closes 4 small, real gaps found by directly auditing the repository after v1.9.0 shipped — no
+new mechanism, same audit-first discipline. All additive, no breaking changes.
+
+**Version-consistency hardening (the headline item):** `bin/sdd-agentic-flow.js`'s own `const
+VERSION` and `OFFICIAL_SKILLS` array drifted from `package.json`/`skills/` during v1.9.0 —
+`VERSION` stayed at `1.8.0` and `OFFICIAL_SKILLS` missed the new `sdd-release` skill, and
+`npm run check` still passed, because `scripts/check-version-consistency.js` only ever walked
+`skills/*/SKILL.md` and `presets/*.json`, never `bin/`. Only manual testing caught it, after the
+fact. `check-version-consistency.js` now also checks `bin/`'s `VERSION` (consumed by both
+`scripts/check-skills.sh` and `scripts/release-checklist.sh`, which share this module); a new
+`OFFICIAL_SKILLS`-vs-`skills/` parity check was added directly to `check-skills.sh`, since a
+skill dropped from that array would silently stop being removable by `uninstall`. Both checks
+were proven against the actual v1.9.0 bug shape (temporarily reintroducing it locally) before
+being kept.
+
+**`sdd-release` reachability:** `shared/references/workflow-routing.md` (`sdd-route`'s single
+source of truth) had no row pointing from a validated feature to `sdd-release`, even though
+`README.md`'s own flow diagram already treats it as a legitimate on-demand next step —
+`sdd-route` could not mechanically recommend it. Added, same "on demand" framing as the README.
+`docs/workflow.md`'s one-line canonical summary gains a matching mention.
+
+**`sdd-release`'s config promise, aligned with reality:** its `SKILL.md` described reading
+"declared release conventions" from `.sdd/config.yml`, but no such section exists in the
+generated schema or in `docs/configuration.md` — not a functional bug (the skill already falls
+back defensively), but an undocumented promise unlike every other config field a skill reads.
+Both now say explicitly: no dedicated `release` section exists yet; the skill reads whatever
+convention the project already expresses.
+
 ## 1.9.0
 
 Deepens what v1.8.0 shipped instead of adding a new autonomy mechanism — closes real,

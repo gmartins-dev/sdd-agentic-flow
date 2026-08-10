@@ -17,14 +17,15 @@ npm run pack:dry
 echo "-- 3/7: doctor --smoke --"
 node bin/sdd-agentic-flow.js doctor --smoke
 
-echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json) --"
+echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json vs bin/) --"
 node <<'NODE'
 const { checkVersionConsistency } = require('./scripts/check-version-consistency.js');
 
-const { packageVersion, skills, presets } = checkVersionConsistency();
+const { packageVersion, skills, presets, cli } = checkVersionConsistency();
 const drifted = [
   ...skills.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
   ...presets.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
+  ...(cli.drifted ? [`${cli.file} (version: ${cli.version})`] : []),
 ];
 
 if (drifted.length) {
@@ -32,7 +33,7 @@ if (drifted.length) {
   for (const entry of drifted) console.error(`  - ${entry}`);
   process.exit(1);
 }
-console.log(`all skill and preset versions match package.json (${packageVersion})`);
+console.log(`all skill, preset, and CLI versions match package.json (${packageVersion})`);
 NODE
 
 echo "-- 5/7: no pinned sdd-agentic-flow@<version> examples remaining --"

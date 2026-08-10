@@ -1,5 +1,23 @@
 # Roadmap
 
+- **v1.9.1 (2026-08-10):** Release Consistency Hardening. Closes 4 small, real gaps found by
+  directly auditing the repository after v1.9.0 shipped — no new mechanism, same discipline.
+  `bin/sdd-agentic-flow.js`'s own `const VERSION` and `OFFICIAL_SKILLS` array had drifted from
+  `package.json`/`skills/` during v1.9.0 (`VERSION` stuck at `1.8.0`, `OFFICIAL_SKILLS` missing
+  the new `sdd-release` skill) with `npm run check` still reporting green, because
+  `scripts/check-version-consistency.js` only ever walked `skills/*/SKILL.md` and
+  `presets/*.json`, never `bin/` — caught only by manual testing after the fact. Both scripts
+  that consume it (`check-skills.sh`, `release-checklist.sh`) now also check `bin/`'s `VERSION`;
+  a new `OFFICIAL_SKILLS`-vs-`skills/` parity check was added directly to `check-skills.sh`. Both
+  fixes were proven against the actual v1.9.0 bug shape (temporarily reintroducing it locally)
+  before being kept — see `.local/gmm/sdd-agentic-flow/v1.9.1-implementation-report.md`.
+  `shared/references/workflow-routing.md` (`sdd-route`'s single source of truth) gains a row for
+  `sdd-release`, which it could not previously recommend even though `README.md`'s own flow
+  diagram already treats it as a legitimate on-demand step; `docs/workflow.md` gets a matching
+  mention. `sdd-release/SKILL.md` and `docs/configuration.md` now agree that no dedicated
+  `release` config section exists yet — the skill reads whatever convention the project already
+  expresses, not a declared field. Zero breaking changes.
+
 - **v1.9.0 (2026-08-10):** Method & Reliability. Deepens v1.8.0's autonomy foundation instead of
   adding a new mechanism. This release closes individually audited gaps rather than the originally drafted
   candidate wholesale (see "Corrections vs. the v1.9 candidate draft" below). New `sdd-release`
@@ -176,65 +194,51 @@
   include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
   maturity-model documentation. Nothing in this line is committed or scheduled.
 
-## Strategic direction (v2.0) — candidate, not a commitment
+## Future direction (post-1.9.1, v2.0 undefined)
 
-v1.9.0 (`sdd-release`, handoff standard, `Status:` field, audited-and-closed progressive
-disclosure/golden-fixture gaps) shipped above, closing the "how do we know it's working
-correctly?" question the earlier v1.9 candidate posed. What follows is the remaining
-candidate, validated against the current architecture, not a committed schedule — it only
-becomes a real dated entry once it actually ships, following the same audit-first discipline
-every release above already used (a real gap found by reading the code, not an assumed one).
-No week or date estimate is given on purpose. Full implementation-level detail lives outside
-this file, in a dedicated `v{X.Y.Z}-implementation-plan.md` under
-`.local/gmm/sdd-agentic-flow/` — the same convention already used for v0.7.0 through v1.9.0.
+**v2.0 is deliberately undefined.** It is not the next release, has no scope, no acceptance
+criteria, and no schedule. By explicit maintainer decision (2026-08-10), the project evolves
+through several more incremental, audit-first minor/patch versions first — each one scoped the
+same way v1.5 through v1.9.1 already were: a real gap found by reading the code, not a
+pre-assigned roadmap slot. There is no fixed number or sequence of versions between here and
+v2.0; the next one is whatever the next real audit finds, decided when that work actually
+starts, not now.
 
-| Version | Question it answers | Answer |
-| --- | --- | --- |
-| v2.0 | How does this become a portable methodology? | Evidence graph + portable `.sdd/` context + cross-agent parity |
+This replaces the earlier "v2.0 — Agentic SDD Platform (candidate)" outline that used to live in
+this section. That fuller sketch is preserved, unchanged, in
+`.local/gmm/sdd-agentic-flow/v2.0.0-implementation-plan.md` for whenever v2.0 is eventually
+picked up — it is historical/reference material now, not a committed plan, and should be
+re-audited against the codebase at that time rather than trusted as still accurate.
 
-A formal no-progress/repeated-failure signal for `.sdd/autonomy/loop-state.md` (an
-`Attempt:`/`Progress:` field per `## Current State` block, self-evaluated by the invoking agent
-the same way guardrails 1–6 already are) was raised and evaluated during v1.9.0's planning and
-explicitly deferred, not folded into v2.0's deliverables below by default — it becomes real
-scope only if a genuine stuck-loop incident is observed in practice, evaluated fresh against
-whatever the evidence graph below actually needs at that time.
+**Directions being watched, not committed to any version:** a longer-range pre-planning
+discussion surfaced several themes that may eventually justify real work — none of them do
+today, and none is scheduled. Recorded here so they have a home without inflating any specific
+version's scope:
 
-### v2.0 — Agentic SDD Platform (candidate)
+- A more explicit, inspectable "flow state" beyond what `.sdd/autonomy/loop-state.md` and
+  `handoff-standard.md` (v1.9.0) already provide.
+- A more formal semantics for what a skill's completion means to whichever skill/human comes
+  next — while preserving each skill's own local vocabulary, the same principle
+  `evidence-standard.md`'s `Status:` mapping (v1.9.0) already applies.
+- A no-progress/repeated-failure signal for `loop-state.md` (an `Attempt:`/`Progress:` field,
+  self-evaluated by the invoking agent the same way guardrails 1–6 already are) — raised and
+  explicitly deferred during v1.9.0's planning; becomes real scope only if a genuine stuck-loop
+  incident is actually observed, not before.
+- An evidence graph linking requirement → spec → task → code → test → validation → PR, exposed
+  via `doctor --evidence-graph` rather than a new top-level command — extending the existing
+  optional `REQ-{id}` traceability convention in `artifact-contracts.md`, not inventing a new ID
+  scheme.
+- `.sdd/` as portable, cross-agent context — evolving what already exists (`config.yml`,
+  `context/`, `reports/`, `snapshots/`, `autonomy/loop-state.md`) rather than a parallel
+  structure.
+- Cross-agent portability as a documented extension of the existing adapter pattern
+  (`local-files`/`github`, `docs/adapters.md`), which stays at the edge, carrying no
+  methodological logic of its own.
 
-**Goal & business value:** a user can swap AI agents without relearning the methodology — that is
-v2.0's real acceptance test, not a feature checklist.
-
-**Deliverables:** a documented canonical workflow
-(`IDEA → EXPLORE → DEFINE → SPECIFY → PLAN → IMPLEMENT → VERIFY → REVIEW → RELEASE → HANDOFF`)
-with an adaptive variant sized to the change, without becoming a workflow engine. An evidence
-graph linking requirement → spec → task → code → test → validation → PR, exposed via
-`doctor --evidence-graph` — not a new, parallel `validate` command, since `doctor` already owns
-`--json`/`--contracts`/`--smoke`/`--check-updates`. `.sdd/` as portable cross-agent context,
-evolving what already exists (`config.yml`, `context/`, `reports/`, `snapshots/`, plus v1.8's
-`autonomy/loop-state.md`) rather than a parallel structure — the exact shape of any new
-execution-state file is an audit decision at implementation time, not decided here. Cross-agent
-portability documented as an extension of the adapter pattern already in place
-(`local-files`/`github`, `docs/adapters.md`) — adapters stay at the edge, carrying no
-methodological logic of their own. Closing whatever a "CLI 2.0" audit would still ask for on top
-of what already exists today (`doctor --json`, `--quiet`, `install --plan` /
-`uninstall --plan|--apply`, CI-safe detection, `doctor --check-updates`) — the real work here is
-closing v1.8/v1.9-specific gaps, not building CLI ergonomics from zero.
-
-**Prerequisites/dependencies:** v1.8's `autonomy_profile`/`loop-state.md`; v1.9.0's
-`handoff-standard.md` and `Status:`-field evidence model; the existing adapter pattern
-(`docs/adapters.md`).
-
-**Acceptance criteria:** a full workflow demonstrably runs end to end while swapping the agent
-mid-way without reconfiguring the method; `doctor` covers the evidence graph and compatibility
-checks without needing a second command; nothing breaks the v1.0 stability commitment.
-
-**Risks & mitigation:** the evidence graph could grow into an observability platform, which
-contradicts the toolkit's identity → mitigated by keeping it a file-based artifact, no new
-service or database, same rule as the non-goals below.
-
-**Out of scope (holds for the whole v1.8 → v2.0 line):** an agent runtime/scheduler, a hosted MCP
-platform, a model-provider abstraction/router, a heavy workflow-DAG engine, a proprietary skill
-format, a skill marketplace ahead of validated need, mandatory telemetry. Matches
+**Out of scope, holds regardless of how many versions come before v2.0:** an agent
+runtime/scheduler, a hosted MCP platform, a model-provider abstraction/router, a heavy
+workflow-DAG engine, a proprietary skill format, a skill marketplace ahead of validated need,
+mandatory telemetry, any `while (...)`-shaped orchestration loop inside this CLI. Matches
 `docs/design-principles.md`: concrete claims over broad compatibility, security, or autonomy
 promises.
 

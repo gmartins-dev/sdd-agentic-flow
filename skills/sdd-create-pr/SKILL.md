@@ -2,7 +2,7 @@
 name: sdd-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: pr
 extends: sdd-task-check
 requires: [config, task-evidence]
@@ -13,6 +13,11 @@ compatible_with: [full, github, pr]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'pr-description.md present, linked to complete task evidence, with no required template section missing'
+  blocking_conditions: [missing_task_evidence, incomplete_pr_template]
+  evidence_required: [pr-description.md]
 ---
 
 # Prepare an SDD pull request
@@ -45,3 +50,7 @@ Do not commit, push, create or edit PRs, assign reviewers, alter labels, or muta
 ## Output
 
 Return the PR package, task scope, validation summary, blockers, and whether a remote PR was created.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-pr-review` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

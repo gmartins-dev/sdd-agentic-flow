@@ -2,7 +2,7 @@
 name: sdd-pr-fix
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: pr
 extends: sdd-pr-review
 requires: [config, pr-reference, review-findings]
@@ -13,6 +13,11 @@ compatible_with: [full, github, pr]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'fix-evidence present and every actionable finding on the findings ledger is resolved or explicitly deferred with a reason'
+  blocking_conditions: [findings_unresolved, scope_exceeded]
+  evidence_required: [fix-evidence]
 ---
 
 # Fix SDD pull-request findings
@@ -44,3 +49,7 @@ Preserve unrelated changes. Stop for SDD reconciliation, sibling scope, unsafe e
 ## Output
 
 Return the findings ledger, changes and checks, unresolved items, re-review scope, and next step.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing back to `sdd-pr-review` requires fix-evidence present and every actionable finding on the ledger resolved or explicitly deferred with a reason; an unresolved finding or a scope violation blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

@@ -2,7 +2,7 @@
 name: sdd-brainstorm
 description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for sdd-create-specs — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: planning
 extends: null
 requires: [config]
@@ -13,6 +13,11 @@ compatible_with: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; convergence on a spec-ready brief is a human judgment call, not a guardrail a skill can self-certify'
+  blocking_conditions: [unresolved_unknowns, no_convergence]
+  evidence_required: [spec-ready-brief]
 ---
 
 # Brainstorm an idea toward spec-ready
@@ -59,3 +64,7 @@ Return the current mode, a short summary of the problem/approach discussed so fa
 - Reason: one line tying the status to the recommendation
 
 When `converged`, also return the brief's file path and the open questions left for `sdd-create-specs` to resolve.
+
+## Autonomy
+
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. Whether an idea has converged into a spec-ready brief is a human judgment call. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

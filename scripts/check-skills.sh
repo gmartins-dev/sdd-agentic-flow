@@ -40,7 +40,7 @@ done
 all_skills=(setup-sdd-agentic-flow sdd-route sdd-brainstorm sdd-create-specs sdd-explain-me sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
-  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:'; do
+  for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:' 'autonomy_profile:' 'supported_levels:' 'auto_continue_condition:' 'blocking_conditions:' 'evidence_required:'; do
     grep -F -q -- "$marker" "$file"
   done
 done
@@ -124,6 +124,25 @@ for (const { name, frontmatter } of skills) {
   }
 }
 
+// v1.8.0: autonomy_profile.supported_levels must be a non-empty subset of the 3 known
+// autonomy_levels — the same style of validation compatible_with already gets above, reusing
+// parseContractArray since supported_levels is declared flow-style, same as compatible_with.
+const KNOWN_AUTONOMY_LEVELS = ['manual', 'supervised', 'autonomous'];
+for (const { name, frontmatter } of skills) {
+  const levels = parseContractArray(frontmatter, 'supported_levels');
+  if (!levels || !levels.length) {
+    console.error(`missing autonomy_profile.supported_levels in skills/${name}/SKILL.md`);
+    drift = true;
+    continue;
+  }
+  for (const level of levels) {
+    if (!KNOWN_AUTONOMY_LEVELS.includes(level)) {
+      console.error(`${name}: autonomy_profile.supported_levels has unknown level '${level}'`);
+      drift = true;
+    }
+  }
+}
+
 // depends_on/baseline referential integrity + depends_on and extends cycle detection.
 const registry = fs.readFileSync('shared/baselines/registry.yml', 'utf8');
 const knownBaselineIds = [...registry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)].map(
@@ -194,7 +213,7 @@ if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.e
   exit 1
 fi
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md; do
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.6.0' "shared/references/$ref"
@@ -243,7 +262,7 @@ done
 for preset in core planning execution pr multi-worktree full local-files github; do
   node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
 done
-for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/upgrading.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/upgrading.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md

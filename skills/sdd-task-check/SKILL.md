@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
@@ -13,6 +13,11 @@ compatible_with: [core, execution, full, github, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'check-report present with status PASS and every configured gate satisfied'
+  blocking_conditions: [acceptance_criteria_unmet, gates_failed]
+  evidence_required: [check-report]
 ---
 
 # Check one SDD task
@@ -46,3 +51,7 @@ This is read-only except for disposable test artifacts permitted by configuratio
 ## Output
 
 Return task identity, criterion-to-evidence summary, executed checks, scope findings, final classification, and next step.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-create-pr` or `sdd-validation` requires a check-report with status PASS and every configured gate satisfied; an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

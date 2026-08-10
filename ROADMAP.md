@@ -1,5 +1,29 @@
 # Roadmap
 
+- **v1.8.0 (2026-08-09):** Autonomy levels. `workflow.autonomy_level` (`manual`/`supervised`/
+  `autonomous`, default `manual`) ships as a **new axis orthogonal to** the 5 existing
+  `execution_modes` (`docs/execution-modes.md`) — it does not replace or duplicate them.
+  7 deterministic guardrails (completion status, evidence validation, verification gates, scope
+  boundary, transition validity, resource sufficiency, human override) gate every automatic
+  transition; any failure returns control to a human, same as `manual`. An `autonomy_profile`
+  frontmatter extension ships across all 13 skills (`supported_levels`, `auto_continue_condition`,
+  `blocking_conditions`, `evidence_required`), validated by `scripts/check-skills.sh` the same way
+  `extends`/`requires`/`produces`/`depends_on`/`conflicts` already are. `.sdd/config.yml` gains
+  `workflow.execution_mode`/`autonomy_level`/`autonomy_budget` (all additive; an existing config
+  without them defaults to `guided`/`manual`, identical to pre-v1.8.0 behavior — `doctor
+  --autonomy` reports `WARN`, not `FAIL`). New CLI surface: `init --execution-mode
+  --autonomy-level`, `doctor --autonomy [--verbose]`, `context autonomy-state`, and
+  `autonomous-resume [--force | --override-guard=<1-7> --reason="..."]`. There is no
+  orchestration engine in this CLI — these commands validate the static contract and manage
+  `.sdd/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
+  workflow; they never invoke a skill themselves. Two new docs
+  (`docs/autonomy-levels.md`, `docs/autonomy-guardrails.md`) plus a new shared reference
+  (`shared/references/autonomy-guardrails.md`); `docs/execution-modes.md`,
+  `docs/configuration.md`, `docs/compatibility-promise.md`, `docs/troubleshooting.md`, and
+  `docs/inspirations.md` updated to cross-reference it. MCP stays **awareness, not a
+  platform**: `autonomy_level` governs skill-to-skill transitions only, never tool use — a skill
+  may call any available MCP integration at any autonomy level, exactly as before. Zero breaking
+  changes: every field and command is additive, and no skill's documented behavior changed.
 - **v1.7.0 (2026-08-09):** Local CLI testing without publishing. `npm run cli:dev` runs
   `bin/sdd-agentic-flow.js` straight from source against a persistent scratch project and an
   isolated `HOME`, for the fastest possible edit-and-look loop (`--fresh` resets it). `npm run
@@ -117,9 +141,9 @@
   include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
   maturity-model documentation. Nothing in this line is committed or scheduled.
 
-## Strategic direction (v1.8 → v2.0) — candidates, not commitments
+## Strategic direction (v1.9 → v2.0) — candidates, not commitments
 
-The three candidates below follow the same rule as `v1.x (open)` above: validated against the
+The two candidates below follow the same rule as `v1.x (open)` above: validated against the
 current architecture, not a committed schedule. Each only becomes a real dated entry once it
 actually ships, following the same audit-first discipline v1.5 and v1.6 already used (a real gap
 found by reading the code, not an assumed one). No week or date estimates are given on purpose —
@@ -127,49 +151,13 @@ every release above shipped once validated, not on a pre-set calendar, and a mul
 would misrepresent how this project actually moves. Full implementation-level detail for
 whichever candidate is picked up next lives outside this file, in a dedicated
 `v{X.Y.Z}-implementation-plan.md` under `.local/gmm/sdd-agentic-flow/` — the same convention
-already used for v0.7.0 through v1.6.0.
+already used for v0.7.0 through v1.6.0. v1.8 (`autonomy_level` + deterministic guardrails)
+already shipped, above; v1.9 and v2.0 both build on it.
 
 | Version | Question it answers | Answer |
 | --- | --- | --- |
-| v1.8 | How does the agent work better, with more autonomy? | `autonomy_level` + deterministic guardrails + ecosystem awareness |
 | v1.9 | How do we know it's working correctly? | Deeper skill contracts + verification + handoff |
 | v2.0 | How does this become a portable methodology? | Evidence graph + portable `.sdd/` context + cross-agent parity |
-
-### v1.8 — Autonomy & Ecosystem (candidate)
-
-**Goal & business value:** let the agent advance between skills without constant supervision,
-without trading "autonomy" for "magic" — every automatic advance stays auditable and reversible.
-
-**Deliverables:** `autonomy_level` (`manual`/`supervised`/`autonomous`) as a **new axis
-orthogonal to**, not a replacement for, the 5 existing `execution_modes`
-(`plan`/`guided`/`apply`/`review`/`full`, `docs/execution-modes.md`). 7 deterministic guardrails
-(completion status, evidence validation, verification gates, scope boundary, transition validity,
-resource sufficiency, human override) checked before any automatic transition. An `autonomy_profile`
-frontmatter extension across the 13 skills, validated by `scripts/check-skills.sh` the same way
-`extends`/`requires`/`consumes`/`produces`/`depends_on`/`conflicts` already are. New
-`.sdd/config.yml` fields plus `doctor --autonomy`, `context autonomy-state`, `autonomous-resume`;
-a `.sdd/autonomy/loop-state.md` execution-state file. MCP stays **awareness, not a platform**:
-skills may optionally detect and use an available MCP integration (e.g. GitHub) the same way they
-already treat the `local-files`/`github` adapters — no CLI hosting an MCP server — plus secret
-safety (never persist a secret into generated config). Agent Skills Standard: an alignment audit
-across the 13 skills documenting where the format already converges (most of it), without
-forcing compliance or a certification claim — same posture as v1.5.1.
-
-**Prerequisites/dependencies:** the existing skill-contract system; `bin/contract-graph.js`; the
-5 `execution_modes` already documented; the v1.0 stability commitment (any new config/CLI field
-must be additive).
-
-**Acceptance criteria:** `npm run check` passes; all 13 skills carry a valid `autonomy_profile`;
-no invalid `execution_mode`×`autonomy_level` combination goes unflagged; nothing documented today
-changes behavior.
-
-**Risks & mitigation:** CLI surface growing without a validated need → mitigated by extending
-`doctor` instead of adding new commands wherever possible; "autonomy" becoming an excuse to skip
-evidence → guardrails are blocking by design, not suggestions.
-
-**Out of scope for this version:** progressive-disclosure refactor of the skills, formal Agent
-Skills Standard compliance enforcement, an MCP-aware skill redesign, multi-agent orchestration —
-all move to v1.9/v2.0 only if validated.
 
 ### v1.9 — Method & Reliability (candidate)
 

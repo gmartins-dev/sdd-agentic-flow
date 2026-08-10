@@ -204,6 +204,81 @@ required range, and your installed CLI version.
 **Fix:** upgrade `sdd-agentic-flow` (`npx sdd-agentic-flow@latest ...`, or update your global
 install), then re-run `install <pack>`.
 
+## `doctor --autonomy`
+
+See [autonomy levels](autonomy-levels.md) and [autonomy guardrails](autonomy-guardrails.md) for
+the full model these checks validate.
+
+### `autonomy_config`: `WARN` "workflow.execution_mode/autonomy_level not set"
+
+**Cause:** `.sdd/config.yml` predates v1.8.0, or was hand-written without these fields.
+
+**Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
+
+**Fix:** none required — behavior defaults to `guided`/`manual`, identical to before v1.8.0. Add
+`workflow.execution_mode`/`autonomy_level` to `.sdd/config.yml` explicitly if you want a
+different default, or re-run `init --execution-mode <mode> --autonomy-level <level>` against a
+fresh project.
+
+### `autonomy_combo`: `FAIL` "execution_mode=... cannot combine with autonomy_level=..."
+
+**Cause:** `.sdd/config.yml` sets `execution_mode: plan` or `execution_mode: guided` together
+with `autonomy_level: autonomous` — an invalid combination (a plan-only workflow has nothing to
+auto-advance into; `guided`'s entire point is step-by-step confirmation).
+
+**Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
+
+**Fix:** edit `.sdd/config.yml` to either raise `execution_mode` to `apply`/`review`/`full`, or
+lower `autonomy_level` to `manual`/`supervised`.
+
+### `autonomy_skills`: `WARN` "skill(s) do not support autonomy_level=..."
+
+**Cause:** the configured `autonomy_level` is `supervised` or `autonomous`, but one or more
+installed skills' `autonomy_profile.supported_levels` doesn't include it — by design for skills
+that always end in a human decision (`sdd-brainstorm`, `sdd-explain-me`, `sdd-route`,
+`setup-sdd-agentic-flow`).
+
+**Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
+
+**Fix:** none required for the four skills above; this `WARN` is expected. For any other skill,
+either accept it will always ask before advancing, or add a `workflow.skill_overrides` entry
+pinning it explicitly.
+
+### `autonomy_config`: `FAIL` "workflow.execution_mode/autonomy_level has an invalid value"
+
+**Cause:** `.sdd/config.yml` sets `execution_mode`/`autonomy_level` to something outside the
+documented values (a typo, e.g. `autonomous2`, or a value from a different field). Unlike the
+`WARN` case above, this is an explicit wrong value, not a missing one — `autonomy_combo` also
+reports `FAIL` ("not evaluated") in this case rather than silently checking against
+guided/manual defaults, so a real misconfiguration is never masked by a misleading `PASS`.
+
+**Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
+
+**Fix:** set `workflow.execution_mode` to one of `plan`/`guided`/`apply`/`review`/`full`, and
+`workflow.autonomy_level` to one of `manual`/`supervised`/`autonomous`.
+
+### `autonomy_skills`: `FAIL` "skill(s) missing autonomy_profile"
+
+**Cause:** an installed `SKILL.md` was hand-edited and lost its `autonomy_profile` block, or was
+installed from a pre-v1.8.0 package version.
+
+**Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
+
+**Fix:** re-run `install <pack> --scope project`; if the file already exists, remove it first (or
+use `uninstall --apply --scope project` then reinstall) so the clean version is copied back in —
+same caveat as the `capability_contracts` "missing required field" entry above, since `install`
+never overwrites an existing file.
+
+### `autonomy_loop_state`: `WARN` "loop state recorded pause=true / stop=true"
+
+**Cause:** a human (or an agent honoring an explicit stop request) set `pause: true` or
+`stop: true` in `.sdd/autonomy/loop-state.md` during a `supervised`/`autonomous` run.
+
+**Diagnose:** `sdd-agentic-flow context autonomy-state`.
+
+**Fix:** resolve whatever caused the pause/stop, then run `sdd-agentic-flow autonomous-resume`
+(optionally `--override-guard=<1-7> --reason="..."` if bypassing a specific guardrail).
+
 ### `update_check`: "could not check for updates (offline or registry unreachable)"
 
 **Cause:** `doctor --check-updates` (opt-in only — never runs automatically) couldn't reach the

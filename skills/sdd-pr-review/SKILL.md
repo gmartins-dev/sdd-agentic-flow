@@ -2,7 +2,7 @@
 name: sdd-pr-review
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: pr
 extends: sdd-create-pr
 requires: [config, pr-reference]
@@ -13,6 +13,11 @@ compatible_with: [full, github, pr]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'review-findings present, every finding evidence-backed, and no unresolved blocking finding'
+  blocking_conditions: [blocking_findings_unresolved]
+  evidence_required: [review-findings]
 ---
 
 # Review an SDD pull request
@@ -44,3 +49,7 @@ Operate read-only. Do not submit reviews, comments, approvals, labels, assignmen
 ## Output
 
 Return `approved`, `changes requested`, `blocked`, or `inconclusive`, plus the scoped findings ledger, check evidence, and next step.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). Autonomy only governs whether the workflow *advances* after this skill completes (to `sdd-pr-fix` on accepted findings, or to `sdd-validation` when ready) — this skill still never corrects a finding automatically, in any autonomy level. Advancing in `autonomous` mode requires review-findings present, every finding evidence-backed, and no unresolved blocking finding. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

@@ -12,11 +12,21 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.6.2';
+const VERSION = '1.8.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'];
+const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'];
+const AUTONOMY_LEVELS = ['manual', 'supervised', 'autonomous'];
+// v1.8.0: autonomy_level is a new axis orthogonal to execution_mode (docs/execution-modes.md,
+// shared/references/autonomy-guardrails.md) — `plan`/`guided` never combine with `autonomous`:
+// a plan-only workflow has nothing to auto-advance into, and step-by-step confirmation is the
+// entire point of `guided`.
+const INVALID_AUTONOMY_COMBOS = new Set(['plan:autonomous', 'guided:autonomous']);
+function autonomyComboValid(executionMode, autonomyLevel) {
+  return !INVALID_AUTONOMY_COMBOS.has(`${executionMode}:${autonomyLevel}`);
+}
 const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
   'sdd-route',
@@ -161,6 +171,14 @@ workflow:
   allow_multi_worktree: ${options.multiWorktree || false}
   allow_stacked_prs: ${options.stackedPrs || false}
   commit_policy: manual
+  execution_mode: ${options.executionMode || 'guided'}
+  autonomy_level: ${options.autonomyLevel || 'manual'}
+
+  autonomy_budget:
+    max_iterations: 50
+    max_tokens: 500000
+    max_runtime_hours: 4
+    pause_on_warning: true
 
 quality:
   tlc_baseline_required: true
@@ -502,6 +520,68 @@ function contextRefresh(cwd) {
   discoverProject(cwd, { force: true });
 }
 
+// `context autonomy-state`: read-only report of .sdd/config.yml's workflow.execution_mode /
+// autonomy_level plus the last recorded .sdd/autonomy/loop-state.md, if any. Never mutates
+// anything — `autonomous-resume` is the command that acts on a blocked/paused state.
+function autonomyStateReport(cwd) {
+  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const content = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : null;
+  const executionMode = (content && configValue(content, 'execution_mode')) || 'guided';
+  const autonomyLevel = (content && configValue(content, 'autonomy_level')) || 'manual';
+  log('INFO', `execution_mode: ${executionMode}`);
+  log('INFO', `autonomy_level: ${autonomyLevel}`);
+  const state = readLoopState(cwd);
+  if (!state) {
+    log(
+      'WARN',
+      `status: no ${LOOP_STATE_RELATIVE} found; it is created by an agent the first time it runs a supervised/autonomous workflow`,
+    );
+    return;
+  }
+  log('PASS', 'status: available');
+  log('INFO', `artifact: ${LOOP_STATE_RELATIVE}`);
+  log('INFO', `current skill: ${state.skill || 'unknown'}`);
+  log('INFO', `status: ${state.status || 'unknown'}`);
+  log('INFO', `next: ${state.next || 'none'}`);
+  log('INFO', `guardrails: ${state.guardrails || 'unknown'}`);
+  if (state.stop)
+    log('WARN', 'human override: stop=true — resolve the blocker, then run `autonomous-resume`');
+  else if (state.pause)
+    log('WARN', 'human override: pause=true — run `autonomous-resume` to continue');
+  else log('PASS', 'human override: none');
+}
+
+// `autonomous-resume`: clears a pause=true/stop=true recorded in .sdd/autonomy/loop-state.md and
+// appends an audited log entry, so the invoking agent can re-check guardrails and continue.
+// This CLI has no orchestration engine — it does not itself re-invoke the next skill (see the
+// "Scope" note in shared/references/autonomy-guardrails.md); it only clears the gate and prints
+// the recorded next-skill guidance for the agent to act on.
+function autonomousResume(cwd, options = {}) {
+  const state = readLoopState(cwd);
+  if (!state) {
+    fail(
+      `no ${LOOP_STATE_RELATIVE} found; nothing to resume. It is created by an agent the first time it runs a supervised/autonomous workflow.`,
+    );
+    return;
+  }
+  if (!state.pause && !state.stop && !options.force && !options.overrideGuard) {
+    log('PASS', `no active pause/stop recorded at skill '${state.skill}'; nothing to resume`);
+    return;
+  }
+  const timestamp = new Date().toISOString();
+  const entry = options.overrideGuard
+    ? `- ${timestamp}: guardrail ${options.overrideGuard} overridden by human. Reason: ${options.reason}`
+    : `- ${timestamp}: resumed via \`autonomous-resume${options.force ? ' --force' : ''}\`.`;
+  let content = clearLastHumanOverride(state.content);
+  content = /^## Override Log$/m.test(content)
+    ? `${content.trimEnd()}\n${entry}\n`
+    : `${content.trimEnd()}\n\n## Override Log\n\n${entry}\n`;
+  fs.writeFileSync(state.file, content, 'utf8');
+  log('PASS', `resumed: cleared human override recorded at skill '${state.skill}'`);
+  log('INFO', `next skill: ${state.next || 'unknown — inspect .sdd/autonomy/loop-state.md'}`);
+  log('INFO', 'the invoking agent re-checks all 7 guardrails before advancing to it.');
+}
+
 function validValue(value, allowed) {
   return allowed.includes(value) ? value : null;
 }
@@ -511,6 +591,8 @@ async function initInteractive(
   languageDefault = 'en-US',
   featureProfileDefault = 'medium_feature',
   quiet = false,
+  executionModeDefault = 'guided',
+  autonomyLevelDefault = 'manual',
 ) {
   if (fs.existsSync(path.join(cwd, '.sdd', 'config.yml'))) {
     log('WARN', '.sdd/config.yml already exists; interactive init will not overwrite it');
@@ -553,7 +635,13 @@ async function initInteractive(
       featureProfile: await ask('Feature profile', featureProfileDefault, FEATURE_PROFILES),
       multiWorktree: (await ask('Allow multi-worktree', 'false', ['true', 'false'])) === 'true',
       stackedPrs: (await ask('Allow stacked PRs', 'false', ['true', 'false'])) === 'true',
+      executionMode: await ask('Execution mode', executionModeDefault, EXECUTION_MODES),
+      autonomyLevel: await ask('Autonomy level', autonomyLevelDefault, AUTONOMY_LEVELS),
     };
+    if (!autonomyComboValid(options.executionMode, options.autonomyLevel))
+      throw new Error(
+        `Execution mode ${options.executionMode} cannot combine with autonomy level ${options.autonomyLevel}`,
+      );
     init(cwd, { ...options, quiet });
   } catch (error) {
     // Invalid interactive input is a validation failure, exit 1 — same as every other bad-input
@@ -1127,6 +1215,278 @@ function contractsCheck(cwd) {
   };
 }
 
+// v1.8.0: .sdd/autonomy/loop-state.md is the execution-state file an agent maintains while
+// running a workflow under autonomy_level supervised/autonomous (shared/references/
+// autonomy-guardrails.md). This CLI never runs skills itself — it only reads/writes this file
+// so `doctor --autonomy`, `context autonomy-state`, and `autonomous-resume` can report and act
+// on state an agent already recorded.
+//
+// A literal forward-slash string, deliberately not built with path.join — every other
+// generated-artifact path already displayed in this file (e.g. '.sdd/context/project-context.md')
+// is a literal string for exactly this reason: path.join would produce backslashes in
+// user-facing text on Windows, unlike the actual filesystem access below (loopStatePath), which
+// does use path.join.
+const LOOP_STATE_RELATIVE = '.sdd/autonomy/loop-state.md';
+
+function loopStatePath(cwd) {
+  return path.join(cwd, '.sdd', 'autonomy', 'loop-state.md');
+}
+
+// An agent appends a new "## Current State" block after each skill completes and never rewrites
+// history (shared/references/autonomy-guardrails.md) — so the per-skill fields below must come
+// from the LAST such block, not the first `.match()` hit over the whole file. Only "Execution
+// mode"/"Autonomy level" are declared once, at the top, so those still search the full content.
+function latestCurrentStateSection(content) {
+  const blocks = content.split(/^## Current State$/m);
+  if (blocks.length < 2) return content;
+  return blocks[blocks.length - 1].split(/^## /m)[0];
+}
+
+// Clears the human override recorded in the LAST "- Human override:" line only — with multiple
+// "## Current State" blocks, a plain non-global `.replace()` would silently clear the first
+// (stale) one instead, leaving the actually-current override untouched.
+function clearLastHumanOverride(content) {
+  const regex = /^- Human override:.*$/gm;
+  let lastMatch = null;
+  let match = regex.exec(content);
+  while (match) {
+    lastMatch = match;
+    match = regex.exec(content);
+  }
+  if (!lastMatch) return content;
+  const start = lastMatch.index;
+  const end = start + lastMatch[0].length;
+  return `${content.slice(0, start)}- Human override: pause=false, stop=false${content.slice(end)}`;
+}
+
+function parseLoopState(content) {
+  const latest = latestCurrentStateSection(content);
+  const field = (label) => {
+    const match = latest.match(new RegExp(`^- ${label}:\\s*(.+)$`, 'm'));
+    return match ? match[1].trim() : null;
+  };
+  const overrideRaw = field('Human override') || '';
+  return {
+    executionMode: content.match(/^Execution mode:\s*(.+)$/m)?.[1] ?? null,
+    autonomyLevel: content.match(/^Autonomy level:\s*(.+)$/m)?.[1] ?? null,
+    skill: field('Skill'),
+    status: field('Status'),
+    next: field('Next'),
+    guardrails: field('Guardrails'),
+    pause: /pause\s*=\s*true/.test(overrideRaw),
+    stop: /stop\s*=\s*true/.test(overrideRaw),
+  };
+}
+
+function readLoopState(cwd) {
+  const file = loopStatePath(cwd);
+  if (!fs.existsSync(file)) return null;
+  return {
+    file,
+    content: fs.readFileSync(file, 'utf8'),
+    ...parseLoopState(fs.readFileSync(file, 'utf8')),
+  };
+}
+
+const AUTONOMY_GUARDRAILS = [
+  ['guardrail_1_completion', 'Completion status — skill reports PASS/DONE, not IN_PROGRESS/FAIL'],
+  [
+    'guardrail_2_evidence',
+    'Evidence validation — every autonomy_profile.evidence_required artifact exists',
+  ],
+  ['guardrail_3_verification', "Verification gates — the skill's own required checks all pass"],
+  ['guardrail_4_scope', 'Scope boundary — work stays within the declared task scope'],
+  [
+    'guardrail_5_transition',
+    'Skill transition validity — next skill is on the authorized workflow path',
+  ],
+  ['guardrail_6_resources', 'Resource sufficiency — workflow.autonomy_budget is not exhausted'],
+  ['guardrail_7_human_gate', 'Human override gate — no pause/stop recorded in loop-state.md'],
+];
+
+// Reads workflow.skill_overrides.<skill>.autonomy_level from raw .sdd/config.yml text — same
+// lightweight, zero-dependency regex style as configValue()/parseScalarField(), matching the
+// documented shape (docs/autonomy-levels.md):
+//   workflow:
+//     skill_overrides:
+//       <skill>:
+//         autonomy_level: <level>
+function skillOverrideLevel(content, skill) {
+  if (!content) return null;
+  const match = content.match(new RegExp(`${skill}:\\s*\\n\\s*autonomy_level:\\s*(\\S+)`));
+  return match ? match[1].trim() : null;
+}
+
+// `doctor --autonomy`: validates the *static* setup for autonomy_level (config, skill contracts,
+// budget) plus the last recorded .sdd/autonomy/loop-state.md, if any. There is no orchestration
+// engine in this CLI to validate live — see the "Scope" note in shared/references/
+// autonomy-guardrails.md.
+function autonomyCheck(cwd, options = {}) {
+  const checks = [];
+  const add = (name, status, message, section = 'Autonomy') =>
+    checks.push({ name, status, message, section });
+
+  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configExists = fs.existsSync(configPath);
+  const content = configExists ? fs.readFileSync(configPath, 'utf8') : null;
+  const executionMode = content ? configValue(content, 'execution_mode') : null;
+  const autonomyLevel = content ? configValue(content, 'autonomy_level') : null;
+
+  let explicitlyInvalid = false;
+  if (!configExists) {
+    add(
+      'autonomy_config',
+      'WARN',
+      '.sdd/config.yml not found; run `init` to set workflow.execution_mode/autonomy_level',
+    );
+  } else if (!executionMode || !autonomyLevel) {
+    add(
+      'autonomy_config',
+      'WARN',
+      'workflow.execution_mode/autonomy_level not set in .sdd/config.yml; defaulting to guided/manual (pre-v1.8.0 config, still fully supported)',
+    );
+  } else if (!EXECUTION_MODES.includes(executionMode) || !AUTONOMY_LEVELS.includes(autonomyLevel)) {
+    explicitlyInvalid = true;
+    add(
+      'autonomy_config',
+      'FAIL',
+      `workflow.execution_mode/autonomy_level has an invalid value (execution_mode=${executionMode}, autonomy_level=${autonomyLevel})`,
+    );
+  } else {
+    add(
+      'autonomy_config',
+      'PASS',
+      `execution_mode=${executionMode}, autonomy_level=${autonomyLevel}`,
+    );
+  }
+
+  const effectiveExecutionMode =
+    executionMode && EXECUTION_MODES.includes(executionMode) ? executionMode : 'guided';
+  const effectiveAutonomyLevel =
+    autonomyLevel && AUTONOMY_LEVELS.includes(autonomyLevel) ? autonomyLevel : 'manual';
+  // When autonomy_config is FAIL because of an invalid *explicit* value, evaluating the combo
+  // against the silently-substituted guided/manual defaults would report a misleading PASS —
+  // fix workflow.execution_mode/autonomy_level first instead.
+  if (explicitlyInvalid) {
+    add(
+      'autonomy_combo',
+      'FAIL',
+      'not evaluated — workflow.execution_mode/autonomy_level has an invalid value, fix autonomy_config first',
+    );
+  } else if (!autonomyComboValid(effectiveExecutionMode, effectiveAutonomyLevel)) {
+    add(
+      'autonomy_combo',
+      'FAIL',
+      `execution_mode=${effectiveExecutionMode} cannot combine with autonomy_level=${effectiveAutonomyLevel} (see docs/autonomy-levels.md)`,
+    );
+  } else {
+    add('autonomy_combo', 'PASS', 'execution_mode × autonomy_level combination is valid');
+  }
+
+  const root = resolveSkillsRoot(cwd);
+  const skills = installedSkillDirs(root);
+  if (!skills.length) {
+    add('autonomy_skills', 'WARN', 'no installed skills found under .agents/skills to validate');
+  } else {
+    const missingProfile = [];
+    const unsupported = [];
+    for (const skill of skills) {
+      const skillPath = path.join(root, skill, 'SKILL.md');
+      const skillContent = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf8') : null;
+      const frontmatter = skillContent ? frontmatterOf(skillContent) : null;
+      if (!frontmatter || !/^autonomy_profile:/m.test(frontmatter)) {
+        missingProfile.push(skill);
+        continue;
+      }
+      const supportedLevels = parseContractArray(frontmatter, 'supported_levels') || [];
+      const overrideLevel = skillOverrideLevel(content, skill);
+      const levelForSkill =
+        overrideLevel && AUTONOMY_LEVELS.includes(overrideLevel)
+          ? overrideLevel
+          : effectiveAutonomyLevel;
+      if (levelForSkill !== 'manual' && !supportedLevels.includes(levelForSkill))
+        unsupported.push(
+          overrideLevel ? `${skill} (workflow.skill_overrides: ${levelForSkill})` : skill,
+        );
+    }
+    if (missingProfile.length) {
+      add(
+        'autonomy_skills',
+        'FAIL',
+        `skill(s) missing autonomy_profile: ${missingProfile.join(', ')}`,
+      );
+    } else if (unsupported.length) {
+      add(
+        'autonomy_skills',
+        'WARN',
+        `skill(s) do not support their effective autonomy_level (workflow default: ${effectiveAutonomyLevel}): ${unsupported.join(', ')} — set workflow.skill_overrides or keep them at manual/supervised`,
+      );
+    } else {
+      add(
+        'autonomy_skills',
+        'PASS',
+        `all ${skills.length} installed skill(s) support autonomy_level=${effectiveAutonomyLevel}`,
+      );
+    }
+  }
+
+  if (content) {
+    const maxIterations = configValue(content, 'max_iterations');
+    if (effectiveAutonomyLevel === 'autonomous' && !maxIterations) {
+      add(
+        'autonomy_budget',
+        'WARN',
+        'workflow.autonomy_budget not set; an autonomous run has no resource guardrail (guardrail 6)',
+      );
+    } else if (maxIterations) {
+      add(
+        'autonomy_budget',
+        'PASS',
+        `budget: max_iterations=${maxIterations}, max_tokens=${configValue(content, 'max_tokens')}, max_runtime_hours=${configValue(content, 'max_runtime_hours')}`,
+      );
+    } else {
+      add(
+        'autonomy_budget',
+        'INFO',
+        'workflow.autonomy_budget not set (not required outside autonomous mode)',
+      );
+    }
+  }
+
+  const loopState = readLoopState(cwd);
+  if (!loopState) {
+    add(
+      'autonomy_loop_state',
+      'INFO',
+      'no .sdd/autonomy/loop-state.md yet; an agent creates it the first time it runs a supervised/autonomous workflow',
+    );
+  } else if (loopState.stop) {
+    add(
+      'autonomy_loop_state',
+      'WARN',
+      `loop state recorded stop=true at skill '${loopState.skill}'; resolve the blocker, then run \`autonomous-resume\``,
+    );
+  } else if (loopState.pause) {
+    add(
+      'autonomy_loop_state',
+      'WARN',
+      `loop state recorded pause=true at skill '${loopState.skill}'; run \`autonomous-resume\` to continue`,
+    );
+  } else {
+    add(
+      'autonomy_loop_state',
+      'PASS',
+      `last recorded skill '${loopState.skill}' → ${loopState.status || 'unknown'}; next: ${loopState.next || 'none'}`,
+    );
+  }
+
+  if (options.verbose)
+    for (const [name, message] of AUTONOMY_GUARDRAILS)
+      add(name, 'INFO', message, 'Autonomy guardrails');
+
+  return checks;
+}
+
 // Only checks whose fix is a single, unambiguous command get a hint — checks that already
 // embed their fix instruction directly in the message text (project_context, the
 // installation_* rows, baseline-compliance) are left untouched to avoid duplication.
@@ -1193,6 +1553,7 @@ async function doctor(cwd, options = {}) {
   const checks = doctorChecks(cwd);
   if (options.smoke) checks.push(smokeCheck());
   if (options.contracts) checks.push(contractsCheck(cwd));
+  if (options.autonomy) checks.push(...autonomyCheck(cwd, { verbose: options.verbose }));
   if (options.checkUpdates) checks.push(await checkForUpdate({ currentVersion: VERSION }));
   const result = {
     status: severity(checks),
@@ -1288,14 +1649,17 @@ function uninstall(args, cwd) {
 // alongside --quiet (v1.4.0) specifically because it lands in 4 of these strings at once, which
 // is exactly the kind of change that causes hand-duplicated copies to drift.
 const USAGE = {
-  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--quiet]',
+  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--quiet]',
   install:
     'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--quiet]',
-  doctor: 'usage: doctor [--json] [--smoke] [--contracts] [--check-updates]',
+  doctor:
+    'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
   uninstall:
     'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--quiet]',
   discover: 'usage: discover [--force] [--quiet]',
-  context: 'usage: context [status|refresh]',
+  context: 'usage: context [status|refresh|autonomy-state]',
+  'autonomous-resume':
+    'usage: autonomous-resume [--force] | autonomous-resume --override-guard=<1-7> --reason="..."',
 };
 
 const KNOWN_COMMANDS = [
@@ -1305,6 +1669,7 @@ const KNOWN_COMMANDS = [
   'context',
   'install',
   'doctor',
+  'autonomous-resume',
   'uninstall',
   'help',
   'version',
@@ -1320,21 +1685,30 @@ Existing .sdd/config.yml is preserved; init never overwrites it.
 USAGE
   sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
+                         [--execution-mode plan|guided|apply|review|full]
+                         [--autonomy-level manual|supervised|autonomous]
                          [--quiet]
 
 OPTIONS
   --interactive          Prompt for project name, agent target, language, source type,
-                         flow, and feature profile instead of using defaults.
+                         flow, feature profile, execution mode, and autonomy level
+                         instead of using defaults.
   --language <profile>   Human-facing output language: en-US or pt-BR.
   --en                   Alias for --language en-US.
   --br                   Alias for --language pt-BR.
   --feature-profile <p>  Adaptive sizing: small_fix | medium_feature | large_feature | epic.
+  --execution-mode <m>   What a skill is authorized to do: plan | guided | apply | review |
+                         full. Default: guided. See docs/execution-modes.md.
+  --autonomy-level <l>   How a workflow advances between skills: manual | supervised |
+                         autonomous. Default: manual. plan/guided never combine with
+                         autonomous. See docs/autonomy-levels.md.
   --quiet                Suppress the "Suggested next step" line on success.
 
 EXAMPLES
   sdd-agentic-flow init
   sdd-agentic-flow init --br
   sdd-agentic-flow init --interactive
+  sdd-agentic-flow init --execution-mode full --autonomy-level supervised
 `,
   install: `sdd-agentic-flow install <pack>
 
@@ -1367,12 +1741,18 @@ Validate local setup: configuration, installed skills (project and user scope),
 baselines, language profile, safety defaults, and platform/environment.
 
 USAGE
-  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--check-updates]
+  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose]
+                          [--check-updates]
 
 OPTIONS
   --json           Print machine-readable JSON only (no human-readable report).
   --smoke          Also run an isolated init/install/doctor smoke test in a temp dir.
   --contracts      Also validate installed skills' capability contracts.
+  --autonomy       Also validate workflow.execution_mode/autonomy_level, the
+                   execution_mode × autonomy_level matrix, each installed skill's
+                   autonomy_profile support, workflow.autonomy_budget, and the last
+                   recorded .sdd/autonomy/loop-state.md. See docs/autonomy-levels.md.
+  --verbose        With --autonomy, also list all 7 guardrails and what each one gates.
   --check-updates  Make one request to the npm registry to check for a newer version.
                    The sole, explicit, opt-in exception to "no outbound network access
                    by default" (see docs/trust-model.md) — never run automatically.
@@ -1381,6 +1761,7 @@ EXAMPLES
   sdd-agentic-flow doctor
   sdd-agentic-flow doctor --json
   sdd-agentic-flow doctor --smoke --contracts
+  sdd-agentic-flow doctor --autonomy --verbose
   sdd-agentic-flow doctor --check-updates
 `,
   uninstall: `sdd-agentic-flow uninstall
@@ -1432,19 +1813,22 @@ EXAMPLES
   sdd-agentic-flow discover
   sdd-agentic-flow discover --force
 `,
-  context: `sdd-agentic-flow context [status|refresh]
+  context: `sdd-agentic-flow context [status|refresh|autonomy-state]
 
 Inspect or refresh the generated project-context artifact's provenance
-(when it was generated, at which repository revision/branch).
+(when it was generated, at which repository revision/branch), or inspect the
+last recorded .sdd/autonomy/loop-state.md (autonomy_level supervised/autonomous runs).
 
 USAGE
   sdd-agentic-flow context
   sdd-agentic-flow context status
   sdd-agentic-flow context refresh
+  sdd-agentic-flow context autonomy-state
 
 EXAMPLES
   sdd-agentic-flow context status
   sdd-agentic-flow context refresh
+  sdd-agentic-flow context autonomy-state
 `,
   list: `sdd-agentic-flow list
 
@@ -1452,6 +1836,30 @@ List available skill packs and their status.
 
 USAGE
   sdd-agentic-flow list
+`,
+  'autonomous-resume': `sdd-agentic-flow autonomous-resume
+
+Resume an autonomy_level supervised/autonomous workflow paused or stopped at a
+guardrail. Reads .sdd/autonomy/loop-state.md, clears any recorded pause=true/
+stop=true, and appends an audited log entry. Never re-invokes a skill itself —
+this CLI has no orchestration engine; it prints the recorded next skill for the
+invoking agent to act on. See docs/autonomy-levels.md.
+
+USAGE
+  sdd-agentic-flow autonomous-resume [--force]
+  sdd-agentic-flow autonomous-resume --override-guard=<1-7> --reason="..."
+
+OPTIONS
+  --force                  Resume without a specific guardrail reference; logs a
+                           generic resume entry.
+  --override-guard=<1-7>   Reference the specific guardrail (1-7, see
+                           docs/autonomy-guardrails.md) being bypassed. Requires --reason.
+  --reason="..."           Required with --override-guard: why the override is safe.
+
+EXAMPLES
+  sdd-agentic-flow autonomous-resume
+  sdd-agentic-flow autonomous-resume --force
+  sdd-agentic-flow autonomous-resume --override-guard=3 --reason="flaky test, verified manually"
 `,
 };
 
@@ -1478,11 +1886,12 @@ QUICK START
 
 COMMANDS
   list                                   List packs
-  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--quiet]  Create local configuration
+  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Create local configuration
   discover [--force] [--quiet]           Refresh auto-discovered project context
-  context [status|refresh]               Show or refresh project context provenance
+  context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
   install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
-  doctor [--json] [--smoke] [--contracts] [--check-updates]  Validate package or project setup
+  doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+  autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
   uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
@@ -1567,6 +1976,8 @@ async function runCommand(command, args, cwd) {
       let interactive = false;
       let language = 'en-US';
       let featureProfile = 'medium_feature';
+      let executionMode = 'guided';
+      let autonomyLevel = 'manual';
       let quiet = false;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
@@ -1582,10 +1993,27 @@ async function runCommand(command, args, cwd) {
         ) {
           featureProfile = args[index + 1];
           index += 1;
+        } else if (
+          args[index] === '--execution-mode' &&
+          EXECUTION_MODES.includes(args[index + 1])
+        ) {
+          executionMode = args[index + 1];
+          index += 1;
+        } else if (
+          args[index] === '--autonomy-level' &&
+          AUTONOMY_LEVELS.includes(args[index + 1])
+        ) {
+          autonomyLevel = args[index + 1];
+          index += 1;
         } else return fail(usage);
       }
-      if (interactive) await initInteractive(cwd, language, featureProfile, quiet);
-      else init(cwd, { profile: language, featureProfile, quiet });
+      if (!autonomyComboValid(executionMode, autonomyLevel))
+        return fail(
+          `--execution-mode ${executionMode} cannot combine with --autonomy-level ${autonomyLevel} (see docs/autonomy-levels.md).`,
+        );
+      if (interactive)
+        await initInteractive(cwd, language, featureProfile, quiet, executionMode, autonomyLevel);
+      else init(cwd, { profile: language, featureProfile, executionMode, autonomyLevel, quiet });
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);
@@ -1600,10 +2028,11 @@ async function runCommand(command, args, cwd) {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.context);
     else {
       const sub = args[0] || 'status';
-      if (args.length > 1 || (sub !== 'status' && sub !== 'refresh'))
-        return fail('usage: context [status|refresh]');
+      if (args.length > 1 || !['status', 'refresh', 'autonomy-state'].includes(sub))
+        return fail('usage: context [status|refresh|autonomy-state]');
       if (sub === 'status') contextStatus(cwd);
-      else contextRefresh(cwd);
+      else if (sub === 'refresh') contextRefresh(cwd);
+      else autonomyStateReport(cwd);
     }
   } else if (command === 'install') {
     const usage = USAGE.install;
@@ -1636,7 +2065,12 @@ async function runCommand(command, args, cwd) {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);
     const valid = args.every(
       (arg) =>
-        arg === '--json' || arg === '--smoke' || arg === '--contracts' || arg === '--check-updates',
+        arg === '--json' ||
+        arg === '--smoke' ||
+        arg === '--contracts' ||
+        arg === '--autonomy' ||
+        arg === '--verbose' ||
+        arg === '--check-updates',
     );
     if (!valid) {
       if (args.includes('--json')) {
@@ -1650,8 +2084,27 @@ async function runCommand(command, args, cwd) {
         json: args.includes('--json'),
         smoke: args.includes('--smoke'),
         contracts: args.includes('--contracts'),
+        autonomy: args.includes('--autonomy'),
+        verbose: args.includes('--verbose'),
         checkUpdates: args.includes('--check-updates'),
       });
+  } else if (command === 'autonomous-resume') {
+    const usage = USAGE['autonomous-resume'];
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP['autonomous-resume']);
+    let force = false;
+    let overrideGuard = null;
+    let reason = null;
+    let valid = true;
+    for (const arg of args) {
+      if (arg === '--force') force = true;
+      else if (arg.startsWith('--override-guard='))
+        overrideGuard = arg.slice('--override-guard='.length);
+      else if (arg.startsWith('--reason=')) reason = arg.slice('--reason='.length);
+      else valid = false;
+    }
+    if (!valid || (overrideGuard && !/^[1-7]$/.test(overrideGuard))) return fail(usage);
+    if (overrideGuard && !reason) return fail('--override-guard requires --reason="...".');
+    autonomousResume(cwd, { force, overrideGuard, reason });
   } else if (command === 'uninstall') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
     else uninstall(args, cwd);

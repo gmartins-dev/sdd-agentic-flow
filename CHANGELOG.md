@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.8.0
+
+Adds autonomy levels: `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default
+`manual`) is a new axis **orthogonal to**, not a replacement for, the 5 existing
+`execution_modes` (`plan`/`guided`/`apply`/`review`/`full`, `docs/execution-modes.md`).
+`execution_mode` answers "what is a skill authorized to do"; `autonomy_level` answers "does a
+skill need a human between it and the next one." `plan` and `guided` never combine with
+`autonomous` — `doctor --autonomy` flags either combination as `FAIL`.
+
+`autonomous` only advances between skills when 7 deterministic guardrails all pass: completion
+status, evidence validation, verification gates, scope boundary, transition validity, resource
+sufficiency, and human override. Any single failure returns control to a human, exactly as
+`autonomy_level: manual` already would — see `docs/autonomy-guardrails.md`.
+
+All 13 skills gain an `autonomy_profile` frontmatter block (`supported_levels`,
+`auto_continue_condition`, `blocking_conditions`, `evidence_required`), validated by
+`scripts/check-skills.sh` the same way `extends`/`requires`/`produces`/`depends_on`/`conflicts`
+already are. `.sdd/config.yml` gains `workflow.execution_mode`/`autonomy_level`/`autonomy_budget`
+— all additive; an existing config predating v1.8.0 that has neither field defaults to
+`guided`/`manual`, identical to previous behavior (`doctor --autonomy` reports `WARN`, not
+`FAIL`).
+
+New CLI surface: `init --execution-mode <mode> --autonomy-level <level>` (also available via
+`init --interactive`), `doctor --autonomy [--verbose]`, `context autonomy-state`, and
+`autonomous-resume [--force | --override-guard=<1-7> --reason="..."]`. There is no orchestration
+engine in this CLI — these commands validate the static contract and manage
+`.sdd/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
+`supervised`/`autonomous` workflow; none of them invoke a skill on their own.
+
+Two new docs (`docs/autonomy-levels.md`, `docs/autonomy-guardrails.md`) plus a new shared
+reference (`shared/references/autonomy-guardrails.md`); `docs/execution-modes.md`,
+`docs/configuration.md`, `docs/compatibility-promise.md`, `docs/troubleshooting.md`, and
+`docs/inspirations.md` updated to cross-reference the new model. MCP stays **awareness,
+not a platform**: `autonomy_level` governs skill-to-skill transitions only, never tool use — a
+skill may call any available MCP integration at any autonomy level, exactly as before.
+
+Zero breaking changes: every new field, frontmatter block, and command is additive, and no
+skill's previously documented behavior changed.
+
 ## 1.7.0
 
 Adds a way to try out CLI changes — onboarding wording, a new flag, changed command behavior —

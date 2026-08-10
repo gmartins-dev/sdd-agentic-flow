@@ -82,11 +82,12 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language ...|--en|--br] [--feature-profile ...] [--quiet]  Create local configuration
+init [--interactive] [--language ...|--en|--br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Create local configuration
 discover [--force] [--quiet]          Refresh auto-discovered project context
-context [status|refresh]              Show or refresh project context provenance
+context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
-doctor [--json] [--smoke] [--contracts] [--check-updates]  Validate package or project setup
+doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
 uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
 list                                  List packs
@@ -116,6 +117,10 @@ Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/int
 ## Execution modes
 
 The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `review`, and `full`. `full` means a coordinated local workflow, not unrestricted autonomy. See [execution modes](docs/execution-modes.md).
+
+## Autonomy levels
+
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) is a second, orthogonal axis: `execution_mode` says what a skill may do, `autonomy_level` says whether it needs a human before the next one runs. `autonomous` only advances when all 7 deterministic guardrails pass (completion, evidence, verification, scope, transition validity, resource budget, no human override); any failure hands control back to a human. Set it with `init --autonomy-level`, audit it with `doctor --autonomy`, and inspect an in-flight run with `context autonomy-state` / `autonomous-resume`. See [autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
 
 ## Main SDD flow
 

@@ -2,7 +2,7 @@
 name: setup-sdd-agentic-flow
 description: Initialize the public SDD Agentic Flow structure in a repository. Use when a user asks to set up, bootstrap, or configure this SDD workflow; create only the requested repository-local planning files and start from .sdd/config.yml.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: null
 requires: [config]
@@ -13,6 +13,11 @@ compatible_with: [core, full, github, local-files, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; project bootstrap is a one-time, human-confirmed step'
+  blocking_conditions: [config_write_failed]
+  evidence_required: [.sdd/config.yml, .sdd/context/project-context.md]
 ---
 
 # Set up SDD Agentic Flow
@@ -57,3 +62,7 @@ Return a short setup summary containing:
 - the configuration path and effective artifact locations;
 - files created or intentionally left unchanged;
 - the next local command or skill to use.
+
+## Autonomy
+
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. Project bootstrap is a one-time, human-confirmed step outside the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

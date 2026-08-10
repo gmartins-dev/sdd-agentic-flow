@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]
@@ -13,6 +13,11 @@ compatible_with: [core, full, github, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'validation-report present with status PASS and every specification requirement satisfied'
+  blocking_conditions: [requirements_unmet, gates_failed]
+  evidence_required: [validation-report]
 ---
 
 # Validate an SDD feature
@@ -47,3 +52,7 @@ Remain read-only except for permitted local report or disposable test artifacts.
 ## Output
 
 Return feature identity, decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, treating the feature as ready for `sdd-create-pr` requires a validation-report with status PASS and every specification requirement satisfied; an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

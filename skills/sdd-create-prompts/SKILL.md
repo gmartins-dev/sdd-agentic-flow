@@ -2,7 +2,7 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd/config.yml first and do not implement the work.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -13,6 +13,11 @@ compatible_with: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'prompts.md present with a paste-ready prompt for every task in tasks.md; no ambiguous task boundary'
+  blocking_conditions: [missing_spec_package, ambiguous_task_boundaries]
+  evidence_required: [prompts.md]
 ---
 
 # Create SDD Implementation Prompts
@@ -53,3 +58,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 ## Output
 
 Return the prompt artifact paths plus a compact mapping of prompt to requirements, owned files, dependencies, and validation expected from the implementer.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-implement-task` or `sdd-implement-multi` requires prompts.md present with a paste-ready prompt for every task and no ambiguous task boundary; missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

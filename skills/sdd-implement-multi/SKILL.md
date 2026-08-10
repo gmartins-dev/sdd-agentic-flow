@@ -2,7 +2,7 @@
 name: sdd-implement-multi
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: multi-worktree
 extends: sdd-create-prompts
 requires: [config, spec-package]
@@ -13,6 +13,11 @@ compatible_with: [execution, full, multi-worktree]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'execution-plan.md present, the task dependency graph is acyclic, and worktree/scope boundaries are declared for every delegated task'
+  blocking_conditions: [circular_task_dependencies, unscoped_worktrees]
+  evidence_required: [execution-plan.md]
 ---
 
 # Coordinate SDD tasks
@@ -48,3 +53,7 @@ Never share a mutable worktree between concurrent tasks — this is the isolatio
 ## Output
 
 Return feature identity, dependency waves, per-task status, blockers, evidence, and the next safe action.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to delegated `sdd-implement-task` runs requires execution-plan.md present, an acyclic dependency graph, and a declared worktree/scope boundary per task; a circular dependency or unscoped worktree blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

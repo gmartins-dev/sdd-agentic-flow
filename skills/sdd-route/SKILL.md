@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: null
 requires: [config]
@@ -14,6 +14,11 @@ compatible_with:
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; it only recommends a next skill for a human or the invoking agent to run'
+  blocking_conditions: [ambiguous_state]
+  evidence_required: [route-recommendation]
 ---
 
 # Route an SDD workflow
@@ -57,3 +62,7 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 - Human decision required:
 - Next invocation:
 - Safety limits:
+
+## Autonomy
+
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. It recommends a next skill; it never invokes one itself, so there is nothing for it to auto-advance into. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

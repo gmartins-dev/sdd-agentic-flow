@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd/config.yml before producing artifacts.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -13,6 +13,11 @@ compatible_with: [core, full, github, local-files, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion'
+  blocking_conditions: [missing_spec, inconsistent_design, unspecified_requirements]
+  evidence_required: [spec.md, design.md]
 ---
 
 # Create SDD Specifications
@@ -58,3 +63,7 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
 ## Output
 
 Return the created or updated artifact paths, evidence consulted, and: in source-item mode, a concise scope and acceptance-criteria summary plus open questions or decisions required before implementation; in existing-code mode, a concise summary of findings labeled Observed, Inferred, or Unknown, so the reader can distinguish confirmed behavior from inference and unresolved gaps at a glance.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-create-prompts` or `sdd-implement-task` requires spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion; an inconsistent design or missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

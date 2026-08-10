@@ -2,7 +2,7 @@
 name: sdd-explain-me
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -13,6 +13,11 @@ compatible_with: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; it produces an explanation for a human reader, not a workflow step'
+  blocking_conditions: [missing_spec_package]
+  evidence_required: [explanation]
 ---
 
 # Explain an SDD feature
@@ -54,3 +59,7 @@ Return the explanation's file path and a short summary, plus:
 - Status: `written` / `blocked`
 - Next recommended skill: `none` (this is a terminal, on-demand step)
 - Reason: one line tying the status to the recommendation
+
+## Autonomy
+
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. It produces an explanation for a human reader, not a step in the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

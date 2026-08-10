@@ -25,6 +25,19 @@ deterministically against the installed CLI's `VERSION` using the vendored compa
 `bin/version-compat.js` — not the npm `semver` package, which would break the zero-runtime-
 dependency invariant (see [trust model](trust-model.md)).
 
+## `autonomy_profile` (v1.8.0)
+
+`autonomy_profile` is a 10th capability-contract field, alongside `requires_cli`. Unlike the 9
+fields above it, it is a nested block (`supported_levels`, `auto_continue_condition`,
+`blocking_conditions`, `evidence_required`), not a single scalar or flow array — see
+[autonomy levels](autonomy-levels.md#authoring-autonomy_profile-for-a-skill). It follows the same
+breaking-vs-additive rule as every other contract field below: removing it, or changing an
+existing skill's `supported_levels` in a way that drops a level a project already configured, is
+a breaking change requiring a major release under the v1.0 stability commitment.
+`scripts/check-skills.sh` validates every installed skill declares it and that
+`supported_levels` stays a subset of `{manual, supervised, autonomous}`, the same enforcement
+style as `compatible_with`.
+
 ## Baseline versioning
 
 `shared/baselines/registry.yml` tracks `baseline_version` for `tlc-spec-driven` and `tdd`
@@ -83,9 +96,11 @@ internal convention.
 
 - **CLI argument surface.** The *documented* CLI surface — every command and flag listed in
   `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
-  `init [--interactive] [--language ...] [--quiet]`, `install <pack> [--scope user|project]
-  [--agent ...] [--plan] [--quiet]`, `doctor [--json] [--smoke] [--contracts]
-  [--check-updates]`, `uninstall --plan | --apply [--include-config] [--full] [--scope
+  `init [--interactive] [--language ...] [--execution-mode ...] [--autonomy-level ...]
+  [--quiet]`, `install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]`, `doctor
+  [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]`, `context
+  [status|refresh|autonomy-state]`, `autonomous-resume [--force] [--override-guard=<1-7>
+  --reason="..."]`, `uninstall --plan | --apply [--include-config] [--full] [--scope
   user|project] [--agent ...] [--quiet]`, `discover [--force] [--quiet]` — now follows the same
   rule as a skill's capability contract: it only changes in a **minor** or **major** release,
   never a patch. Removing a command or flag, or changing what it defaults to, is a breaking
@@ -107,7 +122,11 @@ internal convention.
 - **`--json` output shape**, also frozen. v1.4.0 adds one additive row: `doctor --check-updates
   --json` includes a new `{ name: "update_check", status, message }` entry in `checks`, present
   only when `--check-updates` is explicitly passed — every other invocation's `--json` shape is
-  unchanged. Same precedent as the existing `--smoke`/`--contracts` rows.
+  unchanged. v1.8.0 adds the same kind of additive rows for `doctor --autonomy --json`
+  (`autonomy_config`, `autonomy_combo`, `autonomy_skills`, `autonomy_budget`,
+  `autonomy_loop_state`, and, with `--verbose`, `guardrail_1_completion` through
+  `guardrail_7_human_gate`) — present only when `--autonomy` is explicitly passed. Same
+  precedent as the existing `--smoke`/`--contracts` rows.
 - **What still stays free to change without notice:** the exact non-JSON, human-readable
   output text of `doctor` and other commands, and the wording of log/warning/error messages —
   including whether that text is colored (colors are disabled automatically for any non-TTY

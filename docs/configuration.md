@@ -12,6 +12,22 @@ overwriting it. See [language profiles](language-profiles.md).
 Keep `quality` gates enabled unless the project records an explicit exception. The `safety`
 keys keep commit, push, and merge/deploy disabled by default.
 
+## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
+
+`workflow.execution_mode` (`plan`/`guided`/`apply`/`review`/`full`, default `guided`) and
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) are two
+orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `autonomy_level`
+answers "does a skill need a human between it and the next one." `plan` and `guided` never
+combine with `autonomous` — `doctor --autonomy` flags either combination as `FAIL`. `init
+--autonomy-level`/`--execution-mode` set both at creation time; both default to their most
+conservative value, so an existing `.sdd/config.yml` predating v1.8.0 behaves identically once
+these fields are added (`WARN`, not `FAIL`, when missing). `workflow.autonomy_budget`
+(`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an
+`autonomous` run may do before it must stop and hand control back. See
+[autonomy levels](autonomy-levels.md) for the full model, including the 7 guardrails that gate
+every automatic transition, and `doctor --autonomy` / `context autonomy-state` /
+`autonomous-resume` for the CLI surface.
+
 ## Project context
 
 `init` also creates `.sdd/context/project-context.md`, a read-only, auto-discovered record of
@@ -67,6 +83,9 @@ Two commands read and act on this provenance:
   or not it already exists. It is equivalent to `discover --force` but does not require
   remembering the flag, and is the recommended way to refresh context going forward; `discover
   [--force]` keeps working exactly as before for existing scripts and CI.
+- `sdd-agentic-flow context autonomy-state` — read-only report of `workflow.execution_mode`/
+  `autonomy_level` plus the last recorded `.sdd/autonomy/loop-state.md`, if any. See
+  [autonomy levels](autonomy-levels.md).
 
 `doctor`'s `project_context` check also surfaces revision drift in its message when it detects
 the repository has moved on since the recorded generation.

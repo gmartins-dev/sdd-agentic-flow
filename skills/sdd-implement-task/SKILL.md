@@ -2,7 +2,7 @@
 name: sdd-implement-task
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 1.7.0
+  version: 1.8.0
   pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
@@ -13,6 +13,11 @@ compatible_with: [core, execution, full, github, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'tests pass, the configured linter is clean, and modified files stay within the declared task scope'
+  blocking_conditions: [tests_fail, linter_errors, scope_exceeded]
+  evidence_required: [tests, tdd-evidence]
 ---
 
 # Implement one SDD task
@@ -48,3 +53,7 @@ Preserve unrelated and pre-existing changes. Keep credentials, personal data, an
 ## Output
 
 Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step.
+
+## Autonomy
+
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-task-check` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

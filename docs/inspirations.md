@@ -32,7 +32,10 @@
   its 13 skills already matches its core shape by construction: `name` equal to the skill
   directory, kebab-case, and a `description` following a "what it does. Use when..." pattern.
   Noted here as a compatibility reference, not a claim of formal compliance — no external
-  validator has been run against this toolkit's skills.
+  validator has been run against this toolkit's skills. Fields added since (`autonomy_profile`
+  in v1.8.0, alongside the pre-existing `extends`/`requires`/`produces`/`depends_on`/`conflicts`)
+  stay plain YAML frontmatter, read by no vendor-specific API — the same posture, re-audited
+  each time the frontmatter grows rather than assumed to still hold.
 
 ## No endorsement
 

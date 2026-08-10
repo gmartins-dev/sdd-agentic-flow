@@ -23,7 +23,40 @@ const mmdc = path.join(
 // Chromium's sandbox needs — Puppeteer fails to launch with "No usable sandbox!" otherwise.
 // Safe here: this only renders trusted, repo-local Markdown to catch mermaid syntax errors,
 // never untrusted content, and never runs as part of the distributed CLI.
-const puppeteerConfig = path.join(__dirname, 'mermaid-puppeteer-config.json');
+const puppeteerConfigPath = path.join(__dirname, 'mermaid-puppeteer-config.json');
+
+function resolveChromeExecutable() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const candidates =
+    process.platform === 'darwin'
+      ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+      : process.platform === 'win32'
+        ? [
+            `${process.env.PROGRAMFILES}\\Google\\Chrome\\Application\\chrome.exe`,
+            `${process.env['PROGRAMFILES(X86)']}\\Google\\Chrome\\Application\\chrome.exe`,
+          ]
+        : [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+          ];
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate));
+}
+
+function puppeteerConfigFile() {
+  const base = JSON.parse(fs.readFileSync(puppeteerConfigPath, 'utf8'));
+  const executablePath = resolveChromeExecutable();
+  if (!executablePath) {
+    return puppeteerConfigPath;
+  }
+  const merged = { ...base, executablePath };
+  const tempPath = path.join(os.tmpdir(), `sdd-agentic-flow-mermaid-puppeteer-${process.pid}.json`);
+  fs.writeFileSync(tempPath, `${JSON.stringify(merged, null, 2)}\n`);
+  return tempPath;
+}
 
 function trackedMarkdownFiles() {
   const output = execFileSync('git', ['ls-files', '*.md', ':!.specs/**'], {
@@ -45,6 +78,7 @@ function main() {
     return;
   }
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-mermaid-'));
+  const puppeteerConfig = puppeteerConfigFile();
   const failures = [];
   try {
     for (const file of files) {
@@ -71,6 +105,9 @@ function main() {
     }
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
+    if (puppeteerConfig !== puppeteerConfigPath) {
+      fs.rmSync(puppeteerConfig, { force: true });
+    }
   }
   if (failures.length) {
     for (const failure of failures) {

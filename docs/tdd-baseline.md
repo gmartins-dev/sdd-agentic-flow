@@ -6,7 +6,7 @@ The canonical rules live in [shared/references/tdd-baseline.md](../shared/refere
 
 ## Upstream inspiration
 
-The baseline adapts the public `tdd` skill in `mattpocock/skills`. Attribution does not imply endorsement. The pinned upstream reference is release tag [`v1.2.3`](https://github.com/mattpocock/skills/releases/tag/v1.2.3). See [TLC integration](tlc-integration.md#upstream-version-pins) for how this pin is tracked and updated.
+The baseline adapts the public `tdd` skill in `mattpocock/skills`. Attribution does not imply endorsement. The pinned upstream reference is release tag [`v1.2.3`](https://github.com/mattpocock/skills/releases/tag/v1.2.3). See [Baselines](baselines.md) for how this pin is tracked and updated.
 
 ## When it applies
 

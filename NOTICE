@@ -16,4 +16,4 @@ endorsement. See `LICENSING.md`.
 
 Both upstream version references are tracked in `shared/baselines/registry.yml`
 (`upstream_version`) and are updated deliberately, never silently, when the upstream skill
-changes — see docs/tlc-integration.md.
+changes — see docs/baselines.md.

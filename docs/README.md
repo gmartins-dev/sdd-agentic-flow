@@ -17,6 +17,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 
 | Doc | When to read |
 | --- | --- |
+| [sdd-methodology.md](sdd-methodology.md) | What SDD means in this toolkit and why specs help agents |
 | [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) | Running the full SDD chain with coding agents |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
 | [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
@@ -24,7 +25,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [skills.md](skills.md) | Skills layer overview |
 | [prompt-recipes.md](prompt-recipes.md) | Copy-paste prompt patterns |
 | [tdd-baseline.md](tdd-baseline.md) | TDD baseline overview (detail in shared reference) |
-| [tlc-integration.md](tlc-integration.md) | What this package ships vs external TLC skills |
+| [baselines.md](baselines.md) | What this package ships vs external TLC/TDD skills |
 
 ## Guides
 

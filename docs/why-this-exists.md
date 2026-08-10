@@ -1,5 +1,7 @@
 # Why this exists
 
+Expanded narrative: see the [README](../README.md) and [SDD methodology](sdd-methodology.md).
+
 Coding agents can implement before understanding the request, lose task boundaries, or report completion without executable evidence. This toolkit keeps the workflow local and explicit.
 
 | Common failure | Local response |

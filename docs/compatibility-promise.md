@@ -43,7 +43,7 @@ style as `compatible_with`.
 `shared/baselines/registry.yml` tracks `baseline_version` for `tlc-spec-driven` and `tdd`
 independently of the package version. A baseline's stages or loop only change when its
 `baseline_version` changes, and any such change is called out in [CHANGELOG.md](../CHANGELOG.md)
-under a "Baseline changes" note. See [TLC integration](tlc-integration.md) for what this package
+under a "Baseline changes" note. See [Baselines](baselines.md) for what this package
 ships versus the external skills it is inspired by.
 
 ## Breaking vs. additive capability-contract changes

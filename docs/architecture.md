@@ -109,12 +109,12 @@ TLC and TDD are registered in `shared/baselines/registry.yml` with a `baseline_v
 independent from the package version. `sdd-agentic-flow` ships **condensed, adapted** versions
 of both (`shared/references/tlc-baseline.md`, `shared/references/tdd-baseline.md`), not the
 full external `tlc-spec-driven`/`tdd` skills they are inspired by. See
-[TLC integration](tlc-integration.md) for the exact boundary and the
+[Baselines](baselines.md) for the exact boundary and the
 [compatibility promise](compatibility-promise.md) for what changes across versions.
 
 `doctor` enforces a Baseline Compliance gate that checks the shipped baseline files,
 adaptive-sizing guidance, traceability guidance, and the evidence-first quality gate are present
-and configured. See [TLC integration](tlc-integration.md) for the exact scope of what this gate
+and configured. See [Baselines](baselines.md) for the exact scope of what this gate
 can and cannot verify.
 
 ## Project context

@@ -8,28 +8,50 @@
 
 **sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit for coding-agent workflows.
 
-Structured specs, clear boundaries, and human governance:
+Run it with `npx sdd-agentic-flow`. Zero runtime dependencies. User-local skill install by default. Human review stays in charge. Your project can stay Java, Python, Go, or anything else; the CLI only adds Markdown skills and local config.
 
-- **Capability-Contracted Skills:** Markdown skills built on condensed TLC (tlc-spec-driven skill) and TDD baselines.
-- **Adaptive Sizing:** Dynamic feature-profile sizing with optional auto-discovered project context.
-- **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) stays in your project only when you create it.
-- **Human-in-the-Loop:** The toolkit structures and guides AI workflows. Human code review and governance stay in charge.
-- **Language-agnostic:** The CLI runs on Node.js; your project does not have to. Java, PHP, C#, Python, Go, Rust, Node.js: the CLI only installs Markdown skills and local config and never adds a dependency to your project.
-
-📦 Install and run instantly with `npx sdd-agentic-flow`.
-
-📖 Explore the [Skills Usage Guide](docs/sdd-skills-usage-guide.md) to start running SDD workflows, check the [Architecture Overview](docs/architecture.md), or read [AGENTS.md](AGENTS.md) for agent routing.
+📦 [Get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🤖 [AGENTS.md](AGENTS.md)
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*
 
-## Quick start
+## The problem
 
-Requires Node.js >= 22 to run the CLI (see [environment compatibility](docs/environment-compatibility.md)).
-That requirement applies to the CLI only. **Your project does not need to be a Node.js
-project.** `sdd-agentic-flow` installs Markdown skills and local config files; it never adds a
-`package.json`, `node_modules`, or a runtime dependency to your project, whatever language it's
-written in (Java, PHP, C#, Python, Go, Rust, Node.js, or anything else).
+Coding agents jump to code, blur task boundaries, and mark work done without executable proof. You spend review time reconstructing what they were supposed to build.
+
+| Common failure | Local response |
+| --- | --- |
+| Implementation starts before requirements are understood | `sdd-create-specs` and `sdd-create-prompts` |
+| A task is too large for one controlled change | `sdd-implement-task` or `sdd-implement-multi` |
+| Output is accepted without evidence | `sdd-task-check` and `sdd-validation` |
+| A PR loses traceability to the feature | `sdd-create-pr`, `sdd-pr-review`, and `sdd-pr-fix` |
+| A release ships without version or changelog checks | `sdd-release` (on demand, after validation) |
+
+See [why this exists](docs/why-this-exists.md) for the short form.
+
+## The solution
+
+Write the spec first. The spec is the contract between you and the agent: behavior, scope, and acceptance criteria live in `.specs/features/` before anyone edits production code.
+
+This toolkit gives you a linear workflow with review gates, not an open-ended chat loop. Each phase has a Markdown skill, local safety defaults, and evidence artifacts you can inspect. Read [SDD methodology](docs/sdd-methodology.md) for the full picture.
+
+## What you gain
+
+| Benefit | How this toolkit delivers it |
+| --- | --- |
+| Task boundaries | Specs, task prompts, and `sdd-task-check` per slice |
+| Traceability | Spec → prompt → code → PR package in one chain |
+| Evidence before done | TDD baseline, check reports, validation reports |
+| Clearer agent input | Written specs and `.sdd/config.yml` replace repeated chat context |
+| Async teamwork | Versioned artifacts in `.specs/` and `.sdd/` |
+| Reversible setup | `uninstall --plan`, explicit install scope, [trust model](docs/trust-model.md) |
+
+> [!NOTE]
+> Token economics benchmark: planned for a future release ([ROADMAP.md](ROADMAP.md)). This README does not quote token or speed multipliers without measured data.
+
+## Get started
+
+Requires Node.js >= 22 for the CLI only. Your project does not need Node.js. See [environment compatibility](docs/environment-compatibility.md).
 
 ```bash
 npx sdd-agentic-flow init
@@ -37,34 +59,71 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already
-set up, and one suggested next command) instead of the full reference — it never runs anything
-on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also
-offers a numbered menu below the status screen; selecting an entry runs the exact same command
-the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`),
-never applies. Piped output, scripts, CI, and agent invocations always see just the status
-screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or
-`help <command>` / `<command> --help` for one command's usage and examples.
+That creates `.sdd/config.yml`, installs skills, and validates setup. Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-See [installation](docs/installation.md) for the full install guide, including pack selection
-and re-running installation safely.
+Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md) and [configuration](docs/configuration.md).
 
-Use `init --interactive` to choose a project name, agent target, language, source type,
-feature profile, and workflow defaults. Existing `.sdd/config.yml` files are preserved. `init`
-also auto-discovers `.sdd/context/project-context.md`; re-run `discover [--force]` any time to
-refresh it. See [configuration](docs/configuration.md).
+## How it works
 
-Choose a language profile explicitly when creating a project:
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
 
-```bash
-npx sdd-agentic-flow init --language en-US
-npx sdd-agentic-flow init --language pt-BR
-# --en / --br are shorthand for the two flags above
-npx sdd-agentic-flow init --en
-npx sdd-agentic-flow init --br
+```mermaid
+flowchart TD
+  setup[setup-sdd-agentic-flow] --> route[sdd-route]
+  route --> brainstorm[sdd-brainstorm]
+  brainstorm -->|converged| specs[sdd-create-specs]
+  route --> specs
+  specs -.->|on demand| explain[sdd-explain-me]
+  specs --> prompts[sdd-create-prompts]
+  prompts --> implement[sdd-implement-task]
+  prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
+  implementmulti -->|delegates per task| implement
+  implement --> check[sdd-task-check]
+  check --> pr[sdd-create-pr]
+  pr --> review[sdd-pr-review]
+  review -->|findings accepted| fix[sdd-pr-fix]
+  fix --> review
+  review -->|ready| validate[sdd-validation]
+  validate -.->|on demand| release[sdd-release]
 ```
 
-See [language profiles](docs/language-profiles.md) for the profile contract.
+Invoke `sdd-route` when the next step is unclear. It recommends a skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
+
+## Proved in this repository
+
+Five golden flows run as integration tests in `test/cli.test.js`. Each walkthrough lists the commands the test runs and what it checks.
+
+| Flow | What it proves | Walkthrough |
+| --- | --- | --- |
+| Greenfield feature | Source item through validation | [task-management](examples/golden/task-management/walkthrough.md) |
+| Existing code | Specs from undocumented code | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
+| Project context | `discover` / `context` lifecycle | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
+| PR loop | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
+| Version migration | Upgrade path v0.8.0 → v0.9.0 | [version migration](examples/golden/version-migration/walkthrough.md) |
+
+The generic [task-management example](examples/golden/task-management/) shows one feature end to end.
+
+## Learn more
+
+| Topic | Doc |
+| --- | --- |
+| SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
+| Architecture | [docs/architecture.md](docs/architecture.md) |
+| All 14 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
+| Agent setup | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
+| Language policy | [docs/i18n.md](docs/i18n.md) · [README em português](README.pt-BR.md) |
+| Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+## Who is this for?
+
+Teams adopting Spec-Driven Development, sprint delivery with review gates, tech leads splitting work into specs and tasks, developers delegating traceable slices to agents, TDD-first teams, and controlled multi-agent or multi-worktree work.
+
+## Not optimized for
+
+Quick one-off scripts, fully autonomous no-review agents, automatic deploy/release pipelines, or workflows that reject specs, task boundaries, and validation checkpoints.
+
+<details>
+<summary><strong>Technical reference</strong> (CLI, packs, skill map, trust, safety)</summary>
 
 ## Why trust this toolkit?
 
@@ -100,21 +159,32 @@ help [command]                        Show the command reference, or one command
 
 If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall`/`discover` to suppress decorative success output.
 
-Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion.
-Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set
-`NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically.
-Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error.
+Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already set up, and one suggested next command) instead of the full reference. It never runs anything on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also offers a numbered menu below the status screen; selecting an entry runs the exact same command the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`), never applies. Piped output, scripts, CI, and agent invocations always see just the status screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` / `<command> --help` for one command's usage and examples.
+
+Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error.
+
+Choose a language profile explicitly when creating a project:
+
+```bash
+npx sdd-agentic-flow init --language en-US
+npx sdd-agentic-flow init --language pt-BR
+# --en / --br are shorthand for the two flags above
+npx sdd-agentic-flow init --en
+npx sdd-agentic-flow init --br
+```
+
+See [language profiles](docs/language-profiles.md) for the profile contract.
 
 ## Packs
 
 | Pack | Purpose |
 | --- | --- |
-| `core`           | Safe setup, specification, implementation, checking, and validation baseline. |
-| `planning`       | Specs and task prompts.                                                       |
-| `execution`      | Single-task and multi-task execution guidance.                                |
-| `pr`             | PR preparation, review, and finding repair.                                   |
-| `multi-worktree` | Multi-task orchestration guidance.                                            |
-| `full`           | All public skills.                                                            |
+| `core` | Safe setup, specification, implementation, checking, and validation baseline. |
+| `planning` | Specs and task prompts. |
+| `execution` | Single-task and multi-task execution guidance. |
+| `pr` | PR preparation, review, and finding repair. |
+| `multi-worktree` | Multi-task orchestration guidance. |
+| `full` | All public skills. |
 
 `local-files` and `github` compose packs for those source contexts.
 
@@ -126,40 +196,9 @@ The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `re
 
 `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) is a second, orthogonal axis: `execution_mode` says what a skill may do, `autonomy_level` says whether it needs a human before the next one runs. `autonomous` only advances when all 7 deterministic guardrails pass (completion, evidence, verification, scope, transition validity, resource budget, no human override); any failure hands control back to a human. Set it with `init --autonomy-level`, audit it with `doctor --autonomy`, and inspect an in-flight run with `context autonomy-state` / `autonomous-resume`. See [autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
 
-## Main SDD flow
-
-Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
-
-```mermaid
-flowchart TD
-  setup[setup-sdd-agentic-flow] --> route[sdd-route]
-  route --> brainstorm[sdd-brainstorm]
-  brainstorm -->|converged| specs[sdd-create-specs]
-  route --> specs
-  specs -.->|on demand| explain[sdd-explain-me]
-  specs --> prompts[sdd-create-prompts]
-  prompts --> implement[sdd-implement-task]
-  prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
-  implementmulti -->|delegates per task| implement
-  implement --> check[sdd-task-check]
-  check --> pr[sdd-create-pr]
-  pr --> review[sdd-pr-review]
-  review -->|findings accepted| fix[sdd-pr-fix]
-  fix --> review
-  review -->|ready| validate[sdd-validation]
-  validate -.->|on demand| release[sdd-release]
-```
-
-Use `sdd-route` when the next step is unclear. It only recommends a route and points to the selected skill's `SKILL.md`; it does not invoke skills or change files. See [the invocation model](docs/invocation-model.md), [why this exists](docs/why-this-exists.md),
-and [design principles](docs/design-principles.md).
-
 ## TDD baseline
 
-`sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD
-baseline for implementation. The TDD baseline uses behavior-focused tests at
-agreed public seams through RED → GREEN → REFACTOR loops and vertical slices.
-See [TDD baseline](docs/tdd-baseline.md) and [TLC integration](docs/tlc-integration.md)
-for what this package ships versus the external skills it adapts from.
+`sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD baseline for implementation. The TDD baseline uses behavior-focused tests at agreed public seams through RED → GREEN → REFACTOR loops and vertical slices. See [TDD baseline](docs/tdd-baseline.md) and [baselines](docs/baselines.md) for what this package ships versus the external skills it adapts from.
 
 ## Uninstall and rollback
 
@@ -168,38 +207,28 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full` — it also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
-
-## Who is this for?
-
-This toolkit fits teams adopting Spec-Driven Development, sprint feature delivery in agile/scrum/kanban workflows, tech leads breaking work into specs/tasks/prompts/reviews/validation, developers delegating traceable work to coding agents, TDD/test-first teams, and controlled multi-agent or multi-worktree work.
-
-## Not optimized for
-
-It is not optimized for quick one-off scripts, fully autonomous no-review agents, automatic deploy/release pipelines, or workflows that do not want specs, task boundaries, review gates, and validation checkpoints.
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full`. It also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
 
 ## Skill map
 
-For the long-form version of this table — Purpose, When to use/not to use, Inputs/Outputs,
-Dependencies, Conflicts, Baseline, Pack(s), and flow position for each skill — see the
-[skills catalog](docs/skills-catalog.md).
+For the long-form version of this table, see the [skills catalog](docs/skills-catalog.md).
 
 | Skill | Purpose | Input | Output | Mutates files? | Default mode | Recommended when |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
-| `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
-| `sdd-brainstorm`         | Shape a vague idea           | Rough idea         | Spec-ready brief        | Yes, when converged   | guided       | The idea isn't spec-ready yet |
-| `sdd-create-specs`       | Plan feature specs          | Source item OR existing codebase | Feature spec set       | Yes, when authorized | plan         | Requirements need structure, or undocumented code needs specs |
-| `sdd-explain-me`         | Explain a specified feature | Spec package        | Plain-language explanation | Yes, when authorized | guided    | Someone needs context without reading every artifact |
-| `sdd-create-prompts`     | Generate task prompts       | Specs/tasks       | Agent-ready prompts    | Yes, when authorized | plan         | Work must be delegated      |
-| `sdd-implement-task`     | Implement one task          | Approved task     | Code and evidence      | Yes, when authorized | apply        | One bounded task is ready   |
-| `sdd-implement-multi`    | Plan multi-task execution   | Task set          | Execution plan         | Yes, when authorized | guided       | Tasks have dependencies     |
-| `sdd-task-check`         | Independent task check      | Task evidence     | Check report           | No                   | review       | Before accepting a task     |
-| `sdd-create-pr`          | Prepare PR                  | Completed change  | PR package             | Yes, when authorized | guided       | Review package is needed    |
-| `sdd-pr-review`          | Review PR                   | PR/change set     | Findings               | No                   | review       | Reviewing a change          |
-| `sdd-pr-fix`             | Fix PR findings             | Findings          | Corrected local change | Yes, when authorized | apply        | Findings are accepted       |
-| `sdd-validation`         | Validate feature            | Feature evidence  | Validation report      | No                   | review       | Before completion           |
-| `sdd-release`            | Check release readiness     | Version/changelog | Release readiness report | No                 | review       | Before tagging a release    |
+| `setup-sdd-agentic-flow` | Setup project configuration | Project context | Local setup guidance | Yes, when authorized | guided | Starting a project |
+| `sdd-route` | Recommend next local skill | Request/artifacts | Route recommendation | No | plan | The next step is unclear |
+| `sdd-brainstorm` | Shape a vague idea | Rough idea | Spec-ready brief | Yes, when converged | guided | The idea isn't spec-ready yet |
+| `sdd-create-specs` | Plan feature specs | Source item OR existing codebase | Feature spec set | Yes, when authorized | plan | Requirements need structure, or undocumented code needs specs |
+| `sdd-explain-me` | Explain a specified feature | Spec package | Plain-language explanation | Yes, when authorized | guided | Someone needs context without reading every artifact |
+| `sdd-create-prompts` | Generate task prompts | Specs/tasks | Agent-ready prompts | Yes, when authorized | plan | Work must be delegated |
+| `sdd-implement-task` | Implement one task | Approved task | Code and evidence | Yes, when authorized | apply | One bounded task is ready |
+| `sdd-implement-multi` | Plan multi-task execution | Task set | Execution plan | Yes, when authorized | guided | Tasks have dependencies |
+| `sdd-task-check` | Independent task check | Task evidence | Check report | No | review | Before accepting a task |
+| `sdd-create-pr` | Prepare PR | Completed change | PR package | Yes, when authorized | guided | Review package is needed |
+| `sdd-pr-review` | Review PR | PR/change set | Findings | No | review | Reviewing a change |
+| `sdd-pr-fix` | Fix PR findings | Findings | Corrected local change | Yes, when authorized | apply | Findings are accepted |
+| `sdd-validation` | Validate feature | Feature evidence | Validation report | No | review | Before completion |
+| `sdd-release` | Check release readiness | Version/changelog | Release readiness report | No | review | Before tagging a release |
 
 ## Agent workflows
 
@@ -211,30 +240,11 @@ The skills are Markdown-first and installed locally. See [agent compatibility](d
 
 Language profiles select human-facing output language; a domain glossary records product terms. The glossary is optional, never created by `init`, and may be proposed or written only with explicit authorization. See [domain vocabulary](docs/domain-vocabulary.md).
 
-## Examples, language, and inspiration
+## Inspiration and guides
 
-The complete generic [task-management golden example](examples/golden/task-management/) shows a source item through validation. The primary README is English; read the practical [Portuguese introduction](README.pt-BR.md) and [language policy](docs/i18n.md) for the bilingual policy.
+The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
 
-### Golden flows
-
-5 flows are proved as integration tests in `test/cli.test.js`, not just documentation — each
-has a `walkthrough.md` describing the commands the test runs and the result it checks:
-[greenfield](examples/golden/task-management/walkthrough.md),
-[existing-code mode](examples/golden/existing-code-mode/walkthrough.md),
-[project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md),
-[PR (create → review → fix → review)](examples/golden/pr-flow/walkthrough.md), and
-[version migration (v0.8.0 → v0.9.0)](examples/golden/version-migration/walkthrough.md).
-
-The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development,
-Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),
-[NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md),
-the [compatibility matrix](docs/compatibility-matrix.md),
-and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
-
-For decision help, see the guides on
-[choosing a feature profile](docs/guides/choosing-a-feature-profile.md),
-[adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and
-[condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).
+For decision help, see [choosing a feature profile](docs/guides/choosing-a-feature-profile.md), [adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and [condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).
 
 ## Safety boundaries
 
@@ -243,3 +253,5 @@ The CLI does not call external APIs, require a tracker, sync remotely, update it
 ## Publishing
 
 Maintainers: see [publishing](docs/publishing.md).
+
+</details>

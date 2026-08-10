@@ -43,4 +43,4 @@ Inspiration and attribution do not imply endorsement by original authors or proj
 
 Both upstream sources are pinned to a specific version, tracked in
 `shared/baselines/registry.yml`, and updated deliberately rather than silently. See
-[TLC integration](tlc-integration.md#upstream-version-pins).
+See [Baselines](baselines.md#upstream-version-pins).

@@ -1,7 +1,7 @@
 # Condensed vs. full TLC/TDD
 
 `sdd-agentic-flow` ships condensed, self-contained adaptations of TLC and TDD. See
-[TLC integration](../tlc-integration.md) for the exact boundary. Choose between this package's condensed baselines and the full external `tlc-spec-driven`/`tdd` skills they adapt from.
+[Baselines](../baselines.md) for the exact boundary. Choose between this package's condensed baselines and the full external `tlc-spec-driven`/`tdd` skills they adapt from.
 
 ## Use this package's condensed baselines when
 
@@ -36,5 +36,5 @@ their artifact shapes and stage names differ.
 
 This package's condensed baselines are updated deliberately, not automatically, when the
 external skills change in ways that affect their public stages or loop — see the
-[synchronization policy](../tlc-integration.md#synchronization-policy). A version bump here
+[synchronization policy](../baselines.md#synchronization-policy). A version bump here
 never silently pulls in behavior from the external skills.

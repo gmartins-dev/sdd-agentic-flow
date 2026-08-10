@@ -1,6 +1,6 @@
 {
   "name": "local-files",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Core workflow for local source files.",
   "skills": [
     "setup-sdd-agentic-flow",
@@ -8,7 +8,8 @@
     "sdd-create-specs",
     "sdd-implement-task",
     "sdd-task-check",
-    "sdd-validation"
+    "sdd-validation",
+    "sdd-release"
   ],
   "shared": true,
   "adapter": "local-files",

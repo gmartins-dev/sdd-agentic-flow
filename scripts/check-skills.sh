@@ -28,7 +28,9 @@ done
 # Milestone 6/7 (v1.5.0): sdd-brainstorm and sdd-explain-me are baseline:[] root/branch skills
 # like sdd-route — they follow the 6-section skeleton and the config/init/safety markers, but
 # (like sdd-route) never reference tlc-baseline.md, since no TLC/TDD baseline governs them.
-new_skills=(sdd-brainstorm sdd-explain-me)
+# v1.9.0: sdd-release joins this group for the same reason — release readiness is process work,
+# not TLC/TDD methodology.
+new_skills=(sdd-brainstorm sdd-explain-me sdd-release)
 for skill in "${new_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
@@ -37,7 +39,7 @@ for skill in "${new_skills[@]}"; do
   done
 done
 
-all_skills=(setup-sdd-agentic-flow sdd-route sdd-brainstorm sdd-create-specs sdd-explain-me sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
+all_skills=(setup-sdd-agentic-flow sdd-route sdd-brainstorm sdd-create-specs sdd-explain-me sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation sdd-release)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:' 'autonomy_profile:' 'supported_levels:' 'auto_continue_condition:' 'blocking_conditions:' 'evidence_required:'; do
@@ -62,7 +64,7 @@ const { parseVersion, compareVersions } =
 const skillNames = [
   'setup-sdd-agentic-flow', 'sdd-route', 'sdd-brainstorm', 'sdd-create-specs', 'sdd-explain-me',
   'sdd-create-prompts', 'sdd-implement-task', 'sdd-implement-multi', 'sdd-task-check',
-  'sdd-create-pr', 'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation',
+  'sdd-create-pr', 'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation', 'sdd-release',
 ];
 const frontmatterOf = (content) => (content.match(/^---\n([\s\S]*?)\n---/) || [, content])[1];
 const skills = skillNames.map((name) => ({
@@ -213,7 +215,7 @@ if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.e
   exit 1
 fi
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md; do
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md handoff-standard.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.6.0' "shared/references/$ref"
@@ -238,16 +240,23 @@ grep -F -q 'v1.2.3' NOTICE docs/tdd-baseline.md
 for profile in en-US pt-BR; do
   test -f "shared/language-profiles/$profile.md"
 done
-for template in context spec design tasks task-prompt check-report validation-report pr-description pr-review pr-fix domain-glossary; do
+for template in context spec design tasks task-prompt check-report validation-report pr-description pr-review pr-fix domain-glossary release-readiness-report; do
   test -f "shared/templates/$template.template.md"
 done
 for skill in sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
   grep -F -q 'tdd-baseline.md' "skills/$skill/SKILL.md"
 done
-# Milestone 2 (Evidence Standard extraction): the 6 skills that classify pass/fail/ready must
+# Milestone 2 (Evidence Standard extraction): the skills that classify pass/fail/ready must
 # reference the shared evidence-standard.md rather than re-deriving the principle with drift.
-for skill in sdd-create-specs sdd-implement-task sdd-task-check sdd-validation sdd-pr-review sdd-pr-fix; do
+# v1.9.0: sdd-release joins the original 6 (same evidence-first classification, one stage later).
+for skill in sdd-create-specs sdd-implement-task sdd-task-check sdd-validation sdd-pr-review sdd-pr-fix sdd-release; do
   grep -F -q 'evidence-standard.md' "skills/$skill/SKILL.md"
+done
+
+# v1.9.0 (Handoff Standard): the 7 skills whose work can pause across a session/agent boundary
+# must reference the shared handoff-standard.md rather than re-deriving when to write handoff.md.
+for skill in sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation sdd-pr-fix sdd-create-pr sdd-release; do
+  grep -F -q 'handoff-standard.md' "skills/$skill/SKILL.md"
 done
 for skill in sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
   grep -F -q 'task-slicing.md' "skills/$skill/SKILL.md"

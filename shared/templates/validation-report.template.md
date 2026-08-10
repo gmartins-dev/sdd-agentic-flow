@@ -1,5 +1,7 @@
 # Feature validation — {{feature_slug}}
 
+Status: {{status}}
+
 ## Evidence
 
 {{evidence}}

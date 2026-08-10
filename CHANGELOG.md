@@ -1,5 +1,74 @@
 # Changelog
 
+## 1.9.0
+
+Deepens what v1.8.0 shipped instead of adding a new autonomy mechanism — closes real,
+individually audited gaps in the existing skill contracts, evidence model, and continuity
+story. No orchestration engine, retry/repair loop, or new mandatory skill sections; every
+change stays additive under the v1.0 stability commitment.
+
+**New `sdd-release` skill** (14th public skill, packs `core`/`full`/`local-files`/`github`,
+matching `sdd-validation`'s membership): checks whether a project or feature is ready to tag
+and publish a release — version consistency across declared version-bearing files, changelog
+section presence/content, and configured checks reused from `sdd-task-check`/`sdd-validation`
+evidence. Config-driven and portable like every other skill: it does not shell out to this
+repository's own `scripts/release-checklist.sh`, since skills install into arbitrary consumer
+repositories that have no such script. Read-only — it never creates a tag, runs a publish
+command, or edits the changelog itself; it reports the exact commands for a human to run.
+
+**Handoff standard**: `shared/templates/handoff.template.md` existed since an earlier release
+but nothing required a skill to populate it. New `shared/references/handoff-standard.md`
+defines exactly when a skill writes or updates `handoff.md` (session end with open work, an
+agent swap, or a blocker needing a human decision — never on a terminal `Status:`) and how it
+cross-references `.sdd/autonomy/loop-state.md` instead of duplicating it. Wired into the 7
+skills whose work can span a session or agent boundary: `sdd-implement-task`,
+`sdd-implement-multi`, `sdd-task-check`, `sdd-validation`, `sdd-pr-fix`, `sdd-create-pr`, and
+the new `sdd-release`.
+
+**`Status:` field on report artifacts**: `check-report` and `validation-report` (both
+templates and `shared/references/artifact-contracts.md`) gain a top-line `Status:` field, so
+[guardrail 1](docs/autonomy-guardrails.md) ("the skill reports `PASS`/`DONE`") is mechanically
+checkable from the artifact itself instead of only from surrounding prose.
+`shared/references/evidence-standard.md` documents the mapping from each skill's own local
+vocabulary (`sdd-task-check`: `pass`/`needs changes`/`blocked`/`inconclusive`; `sdd-validation`:
+`ready`/`not ready`/`blocked`/`inconclusive`) to that guardrail's generic pass/not-pass check —
+this does not introduce a universal status enum; per-skill vocabulary is unchanged.
+
+**`sdd-brainstorm`** gains an explicit Known/Assumed/Unknown/Needs research split before
+handing off to `sdd-create-specs`, mirroring `sdd-create-specs`' existing-code-mode
+Observed/Inferred/Unknown labels instead of inventing new terminology.
+
+**`sdd-implement-multi`** now explicitly links
+`shared/references/worktree-orchestration.md` from its worktree-isolation rule, closing the
+one skill that actually needed the link — a repository audit found the file was already
+required to exist by `scripts/check-skills.sh` but cited by no skill.
+
+**Audited and found no gap, on purpose:**
+
+- **Progressive disclosure** — all 13 pre-existing skills measured at 55–70 lines at audit
+  time (before this release's own content additions to `sdd-brainstorm`/`sdd-implement-multi`
+  nudged one of them to 71), far under the Agent Skills Standard's ~500-line guidance even
+  after v1.8.0's `## Autonomy` section addition. No refactor shipped; this finding is the
+  result, not a placeholder.
+- **Orphaned golden-flow fixtures** — `examples/golden/project-context-lifecycle/` and
+  `examples/golden/version-migration/` have no on-disk fixture files by design (both are
+  proved by dedicated `test/cli.test.js` tests that construct their scenario directly) and
+  were never untested; `examples/golden/invoice-approval/` is a deliberately smaller,
+  non-golden-flow fixture (a `source-item.md` + `expected-sdd-summary.md` pair with no output
+  artifacts to mechanically assert against), not an orphaned golden flow. No test-wiring
+  shipped, because there was nothing to wire.
+- **A first-principles no-progress/repeated-failure signal** for `.sdd/autonomy/loop-state.md`
+  — considered and explicitly deferred, not built: no real stuck-loop incident has been
+  observed, and `## Blocker History` plus guardrail 6 already give an agent a place to record
+  "this isn't working." Building a formal `Attempt:`/`Progress:` taxonomy ahead of a validated
+  need would contradict the audit-first discipline this release itself follows. Noted as a
+  v2.0/evidence-graph candidate, not a v1.9 deliverable.
+
+**Out of scope, deliberately**: a Token Economics benchmark (needs a live, human-run
+comparison, not fabricable inside a documentation/skill-content release) is left for the
+maintainer to run separately; new mandatory skill sections (`## Verification`, `## Completion
+Criteria`, `## Escalation`); any orchestration engine, retry budget, or agent runtime.
+
 ## 1.8.0
 
 Adds autonomy levels: `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default

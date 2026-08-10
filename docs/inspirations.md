@@ -29,7 +29,7 @@
   [agentskills.io](https://agentskills.io/home)) — an open specification for `SKILL.md`
   frontmatter, structure, and progressive-disclosure conventions shared across multiple AI
   coding clients. `sdd-agentic-flow` was not designed against this standard, but every one of
-  its 13 skills already matches its core shape by construction: `name` equal to the skill
+  its 14 skills already matches its core shape by construction: `name` equal to the skill
   directory, kebab-case, and a `description` following a "what it does. Use when..." pattern.
   Noted here as a compatibility reference, not a claim of formal compliance — no external
   validator has been run against this toolkit's skills. Fields added since (`autonomy_profile`

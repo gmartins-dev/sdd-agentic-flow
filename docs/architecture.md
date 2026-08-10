@@ -101,6 +101,7 @@ that exact-match check only runs at the source, in `scripts/check-skills.sh`.
 | `sdd-pr-review`           | sdd-create-pr       | config, pr-reference                   | review-findings               | tlc-spec-driven       |
 | `sdd-pr-fix`              | sdd-pr-review       | config, pr-reference, review-findings  | fix-evidence                   | tlc-spec-driven       |
 | `sdd-validation`          | sdd-task-check      | config, spec-package, task-evidence    | validation-report              | tlc-spec-driven, tdd |
+| `sdd-release`             | —                   | config                                 | release-readiness-report        | —                      |
 
 ## Canonical baselines
 

@@ -20,11 +20,19 @@ format. This is a presence check, not full-schema validation — it does not ver
 - task-prompt — required: `# Task prompt — {task_id}`, `## Task slice` (same six fields as a
   `tasks.md` entry), `## TDD baseline` (same seven fields as above). Produced by
   `sdd-create-prompts`.
-- check-report — required: `# Task check — {task_id}`, `## Evidence`, `## TDD evidence`
-  (Behavior tested, Seam, RED, GREEN, REFACTOR, Broader checks, Limitations). Produced by
-  `sdd-task-check`.
+- check-report — required: `# Task check — {task_id}`, a top-line `Status:` field (see
+  [evidence-standard.md](evidence-standard.md)'s `Status:` field/guardrail 1 mapping),
+  `## Evidence`, `## TDD evidence` (Behavior tested, Seam, RED, GREEN, REFACTOR, Broader checks,
+  Limitations). Produced by `sdd-task-check`.
+- validation-report — required: `# Feature validation — {feature_slug}`, a top-line `Status:`
+  field (same convention as check-report), `## Evidence`, `## TDD evidence` (same seven fields as
+  above). Produced by `sdd-validation`.
 - pr-package — required: `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`. Produced by
   `sdd-create-pr`.
+- release-readiness-report — required: `# Release readiness — {release_identity}`, a top-line
+  `Status:` field (same convention as check-report/validation-report), `## Evidence`,
+  `## Version consistency`, `## Changelog check`, `## Gaps`, `## Tag / publish commands`.
+  Produced by `sdd-release`.
 
 ## Optional traceability convention
 

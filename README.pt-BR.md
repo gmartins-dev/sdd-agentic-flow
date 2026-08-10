@@ -150,6 +150,7 @@ Dependências, Conflitos, Baseline, Pack(s) e posição no fluxo de cada skill �
 | `sdd-pr-review`          | Revisa PR                   | PR/conjunto de mudanças     | Findings               | Não                   | review       | Revisando uma mudança            |
 | `sdd-pr-fix`             | Corrige findings de PR          | Findings              | Mudança local corrigida | Sim, quando autorizado | apply        | Os findings foram aceitos          |
 | `sdd-validation`         | Valida uma feature            | Evidência da feature  | Relatório de validação           | Não                   | review       | Antes de concluir            |
+| `sdd-release`            | Checa prontidão de release  | Versão/changelog     | Relatório de prontidão de release | Não                  | review       | Antes de criar uma tag de release |
 
 ## TDD baseline
 
@@ -178,7 +179,7 @@ Para o fluxo completo, consulte o [guia de uso das skills em português](docs/sd
 
 Veja o [catálogo de skills](docs/skills-catalog.md) para a versão detalhada — propósito, quando
 usar/não usar, entradas/saídas, dependências, conflitos, baseline e posição no fluxo de cada
-uma das 13 skills públicas.
+uma das 14 skills públicas.
 
 Veja também a [matriz de compatibilidade](docs/compatibility-matrix.md) (quais packs instalam
 quais skills) e os guias de decisão: [escolhendo um perfil de feature](docs/guides/choosing-a-feature-profile.md),

@@ -42,3 +42,20 @@ implements, not a replacement for it.
 
 A skill's local vocabulary may add nuance for its domain; it must never contradict the generic
 principle above.
+
+## `Status:` field and the guardrail 1 mapping
+
+`shared/templates/check-report.template.md` and `shared/templates/validation-report.template.md`
+carry a top-line `Status: {{status}}` field, filled with the producing skill's own local
+vocabulary (`sdd-task-check`: `pass`/`needs changes`/`blocked`/`inconclusive`; `sdd-validation`:
+`ready`/`not ready`/`blocked`/`inconclusive`) — this does not introduce a new, universal status
+enum; `skill-authoring-standard.md`'s existing per-skill vocabulary rule is unchanged.
+
+[Guardrail 1](autonomy-guardrails.md) ("the skill reports `PASS`/`DONE`, not `IN_PROGRESS`,
+`UNKNOWN`, or `FAIL`") reads this field, not the surrounding prose, and maps each skill's own
+positive value to a pass: `pass` (`sdd-task-check`) and `ready` (`sdd-validation`) count as
+`PASS`; every other local value (`needs changes`, `not ready`, `blocked`, `inconclusive`) counts
+as not-`PASS` and blocks an `autonomous` advance the same way a literal `FAIL` would. A skill
+must never write `Status: pass`/`Status: ready` while a required check in `## Evidence` recorded
+a failure — the same "missing evidence is never silently upgraded to a pass" rule above applies
+to this field specifically.

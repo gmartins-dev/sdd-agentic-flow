@@ -33,6 +33,7 @@ scope and auto-discovery have actually been exercised.
 | `sdd-pr-review`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
 | `sdd-pr-fix`               |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
 | `sdd-validation`           |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `sdd-release`              |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
 
 `full` installs every skill; every other pack is a scoped subset for a specific workflow slice
 (core SDD loop, planning-only, multi-worktree execution, PR review/fix, or an adapter-flavored

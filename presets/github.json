@@ -1,6 +1,6 @@
 {
   "name": "github",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Core and PR guidance for GitHub-aware agents.",
   "skills": [
     "setup-sdd-agentic-flow",
@@ -11,7 +11,8 @@
     "sdd-validation",
     "sdd-create-pr",
     "sdd-pr-review",
-    "sdd-pr-fix"
+    "sdd-pr-fix",
+    "sdd-release"
   ],
   "shared": true,
   "adapter": "github",

@@ -125,6 +125,7 @@ limites claros e a equipe puder revisar as evidências.
 | `sdd-pr-review`          | Conjunto de alterações | Findings de review   | Não               | `review` |
 | `sdd-pr-fix`             | Findings aceitos       | Correções locais     | Quando autorizada | `apply`  |
 | `sdd-validation`         | Evidências da feature  | Report de validação  | Não               | `review` |
+| `sdd-release`            | Versão/changelog       | Report de prontidão de release | Não     | `review` |
 
 ## 7. Uso com agentes
 

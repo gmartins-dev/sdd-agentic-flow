@@ -1,5 +1,7 @@
 # Task check — {{task_id}}
 
+Status: {{status}}
+
 ## Evidence
 
 {{evidence}}

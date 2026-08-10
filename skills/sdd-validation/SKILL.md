@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]
@@ -51,7 +51,7 @@ Remain read-only except for permitted local report or disposable test artifacts.
 
 ## Output
 
-Return feature identity, decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step.
+Return feature identity, decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step. When the decision is `not ready`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ## Autonomy
 

@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
@@ -50,7 +50,7 @@ This is read-only except for disposable test artifacts permitted by configuratio
 
 ## Output
 
-Return task identity, criterion-to-evidence summary, executed checks, scope findings, final classification, and next step.
+Return task identity, criterion-to-evidence summary, executed checks, scope findings, final classification, and next step. When the classification is `needs changes`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ## Autonomy
 

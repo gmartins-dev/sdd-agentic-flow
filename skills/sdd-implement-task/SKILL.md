@@ -2,7 +2,7 @@
 name: sdd-implement-task
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
@@ -52,7 +52,7 @@ Preserve unrelated and pre-existing changes. Keep credentials, personal data, an
 
 ## Output
 
-Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step.
+Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ## Autonomy
 

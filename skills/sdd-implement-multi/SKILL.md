@@ -2,7 +2,7 @@
 name: sdd-implement-multi
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: multi-worktree
 extends: sdd-create-prompts
 requires: [config, spec-package]
@@ -48,11 +48,11 @@ Do not use for one task, vague feature requests, specification creation, PR work
 
 ## Safety
 
-Never share a mutable worktree between concurrent tasks — this is the isolation rule the dependency analysis in `## Workflow` step 3 exists to protect. Preserve existing changes and do not create branches, worktrees, commits, pushes, PRs, tracker updates, or network mutations by default.
+Never share a mutable worktree between concurrent tasks — this is the isolation rule the dependency analysis in `## Workflow` step 3 exists to protect, and it follows `../sdd-agentic-flow-shared/references/worktree-orchestration.md`. Preserve existing changes and do not create branches, worktrees, commits, pushes, PRs, tracker updates, or network mutations by default.
 
 ## Output
 
-Return feature identity, dependency waves, per-task status, blockers, evidence, and the next safe action.
+Return feature identity, dependency waves, per-task status, blockers, evidence, and the next safe action. When orchestration stops at a blocker likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`, referencing the ledger rather than duplicating it.
 
 ## Autonomy
 

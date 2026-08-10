@@ -2,7 +2,7 @@
 name: sdd-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: pr
 extends: sdd-task-check
 requires: [config, task-evidence]
@@ -49,7 +49,7 @@ Do not commit, push, create or edit PRs, assign reviewers, alter labels, or muta
 
 ## Output
 
-Return the PR package, task scope, validation summary, blockers, and whether a remote PR was created.
+Return the PR package, task scope, validation summary, blockers, and whether a remote PR was created. When a blocker (missing evidence, an incomplete template section, awaiting authorization) is likely to outlive the current session or agent, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ## Autonomy
 

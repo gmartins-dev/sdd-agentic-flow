@@ -12,7 +12,7 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -41,6 +41,7 @@ const OFFICIAL_SKILLS = [
   'sdd-pr-review',
   'sdd-pr-fix',
   'sdd-validation',
+  'sdd-release',
 ];
 const REQUIRED_CONTRACT_FIELDS = [
   'extends',

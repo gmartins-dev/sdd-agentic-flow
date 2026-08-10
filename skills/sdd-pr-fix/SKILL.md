@@ -2,7 +2,7 @@
 name: sdd-pr-fix
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   pack: pr
 extends: sdd-pr-review
 requires: [config, pr-reference, review-findings]
@@ -48,7 +48,7 @@ Preserve unrelated changes. Stop for SDD reconciliation, sibling scope, unsafe e
 
 ## Output
 
-Return the findings ledger, changes and checks, unresolved items, re-review scope, and next step.
+Return the findings ledger, changes and checks, unresolved items, re-review scope, and next step. When actionable findings remain unresolved across a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`, referencing the findings ledger rather than duplicating it.
 
 ## Autonomy
 

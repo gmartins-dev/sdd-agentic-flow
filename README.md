@@ -143,6 +143,7 @@ flowchart TD
   review -->|findings accepted| fix[sdd-pr-fix]
   fix --> review
   review -->|ready| validate[sdd-validation]
+  validate -.->|on demand| release[sdd-release]
 ```
 
 Use `sdd-route` when the next step is unclear. It only recommends a route and points to the selected skill's `SKILL.md`; it does not invoke skills or change files. See [the invocation model](docs/invocation-model.md), [why this exists](docs/why-this-exists.md),
@@ -194,6 +195,7 @@ Dependencies, Conflicts, Baseline, Pack(s), and flow position for each skill —
 | `sdd-pr-review`          | Review PR                   | PR/change set     | Findings               | No                   | review       | Reviewing a change          |
 | `sdd-pr-fix`             | Fix PR findings             | Findings          | Corrected local change | Yes, when authorized | apply        | Findings are accepted       |
 | `sdd-validation`         | Validate feature            | Feature evidence  | Validation report      | No                   | review       | Before completion           |
+| `sdd-release`            | Check release readiness     | Version/changelog | Release readiness report | No                 | review       | Before tagging a release    |
 
 ## Agent workflows
 

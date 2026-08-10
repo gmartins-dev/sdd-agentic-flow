@@ -1,5 +1,40 @@
 # Roadmap
 
+- **v1.9.0 (2026-08-10):** Method & Reliability. Deepens v1.8.0's autonomy foundation instead of
+  adding a new mechanism — closes individually audited gaps rather than the originally drafted
+  candidate wholesale (see "Corrections vs. the v1.9 candidate draft" below). New `sdd-release`
+  skill (14th public skill; packs `core`/`full`/`local-files`/`github`, matching
+  `sdd-validation`): checks release readiness (version consistency, changelog presence,
+  configured checks) and reports tag/publish commands for a human to run — config-driven and
+  portable, it does not shell out to this repository's own `scripts/release-checklist.sh`. New
+  `shared/references/handoff-standard.md` defines when a skill populates the
+  previously-unused `shared/templates/handoff.template.md` and how it cross-references
+  `.sdd/autonomy/loop-state.md` without duplicating it; wired into the 7 skills whose work can
+  span a session/agent boundary. `check-report`/`validation-report` gain a top-line `Status:`
+  field, with `shared/references/evidence-standard.md` documenting the mapping from each
+  skill's own local vocabulary to guardrail 1's generic pass/not-pass check. `sdd-brainstorm`
+  gains an explicit Known/Assumed/Unknown/Needs research split before handing off to
+  `sdd-create-specs`; `sdd-implement-multi` now explicitly links
+  `worktree-orchestration.md`. Zero breaking changes, same as every release since v1.0.
+
+  **Corrections vs. the v1.9 candidate draft below and its
+  `.local/gmm/sdd-agentic-flow/v1.9.0-implementation-plan.md` skeleton:** progressive disclosure
+  was audited and found not needed — all 13 pre-existing skills measured 55–70 lines at audit
+  time (before this release's own content additions nudged `sdd-brainstorm` to 71), far under
+  the ~500-line guidance even after v1.8.0's `## Autonomy` section addition; no refactor
+  shipped. The skeleton's claim of 2 orphaned golden-flow fixtures (and an earlier re-check
+  during this release that initially assumed 3) was also wrong on inspection:
+  `project-context-lifecycle` and `version-migration` have no on-disk fixture files by design
+  and are already proved by dedicated `test/cli.test.js` tests; `invoice-approval` is a
+  deliberately smaller, non-golden-flow fixture per
+  `.local/gmm/sdd-agentic-flow/ai-context-report.md`, not an untested golden flow — there was
+  nothing to wire. A formal no-progress/repeated-failure signal for `loop-state.md` (raised in a
+  separate pre-planning discussion, not in the original v1.9 candidate) was evaluated and
+  explicitly deferred: no real stuck-loop incident has been observed, and building the
+  taxonomy ahead of a validated need would contradict this release's own audit-first discipline
+  — noted below as a v2.0/evidence-graph candidate. A Token Economics benchmark needs a live,
+  human-run comparison and is left for the maintainer to run separately, outside this release.
+
 - **v1.8.0 (2026-08-09):** Autonomy levels. `workflow.autonomy_level` (`manual`/`supervised`/
   `autonomous`, default `manual`) ships as a **new axis orthogonal to** the 5 existing
   `execution_modes` (`docs/execution-modes.md`) — it does not replace or duplicate them.
@@ -141,59 +176,28 @@
   include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
   maturity-model documentation. Nothing in this line is committed or scheduled.
 
-## Strategic direction (v1.9 → v2.0) — candidates, not commitments
+## Strategic direction (v2.0) — candidate, not a commitment
 
-The two candidates below follow the same rule as `v1.x (open)` above: validated against the
-current architecture, not a committed schedule. Each only becomes a real dated entry once it
-actually ships, following the same audit-first discipline v1.5 and v1.6 already used (a real gap
-found by reading the code, not an assumed one). No week or date estimates are given on purpose —
-every release above shipped once validated, not on a pre-set calendar, and a multi-month schedule
-would misrepresent how this project actually moves. Full implementation-level detail for
-whichever candidate is picked up next lives outside this file, in a dedicated
-`v{X.Y.Z}-implementation-plan.md` under `.local/gmm/sdd-agentic-flow/` — the same convention
-already used for v0.7.0 through v1.6.0. v1.8 (`autonomy_level` + deterministic guardrails)
-already shipped, above; v1.9 and v2.0 both build on it.
+v1.9.0 (`sdd-release`, handoff standard, `Status:` field, audited-and-closed progressive
+disclosure/golden-fixture gaps) shipped above, closing the "how do we know it's working
+correctly?" question the earlier v1.9 candidate posed. What follows is the remaining
+candidate, validated against the current architecture, not a committed schedule — it only
+becomes a real dated entry once it actually ships, following the same audit-first discipline
+every release above already used (a real gap found by reading the code, not an assumed one).
+No week or date estimate is given on purpose. Full implementation-level detail lives outside
+this file, in a dedicated `v{X.Y.Z}-implementation-plan.md` under
+`.local/gmm/sdd-agentic-flow/` — the same convention already used for v0.7.0 through v1.9.0.
 
 | Version | Question it answers | Answer |
 | --- | --- | --- |
-| v1.9 | How do we know it's working correctly? | Deeper skill contracts + verification + handoff |
 | v2.0 | How does this become a portable methodology? | Evidence graph + portable `.sdd/` context + cross-agent parity |
 
-### v1.9 — Method & Reliability (candidate)
-
-**Goal & business value:** deepen what already exists instead of duplicating it — if there's a
-real gap, it's in already-shipped skills needing to be clearer and more verifiable, not in
-inventing new systems.
-
-**Deliverables:** progressive disclosure across the 13 skills (Agent Skills Standard-aligned):
-each `SKILL.md` under ~500 lines, detailed material moved into `references/`/`scripts/`/`assets/`,
-validated by an extension of `scripts/check-skills.sh`. `sdd-brainstorm` gains an explicit
-known/assumed/unknown/needs-research split before handing off to `sdd-create-specs` (implicit
-today). Git guardrails and parallel-agent guidance formalized (when branch/commit/worktree are
-allowed; when parallelizing is appropriate). A `handoff.md` standard for cross-session/cross-agent
-continuity, integrated with v1.8's `.sdd/autonomy/loop-state.md`. A new skill, `sdd-release`, to
-make version/changelog/publish auditable — today that discipline lives only in
-`scripts/release-checklist.sh` and the maintainer's own process. A first Token Economics
-benchmark: measure tokens/iterations/rework with vs. without the method on the same model — not a
-promise of model-to-model equivalence.
-
-**Prerequisites/dependencies:** v1.8's `autonomy_profile` and `loop-state.md`;
-`scripts/check-skills.sh` as the validation base.
-
-**Acceptance criteria:** all 13 skills pass a `check-skills.sh --progressive-disclosure` check (or
-equivalent); no skill's main body references more than it needs to; `sdd-release` covers
-everything `release-checklist.sh` already does today, with no regression.
-
-**Risks & mitigation:** refactoring all 13 skills at once is a large regression surface →
-validate against the existing 5 golden flows before/after migrating each skill individually, not
-in one batch.
-
-**Correction vs. the draft:** `sdd-explain-me` **already exists**, shipped in v1.5 — it is not a
-new v1.9 item. It only re-enters scope here if the progressive-disclosure audit finds a real,
-validated gap in it.
-
-**Out of scope:** a multi-agent orchestration engine, a skill dependency resolver, a skill
-marketplace, a bespoke agent framework.
+A formal no-progress/repeated-failure signal for `.sdd/autonomy/loop-state.md` (an
+`Attempt:`/`Progress:` field per `## Current State` block, self-evaluated by the invoking agent
+the same way guardrails 1–6 already are) was raised and evaluated during v1.9.0's planning and
+explicitly deferred, not folded into v2.0's deliverables below by default — it becomes real
+scope only if a genuine stuck-loop incident is observed in practice, evaluated fresh against
+whatever the evidence graph below actually needs at that time.
 
 ### v2.0 — Agentic SDD Platform (candidate)
 
@@ -216,8 +220,9 @@ of what already exists today (`doctor --json`, `--quiet`, `install --plan` /
 `uninstall --plan|--apply`, CI-safe detection, `doctor --check-updates`) — the real work here is
 closing v1.8/v1.9-specific gaps, not building CLI ergonomics from zero.
 
-**Prerequisites/dependencies:** v1.8's `autonomy_profile`/`loop-state.md`; v1.9's deepened skill
-contracts and progressive disclosure; the existing adapter pattern (`docs/adapters.md`).
+**Prerequisites/dependencies:** v1.8's `autonomy_profile`/`loop-state.md`; v1.9.0's
+`handoff-standard.md` and `Status:`-field evidence model; the existing adapter pattern
+(`docs/adapters.md`).
 
 **Acceptance criteria:** a full workflow demonstrably runs end to end while swapping the agent
 mid-way without reconfiguring the method; `doctor` covers the evidence graph and compatibility

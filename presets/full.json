@@ -1,6 +1,6 @@
 {
   "name": "full",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "All public skills.",
   "skills": [
     "setup-sdd-agentic-flow",
@@ -15,7 +15,8 @@
     "sdd-create-pr",
     "sdd-pr-review",
     "sdd-pr-fix",
-    "sdd-validation"
+    "sdd-validation",
+    "sdd-release"
   ],
   "shared": true,
   "status": "stable"

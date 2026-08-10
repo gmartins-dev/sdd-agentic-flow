@@ -125,6 +125,7 @@ can review the resulting evidence.
 | `sdd-pr-review`          | Change set        | Review findings   | No              | `review` |
 | `sdd-pr-fix`             | Accepted findings | Local fixes       | When authorized | `apply`  |
 | `sdd-validation`         | Feature evidence  | Validation report | No              | `review` |
+| `sdd-release`            | Version/changelog | Release readiness report | No       | `review` |
 
 ## 7. Agent-specific usage
 

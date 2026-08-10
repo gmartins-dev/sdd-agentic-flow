@@ -2,7 +2,7 @@
 name: sdd-release
 description: Check whether a project or feature is ready to tag and publish a release — version consistency, changelog presence, and configured release checks. Use when the user asks if a release is ready; never tags, publishes, or pushes.
 metadata:
-  version: 1.9.0
+  version: 1.9.1
   pack: core
 extends: null
 requires: [config]
@@ -37,8 +37,10 @@ skill consumes rather than re-derives.
 
 ## Inputs
 
-- `.sdd/config.yml`, including any declared release conventions (version-bearing files, the
-  changelog path, configured build/test/lint commands).
+- `.sdd/config.yml` — there is no dedicated `release` section today, so this means whatever
+  release conventions (version-bearing files, the changelog path, configured build/test/lint
+  commands) the project already expresses through its existing structure, not a config field
+  this skill requires to be declared.
 - The repository's current version marker (for example `package.json`, a `VERSION` file, or
   whatever `.sdd/config.yml` declares) and its changelog file.
 - Accumulated `check-report`/`validation-report` evidence for the work being released.

@@ -37,6 +37,16 @@ function listPresetVersions(root = process.cwd()) {
     });
 }
 
+// v1.9.1: bin/sdd-agentic-flow.js's own `const VERSION` drifted from package.json during
+// v1.9.0 and nothing here caught it — this file only ever walked skills/ and presets/. Same
+// shape as a skill/preset entry so it flows through the existing drift logic unchanged.
+function listCliVersion(root = process.cwd()) {
+  const file = 'bin/sdd-agentic-flow.js';
+  const content = fs.readFileSync(path.join(root, file), 'utf8');
+  const match = content.match(/^const VERSION = '([^']+)';/m);
+  return { file, version: match ? match[1] : null };
+}
+
 // Returns package.json's version plus every skill/preset version alongside a `drifted`
 // flag (true when missing or not exactly equal to packageVersion via compareVersions).
 function checkVersionConsistency(root = process.cwd()) {
@@ -52,6 +62,7 @@ function checkVersionConsistency(root = process.cwd()) {
       ...entry,
       drifted: isDrifted(entry.version),
     })),
+    cli: { ...listCliVersion(root), drifted: isDrifted(listCliVersion(root).version) },
   };
 }
 
@@ -60,13 +71,14 @@ module.exports = {
   getPackageVersion,
   listSkillVersions,
   listPresetVersions,
+  listCliVersion,
 };
 
 // CLI mode: `node scripts/check-version-consistency.js` prints a human-readable report and
 // exits 1 on drift — used directly for manual/debugging invocation, independent of the two
 // shell scripts that consume the module API above with their own message formats.
 if (require.main === module) {
-  const { packageVersion, skills, presets } = checkVersionConsistency();
+  const { packageVersion, skills, presets, cli } = checkVersionConsistency();
   const drifted = [
     ...skills
       .filter((entry) => entry.drifted)
@@ -74,11 +86,12 @@ if (require.main === module) {
     ...presets
       .filter((entry) => entry.drifted)
       .map((entry) => `${entry.file} (version: ${entry.version})`),
+    ...(cli.drifted ? [`${cli.file} (version: ${cli.version})`] : []),
   ];
   if (drifted.length) {
     console.error(`version mismatch against package.json (${packageVersion}):`);
     for (const entry of drifted) console.error(`  - ${entry}`);
     process.exit(1);
   }
-  console.log(`all skill and preset versions match package.json (${packageVersion})`);
+  console.log(`all skill, preset, and CLI versions match package.json (${packageVersion})`);
 }

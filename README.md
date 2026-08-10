@@ -10,9 +10,15 @@
 
 Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
 
-Run it with `npx sdd-agentic-flow`. Zero runtime dependencies. User-local skill install by default. Human review stays in charge. Your project can stay Java, Python, Go, or anything else; the CLI only adds Markdown skills and local config.
+Structured specs, clear boundaries, and human governance:
 
-📦 [Get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🤖 [AGENTS.md](AGENTS.md)
+- **Capability-contracted skills:** Markdown skills built on condensed TLC and TDD baselines.
+- **Adaptive sizing:** Feature-profile sizing with optional auto-discovered project context.
+- **Zero footprint by default:** User-local skill install; `.sdd/config.yml` only when you create it.
+- **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
+- **Language-agnostic:** The CLI runs on Node.js >= 22; your project does not have to.
+
+📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*

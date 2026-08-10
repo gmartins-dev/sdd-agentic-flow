@@ -9,9 +9,8 @@ name: Release
 # tag existence would skip `npm publish` on that retry too, because the tag from the failed
 # attempt's earlier, already-succeeded step still exists. Tag/release creation is gated on tag
 # non-existence (below); npm publish is gated on the exact version not already being on the npm
-# registry (see "Check whether this version is already on npm") — so a retry after a
-# publish-only failure still republishes, while a routine push that changed nothing still does
-# nothing on either side.
+# registry (see "Check whether this version is already on npm"); GitHub Packages publish is
+# gated separately on the scoped package not already being on npm.pkg.github.com.
 #
 # npm publish runs in THIS SAME job, right after tag/release creation, rather than in a separate
 # workflow listening for `release: published`. That was the original design, but it does not
@@ -37,6 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +93,18 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check whether this version is already on GitHub Packages
+        id: gpr_check
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.pkg.outputs.version }}"
+          if npm view "@gmartins-dev/sdd-agentic-flow@${version}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Guards tag/release creation AND npm publish: an accidental package.json bump with no
       # matching changelog entry should never produce either. Runs unconditionally (cheap, local
       # grep) so its result is available on a retry too, not only on the version's first attempt.
@@ -135,6 +147,18 @@ jobs:
             echo "value=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Decide whether GitHub Packages publish should run
+        id: should_publish_gpr
+        run: |
+          if [[ "${{ steps.gpr_check.outputs.published }}" == "false" \
+                && "${{ steps.changelog.outputs.found }}" == "true" \
+                && ( "${{ steps.decide.outputs.should_release }}" == "true" \
+                     || "${{ steps.tag_exists.outputs.exists }}" == "true" ) ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1; pin to latest rather than trust
       # whatever version the runner's Node 22 image happens to bundle.
       - name: Ensure npm CLI supports Trusted Publishing (OIDC)
@@ -142,13 +166,19 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install dependencies
-        if: steps.should_publish.outputs.value == 'true'
+        if: steps.should_publish.outputs.value == 'true' || steps.should_publish_gpr.outputs.value == 'true'
         run: npm ci
 
       - name: Sanity-check the package contents before publishing
-        if: steps.should_publish.outputs.value == 'true'
+        if: steps.should_publish.outputs.value == 'true' || steps.should_publish_gpr.outputs.value == 'true'
         run: npm run pack:dry
 
       - name: Publish to npm
         if: steps.should_publish.outputs.value == 'true'
         run: npm publish --access public --provenance
+
+      - name: Publish to GitHub Packages
+        if: steps.should_publish_gpr.outputs.value == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: bash ./scripts/publish-github-packages.sh

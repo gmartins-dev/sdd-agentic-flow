@@ -18,8 +18,8 @@ bump with no matching changelog entry is skipped (with a workflow warning) rathe
 as an accidental release.
 
 This means the human decision point has moved from "authorize the tag/release" to "authorize the
-push of the version-bump commit to `main`." Once that commit is pushed and CI is green, tag and
-release follow without a second manual step. `npm publish` is not part of this workflow.
+push of the version-bump commit to `main`." Once that commit is pushed and CI is green, tag,
+release, and both registry publishes follow without a second manual step.
 
 ## `npm publish`: automatic via npm Trusted Publishing (OIDC)
 
@@ -38,6 +38,33 @@ per package, so only `release.yml` is registered; see "One-time setup" below.
 
 Before publishing, `release.yml` re-installs dependencies and re-runs `npm run pack:dry` as a
 final sanity check of the package contents.
+
+## GitHub Packages mirror: automatic (scoped)
+
+The same `release.yml` job also publishes **`@gmartins-dev/sdd-agentic-flow`** to
+[GitHub Packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)
+(`https://npm.pkg.github.com`) after the public npm publish (or on a retry when npm already has
+the version but GitHub Packages does not). That scoped name is used **only at publish time**;
+the committed `package.json` name stays **`sdd-agentic-flow`** so `npx sdd-agentic-flow` keeps
+working against the public npm registry.
+
+GitHub links the scoped package to this repository via the existing `repository` field and
+shows it under the repo sidebar **Packages** section. Install from GitHub Packages:
+
+```bash
+npm install @gmartins-dev/sdd-agentic-flow --registry=https://npm.pkg.github.com
+```
+
+The workflow authenticates with `GITHUB_TOKEN` (`packages: write`). No extra secret is required.
+To backfill an already-tagged version manually (for example after enabling this mirror), run
+`npm ci`, then:
+
+```bash
+NODE_AUTH_TOKEN=<github_pat_with_write:packages> bash scripts/publish-github-packages.sh
+```
+
+Or re-run a successful **Release** workflow after the tag exists; the GitHub Packages gate is
+independent of the public npm gate.
 
 ### One-time setup (manual, npmjs.com — cannot be automated from this repository)
 

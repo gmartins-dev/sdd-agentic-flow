@@ -1,0 +1,92 @@
+# Documentation index
+
+Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay in English everywhere.
+
+## Installation and setup
+
+| Doc | When to read |
+| --- | --- |
+| [installation.md](installation.md) | First install, pack selection, re-running install safely |
+| [installation-scope.md](installation-scope.md) | Choosing `--scope user` vs `--scope project` |
+| [configuration.md](configuration.md) | Editing `.sdd/config.yml`, project context, autonomy fields |
+| [environment-compatibility.md](environment-compatibility.md) | Node.js version, OS, shell requirements |
+| [uninstall.md](uninstall.md) | Removing installed skills and optional config |
+| [upgrading.md](upgrading.md) | Updating the CLI and handling skill contract changes |
+
+## SDD workflow
+
+| Doc | When to read |
+| --- | --- |
+| [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) | Running the full SDD chain with coding agents |
+| [workflow.md](workflow.md) | Short workflow summary and pointers |
+| [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
+| [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, outputs, packs) |
+| [skills.md](skills.md) | Skills layer overview |
+| [prompt-recipes.md](prompt-recipes.md) | Copy-paste prompt patterns |
+| [tdd-baseline.md](tdd-baseline.md) | TDD baseline overview (detail in shared reference) |
+| [tlc-integration.md](tlc-integration.md) | What this package ships vs external TLC skills |
+
+## Guides
+
+| Doc | When to read |
+| --- | --- |
+| [guides/choosing-a-feature-profile.md](guides/choosing-a-feature-profile.md) | Picking `small_fix`, `medium_feature`, `large_feature`, or `epic` |
+| [guides/adopting-in-a-brownfield-repo.md](guides/adopting-in-a-brownfield-repo.md) | Adding SDD to an existing codebase |
+| [guides/condensed-vs-full-tlc-tdd.md](guides/condensed-vs-full-tlc-tdd.md) | Condensed baselines vs full external skills |
+
+## Trust, safety, and autonomy
+
+| Doc | When to read |
+| --- | --- |
+| [trust-model.md](trust-model.md) | Product trust boundaries (local-first, no telemetry) |
+| [safety-model.md](safety-model.md) | Agent behavior rules and safety policy |
+| [execution-modes.md](execution-modes.md) | `plan`, `guided`, `apply`, `review`, `full` |
+| [autonomy-levels.md](autonomy-levels.md) | `manual`, `supervised`, `autonomous` |
+| [autonomy-guardrails.md](autonomy-guardrails.md) | Seven guardrails that gate automatic transitions |
+
+## Agent compatibility
+
+| Doc | When to read |
+| --- | --- |
+| [agent-compatibility.md](agent-compatibility.md) | Validated agent workflows and limits |
+| [using-with-cursor.md](using-with-cursor.md) | Cursor setup |
+| [using-with-claude-code.md](using-with-claude-code.md) | Claude Code setup |
+| [using-with-codex.md](using-with-codex.md) | Codex CLI setup |
+| [using-with-vscode-copilot.md](using-with-vscode-copilot.md) | VS Code + GitHub Copilot setup |
+| [recommended-harness.md](recommended-harness.md) | Optional AI development harness |
+
+## Architecture and compatibility
+
+| Doc | When to read |
+| --- | --- |
+| [architecture.md](architecture.md) | CLI, packs, skills, shared layer, consumer project |
+| [compatibility-promise.md](compatibility-promise.md) | Versioning and capability-contract rules |
+| [compatibility-matrix.md](compatibility-matrix.md) | Supported combinations |
+| [design-principles.md](design-principles.md) | Design goals |
+| [why-this-exists.md](why-this-exists.md) | Problem statement |
+| [adapters.md](adapters.md) | Source adapters (`local-files`, `github`) |
+| [domain-vocabulary.md](domain-vocabulary.md) | Domain glossary and language profiles |
+
+## Language and i18n
+
+| Doc | When to read |
+| --- | --- |
+| [i18n.md](i18n.md) | Bilingual policy |
+| [language-profiles.md](language-profiles.md) | `en-US` and `pt-BR` profile contract |
+| [language-profiles.pt-BR.md](language-profiles.pt-BR.md) | Same contract in Brazilian Portuguese |
+| [sdd-skills-usage-guide.pt-BR.md](sdd-skills-usage-guide.pt-BR.md) | Usage guide in Brazilian Portuguese |
+
+## Maintainer
+
+| Doc | When to read |
+| --- | --- |
+| [publishing.md](publishing.md) | Release and npm publish process for this repository |
+
+## Help
+
+| Doc | When to read |
+| --- | --- |
+| [AGENTS.md](../AGENTS.md) | Agent routing for install, workflow, trust, and maintainer branches |
+| [faq.md](faq.md) | Common questions |
+| [troubleshooting.md](troubleshooting.md) | `doctor` warnings and failures |
+| [inspirations.md](inspirations.md) | TLC, TDD, and SDD influences |

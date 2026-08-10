@@ -1,8 +1,6 @@
 # Guia de uso das skills SDD
 
-Este guia mostra como usar as skills públicas do `sdd-agentic-flow` em um fluxo
-local com agentes de código. O toolkit mantém especificações, prompts,
-alterações e evidências no projeto para que uma pessoa revise cada etapa.
+Use as skills públicas do `sdd-agentic-flow` em um fluxo local com agentes de código. O toolkit mantém especificações, prompts, alterações e evidências no projeto para que uma pessoa revise cada etapa.
 
 ## 1. Instale o toolkit
 

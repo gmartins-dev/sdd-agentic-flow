@@ -5,7 +5,7 @@
 No. Node.js is required to run the `sdd-agentic-flow` CLI itself, not the project you use it
 in. The CLI only installs Markdown skills and local config files; it never adds a
 `package.json`, `node_modules`, or a runtime dependency to your project. It works the same way
-for Java, PHP, C#, Python, Go, Rust, Node.js, or any other language — see
+for Java, PHP, C#, Python, Go, Rust, Node.js, or any other language. See
 [environment compatibility](environment-compatibility.md).
 
 ## What if I don't have Node.js installed?
@@ -42,7 +42,7 @@ No universal guarantee is made. It is Markdown-first and locally installed; see 
 ## How do I know if `project-context.md` is out of date?
 
 Run `sdd-agentic-flow context status`. It reports when the file was generated and at which
-repository revision, and states plainly if the repository has changed since — no guessing, just
+repository revision, and states plainly if the repository has changed since. No guessing, just
 a factual revision comparison.
 
 ## How do I refresh it?

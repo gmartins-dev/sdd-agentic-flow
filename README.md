@@ -6,19 +6,19 @@
   </picture>
 </p>
 
-**sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit designed for coding-agent workflows.
+**sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit for coding-agent workflows.
 
-It empowers AI-assisted development through structured specs, clear boundaries, and human governance:
+Structured specs, clear boundaries, and human governance:
 
 - **Capability-Contracted Skills:** Markdown skills built on condensed TLC (tlc-spec-driven skill) and TDD baselines.
 - **Adaptive Sizing:** Dynamic feature-profile sizing with optional auto-discovered project context.
-- **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) remains explicit and isolated to your project.
-- **Human-in-the-Loop:** Built for continuous flow is designed to structure and guide AI workflows; it does not replace human code review and governance.
-- **Language-agnostic:** The CLI runs on Node.js, but your project doesn't have to. Java, PHP, C#, Python, Go, Rust, Node.js — the CLI only installs Markdown skills and local config; it never adds a dependency to your project.
+- **Zero Footprint by Default:** Explicit, user-local skill installation. Project configuration (`.sdd/config.yml`) stays in your project only when you create it.
+- **Human-in-the-Loop:** The toolkit structures and guides AI workflows. Human code review and governance stay in charge.
+- **Language-agnostic:** The CLI runs on Node.js; your project does not have to. Java, PHP, C#, Python, Go, Rust, Node.js: the CLI only installs Markdown skills and local config and never adds a dependency to your project.
 
 📦 Install and run instantly with `npx sdd-agentic-flow`.
 
-📖 Explore the [Skills Usage Guide](docs/sdd-skills-usage-guide.md) to start running SDD workflows, or check the [Architecture Overview](docs/architecture.md) to see how the core components fit together.
+📖 Explore the [Skills Usage Guide](docs/sdd-skills-usage-guide.md) to start running SDD workflows, check the [Architecture Overview](docs/architecture.md), or read [AGENTS.md](AGENTS.md) for agent routing.
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*
@@ -26,7 +26,7 @@ It empowers AI-assisted development through structured specs, clear boundaries, 
 ## Quick start
 
 Requires Node.js >= 22 to run the CLI (see [environment compatibility](docs/environment-compatibility.md)).
-That requirement is about the CLI only — **your project does not need to be a Node.js
+That requirement applies to the CLI only. **Your project does not need to be a Node.js
 project.** `sdd-agentic-flow` installs Markdown skills and local config files; it never adds a
 `package.json`, `node_modules`, or a runtime dependency to your project, whatever language it's
 written in (Java, PHP, C#, Python, Go, Rust, Node.js, or anything else).
@@ -70,7 +70,7 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 
 - The source, CLI, docs, skills, and checks are open source and inspectable.
 - The CLI is small, local-first, and has zero runtime dependencies.
-- It has no telemetry, postinstall script, or outbound CLI network access by default — the sole exception is the opt-in `doctor --check-updates` flag, which makes exactly one npm-registry request only when passed.
+- It has no telemetry, postinstall script, or outbound CLI network access by default. The sole exception is the opt-in `doctor --check-updates` flag, which makes exactly one npm-registry request when you pass it.
 - It does not automatically commit, push, merge, deploy, or publish.
 - Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd/config.yml`. See [installation scope](docs/installation-scope.md).
 - `doctor` and `doctor --smoke` validate local setup, while publishable files are checked for blocked private-context markers.
@@ -94,7 +94,11 @@ list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` makes one request to the npm registry to check for a newer version — the sole, explicit, opt-in exception to "no network access by default"; see [the trust model](docs/trust-model.md). `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`); pass `--scope project` to install into `.agents/skills/` inside the project instead, and `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md). If `doctor` reports a `WARN`/`FAIL` you don't understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall`/`discover` to suppress decorative success output.
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` makes one request to the npm registry to check for a newer version. That flag is the sole, explicit, opt-in exception to "no network access by default"; see [the trust model](docs/trust-model.md).
+
+`install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Pass `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md).
+
+If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall`/`discover` to suppress decorative success output.
 
 Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion.
 Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set
@@ -103,8 +107,8 @@ Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/int
 
 ## Packs
 
-| Pack             | Purpose                                                                       |
-| ---------------- | ----------------------------------------------------------------------------- |
+| Pack | Purpose |
+| --- | --- |
 | `core`           | Safe setup, specification, implementation, checking, and validation baseline. |
 | `planning`       | Specs and task prompts.                                                       |
 | `execution`      | Single-task and multi-task execution guidance.                                |
@@ -168,7 +172,7 @@ Uninstall removes only known installed toolkit skill directories, from both scop
 
 ## Who is this for?
 
-This toolkit is optimized for teams adopting Spec Driven Development; sprint feature delivery in agile, scrum, or kanban workflows; tech leads breaking work into specs, tasks, prompts, reviews, and validation; developers delegating traceable work to coding agents; TDD/test-first teams; and controlled multi-agent or multi-worktree work.
+This toolkit fits teams adopting Spec-Driven Development, sprint feature delivery in agile/scrum/kanban workflows, tech leads breaking work into specs/tasks/prompts/reviews/validation, developers delegating traceable work to coding agents, TDD/test-first teams, and controlled multi-agent or multi-worktree work.
 
 ## Not optimized for
 
@@ -180,8 +184,8 @@ For the long-form version of this table — Purpose, When to use/not to use, Inp
 Dependencies, Conflicts, Baseline, Pack(s), and flow position for each skill — see the
 [skills catalog](docs/skills-catalog.md).
 
-| Skill                    | Purpose                     | Input             | Output                 | Mutates files?       | Default mode | Recommended when            |
-| ------------------------ | --------------------------- | ----------------- | ---------------------- | -------------------- | ------------ | --------------------------- |
+| Skill | Purpose | Input | Output | Mutates files? | Default mode | Recommended when |
+| --- | --- | --- | --- | --- | --- | --- |
 | `setup-sdd-agentic-flow` | Setup project configuration | Project context   | Local setup guidance   | Yes, when authorized | guided       | Starting a project          |
 | `sdd-route`              | Recommend next local skill  | Request/artifacts | Route recommendation   | No                   | plan         | The next step is unclear    |
 | `sdd-brainstorm`         | Shape a vague idea           | Rough idea         | Spec-ready brief        | Yes, when converged   | guided       | The idea isn't spec-ready yet |
@@ -221,7 +225,7 @@ has a `walkthrough.md` describing the commands the test runs and the result it c
 [PR (create → review → fix → review)](examples/golden/pr-flow/walkthrough.md), and
 [version migration (v0.8.0 → v0.9.0)](examples/golden/version-migration/walkthrough.md).
 
-The toolkit adapts TLC and TDD baselines and combines Spec Driven Development,
+The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development,
 Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md),
 [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md),
 the [compatibility matrix](docs/compatibility-matrix.md),
@@ -234,11 +238,8 @@ For decision help, see the guides on
 
 ## Safety boundaries
 
-The CLI does not call external APIs, require a tracker, sync remotely, update itself, or perform Git/release operations — except the opt-in `doctor --check-updates` flag, which checks for a newer version (and never installs it for you) only when explicitly passed. It is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them.
+The CLI does not call external APIs, require a tracker, sync remotely, update itself, or perform Git/release operations. The opt-in `doctor --check-updates` flag checks for a newer version when you pass it and never installs it for you. This toolkit is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them. See [safety model](docs/safety-model.md).
 
 ## Publishing
 
-Review locally, then follow [docs/publishing.md](docs/publishing.md). Tag, GitHub release, and
-`npm publish` are automated in this repository's own CI — via `id-token: write` OIDC Trusted
-Publishing, no stored npm token — triggered only after `ci.yml` passes on `main`; this is
-maintainer-side release tooling, not something the CLI itself does when you run it.
+Maintainers: see [publishing](docs/publishing.md).

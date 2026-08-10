@@ -1,6 +1,6 @@
 # Compatibility matrix
 
-This table is a direct re-presentation of every skill's `compatible_with` frontmatter field —
+The table below re-presents every skill's `compatible_with` frontmatter field.
 `scripts/check-skills.sh` mechanically verifies it matches `presets/*.json` membership on every
 `npm run check`, so it cannot drift from what a pack actually installs. See the
 [compatibility promise](compatibility-promise.md) for what that guarantee does and does not
@@ -18,8 +18,8 @@ against that pack's target agent or workflow. Manual verification is tracked sep
 [agent compatibility](agent-compatibility.md), which lists, per agent, whether user/project
 scope and auto-discovery have actually been exercised.
 
-| Skill                     | core | planning | execution | pr  | multi-worktree | full | local-files | github |
-| -------------------------- | :--: | :------: | :-------: | :-: | :-------------: | :--: | :---------: | :----: |
+| Skill | core | planning | execution | pr | multi-worktree | full | local-files | github |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `setup-sdd-agentic-flow`   |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
 | `sdd-route`                |  ✓   |    ✓     |     ✓     |  ✓  |        ✓         |  ✓   |     ✓       |   ✓    |
 | `sdd-brainstorm`           |      |    ✓     |           |     |                  |  ✓   |             |        |

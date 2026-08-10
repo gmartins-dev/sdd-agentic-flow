@@ -1,9 +1,9 @@
 # Architecture
 
 `sdd-agentic-flow` is a local-first, zero-runtime-dependency toolkit that gives coding agents a
-Spec Driven Development foundation: capability-contracted skills built on condensed TLC and TDD
-baselines, adaptive feature-profile sizing, and optional auto-discovered project context. This
-document describes how those pieces fit together.
+Spec-Driven Development foundation: capability-contracted skills built on condensed TLC and TDD
+baselines, adaptive feature-profile sizing, and optional auto-discovered project context.
+The sections below show how those pieces fit together.
 
 ## Layers
 
@@ -30,8 +30,8 @@ Consumer project (installed via `install <pack>` into a target repository)
   .agents/skills/**                   installed skill copies + sdd-agentic-flow-shared
 ```
 
-Each layer only depends on the layer below it. Skills never call the CLI, and the CLI never
-authors SDD artifacts — it only creates configuration, discovers context, and copies files.
+Each layer only depends on the layer below it. Skills never call the CLI. The CLI never
+authors SDD artifacts; it only creates configuration, discovers context, and copies files.
 
 ## Capability contracts
 
@@ -61,33 +61,33 @@ Every skill's frontmatter declares:
 
 | Field | Answers | Not to be confused with |
 | --- | --- | --- |
-| `extends` | "What is the one upstream skill this continues from?" | `depends_on` — `extends` is a single required chain link, not an optional extra input. |
-| `depends_on` | "What other skill's *output* does this skill also need, beyond its `extends` parent?" | `requires` — `depends_on` names other **skills**; `requires` names **input kinds** (`config`, `task-identity`), never a skill. |
-| `conflicts` | "Which skills must never be installed alongside this one?" | `depends_on` — `conflicts` names an incompatibility, not a needed output. |
-| `requires` | "What input kinds must exist before this skill can act?" | `consumes` — a missing `requires` input blocks the skill; a missing `consumes` artifact does not. |
-| `consumes` | "What optional context artifacts does this skill read when present?" | `requires` — `consumes` is best-effort context, never a precondition. |
-| `produces` | "What artifact kind does this skill hand off when it finishes?" | `compatible_with` — `produces` is workflow output, `compatible_with` is pack membership. |
-| `requires_cli` | "What is the minimum CLI version this skill needs?" | `baseline` — `requires_cli` gates on the CLI's own version, not a methodology baseline. |
+| `extends` | "What is the one upstream skill this continues from?" | `depends_on`. `extends` is a single required chain link, not an optional extra input. |
+| `depends_on` | "What other skill's *output* does this skill also need, beyond its `extends` parent?" | `requires`. `depends_on` names other **skills**; `requires` names **input kinds** (`config`, `task-identity`), never a skill. |
+| `conflicts` | "Which skills must never be installed alongside this one?" | `depends_on`. `conflicts` names an incompatibility, not a needed output. |
+| `requires` | "What input kinds must exist before this skill can act?" | `consumes`. A missing `requires` input blocks the skill; a missing `consumes` artifact does not. |
+| `consumes` | "What optional context artifacts does this skill read when present?" | `requires`. `consumes` is best-effort context, never a precondition. |
+| `produces` | "What artifact kind does this skill hand off when it finishes?" | `compatible_with`. `produces` is workflow output; `compatible_with` is pack membership. |
+| `requires_cli` | "What is the minimum CLI version this skill needs?" | `baseline`. `requires_cli` gates on the CLI's own version, not a methodology baseline. |
 
 `doctor --contracts` validates that every skill installed in a **consumer** repository
 (`.agents/skills/*/SKILL.md`) still carries all 6 required fields and reports on the 3 optional
-ones (`depends_on`, `conflicts`, `requires_cli`) — `FAIL` if a required field is missing
-(signals a corrupted or hand-edited installed skill), `WARN` if an optional field is absent,
-and a separate deterministic `FAIL` if a declared `requires_cli` range is not satisfied by the
-installed CLI's version. This complements
+ones (`depends_on`, `conflicts`, `requires_cli`). It returns `FAIL` if a required field is
+missing (signals a corrupted or hand-edited installed skill), `WARN` if an optional field is
+absent, and a separate deterministic `FAIL` if a declared `requires_cli` range is not satisfied
+by the installed CLI's version. This complements
 `scripts/check-skills.sh`, which validates the same fields **at the source** (this repository)
 before anything is packed or installed.
 
 `doctor --contracts` also validates that `depends_on`/`conflicts` reference real skill names
 (and, for `conflicts`, that referenced skills are not actually co-installed), that `baseline`
-entries exist in `shared/baselines/registry.yml`, and that `depends_on`/`extends` form no cycle
-— surfacing any of these as a `FAIL` inside this same check rather than a new status value. It
-does not re-verify `compatible_with` against pack membership: a consumer repository has no
-local `presets/` directory to check against (`install` only copies `shared/`, never `presets/`);
-that exact-match check only runs at the source, in `scripts/check-skills.sh`.
+entries exist in `shared/baselines/registry.yml`, and that `depends_on`/`extends` form no cycle.
+Any of these failures surface as a `FAIL` inside this same check rather than a new status value.
+It does not re-verify `compatible_with` against pack membership: a consumer repository has no
+local `presets/` directory to check against (`install` only copies `shared/`, never `presets/`).
+That exact-match check only runs at the source, in `scripts/check-skills.sh`.
 
-| Skill                    | extends           | requires                              | produces                 | baseline             |
-| ------------------------ | ------------------ | -------------------------------------- | ------------------------- | --------------------- |
+| Skill | extends | requires | produces | baseline |
+| --- | --- | --- | --- | --- |
 | `setup-sdd-agentic-flow` | —                   | config                                 | project-config, project-context | tlc-spec-driven  |
 | `sdd-route`               | —                   | config                                 | route-recommendation      | —                      |
 | `sdd-brainstorm`          | —                   | config                                 | spec-ready-brief           | —                      |
@@ -107,7 +107,7 @@ that exact-match check only runs at the source, in `scripts/check-skills.sh`.
 
 TLC and TDD are registered in `shared/baselines/registry.yml` with a `baseline_version`
 independent from the package version. `sdd-agentic-flow` ships **condensed, adapted** versions
-of both (`shared/references/tlc-baseline.md`, `shared/references/tdd-baseline.md`) — not the
+of both (`shared/references/tlc-baseline.md`, `shared/references/tdd-baseline.md`), not the
 full external `tlc-spec-driven`/`tdd` skills they are inspired by. See
 [TLC integration](tlc-integration.md) for the exact boundary and the
 [compatibility promise](compatibility-promise.md) for what changes across versions.
@@ -119,12 +119,12 @@ can and cannot verify.
 
 ## Project context
 
-- `.sdd/config.yml` — user-declared policy. Hand-authored (via `init`), never auto-written
+- `.sdd/config.yml`: user-declared policy. Hand-authored (via `init`), never auto-written
   after creation.
-- `.sdd/context/project-context.md` — auto-discovered facts (README, AI instruction files,
+- `.sdd/context/project-context.md`: auto-discovered facts (README, AI instruction files,
   docs/ADR presence, package identity, monorepo tooling, test config). Regenerated by
   `discover`/`discover --force`/`context refresh`, never hand-authored.
-- `.sdd/context/domain-glossary.md` — optional, human-authored product vocabulary, created only
+- `.sdd/context/domain-glossary.md`: optional, human-authored product vocabulary, created only
   with explicit authorization.
 
 Skills read all three when present and never conflate discovered facts with declared policy.
@@ -137,7 +137,7 @@ snapshot of the repository, not authoritative source code. It carries its own pr
 inspectable rather than assumed. `context status` reports that provenance and states, factually,
 whether the repository has moved on since generation; `context refresh` regenerates it on demand.
 Skills already consume this artifact as a shared baseline and layer only task-specific inspection
-on top of it — they do not re-discover project-wide facts it already captures.
+on top of it. They do not re-discover project-wide facts it already captures.
 
 This is deliberately the full scope of Dynamic Project Context today. Indexing (accelerating
 retrieval in large repositories) and querying (finding task-relevant context on demand) are
@@ -150,7 +150,7 @@ contract.
 
 Language profiles, multi-worktree orchestration, and feature profiles are extensions: they
 enrich the TLC/TDD baselines but never weaken or replace them (see the "Extensions" section of
-`shared/references/tlc-baseline.md`). `local-files` and `github` are adapters —
+`shared/references/tlc-baseline.md`). `local-files` and `github` are adapters:
 documentation-level only; see [adapters](adapters.md). Jira, Linear, and Azure DevOps adapters,
-along with skill-cards/playbooks/decision-guide documentation, are deferred beyond v0.6 — see
+along with skill-cards/playbooks/decision-guide documentation, are deferred beyond v0.6; see
 [ROADMAP.md](../ROADMAP.md).

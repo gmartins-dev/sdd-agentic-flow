@@ -1,19 +1,19 @@
 # Autonomy guardrails
 
 `workflow.autonomy_level` in `.sdd/config.yml` is a **new axis orthogonal to** `workflow.execution_mode`
-(`plan`/`guided`/`apply`/`review`/`full`, see `docs/execution-modes.md`).
+(`plan`/`guided`/`apply`/`review`/`full`, see [execution modes](../../docs/execution-modes.md)).
 `execution_mode` answers "what is a skill authorized to do"; `autonomy_level` answers "does a
 skill need a human between it and the next one." Neither replaces the other, and neither changes
-behavior unless a project explicitly opts in — the default is `manual`, the same fully-supervised
+behavior unless a project explicitly opts in. The default is `manual`, the same fully-supervised
 behavior every skill already had before this file existed.
 
 ## The three levels
 
-- **`manual`** (default) — every skill returns control completely. Nothing advances
+- **`manual`** (default): every skill returns control completely. Nothing advances
   automatically, even when a skill reports success. Transition policy: `stop`.
-- **`supervised`** — a skill executes, reports its evidence, and offers an explicit
+- **`supervised`**: a skill executes, reports its evidence, and offers an explicit
   "continue to `<next skill>`?" recommendation; the human decides. Transition policy: `confirm`.
-- **`autonomous`** — a skill executes and advances to the next skill on its own, but only when
+- **`autonomous`**: a skill executes and advances to the next skill on its own, but only when
   every guardrail below passes. Any guardrail failure blocks the advance and hands control back
   to the human, the same as `manual` would. Transition policy: `continue`, gated.
 
@@ -27,10 +27,9 @@ behavior every skill already had before this file existed.
 | `review` | valid (default) | valid | valid, uncommon |
 | `full` | valid | valid | valid (default) |
 
-`plan` and `guided` never combine with `autonomous`: a plan-only workflow has nothing to
-auto-advance into, and step-by-step confirmation is the entire point of `guided` — pairing it with
-unattended advance is a direct contradiction, not a stricter variant. `doctor --autonomy` flags
-either combination as `FAIL`.
+`plan` and `guided` never combine with `autonomous`. A plan-only workflow has nothing to
+auto-advance into, and step-by-step confirmation is the entire point of `guided`. Pairing it with
+unattended advance contradicts `guided`. `doctor --autonomy` flags either combination as `FAIL`.
 
 ## The 7 guardrails
 
@@ -58,8 +57,8 @@ completion as license to invoke the next skill.
    editing state, without needing to kill a process.
 
 If any guardrail fails, the agent stops, records the failing guardrail and its reason in
-`.sdd/autonomy/loop-state.md`, and waits for a human to resolve it — by fixing the underlying
-cause and re-running the skill, or by running `sdd-agentic-flow autonomous-resume`.
+`.sdd/autonomy/loop-state.md`, and waits for a human to resolve it. The human fixes the underlying
+cause and re-runs the skill, or runs `sdd-agentic-flow autonomous-resume`.
 
 ## `autonomy_profile` frontmatter
 

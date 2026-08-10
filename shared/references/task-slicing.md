@@ -1,6 +1,6 @@
 # Task slicing
 
-Prefer vertical slices: each task should describe one observable behavior, acceptance criteria, a public seam when code is involved, and an independent check.
+Prefer vertical slices. Each task should describe one observable behavior, acceptance criteria, a public seam when code is involved, and an independent check.
 
 - State dependencies explicitly.
 - Use horizontal-only slices only with a recorded justification.

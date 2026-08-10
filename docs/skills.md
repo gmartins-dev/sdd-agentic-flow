@@ -1,6 +1,6 @@
 # Skills
 
-Deciding which skill to use? See the [skills catalog](skills-catalog.md) — Purpose, When to
+See the [skills catalog](skills-catalog.md) for Purpose, When to
 use/not to use, Inputs/Outputs, Dependencies, Conflicts, Baseline, Pack(s), and flow position
 for each of the 14 public skills.
 

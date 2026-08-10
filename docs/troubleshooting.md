@@ -1,8 +1,7 @@
 # Troubleshooting
 
 Symptom → likely cause → diagnostic command → fix, for every `WARN`/`FAIL` `doctor` can
-actually emit today (read `doctorChecks()` in `bin/sdd-agentic-flow.js` for the source of
-truth — this file is checked against it, not invented). Run `sdd-agentic-flow doctor --json`
+emit today. The source of truth is `doctorChecks()` in `bin/sdd-agentic-flow.js`. Run `sdd-agentic-flow doctor --json`
 first; it names the failing check.
 
 ## Consumer project checks

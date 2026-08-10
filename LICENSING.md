@@ -1,7 +1,7 @@
 # Licensing map
 
-| Area                                  | License          | Notes                                                                      |
-| ------------------------------------- | ---------------- | -------------------------------------------------------------------------- |
+| Area | License | Notes |
+| --- | --- | --- |
 | `bin/`, `scripts/`, package metadata  | MIT              | Original package code.                                                     |
 | `docs/`, templates, examples, presets | MIT              | Original public content unless marked otherwise.                           |
 | `shared/references/tlc-baseline.md`   | CC-BY-4.0        | Adapted methodology with attribution in `NOTICE`. Upstream `tlc-spec-driven` pinned at `metadata.version: 3.3.0`. |

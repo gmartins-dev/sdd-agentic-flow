@@ -4,7 +4,7 @@ Baseline version: 0.6.0
 
 This baseline governs implementation work in `sdd-agentic-flow`.
 
-It is inspired by and adapted from the public `tdd` skill in
+Inspired by and adapted from the public `tdd` skill in
 `mattpocock/skills` for local-first, agent-client-agnostic SDD workflows.
 Attribution does not imply endorsement.
 

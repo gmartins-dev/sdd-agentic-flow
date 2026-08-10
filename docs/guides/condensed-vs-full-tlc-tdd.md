@@ -1,9 +1,7 @@
 # Condensed vs. full TLC/TDD
 
-`sdd-agentic-flow` ships its own condensed, self-contained adaptation of TLC and TDD — see
-[TLC integration](../tlc-integration.md) for the exact boundary. This guide is about when to
-reach for this package's condensed baselines versus installing the full external
-`tlc-spec-driven`/`tdd` skills they're inspired by.
+`sdd-agentic-flow` ships condensed, self-contained adaptations of TLC and TDD. See
+[TLC integration](../tlc-integration.md) for the exact boundary. Choose between this package's condensed baselines and the full external `tlc-spec-driven`/`tdd` skills they adapt from.
 
 ## Use this package's condensed baselines when
 

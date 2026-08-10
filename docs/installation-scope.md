@@ -3,9 +3,9 @@
 `install` supports two explicit scopes. `user` is the default: it never touches the
 consumer project. `project` is opt-in and matches the toolkit's pre-v0.9.0 behavior.
 
-| Scope             | What `install <pack>` does                                     | Trace in the project                                                            |
-| ------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `user` (default)   | Copies skills into the global skill directories of each supported agent | None — no file or directory is created in `cwd`                              |
+| Scope | What `install <pack>` does | Trace in the project |
+| --- | --- | --- |
+| `user` (default) | Copies skills into the global skill directories of each supported agent | None. No file or directory is created in `cwd` |
 | `project` (opt-in) | Copies skills into `.agents/skills/` inside the project, same as `install` before v0.9.0 | Real files, appear as untracked in `git status`; the team decides whether to commit |
 
 ```bash
@@ -20,8 +20,8 @@ The scope only applies to what `install` copies (skills). It never applies to `.
 or `.sdd/context/project-context.md`, which are project policy, always created by
 `init`/`discover`, and always live in the project regardless of scope.
 
-| Category                          | Lives in                              | Owner        |
-| ---------------------------------- | -------------------------------------- | ------------- |
+| Category | Lives in | Owner |
+| --- | --- | --- |
 | Installed skills                   | user-local (default) / project (opt-in) | user / team  |
 | CLI installation config            | user-local                             | user         |
 | `.sdd/config.yml` (project policy) | project                                | team         |
@@ -33,8 +33,8 @@ or `.sdd/context/project-context.md`, which are project policy, always created b
 `sdd-agentic-flow` supports 4 agents officially. Each global (`user` scope) directory is
 verified against that agent's own documentation:
 
-| Agent                    | Global (`user` scope)                     | Project (`project` scope) | Source                                                                                          |
-| -------------------------- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| Agent | Global (`user` scope) | Project (`project` scope) | Source |
+| --- | --- | --- | --- |
 | Codex CLI                | `$HOME/.agents/skills/`                      | `.agents/skills/`             | [developers.openai.com/codex](https://learn.chatgpt.com/docs/build-skills)                          |
 | Cursor                   | `~/.agents/skills/` and `~/.cursor/skills/`  | `.agents/skills/` and `.cursor/skills/` | [cursor.com/help/customization/skills](https://cursor.com/help/customization/skills)                |
 | Claude Code               | `~/.claude/skills/<name>/SKILL.md`           | `.claude/skills/<name>/SKILL.md` | [code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills)                            |
@@ -43,7 +43,7 @@ verified against that agent's own documentation:
 Without `--agent`, `install` writes to 3 fixed global targets by default: `~/.agents/skills/`
 (Codex CLI + Cursor, and Copilot's fallback path), `~/.claude/skills/` (Claude Code), and
 `~/.copilot/skills/` (GitHub Copilot). Writing to all 3 by default costs a few extra KB and
-avoids any need to detect "which agent is installed" — detection is out of scope for this
+avoids any need to detect "which agent is installed." Detection is out of scope for this
 release (see the [v0.9.0 non-scope list](compatibility-promise.md)).
 
 Restrict to a single agent with `--agent`:
@@ -72,6 +72,6 @@ project target and at each of the 3 default user-scope targets, plus an explicit
 
 ## `uninstall --scope`
 
-`uninstall` also accepts `--scope user|project` (default: both, the safer choice — it removes
-from every location the CLI recognizes as installed by it) and `--agent` to restrict the
-user-scope targets it touches.
+`uninstall` also accepts `--scope user|project` (default: both) and `--agent` to restrict the
+user-scope targets it touches. Defaulting to both is the safer choice: it removes skills from
+every location the CLI recognizes as installed by it.

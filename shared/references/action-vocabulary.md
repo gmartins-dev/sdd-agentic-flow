@@ -10,7 +10,7 @@ Each verb below is defined by three facets: **Intent** (why a skill would use it
 step).
 
 - **Read**
-  - Intent: gather existing information — a file, config value, or prior artifact — before
+  - Intent: gather existing information (a file, config value, or prior artifact) before
     acting on it.
   - Authority: read-only; never creates, edits, or deletes anything.
   - Output: loaded content available to inform the next step (for example, reading

@@ -1,7 +1,7 @@
 # Autonomy levels
 
 `workflow.autonomy_level` in `.sdd/config.yml` is a **new axis orthogonal to**
-[execution modes](execution-modes.md) (`plan`/`guided`/`apply`/`review`/`full`) — it does not
+[execution modes](execution-modes.md) (`plan`/`guided`/`apply`/`review`/`full`). It does not
 replace or duplicate them. `execution_mode` answers "what is a skill authorized to do";
 `autonomy_level` answers "does a skill need a human between it and the next one." Every existing
 skill still behaves exactly as documented before v1.8.0: the default, `manual`, is the same
@@ -15,7 +15,7 @@ fully-supervised behavior the toolkit already had.
 | `supervised` | Reports evidence and asks "continue to `<next skill>`?"; a human decides. | `confirm` |
 | `autonomous` | Advances on its own, but only when every one of the 7 guardrails passes. | `continue`, gated |
 
-`autonomous` is not "no oversight" — it is oversight moved from every transition to the guardrail
+`autonomous` is not "no oversight." Oversight moves from every transition to the guardrail
 definitions themselves, checked mechanically before each one. Any guardrail failure produces the
 exact same outcome as `manual`: control returns to a human.
 
@@ -38,8 +38,8 @@ it before writing `.sdd/config.yml`.
 
 See [autonomy guardrails](autonomy-guardrails.md) for the full definition of each one
 (completion status, evidence validation, verification gates, scope boundary, transition validity,
-resource sufficiency, human override) — this is the one part of the model with enough surface
-area to warrant its own page.
+resource sufficiency, human override). That page covers the one part of the model with enough
+surface area to warrant its own page.
 
 ## Configuration
 
@@ -57,11 +57,11 @@ workflow:
 
 `init --execution-mode <mode> --autonomy-level <level>` sets both at creation time (also
 available via `init --interactive`). An `.sdd/config.yml` predating v1.8.0 that has neither field
-is not an error — `doctor --autonomy` reports `WARN` and both default to `guided`/`manual`,
+is not an error. `doctor --autonomy` reports `WARN` and both default to `guided`/`manual`,
 identical to today's behavior. See [configuration](configuration.md).
 
 `workflow.skill_overrides` (optional, not written by `init`) pins one skill to a stricter level
-regardless of the workflow default — e.g. keeping `sdd-pr-review` at `manual` even inside an
+regardless of the workflow default. For example, keep `sdd-pr-review` at `manual` even inside an
 otherwise `autonomous` run, because a security-sensitive review should always get a human look:
 
 ```yaml
@@ -73,22 +73,22 @@ workflow:
 
 ## CLI surface
 
-- `init --execution-mode <mode> --autonomy-level <level>` — set both at project creation.
-- `doctor --autonomy [--verbose]` — validate `workflow.execution_mode`/`autonomy_level`, the
+- `init --execution-mode <mode> --autonomy-level <level>`: set both at project creation.
+- `doctor --autonomy [--verbose]`: validate `workflow.execution_mode`/`autonomy_level`, the
   compatibility matrix, every installed skill's `autonomy_profile` support for the configured
   level, `workflow.autonomy_budget`, and the last recorded loop state. `--verbose` also lists all
   7 guardrails and what each one gates.
-- `context autonomy-state` — read-only report of the current configuration and the last recorded
+- `context autonomy-state`: read-only report of the current configuration and the last recorded
   `.sdd/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
   `supervised`/`autonomous` workflow.
-- `autonomous-resume [--force] [--override-guard=<1-7> --reason="..."]` — clear a `pause=true`/
+- `autonomous-resume [--force] [--override-guard=<1-7> --reason="..."]`: clear a `pause=true`/
   `stop=true` recorded in `loop-state.md` and append an audited log entry, so the invoking agent
   can re-check guardrails and continue.
 
-None of these commands run a skill or an orchestration loop themselves — this package ships
+None of these commands run a skill or an orchestration loop themselves. This package ships
 skills for an agent to read and follow, not a runtime that executes them. `autonomy_level` is a
-contract the skills and the invoking agent honor; the CLI's role is to validate that contract
-statically (`doctor --autonomy`) and manage the state file agents read and write while honoring
+contract the skills and the invoking agent honor. The CLI validates that contract
+statically (`doctor --autonomy`) and manages the state file agents read and write while honoring
 it (`context autonomy-state`, `autonomous-resume`). See the "Scope" section of
 [autonomy guardrails](autonomy-guardrails.md).
 
@@ -104,15 +104,15 @@ autonomy_profile:
   evidence_required: [spec.md, design.md]
 ```
 
-- `supported_levels` — a skill whose output is always a recommendation or explanation for a human
+- `supported_levels`: a skill whose output is always a recommendation or explanation for a human
   to act on, never itself a link in the auto-advancing chain (`sdd-brainstorm`, `sdd-explain-me`,
   `sdd-route`, `setup-sdd-agentic-flow`), omits `autonomous`.
-- `auto_continue_condition` — one human-readable line describing "safe to advance automatically"
+- `auto_continue_condition`: one human-readable line describing "safe to advance automatically"
   for this skill. Informational; the actual gate is guardrails 1–3.
-- `blocking_conditions` / `evidence_required` — the specific failure modes and required artifacts
+- `blocking_conditions` / `evidence_required`: the specific failure modes and required artifacts
   a skill (and the agent invoking it) checks against when deciding `PASS`/`FAIL` and whether to
   advance. `scripts/check-skills.sh` only checks that these two fields are *present*, not their
-  content; `doctor --autonomy` does not currently read them at all — it validates
+  content; `doctor --autonomy` does not currently read them at all. It validates
   `supported_levels`, not evidence on disk. Runtime evidence validation is the invoking agent's
   responsibility, consistent with this CLI hosting no orchestration engine (see "CLI surface"
   above).
@@ -124,7 +124,7 @@ autonomy_profile:
 
 `autonomy_level` governs skill-to-skill transitions only. A skill running at `autonomy_level:
 manual` may still call any tool it always could, including an available MCP integration, exactly
-as before — autonomy only changes whether the agent asks before invoking the *next skill*. MCP
+as before. Autonomy only changes whether the agent asks before invoking the *next skill*. MCP
 stays awareness, not a platform: skills may detect and use an available MCP integration (e.g.
 GitHub) the same way they already treat the `local-files`/`github` adapters
 ([adapters](adapters.md)); this package hosts no MCP server itself.
@@ -134,5 +134,5 @@ GitHub) the same way they already treat the `local-files`/`github` adapters
 Same posture as [what this does not promise](compatibility-promise.md#what-this-does-not-promise):
 `autonomous` is not a guarantee of correctness, a substitute for review, or a claim that a
 workflow needs no human ever. It is a mechanical, auditable rule for when a human is asked versus
-when a documented guardrail set stands in for that ask — and any guardrail failure returns to
+when a documented guardrail set stands in for that ask. Any guardrail failure returns to
 asking.

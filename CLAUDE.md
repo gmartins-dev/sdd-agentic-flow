@@ -1,8 +1,10 @@
 # Development instructions for this repository
 
 These instructions apply to anyone (human or AI agent) developing `sdd-agentic-flow`
-itself — they are separate from the `skills/` this package ships to consumers, which stay
-agent-neutral by design (see `docs/compatibility-promise.md`).
+itself. Consumer workflows start at [AGENTS.md](AGENTS.md); that file routes install,
+SDD workflow, and trust docs. This file covers maintainer rules only. The `skills/` this
+package ships to consumers stay agent-neutral by design (see
+[docs/compatibility-promise.md](docs/compatibility-promise.md)).
 
 ## Git commits: never attribute Claude/Anthropic as a co-author
 

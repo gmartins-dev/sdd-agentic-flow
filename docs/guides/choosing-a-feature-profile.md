@@ -1,9 +1,8 @@
 # Choosing a feature profile
 
-`workflow.feature_profile` in `.sdd/config.yml` adaptively sizes SDD rigor to the scope of the
-work — see [feature profiles](../../shared/references/feature-profiles.md) for the full
-contract each value implies. This guide is about the decision itself: which value fits a given
-piece of work, with real examples.
+`workflow.feature_profile` in `.sdd/config.yml` sizes SDD rigor to the scope of the
+work. See [feature profiles](../../shared/references/feature-profiles.md) for the full
+contract each value implies. Pick the value that fits the piece of work.
 
 ## `small_fix`
 

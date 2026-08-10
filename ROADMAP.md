@@ -1,7 +1,7 @@
 # Roadmap
 
 - **v1.9.0 (2026-08-10):** Method & Reliability. Deepens v1.8.0's autonomy foundation instead of
-  adding a new mechanism — closes individually audited gaps rather than the originally drafted
+  adding a new mechanism. This release closes individually audited gaps rather than the originally drafted
   candidate wholesale (see "Corrections vs. the v1.9 candidate draft" below). New `sdd-release`
   skill (14th public skill; packs `core`/`full`/`local-files`/`github`, matching
   `sdd-validation`): checks release readiness (version consistency, changelog presence,

@@ -1,7 +1,7 @@
 # Execution modes
 
-| Mode     | Purpose                                              | Mutations                                | Git and release boundary                                    |
-| -------- | ---------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| Mode | Purpose | Mutations | Git and release boundary |
+| --- | --- | --- | --- |
 | `plan`   | Analyze, specify, prompt, and report                 | No source-code changes                   | Never commit or publish                                     |
 | `guided` | Suggest or apply reviewed local patches              | Only with human approval                 | Never commit or push                                        |
 | `apply`  | Implement explicitly authorized local work           | Local files only                         | Never commit, push, merge, deploy, or publish               |

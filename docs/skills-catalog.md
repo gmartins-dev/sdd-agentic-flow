@@ -3,7 +3,7 @@
 A product-level view of the 14 public skills, one section each, ordered like the
 [main SDD flow](../README.md#main-sdd-flow) rather than alphabetically. Each entry restates
 its skill's capability contract (`extends`/`requires`/`consumes`/`produces`/`baseline`/
-`compatible_with`/`depends_on`/`conflicts`/`requires_cli`) in prose — see
+`compatible_with`/`depends_on`/`conflicts`/`requires_cli`) in prose. See
 [architecture](architecture.md#capability-contracts) for the full contract table and
 [compatibility matrix](compatibility-matrix.md) for exactly which pack installs which skill.
 `scripts/check-skills.sh` mechanically checks that every skill below has an entry, so this

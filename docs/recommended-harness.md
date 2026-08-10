@@ -1,6 +1,6 @@
 # Recommended optional harness
 
-`sdd-agentic-flow` is self-contained. The tools below are optional; they are not required to install, run, or benefit from the toolkit.
+`sdd-agentic-flow` is self-contained. The tools below are optional complements, not requirements to install, run, or benefit from the toolkit.
 
 ## Core
 

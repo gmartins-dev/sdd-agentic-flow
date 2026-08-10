@@ -5,10 +5,10 @@
 The one explicit, opt-in exception is `doctor --check-updates` (v1.4.0): only when that flag is
 passed, the CLI makes a single request to the npm registry to check for a newer version, bounded
 by a 3-second timeout. No other command makes a network call, and this one never runs
-automatically, on any other flag, or on bare invocation — see `bin/update-check.js`.
+automatically, on any other flag, or on bare invocation. See `bin/update-check.js`.
 
 Installation and configuration are explicit local writes. By default (`install`'s `user`
-scope), skills are written only to per-agent global directories outside the project — see
+scope), skills are written only to per-agent global directories outside the project. See
 [installation scope](installation-scope.md) for the two scopes and their ownership boundary.
 `.sdd/config.yml` and `.sdd/context/project-context.md` always live in the project, created
 explicitly by `init`/`discover`. The CLI does not automatically commit, push, merge, deploy, or
@@ -24,9 +24,9 @@ files are scanned for blocked private-context markers.
 > **Cross-platform, shell-independent.** `sdd-agentic-flow` MUST provide a consistent
 > installation and usage experience across supported Windows, macOS, and Linux environments,
 > without requiring a specific interactive shell. The CLI MUST NOT rely on Bash, Zsh,
-> PowerShell, CMD, or other shell-specific behavior for core functionality — only Node.js APIs
-> (`fs`, `path`, `os`, `child_process` with argument arrays, never shell-string interpolation).
-> Shell-specific commands MAY appear in documentation as illustrative examples, but product
+> PowerShell, CMD, or other shell-specific behavior for core functionality. Only Node.js APIs
+> (`fs`, `path`, `os`, `child_process` with argument arrays, never shell-string interpolation)
+> may drive core behavior. Shell-specific commands MAY appear in documentation as illustrative examples, but product
 > behavior MUST NOT depend on them.
 >
 > **Git is an optional integration capability, not a runtime requirement.** Node.js is

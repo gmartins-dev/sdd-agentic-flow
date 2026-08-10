@@ -27,7 +27,7 @@ sdd-agentic-flow init --br
 ```
 
 The default profile is `en-US`. `init` does not overwrite an existing
-`.sdd/config.yml`; edit that file deliberately when changing a project profile.
+`.sdd/config.yml`. Edit that file deliberately when changing a project profile.
 
 Generated configuration has this shape:
 

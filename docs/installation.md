@@ -1,7 +1,7 @@
 # Installation
 
 Requires Node.js >= 22 to run the CLI (see [environment compatibility](environment-compatibility.md)
-for the full matrix). That requirement is about the CLI only — the project you're installing
+for the full matrix). That requirement applies to the CLI only. The project you're installing
 into can be written in any language; the CLI never adds a dependency to it.
 
 Install the package, run `npx sdd-agentic-flow init`, then install the smallest pack
@@ -14,12 +14,12 @@ npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when selecting initial project defaults. `init` always writes
-project-local configuration (`.sdd/config.yml`, `.sdd/context/project-context.md`) — that part
+project-local configuration (`.sdd/config.yml`, `.sdd/context/project-context.md`). That part
 is unaffected by install scope.
 
 `install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill
 directories (e.g. `~/.claude/skills`) and creates **zero files in the project**. Pass
-`--scope project` to install into `.agents/skills/` inside the project instead — the
+`--scope project` to install into `.agents/skills/` inside the project instead. That matches the
 pre-v0.9.0 behavior. See [installation scope](installation-scope.md) for the full two-scope
 model, the supported agents, and `--plan`/`--agent`.
 

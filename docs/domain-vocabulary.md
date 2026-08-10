@@ -1,6 +1,6 @@
 # Domain vocabulary
 
-Language profiles control human-facing output language. A domain glossary records product terms; it is a separate, optional local artifact.
+Language profiles control human-facing output language. A domain glossary records product terms as a separate, optional local artifact.
 
 Use `.sdd/context/domain-glossary.md` only when explicitly authorized. `init` does not create it automatically. Setup or specification work may propose or create it after explicit authorization.
 

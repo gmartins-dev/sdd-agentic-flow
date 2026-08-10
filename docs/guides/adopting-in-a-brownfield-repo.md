@@ -1,9 +1,8 @@
 # Adopting in a brownfield repo
 
-`init` and `discover` are read-only with respect to your source code — they only write
-`.sdd/config.yml` and `.sdd/context/project-context.md`. This guide walks through adopting
-`sdd-agentic-flow` in a repository that already has code, tests, and conventions, and how to
-read what `discover` finds.
+`init` and `discover` are read-only with respect to your source code. They only write
+`.sdd/config.yml` and `.sdd/context/project-context.md`. Follow these steps to adopt
+`sdd-agentic-flow` in a repository that already has code, tests, and conventions.
 
 ## 1. Run `init`
 

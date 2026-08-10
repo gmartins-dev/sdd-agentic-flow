@@ -1,16 +1,26 @@
 # Workflow
 
-Use the local flow `Plan → Prompt → Implement → Check → PR → Review → Fix → Validate`. When the current phase is unclear, use `sdd-route` for a recommendation, then follow the recommended skill's `SKILL.md`.
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
-Create specs before implementation, implement one Task at a time, independently check
-Task evidence, and run feature validation after integration.
+When the current phase is unclear, invoke `sdd-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
 
-Use the TLC baseline for planning and the [TDD baseline](tdd-baseline.md) for code
-tasks. Confirm behavior and public seams before tests, work in vertical slices,
-and report RED/GREEN evidence or an explicit limitation.
+## Where to read next
 
-Use multi-worktree orchestration only after explicit planning identifies independent paths
-and dependencies. PR skills are extensions; they never replace task checking.
+| Step | Doc |
+| --- | --- |
+| Full workflow with agents | [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) |
+| Skill reference | [skills-catalog.md](skills-catalog.md) |
+| How skills are invoked | [invocation-model.md](invocation-model.md) |
+| Execution modes | [execution-modes.md](execution-modes.md) |
+| Autonomy levels | [autonomy-levels.md](autonomy-levels.md) |
+| Prompt patterns | [prompt-recipes.md](prompt-recipes.md) |
 
-Use the documented `plan`, `guided`, `apply`, `review`, and `full` modes to select the level
-of local work. They preserve human approval and Git/release boundaries; see [execution modes](execution-modes.md).
+## Rules of thumb
+
+Create specs before implementation. Implement one task at a time. Run `sdd-task-check` on task evidence before accepting work. Run `sdd-validation` after integration.
+
+Use the TLC baseline for planning and the [TDD baseline](tdd-baseline.md) for code tasks. Confirm behavior and public seams before tests. Work in vertical slices. Report RED/GREEN evidence or an explicit limitation.
+
+Use multi-worktree orchestration only after explicit planning identifies independent paths and dependencies. PR skills extend the loop; they do not replace task checking.
+
+Use `plan`, `guided`, `apply`, `review`, and `full` to select the level of local work. These modes preserve human approval and Git/release boundaries; see [execution modes](execution-modes.md).

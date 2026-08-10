@@ -20,16 +20,16 @@ sdd-agentic-flow uninstall --apply --full
 
 `--apply --full` is the complete-uninstall path for testing or re-onboarding from a blank
 slate. It implies `--include-config` and additionally removes `.sdd/context/project-context.md`,
-`.sdd/snapshots`, and `.sdd/reports` — all regenerable local state. **`.specs/features` is never
+`.sdd/snapshots`, and `.sdd/reports`, all regenerable local state. **`.specs/features` is never
 removed, by any flag combination**, in any scope: it holds hand-authored specs, the same
 invariant as source code. If you also want those gone, delete them yourself
-(`rm -rf .specs/features`) — that is a deliberate, manual step the CLI will not take for you.
+(`rm -rf .specs/features`). That is a deliberate, manual step the CLI will not take for you.
 `--full` is `--apply`-only, same as `--include-config`; combining it with `--plan` fails, so
 review with a plain `--plan` first if you want to see what a following `--apply --full` will
 touch beyond it.
 
-Add `--quiet` to any of the above to suppress the trailing "preserves ..." explanatory line —
-the per-target `PLAN`/`PASS`/`WARN` action lines are unaffected.
+Add `--quiet` to any of the above to suppress the trailing "preserves ..." explanatory line.
+The per-target `PLAN`/`PASS`/`WARN` action lines are unaffected.
 
 Run `doctor` after removal to verify the remaining project state.
 
@@ -39,6 +39,6 @@ CLI version.
 ## From the interactive menu
 
 Running `npx sdd-agentic-flow` with no command at a real interactive terminal offers a numbered
-menu after the status screen. Its uninstall entry only ever runs `uninstall --plan` — the
-read-only preview above — and never `--apply`; it explains afterward how to run `--apply`
+menu after the status screen. Its uninstall entry only ever runs `uninstall --plan`, the
+read-only preview above, and never `--apply`; it explains afterward how to run `--apply`
 yourself. The menu is inert (never shown) under CI, pipes, scripts, or agent invocations.

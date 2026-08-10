@@ -1,8 +1,6 @@
 # SDD skills usage guide
 
-This guide shows how to use the public `sdd-agentic-flow` skills in a local
-coding-agent workflow. The toolkit keeps specifications, prompts, changes, and
-validation evidence in the project so a person can inspect each step.
+Use the public `sdd-agentic-flow` skills in a local coding-agent workflow. The toolkit keeps specifications, prompts, changes, and validation evidence in the project so a person can inspect each step.
 
 ## 1. Install the toolkit
 

@@ -21,7 +21,7 @@ Any alternative solutions or workarounds you've considered.
 ## Scope check
 
 - [ ] This is engineering of the project/CLI itself, or a change to an existing skill's content
-      (not a new, unrelated product feature — see `ROADMAP.md` for the `v1.x` candidate list).
+      (not a new, unrelated product feature; see [ROADMAP.md](../../ROADMAP.md) for the `v1.x` candidate list).
 - [ ] This does not require a runtime dependency (the project is zero-runtime-dependency by
       design).
 

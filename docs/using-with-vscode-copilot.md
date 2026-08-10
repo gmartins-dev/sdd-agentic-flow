@@ -15,5 +15,5 @@ repository instead. VS Code can also be pointed at a custom skills location via 
 Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd/config.yml. Do not modify files. Return findings and evidence only.
 ```
 
-Manual validation against VS Code + GitHub Copilot has not been performed yet — see
+Manual validation against VS Code + GitHub Copilot has not been performed yet. See
 [agent compatibility](agent-compatibility.md) for the honest status of this cell.

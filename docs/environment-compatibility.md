@@ -2,12 +2,12 @@
 
 `sdd-agentic-flow` only needs Node.js and a writable filesystem. Git is an optional
 integration, never a runtime requirement (see [trust model](trust-model.md)). This table
-matches `.github/workflows/ci.yml`, which is the mechanical source of truth — update both
+matches `.github/workflows/ci.yml`, which is the mechanical source of truth. Update both
 together.
 
 ## CLI runtime vs. your project's language
 
-Node.js is a requirement to *run the CLI* (`npx sdd-agentic-flow ...`) — it is not a
+Node.js is a requirement to *run the CLI* (`npx sdd-agentic-flow ...`). It is not a
 requirement for the project you use the CLI in. The CLI only writes Markdown skills and local
 config files (`.sdd/config.yml`, per-agent skill directories); it never adds a `package.json`,
 `node_modules`, or any language-specific dependency to your project. A Java, PHP, C#, Python,
@@ -17,8 +17,8 @@ agent inside your project, whatever language it's written in.
 
 ## Operating systems
 
-| OS                        | Support level | Verified by                                             |
-| --------------------------- | ---------------- | ---------------------------------------------------------- |
+| OS | Support level | Verified by |
+| --- | --- | --- |
 | Ubuntu LTS (`ubuntu-latest`) | Required       | CI `check` job, every push/PR, Node 22/24/26                |
 | Windows 10/11 (`windows-latest`) | Required   | CI `check-platforms` job, full `npm run check` pipeline    |
 | macOS (`macos-latest`)     | Required       | CI `check-platforms` job, full `npm run check` pipeline    |
@@ -26,12 +26,12 @@ agent inside your project, whatever language it's written in.
 | Fedora/RHEL-family Linux   | Best effort    | Not run in CI; same principle as above                     |
 
 Principle: Linux is supported whenever it provides a supported Node.js runtime and a
-POSIX-compatible filesystem — this is not a closed list of individually tested distributions.
+POSIX-compatible filesystem. This is not a closed list of individually tested distributions.
 
 ## Node.js versions
 
-| Version | Support level | Verified by                       |
-| --------- | ---------------- | ------------------------------------ |
+| Version | Support level | Verified by |
+| --- | --- | --- |
 | 22 (Maintenance LTS) | Required | CI `check` job matrix (`ubuntu-latest`); also the Node used in `check-platforms` |
 | 24 (Active LTS)      | Required | CI `check` job matrix (`ubuntu-latest`) |
 | 26 (Current)         | Required | CI `check` job matrix (`ubuntu-latest`) |
@@ -47,14 +47,14 @@ and its own transitive dependencies) needs.
 
 ## Shells
 
-None of these are a requirement — the CLI only uses Node.js APIs (`fs`, `path`, `os`,
+None of these are a requirement. The CLI only uses Node.js APIs (`fs`, `path`, `os`,
 `child_process` with argument arrays). They are illustrative only, for documentation examples
 and for `doctor`'s informational `Shell:` line (`detectShellInfo()` in
-`bin/sdd-agentic-flow.js`, which reads `SHELL`/`PSModulePath`/`ComSpec` — never used to change
+`bin/sdd-agentic-flow.js`, which reads `SHELL`/`PSModulePath`/`ComSpec`, never used to change
 CLI behavior, and never reported as `FAIL`).
 
-| Shell            | Platform        | Role                              |
-| ------------------ | ----------------- | ------------------------------------ |
+| Shell | Platform | Role |
+| --- | --- | --- |
 | bash / zsh / fish | POSIX (Linux, macOS) | Illustrative examples in docs     |
 | PowerShell / CMD  | Windows            | Illustrative examples in docs     |
 | Git Bash          | Windows            | Illustrative examples in docs     |
@@ -63,13 +63,13 @@ CLI behavior, and never reported as `FAIL`).
 
 The "Platform" section of `doctor` reports, for the current environment: `OS: <platform>, Node
 <version>` (`PASS`), `Filesystem writable` (`PASS`/`FAIL`), `Shell: <detected>` (`INFO`, never
-`FAIL`), and `Git: available`/`Git: not available` (`PASS`/`INFO`, never `FAIL` — a missing Git
-binary or a non-Git directory both degrade gracefully rather than blocking the command).
+`FAIL`), and `Git: available`/`Git: not available` (`PASS`/`INFO`, never `FAIL`). A missing Git
+binary or a non-Git directory both degrade gracefully rather than blocking the command.
 
 ## Interactive menu requirements
 
 The numbered menu offered after bare `npx sdd-agentic-flow`'s status screen (v1.4.0) requires a
 genuinely interactive terminal: both stdout and stdin must be a real TTY, and the `CI` env var
-must be unset. It is automatically inert — never shown — under CI runners, piped/redirected
+must be unset. It is automatically inert, never shown, under CI runners, piped/redirected
 output, scripts, and agent invocations, all of which keep receiving the exact same read-only
 status screen as every other command.

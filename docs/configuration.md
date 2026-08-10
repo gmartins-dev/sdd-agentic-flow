@@ -18,7 +18,7 @@ keys keep commit, push, and merge/deploy disabled by default.
 `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) are two
 orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `autonomy_level`
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
-combine with `autonomous` — `doctor --autonomy` flags either combination as `FAIL`. `init
+combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. `init
 --autonomy-level`/`--execution-mode` set both at creation time; both default to their most
 conservative value, so an existing `.sdd/config.yml` predating v1.8.0 behaves identically once
 these fields are added (`WARN`, not `FAIL`, when missing). `workflow.autonomy_budget`
@@ -37,7 +37,7 @@ config, architectural folder naming, CI configuration, and ORM/feature-flag conf
 distinct from `.sdd/config.yml`: config.yml holds user-declared policy, while `project-context.md`
 holds discovered facts and is never written by hand.
 
-Signals detected (all presence-only checks — no file content is parsed beyond `package.json`):
+Signals detected (all presence-only checks; no file content is parsed beyond `package.json`):
 
 - **Project identity** — `package.json` name/description, README presence.
 - **Documentation** — AI instruction files (`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `GEMINI.md`),
@@ -58,7 +58,7 @@ treat it as optional context, the same way they treat `.sdd/context/domain-gloss
 
 ### Provenance and refresh
 
-`project-context.md` is a derived, versioned snapshot, not authoritative source code — the
+`project-context.md` is a derived, versioned snapshot, not authoritative source code. The
 repository remains the source of truth. Every generated file records the provenance it was
 produced from:
 
@@ -75,15 +75,15 @@ degrade gracefully to `not a git repository` / `unknown` rather than failing dis
 
 Two commands read and act on this provenance:
 
-- `sdd-agentic-flow context status` — reports whether context exists, when it was generated, and
+- `sdd-agentic-flow context status`: reports whether context exists, when it was generated, and
   at which repository revision, without changing anything. If the current `HEAD` differs from the
   recorded revision, it states that fact plainly (never a heuristic "stale" verdict) and suggests
   a refresh.
-- `sdd-agentic-flow context refresh` — regenerates `project-context.md` unconditionally, whether
+- `sdd-agentic-flow context refresh`: regenerates `project-context.md` unconditionally, whether
   or not it already exists. It is equivalent to `discover --force` but does not require
   remembering the flag, and is the recommended way to refresh context going forward; `discover
   [--force]` keeps working exactly as before for existing scripts and CI.
-- `sdd-agentic-flow context autonomy-state` — read-only report of `workflow.execution_mode`/
+- `sdd-agentic-flow context autonomy-state`: read-only report of `workflow.execution_mode`/
   `autonomy_level` plus the last recorded `.sdd/autonomy/loop-state.md`, if any. See
   [autonomy levels](autonomy-levels.md).
 

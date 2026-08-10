@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.9.2
+
+Docs-only patch, no breaking changes. Closes 2 of the 3 items from a `.local/gmm` candidate
+skeleton ("Flow State & Skill Transition Semantics"), following the same audit-first discipline
+as every release since v1.5: only a gap confirmed by reading the current repository became a
+change, the speculative sketch was not applied as written.
+
+**Flow-phase read path:** `docs/sdd-methodology.md` already carries a `Phase | Typical skill`
+table mapping every skill to its SDD flow phase (Plan/Prompt/Implement/Check/PR/Review/Fix/
+Validate/Release) — no schema gap existed. The real gap was that
+`shared/references/autonomy-guardrails.md`'s `.sdd/autonomy/loop-state.md` section, and its
+public mirror `docs/autonomy-guardrails.md`, never pointed a reader at that table, so nothing
+told you where to look to read a `Skill:` entry's flow phase. Both now cross-reference it. No new
+field.
+
+**Completion semantics ↔ handoff:** `shared/references/handoff-standard.md` already referenced
+`evidence-standard.md`'s `Status:` field for its terminal-state definition, but the reverse link
+was missing — `evidence-standard.md`'s "`Status:` field and the guardrail 1 mapping" section
+never mentioned that the same field is also what determines whether a skill should write
+`handoff.md`. It now does, with no change to the existing per-skill vocabulary or the guardrail 1
+mapping table.
+
+**Explicitly excluded:** the skeleton's third item, a no-progress/repeated-failure signal
+(`Attempt:`/`Progress:` fields in `loop-state.md`) was re-evaluated and stays deferred — its own
+stated precondition (a real, observed stuck-loop incident) remains unmet, same conclusion v1.9.0
+reached. No `.sdd/autonomy/loop-state.md` schema change, no new guardrail, no
+`scripts/check-skills.sh` change. A separately proposed governance layer (a `docs/decisions/`
+ADR folder, templates, an "official methodology" doc, a pre-committed `v1.10` schedule) was also
+evaluated and rejected as disproportionate and a duplicate of what `ROADMAP.md`'s own dated
+entries already do; only a one-paragraph pointer was added to `CONTRIBUTING.md` instead.
+
 ## 1.9.1
 
 Closes 4 small, real gaps found by directly auditing the repository after v1.9.0 shipped — no

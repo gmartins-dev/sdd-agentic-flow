@@ -2,6 +2,14 @@
 
 Keep changes small, documented, and covered by `npm run check` and `npm run sanitize`.
 
+Proposing a new feature or direction? This project scopes work audit-first: a candidate idea
+becomes real work only once a direct read of the current repository confirms a real gap, not
+from an assumed roadmap slot or an external comparison. Each dated entry in `ROADMAP.md` is the
+decision record for that release — it states the gap found, why, and what was deliberately left
+out. The `v1.9.2` entry is a live example: 2 of 3 candidate items shipped on a confirmed narrow
+gap, the third stayed out because its own stated precondition was not met. Read a few recent
+entries before proposing scope.
+
 Proposing a new skill? Read `shared/references/skill-authoring-standard.md` first — it documents
 the six required `SKILL.md` sections and the `Status`/`Next recommended skill`/`Reason` output
 convention every skill follows — and, for any skill that classifies a pass/fail/ready-style

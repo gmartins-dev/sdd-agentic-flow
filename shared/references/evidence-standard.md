@@ -56,3 +56,10 @@ as not-`PASS` and blocks an `autonomous` advance the same way a literal `FAIL` w
 must never write `Status: pass`/`Status: ready` while a required check in `## Evidence` recorded
 a failure. The same "missing evidence is never silently upgraded to a pass" rule above applies
 to this field specifically.
+
+This same field is also what [handoff-standard.md](handoff-standard.md) keys off to decide
+whether a skill needs to write `handoff.md`: a terminal `Status:` (`pass`/`ready`) with no open
+blocker means the produced artifact is sufficient continuity on its own; any non-terminal
+`Status:` (`needs changes`, `not ready`, `blocked`, `inconclusive`) paired with work that is
+pausing before completion is a signal to write or update `handoff.md`. One field, two consumers
+(guardrail 1 and the handoff decision) — not a second completion taxonomy.

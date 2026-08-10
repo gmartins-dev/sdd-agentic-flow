@@ -1,5 +1,24 @@
 # Roadmap
 
+- **v1.9.2 (2026-08-10):** Flow-phase and completion-semantics cross-references. Docs-only patch,
+  audited against `.local/gmm/sdd-agentic-flow/v1.9.2-flow-state-implementation-plan.md`'s 3-item
+  candidate skeleton — 2 of 3 items closed a real, narrow gap; the third stayed out, its own
+  precondition still unmet. `shared/references/autonomy-guardrails.md` and its public mirror
+  `docs/autonomy-guardrails.md` now point a `loop-state.md` reader at `docs/sdd-methodology.md`'s
+  existing `Phase | Typical skill` table to read a `Skill:` entry's SDD flow phase — the table
+  already existed, only the cross-reference was missing, no schema change.
+  `shared/references/evidence-standard.md`'s `Status:` field section now also states that the
+  same field is what `handoff-standard.md`'s terminal-state rule keys off, closing a one-directional
+  gap (`handoff-standard.md` already pointed to it, not the reverse) without adding a second
+  completion taxonomy. The skeleton's third item, a no-progress/repeated-failure signal for
+  `loop-state.md`, was re-evaluated and stays deferred: no real stuck-loop incident has been
+  observed, the same conclusion v1.9.0 reached. A separately proposed heavier governance layer
+  (a `docs/decisions/` ADR folder, decision templates, an "official methodology" doc, and a
+  pre-committed `v1.10` schedule) was evaluated and rejected — it duplicated what this file's own
+  dated entries already do, and pre-committing a future version's schedule contradicts this same
+  section's "decided when that work actually starts, not now" rule. `CONTRIBUTING.md` gained one
+  short paragraph pointing contributors at this audit-first pattern instead. Zero breaking
+  changes.
 - **v1.9.1 (2026-08-10):** Release Consistency Hardening. Closes 4 small, real gaps found by
   directly auditing the repository after v1.9.0 shipped — no new mechanism, same discipline.
   `bin/sdd-agentic-flow.js`'s own `const VERSION` and `OFFICIAL_SKILLS` array had drifted from
@@ -221,11 +240,6 @@ discussion surfaced several themes that may eventually justify real work — non
 today, and none is scheduled. Recorded here so they have a home without inflating any specific
 version's scope:
 
-- A more explicit, inspectable "flow state" beyond what `.sdd/autonomy/loop-state.md` and
-  `handoff-standard.md` (v1.9.0) already provide.
-- A more formal semantics for what a skill's completion means to whichever skill/human comes
-  next — while preserving each skill's own local vocabulary, the same principle
-  `evidence-standard.md`'s `Status:` mapping (v1.9.0) already applies.
 - A no-progress/repeated-failure signal for `loop-state.md` (an `Attempt:`/`Progress:` field,
   self-evaluated by the invoking agent the same way guardrails 1–6 already are) — raised and
   explicitly deferred during v1.9.0's planning; becomes real scope only if a genuine stuck-loop

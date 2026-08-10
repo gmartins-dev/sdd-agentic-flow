@@ -114,6 +114,12 @@ An agent appends a new "Current State" block after each skill completes; it neve
 history, only adds to it. A human halts an autonomous run by setting `pause: true` or
 `stop: true` under Human override — guardrail 7 picks that up on the next check.
 
+The `Skill:` value is not itself the SDD flow phase — `docs/sdd-methodology.md`'s
+`Phase | Typical skill` table is the existing mapping (`sdd-brainstorm` through `sdd-release`) for
+reading which phase (Plan/Prompt/Implement/Check/PR/Review/Fix/Validate/Release) a given entry
+corresponds to. No new field is needed to make `loop-state.md` phase-inspectable; the data already
+exists, this is just where to read it.
+
 ## Scope: what autonomy governs, and what it does not
 
 `autonomy_level` governs **skill-to-skill transitions only**. It does not grant a skill any

@@ -2,7 +2,7 @@
 name: sdd-release
 description: Check whether a project or feature is ready to tag and publish a release — version consistency, changelog presence, and configured release checks. Use when the user asks if a release is ready; never tags, publishes, or pushes.
 metadata:
-  version: 1.9.1
+  version: 1.9.2
   pack: core
 extends: null
 requires: [config]

@@ -1,6 +1,8 @@
 # Spec-Driven Development methodology
 
-Spec-Driven Development (SDD) treats a written spec as the contract between you and a coding agent. You agree on behavior, boundaries, and evidence before the agent changes code. This toolkit ships the skills, CLI, and local config to run that contract on your machine.
+The shift is simple: stop debating what the agent *should* have built after the fact. Agree on the spec first—behavior, boundaries, and evidence—then let the agent change code against that contract.
+
+Spec-Driven Development (SDD) treats that written spec as the agreement between you and a coding agent. This toolkit ships the skills, CLI, and local config to run the contract on your machine. You stay the decision-maker; the workflow holds the gates.
 
 For the short problem statement, see [why this exists](why-this-exists.md). For the full narrative, see the [README](../README.md).
 
@@ -34,7 +36,7 @@ When the next step is unclear, invoke `sdd-route`. It recommends a skill; it doe
 
 ## Why specs help agents
 
-Agents work best with a narrow, verifiable target:
+Agents work best with a narrow, verifiable target—the five-second moment you want is *evidence passes*, not *the agent said done*:
 
 - **Scope:** a spec names what is in and out of the task, so the agent does not expand silently.
 - **Context:** artifacts in `.specs/features/` give the agent stable input across sessions instead of re-explaining in chat.

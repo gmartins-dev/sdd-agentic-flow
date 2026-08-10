@@ -4,13 +4,15 @@ Versão prática em português. Leia o [README principal em inglês](README.md) 
 
 **sdd-agentic-flow** é um toolkit local-first e zero-dependência de Spec-Driven Development (SDD) para fluxos com agentes de código.
 
+Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpriu a intenção. Este toolkit fecha esse gap: **spec primeiro, evidência antes de concluir, você aprova o merge.**
+
 Rode com `npx sdd-agentic-flow`. Zero dependências runtime. Instalação de skills user-local por padrão. A revisão humana manda. Seu projeto pode ser Java, Python, Go ou qualquer outra linguagem; a CLI só adiciona skills Markdown e configuração local.
 
 📦 [Início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md) · 🤖 [AGENTS.md](AGENTS.md)
 
 ## O problema
 
-Agentes de código pulam para o código, misturam limites de tarefa e marcam trabalho como concluído sem prova executável. Você gasta tempo de revisão reconstruindo o que deveria ter sido construído.
+Você delega uma tarefa. O agente pula para o código, mistura limites e marca trabalho como concluído sem prova executável. O tempo de revisão vai reconstruir a intenção a partir do diff — não validar o comportamento.
 
 | Falha comum | Resposta local |
 | --- | --- |
@@ -26,11 +28,11 @@ Veja [por que o toolkit existe](docs/why-this-exists.md).
 
 Escreva a spec primeiro. A spec é o contrato entre você e o agente: comportamento, escopo e critérios de aceite ficam em `.specs/features/` antes de alterar código de produção.
 
-Este toolkit oferece um fluxo linear com gates de revisão, não um chat aberto. Cada fase tem uma skill Markdown, defaults de segurança locais e artefatos de evidência que você inspeciona. Leia a [metodologia SDD](docs/sdd-methodology.md) (em inglês) para o panorama completo.
+Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linear com checkpoints de revisão — não um chat aberto. Cada fase tem uma skill Markdown, defaults de segurança locais e artefatos de evidência que você inspeciona. Leia a [metodologia SDD](docs/sdd-methodology.md) (em inglês) para o panorama completo.
 
-## O que você ganha
+## O que muda para você
 
-| Benefício | Como o toolkit entrega |
+| Resultado | Como o toolkit entrega |
 | --- | --- |
 | Limites de tarefa | Specs, prompts de tarefa e `sdd-task-check` por fatia |
 | Rastreabilidade | Spec → prompt → código → pacote de PR em uma cadeia |
@@ -84,7 +86,7 @@ Use `sdd-route` quando o próximo passo não estiver claro. Ele recomenda uma sk
 
 ## Comprovado neste repositório
 
-Cinco golden flows rodam como testes de integração em `test/cli.test.js`. Cada walkthrough lista os comandos que o teste executa e o que ele verifica.
+Esses walkthroughs não são claim de slide — rodam como testes de integração em `test/cli.test.js`. Cada um lista os comandos que o teste executa e o que ele verifica.
 
 | Fluxo | O que comprova | Walkthrough |
 | --- | --- | --- |
@@ -109,7 +111,7 @@ O [exemplo task-management](examples/golden/task-management/) mostra uma feature
 
 ## Para quem é indicado?
 
-Times que usam Spec-Driven Development, entregas em sprint com gates de revisão, tech leads que fatiam specs e tarefas, desenvolvedores que delegam fatias rastreáveis a agentes, times TDD-first, e trabalho multi-agente ou multi-worktree controlado.
+Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates de revisão, fatia specs e tarefas como tech lead, delega fatias rastreáveis a agentes, pratica TDD-first ou coordena trabalho multi-agente ou multi-worktree com controle humano.
 
 ## Não é otimizado para
 

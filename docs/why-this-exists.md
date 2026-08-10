@@ -1,8 +1,10 @@
 # Why this exists
 
+The agent said done. The spec, the tests, and the PR still disagree. That mismatch is what this toolkit is for.
+
 Expanded narrative: see the [README](../README.md) and [SDD methodology](sdd-methodology.md).
 
-Coding agents can implement before understanding the request, lose task boundaries, or report completion without executable evidence. This toolkit keeps the workflow local and explicit.
+Coding agents can implement before understanding the request, lose task boundaries, or report completion without executable evidence. **sdd-agentic-flow** keeps the workflow local and explicit so you approve from artifacts—not from chat confidence.
 
 | Common failure | Local response |
 | --- | --- |

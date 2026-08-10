@@ -8,6 +8,8 @@
 
 **sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit for coding-agent workflows.
 
+Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
+
 Run it with `npx sdd-agentic-flow`. Zero runtime dependencies. User-local skill install by default. Human review stays in charge. Your project can stay Java, Python, Go, or anything else; the CLI only adds Markdown skills and local config.
 
 📦 [Get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🤖 [AGENTS.md](AGENTS.md)
@@ -17,7 +19,7 @@ Run it with `npx sdd-agentic-flow`. Zero runtime dependencies. User-local skill 
 
 ## The problem
 
-Coding agents jump to code, blur task boundaries, and mark work done without executable proof. You spend review time reconstructing what they were supposed to build.
+You delegate a task. The agent jumps to code, blurs boundaries, and marks work done without executable proof. Review time goes to reconstructing intent from the diff—not validating behavior.
 
 | Common failure | Local response |
 | --- | --- |
@@ -33,11 +35,11 @@ See [why this exists](docs/why-this-exists.md) for the short form.
 
 Write the spec first. The spec is the contract between you and the agent: behavior, scope, and acceptance criteria live in `.specs/features/` before anyone edits production code.
 
-This toolkit gives you a linear workflow with review gates, not an open-ended chat loop. Each phase has a Markdown skill, local safety defaults, and evidence artifacts you can inspect. Read [SDD methodology](docs/sdd-methodology.md) for the full picture.
+You stay the decision-maker; the toolkit holds the gates. It gives you a linear workflow with review checkpoints—not an open-ended chat loop. Each phase has a Markdown skill, local safety defaults, and evidence artifacts you can inspect. Read [SDD methodology](docs/sdd-methodology.md) for the full picture.
 
-## What you gain
+## What changes for you
 
-| Benefit | How this toolkit delivers it |
+| Outcome | How this toolkit delivers it |
 | --- | --- |
 | Task boundaries | Specs, task prompts, and `sdd-task-check` per slice |
 | Traceability | Spec → prompt → code → PR package in one chain |
@@ -91,7 +93,7 @@ Invoke `sdd-route` when the next step is unclear. It recommends a skill and poin
 
 ## Proved in this repository
 
-Five golden flows run as integration tests in `test/cli.test.js`. Each walkthrough lists the commands the test runs and what it checks.
+These walkthroughs are not slide-deck claims—they run as integration tests in `test/cli.test.js`. Each one lists the commands the test runs and what it checks.
 
 | Flow | What it proves | Walkthrough |
 | --- | --- | --- |
@@ -116,7 +118,7 @@ The generic [task-management example](examples/golden/task-management/) shows on
 
 ## Who is this for?
 
-Teams adopting Spec-Driven Development, sprint delivery with review gates, tech leads splitting work into specs and tasks, developers delegating traceable slices to agents, TDD-first teams, and controlled multi-agent or multi-worktree work.
+You are a good fit if you adopt Spec-Driven Development, run sprint delivery with review gates, split work into specs and tasks as a tech lead, delegate traceable slices to agents, practice TDD-first delivery, or coordinate multi-agent or multi-worktree work under human control.
 
 ## Not optimized for
 

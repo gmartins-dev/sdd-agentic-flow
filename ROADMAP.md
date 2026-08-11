@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.10.0 (2026-08-11):** Toolkit path rename + system coherence. **Breaking:** `.sdd/` →
+  `.sdd-agentic-flow/` for all toolkit state; `migrate --plan|--apply`, `doctor` `legacy_sdd_root`
+  WARN, `docs/upgrading.md` migration table, grep gate `scripts/check-sdd-paths.sh`. **Additive:**
+  `docs/sdd-agentic-flow-model.md`, README storytelling, five Autonomy Golden Flows (AUTO-001–005)
+  proving static autonomy CLI contracts, cross-agent parity docs. Evidence graph (`doctor
+  --evidence-graph`) and per-agent guide parity remain future candidates (v1.9.3/v1.9.4 audits).
 - **v1.9.2 (2026-08-10):** Flow-phase and completion-semantics cross-references. Docs-only patch,
   audited against `.local/gmm/sdd-agentic-flow/v1.9.2-flow-state-implementation-plan.md`'s 3-item
   candidate skeleton — 2 of 3 items closed a real, narrow gap; the third stayed out, its own
@@ -46,7 +52,7 @@
   portable, it does not shell out to this repository's own `scripts/release-checklist.sh`. New
   `shared/references/handoff-standard.md` defines when a skill populates the
   previously-unused `shared/templates/handoff.template.md` and how it cross-references
-  `.sdd/autonomy/loop-state.md` without duplicating it; wired into the 7 skills whose work can
+  `.sdd-agentic-flow/autonomy/loop-state.md` without duplicating it; wired into the 7 skills whose work can
   span a session/agent boundary. `check-report`/`validation-report` gain a top-line `Status:`
   field, with `shared/references/evidence-standard.md` documenting the mapping from each
   skill's own local vocabulary to guardrail 1's generic pass/not-pass check. `sdd-brainstorm`
@@ -80,14 +86,14 @@
   transition; any failure returns control to a human, same as `manual`. An `autonomy_profile`
   frontmatter extension ships across all 13 skills (`supported_levels`, `auto_continue_condition`,
   `blocking_conditions`, `evidence_required`), validated by `scripts/check-skills.sh` the same way
-  `extends`/`requires`/`produces`/`depends_on`/`conflicts` already are. `.sdd/config.yml` gains
+  `extends`/`requires`/`produces`/`depends_on`/`conflicts` already are. `.sdd-agentic-flow/config.yml` gains
   `workflow.execution_mode`/`autonomy_level`/`autonomy_budget` (all additive; an existing config
   without them defaults to `guided`/`manual`, identical to pre-v1.8.0 behavior — `doctor
   --autonomy` reports `WARN`, not `FAIL`). New CLI surface: `init --execution-mode
   --autonomy-level`, `doctor --autonomy [--verbose]`, `context autonomy-state`, and
   `autonomous-resume [--force | --override-guard=<1-7> --reason="..."]`. There is no
   orchestration engine in this CLI — these commands validate the static contract and manage
-  `.sdd/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
+  `.sdd-agentic-flow/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
   workflow; they never invoke a skill themselves. Two new docs
   (`docs/autonomy-levels.md`, `docs/autonomy-guardrails.md`) plus a new shared reference
   (`shared/references/autonomy-guardrails.md`); `docs/execution-modes.md`,
@@ -178,12 +184,12 @@
   studied in `anomalyco/opencode` and `vercel-labs/skills`.
 - **v1.3 (2026-08-08):** Uninstall completeness and post-command guidance. Added
   `uninstall --apply --full` for a genuine clean-reinstall reset — it removes
-  `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` on top of what
+  `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports` on top of what
   `--include-config` already covered, while `.specs/features` stays permanently protected, same
   as source code, under every flag combination. `init` and `install` now print a short
   "Suggested next step" line on success (pointing at `install core`, then `doctor` and
   `sdd-route`), suppressed during `doctor --smoke`'s internal calls so its own output stays
-  clean. Also fixed a `docs/upgrading.md` line that overstated `.sdd/config.yml` as never
+  clean. Also fixed a `docs/upgrading.md` line that overstated `.sdd-agentic-flow/config.yml` as never
   touched by `uninstall`, when `--include-config`/`--full` always removed it on request. All
   changes are additive under the v1.0 stability commitment — no documented command or flag was
   removed or had its default meaning changed.
@@ -248,7 +254,7 @@ version's scope:
   via `doctor --evidence-graph` rather than a new top-level command — extending the existing
   optional `REQ-{id}` traceability convention in `artifact-contracts.md`, not inventing a new ID
   scheme.
-- `.sdd/` as portable, cross-agent context — evolving what already exists (`config.yml`,
+- `.sdd-agentic-flow/` as portable, cross-agent context — evolving what already exists (`config.yml`,
   `context/`, `reports/`, `snapshots/`, `autonomy/loop-state.md`) rather than a parallel
   structure.
 - Cross-agent portability as a documented extension of the existing adapter pattern

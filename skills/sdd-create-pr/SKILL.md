@@ -2,7 +2,7 @@
 name: sdd-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: pr
 extends: sdd-task-check
 requires: [config, task-evidence]
@@ -33,12 +33,12 @@ Do not use before task validation, for feature-wide PRs without explicit scope, 
 ## Inputs
 
 - One validated task reference, branch/head context, and task-check evidence.
-- `.sdd/config.yml`, SDD artifacts, current diff, and repository PR conventions.
+- `.sdd-agentic-flow/config.yml`, SDD artifacts, current diff, and repository PR conventions.
 - Explicit confirmation when an external PR mutation is requested.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
 2. Verify scope, clean attribution of changed files, validation evidence, and known gaps. Stop on sibling work, missing evidence, or unsafe branch state.
 3. Draft a Markdown PR title and body anchored to SDD criteria, changes, validation, risks, and rollback notes.
 4. Present the package. Create a remote draft PR only with explicit user authorization and configured credentials; otherwise make no external call.
@@ -53,4 +53,4 @@ Return the PR package, task scope, validation summary, blockers, and whether a r
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-pr-review` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-pr-review` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

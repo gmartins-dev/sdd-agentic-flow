@@ -1,8 +1,8 @@
 ---
 name: sdd-create-specs
-description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd/config.yml before producing artifacts.
+description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd-agentic-flow/config.yml before producing artifacts.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -34,16 +34,16 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
 
 - **Source-item mode:** the requested outcome and known constraints.
 - **Existing-code mode:** an explicit **scope** — the specific module, feature, package, directory, or bounded area to reverse-engineer, named by the user. Never proceed against an unstated or whole-repository scope — ask the user to name a bounded area first.
-- `.sdd/config.yml`.
+- `.sdd-agentic-flow/config.yml`.
 - Relevant repository evidence: code, tests, existing decisions, and prior SDD artifacts (within the stated scope, in existing-code mode).
 
 ## Workflow
 
 1. Determine the mode. If the user provides a requested outcome, ticket, or feature request, use **source-item mode**. If the user asks to document or formalize behavior that already exists in the code with no prior spec and no requested outcome, use **existing-code mode** and confirm the user has named an explicit scope — a specific module, feature, or bounded area, not the whole repository — before continuing; ask for one if it is missing or too broad.
-2. Read `.sdd/config.yml` and use its artifact paths, naming rules, and configured scope. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
-3. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to apply the common lifecycle and required decision points. Read `workflow.feature_profile` from `.sdd/config.yml` and apply `../sdd-agentic-flow-shared/references/feature-profiles.md` guidance to scope the package's depth.
+2. Read `.sdd-agentic-flow/config.yml` and use its artifact paths, naming rules, and configured scope. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
+3. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to apply the common lifecycle and required decision points. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply `../sdd-agentic-flow-shared/references/feature-profiles.md` guidance to scope the package's depth.
 4. Read `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/artifact-contracts.md`, and `../sdd-agentic-flow-shared/references/workflow-safety.md` before handling inputs or writing artifacts.
-5. Read `.sdd/context/project-context.md` when it exists; treat it as read-only discovered output. In source-item mode, also read `.sdd/context/domain-glossary.md` when it exists; propose or create it only with explicit authorization and a source or uncertainty note for every term.
+5. Read `.sdd-agentic-flow/context/project-context.md` when it exists; treat it as read-only discovered output. In source-item mode, also read `.sdd-agentic-flow/context/domain-glossary.md` when it exists; propose or create it only with explicit authorization and a source or uncertainty note for every term.
 6. Inspect the evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`:
    - **Source-item mode:** inspect only evidence needed to state the current behavior, desired behavior, constraints, risks, and acceptance criteria. Mark unknowns as open questions rather than inventing facts.
    - **Existing-code mode:** inspect the named code, its tests, and its call sites within the confirmed scope. Classify every finding as **Observed** (directly shown by code or a passing test), **Inferred** (a reasonable reading of the code that no test directly confirms), or **Unknown** (a gap neither the code nor its tests answer). Never present an Inferred or Unknown finding as Observed.
@@ -66,4 +66,4 @@ Return the created or updated artifact paths, evidence consulted, and: in source
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-create-prompts` or `sdd-implement-task` requires spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion; an inconsistent design or missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-create-prompts` or `sdd-implement-task` requires spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion; an inconsistent design or missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

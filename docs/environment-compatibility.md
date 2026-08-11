@@ -9,7 +9,7 @@ together.
 
 Node.js is a requirement to *run the CLI* (`npx sdd-agentic-flow ...`). It is not a
 requirement for the project you use the CLI in. The CLI only writes Markdown skills and local
-config files (`.sdd/config.yml`, per-agent skill directories); it never adds a `package.json`,
+config files (`.sdd-agentic-flow/config.yml`, per-agent skill directories); it never adds a `package.json`,
 `node_modules`, or any language-specific dependency to your project. A Java, PHP, C#, Python,
 Go, or Rust project (or any other language) uses `sdd-agentic-flow` exactly the same way a
 Node.js project does: run the CLI once via `npx`, then let the installed skills guide the coding

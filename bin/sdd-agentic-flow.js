@@ -12,7 +12,7 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.9.2';
+const VERSION = '1.10.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -52,6 +52,27 @@ const REQUIRED_CONTRACT_FIELDS = [
   'compatible_with',
 ];
 const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts', 'requires_cli'];
+
+// v1.10.0: toolkit state lives under .sdd-agentic-flow/ (not the legacy .sdd/ short name).
+const SDD_ROOT = '.sdd-agentic-flow';
+const LEGACY_SDD_ROOT = '.sdd';
+const SDD_PATHS = {
+  config: `${SDD_ROOT}/config.yml`,
+  contextDir: `${SDD_ROOT}/context`,
+  projectContext: `${SDD_ROOT}/context/project-context.md`,
+  autonomyDir: `${SDD_ROOT}/autonomy`,
+  loopState: `${SDD_ROOT}/autonomy/loop-state.md`,
+  snapshots: `${SDD_ROOT}/snapshots`,
+  reports: `${SDD_ROOT}/reports`,
+};
+
+function sddJoin(cwd, ...segments) {
+  return path.join(cwd, SDD_ROOT, ...segments);
+}
+
+function legacySddJoin(cwd, ...segments) {
+  return path.join(cwd, LEGACY_SDD_ROOT, ...segments);
+}
 
 // Agent Integration Layer (Milestone 1): user-scope (global, per-agent) skill directories,
 // each verified against the agent's own documentation (see docs/installation-scope.md).
@@ -164,7 +185,7 @@ specs:
 
 source:
   type: ${options.source || 'local-files'}
-  snapshots_dir: .sdd/snapshots
+  snapshots_dir: .sdd-agentic-flow/snapshots
 
 workflow:
   default_flow: ${options.flow || 'single'}
@@ -200,7 +221,7 @@ function configValue(content, key) {
 }
 
 function resolveConfiguredAgent(cwd) {
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   if (!fs.existsSync(configPath)) return null;
   const target = configValue(fs.readFileSync(configPath, 'utf8'), 'target');
   return target && KNOWN_AGENTS.includes(target) ? target : null;
@@ -218,7 +239,7 @@ function languageProfilePath(cwd, profile, isPackage) {
 }
 
 function languageReport(cwd) {
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   const isPackage = (() => {
     try {
       return (
@@ -323,16 +344,16 @@ function list() {
 }
 
 function init(cwd, options = {}) {
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   if (fs.existsSync(configPath)) {
-    log('WARN', 'preserved existing .sdd/config.yml');
+    log('WARN', `preserved existing ${SDD_PATHS.config}`);
     return false;
   }
-  for (const relative of ['.sdd/snapshots', '.sdd/reports', '.specs/features']) {
+  for (const relative of [SDD_PATHS.snapshots, SDD_PATHS.reports, '.specs/features']) {
     fs.mkdirSync(path.join(cwd, relative), { recursive: true });
   }
   fs.writeFileSync(configPath, configFor(options), 'utf8');
-  log('PASS', 'created .sdd/config.yml');
+  log('PASS', `created ${SDD_PATHS.config}`);
   log('PASS', 'initialized local SDD directories');
   discoverProject(cwd, { force: false });
   if (!options.quiet)
@@ -471,15 +492,15 @@ ${bullets(signals.featureFlagConfigs, 'no feature-flag config found (.launchdark
 }
 
 function discoverProject(cwd, options = {}) {
-  const contextPath = path.join(cwd, '.sdd', 'context', 'project-context.md');
+  const contextPath = sddJoin(cwd, 'context', 'project-context.md');
   if (fs.existsSync(contextPath) && !options.force) {
-    log('WARN', 'preserved existing .sdd/context/project-context.md');
+    log('WARN', `preserved existing ${SDD_PATHS.projectContext}`);
     return false;
   }
   const provenance = { generatedAt: new Date().toISOString(), ...gitInfo(cwd) };
   fs.mkdirSync(path.dirname(contextPath), { recursive: true });
   fs.writeFileSync(contextPath, projectContextFor(scanProjectSignals(cwd), provenance), 'utf8');
-  log('PASS', 'created .sdd/context/project-context.md');
+  log('PASS', `created ${SDD_PATHS.projectContext}`);
   return true;
 }
 
@@ -496,17 +517,17 @@ function parseProvenance(content) {
 }
 
 function contextStatus(cwd) {
-  const contextPath = path.join(cwd, '.sdd', 'context', 'project-context.md');
+  const contextPath = sddJoin(cwd, 'context', 'project-context.md');
   if (!fs.existsSync(contextPath)) {
     log(
       'WARN',
-      'status: not found; run `init` or `discover` to create .sdd/context/project-context.md',
+      `status: not found; run \`init\` or \`discover\` to create ${SDD_PATHS.projectContext}`,
     );
     return;
   }
   const provenance = parseProvenance(fs.readFileSync(contextPath, 'utf8'));
   log('PASS', 'status: available');
-  log('INFO', 'artifact: .sdd/context/project-context.md');
+  log('INFO', `artifact: ${SDD_PATHS.projectContext}`);
   log('INFO', `generated at: ${provenance.generatedAt || 'unknown'}`);
   log('INFO', `repository revision: ${provenance.revision || 'not a git repository'}`);
   log('INFO', `branch: ${provenance.branch || 'unknown'}`);
@@ -521,11 +542,11 @@ function contextRefresh(cwd) {
   discoverProject(cwd, { force: true });
 }
 
-// `context autonomy-state`: read-only report of .sdd/config.yml's workflow.execution_mode /
-// autonomy_level plus the last recorded .sdd/autonomy/loop-state.md, if any. Never mutates
+// `context autonomy-state`: read-only report of .sdd-agentic-flow/config.yml's workflow.execution_mode /
+// autonomy_level plus the last recorded .sdd-agentic-flow/autonomy/loop-state.md, if any. Never mutates
 // anything — `autonomous-resume` is the command that acts on a blocked/paused state.
 function autonomyStateReport(cwd) {
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   const content = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : null;
   const executionMode = (content && configValue(content, 'execution_mode')) || 'guided';
   const autonomyLevel = (content && configValue(content, 'autonomy_level')) || 'manual';
@@ -552,7 +573,7 @@ function autonomyStateReport(cwd) {
   else log('PASS', 'human override: none');
 }
 
-// `autonomous-resume`: clears a pause=true/stop=true recorded in .sdd/autonomy/loop-state.md and
+// `autonomous-resume`: clears a pause=true/stop=true recorded in .sdd-agentic-flow/autonomy/loop-state.md and
 // appends an audited log entry, so the invoking agent can re-check guardrails and continue.
 // This CLI has no orchestration engine — it does not itself re-invoke the next skill (see the
 // "Scope" note in shared/references/autonomy-guardrails.md); it only clears the gate and prints
@@ -579,7 +600,7 @@ function autonomousResume(cwd, options = {}) {
     : `${content.trimEnd()}\n\n## Override Log\n\n${entry}\n`;
   fs.writeFileSync(state.file, content, 'utf8');
   log('PASS', `resumed: cleared human override recorded at skill '${state.skill}'`);
-  log('INFO', `next skill: ${state.next || 'unknown — inspect .sdd/autonomy/loop-state.md'}`);
+  log('INFO', `next skill: ${state.next || `unknown — inspect ${SDD_PATHS.loopState}`}`);
   log('INFO', 'the invoking agent re-checks all 7 guardrails before advancing to it.');
 }
 
@@ -595,8 +616,8 @@ async function initInteractive(
   executionModeDefault = 'guided',
   autonomyLevelDefault = 'manual',
 ) {
-  if (fs.existsSync(path.join(cwd, '.sdd', 'config.yml'))) {
-    log('WARN', '.sdd/config.yml already exists; interactive init will not overwrite it');
+  if (fs.existsSync(sddJoin(cwd, 'config.yml'))) {
+    log('WARN', `${SDD_PATHS.config} already exists; interactive init will not overwrite it`);
     return;
   }
   const pipedAnswers = process.stdin.isTTY ? null : fs.readFileSync(0, 'utf8').split(/\r?\n/);
@@ -862,7 +883,7 @@ function doctorChecks(cwd) {
         return false;
       }
     })();
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : configFor();
@@ -930,9 +951,28 @@ function doctorChecks(cwd) {
     add(
       'config',
       fs.existsSync(configPath) ? 'PASS' : 'WARN',
-      fs.existsSync(configPath) ? '.sdd/config.yml found' : '.sdd/config.yml not found',
+      fs.existsSync(configPath) ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`,
       'Config',
     );
+    (() => {
+      const legacyPath = legacySddJoin(cwd);
+      const newRootPath = path.join(cwd, SDD_ROOT);
+      if (fs.existsSync(legacyPath) && !fs.existsSync(newRootPath)) {
+        add(
+          'legacy_sdd_root',
+          'WARN',
+          `${LEGACY_SDD_ROOT}/ found without ${SDD_ROOT}/ — run \`sdd-agentic-flow migrate --apply\``,
+          'Config',
+        );
+      } else if (fs.existsSync(legacyPath) && fs.existsSync(newRootPath)) {
+        add(
+          'legacy_sdd_root',
+          'WARN',
+          `both ${LEGACY_SDD_ROOT}/ and ${SDD_ROOT}/ exist — remove or merge ${LEGACY_SDD_ROOT}/ manually`,
+          'Config',
+        );
+      }
+    })();
     (() => {
       const presence = coreSkillsPresence(skillsRoot);
       const skillsMessage =
@@ -962,11 +1002,11 @@ function doctorChecks(cwd) {
       'Project readiness',
     );
     {
-      const contextArtifactPath = path.join(cwd, '.sdd', 'context', 'project-context.md');
+      const contextArtifactPath = sddJoin(cwd, 'context', 'project-context.md');
       const contextArtifactExists = fs.existsSync(contextArtifactPath);
       let contextMessage = contextArtifactExists
-        ? '.sdd/context/project-context.md found'
-        : '.sdd/context/project-context.md not found; run `discover`';
+        ? `${SDD_PATHS.projectContext} found`
+        : `${SDD_PATHS.projectContext} not found; run \`discover\``;
       if (contextArtifactExists) {
         const provenance = parseProvenance(fs.readFileSync(contextArtifactPath, 'utf8'));
         const current = gitInfo(cwd);
@@ -1216,21 +1256,21 @@ function contractsCheck(cwd) {
   };
 }
 
-// v1.8.0: .sdd/autonomy/loop-state.md is the execution-state file an agent maintains while
+// v1.8.0: .sdd-agentic-flow/autonomy/loop-state.md is the execution-state file an agent maintains while
 // running a workflow under autonomy_level supervised/autonomous (shared/references/
 // autonomy-guardrails.md). This CLI never runs skills itself — it only reads/writes this file
 // so `doctor --autonomy`, `context autonomy-state`, and `autonomous-resume` can report and act
 // on state an agent already recorded.
 //
 // A literal forward-slash string, deliberately not built with path.join — every other
-// generated-artifact path already displayed in this file (e.g. '.sdd/context/project-context.md')
+// generated-artifact path already displayed in this file (e.g. '.sdd-agentic-flow/context/project-context.md')
 // is a literal string for exactly this reason: path.join would produce backslashes in
 // user-facing text on Windows, unlike the actual filesystem access below (loopStatePath), which
 // does use path.join.
-const LOOP_STATE_RELATIVE = '.sdd/autonomy/loop-state.md';
+const LOOP_STATE_RELATIVE = SDD_PATHS.loopState;
 
 function loopStatePath(cwd) {
-  return path.join(cwd, '.sdd', 'autonomy', 'loop-state.md');
+  return sddJoin(cwd, 'autonomy', 'loop-state.md');
 }
 
 // An agent appends a new "## Current State" block after each skill completes and never rewrites
@@ -1305,7 +1345,7 @@ const AUTONOMY_GUARDRAILS = [
   ['guardrail_7_human_gate', 'Human override gate — no pause/stop recorded in loop-state.md'],
 ];
 
-// Reads workflow.skill_overrides.<skill>.autonomy_level from raw .sdd/config.yml text — same
+// Reads workflow.skill_overrides.<skill>.autonomy_level from raw .sdd-agentic-flow/config.yml text — same
 // lightweight, zero-dependency regex style as configValue()/parseScalarField(), matching the
 // documented shape (docs/autonomy-levels.md):
 //   workflow:
@@ -1319,7 +1359,7 @@ function skillOverrideLevel(content, skill) {
 }
 
 // `doctor --autonomy`: validates the *static* setup for autonomy_level (config, skill contracts,
-// budget) plus the last recorded .sdd/autonomy/loop-state.md, if any. There is no orchestration
+// budget) plus the last recorded .sdd-agentic-flow/autonomy/loop-state.md, if any. There is no orchestration
 // engine in this CLI to validate live — see the "Scope" note in shared/references/
 // autonomy-guardrails.md.
 function autonomyCheck(cwd, options = {}) {
@@ -1327,7 +1367,7 @@ function autonomyCheck(cwd, options = {}) {
   const add = (name, status, message, section = 'Autonomy') =>
     checks.push({ name, status, message, section });
 
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   const configExists = fs.existsSync(configPath);
   const content = configExists ? fs.readFileSync(configPath, 'utf8') : null;
   const executionMode = content ? configValue(content, 'execution_mode') : null;
@@ -1338,13 +1378,13 @@ function autonomyCheck(cwd, options = {}) {
     add(
       'autonomy_config',
       'WARN',
-      '.sdd/config.yml not found; run `init` to set workflow.execution_mode/autonomy_level',
+      `${SDD_PATHS.config} not found; run \`init\` to set workflow.execution_mode/autonomy_level`,
     );
   } else if (!executionMode || !autonomyLevel) {
     add(
       'autonomy_config',
       'WARN',
-      'workflow.execution_mode/autonomy_level not set in .sdd/config.yml; defaulting to guided/manual (pre-v1.8.0 config, still fully supported)',
+      `workflow.execution_mode/autonomy_level not set in ${SDD_PATHS.config}; defaulting to guided/manual (pre-v1.8.0 config, still fully supported)`,
     );
   } else if (!EXECUTION_MODES.includes(executionMode) || !AUTONOMY_LEVELS.includes(autonomyLevel)) {
     explicitlyInvalid = true;
@@ -1459,7 +1499,7 @@ function autonomyCheck(cwd, options = {}) {
     add(
       'autonomy_loop_state',
       'INFO',
-      'no .sdd/autonomy/loop-state.md yet; an agent creates it the first time it runs a supervised/autonomous workflow',
+      `no ${SDD_PATHS.loopState} yet; an agent creates it the first time it runs a supervised/autonomous workflow`,
     );
   } else if (loopState.stop) {
     add(
@@ -1521,8 +1561,8 @@ function smokeCheck() {
       init(temporary, { profile, quiet: true });
       install('core', temporary, { scope: 'project', quiet: true });
       const required = [
-        '.sdd/config.yml',
-        '.sdd/context/project-context.md',
+        SDD_PATHS.config,
+        SDD_PATHS.projectContext,
         '.agents/skills',
         '.agents/skills/sdd-agentic-flow-shared',
         `.agents/skills/sdd-agentic-flow-shared/language-profiles/${profile}.md`,
@@ -1572,6 +1612,34 @@ function describePath(cwd, target) {
   return relative.startsWith('..') || path.isAbsolute(relative) ? target : relative;
 }
 
+function migrateSddRoot(args, cwd) {
+  const plan = args.includes('--plan');
+  const apply = args.includes('--apply');
+  const rest = args.filter((arg) => !['--plan', '--apply', '--help', '--quiet'].includes(arg));
+  if (rest.length || plan === apply) return fail(USAGE.migrate);
+
+  const legacyPath = legacySddJoin(cwd);
+  const newRootPath = path.join(cwd, SDD_ROOT);
+
+  if (!fs.existsSync(legacyPath)) {
+    log('WARN', `nothing to migrate — ${LEGACY_SDD_ROOT}/ not found`);
+    return;
+  }
+  if (fs.existsSync(newRootPath)) {
+    return fail(
+      `${SDD_ROOT}/ already exists; resolve the conflict manually before migrating from ${LEGACY_SDD_ROOT}/`,
+    );
+  }
+
+  if (plan) {
+    log('PLAN', `move ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/`);
+    return;
+  }
+
+  fs.renameSync(legacyPath, newRootPath);
+  log('PASS', `migrated ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/`);
+}
+
 function uninstall(args, cwd) {
   const usage = USAGE.uninstall;
   const plan = args.includes('--plan');
@@ -1607,15 +1675,15 @@ function uninstall(args, cwd) {
     ...OFFICIAL_SKILLS.map((skill) => path.join(root, skill)),
     path.join(root, 'sdd-agentic-flow-shared'),
   ]);
-  if (includeConfig) targets.push(path.join(cwd, '.sdd', 'config.yml'));
+  if (includeConfig) targets.push(sddJoin(cwd, 'config.yml'));
   // --full additionally clears regenerable local state (context, snapshots, reports).
   // .specs/features is never a target here, in any mode: it holds hand-authored specs, the
   // same "preserved like source code" invariant documented throughout uninstall.md/upgrading.md.
   if (full) {
     targets.push(
-      path.join(cwd, '.sdd', 'context', 'project-context.md'),
-      path.join(cwd, '.sdd', 'snapshots'),
-      path.join(cwd, '.sdd', 'reports'),
+      sddJoin(cwd, 'context', 'project-context.md'),
+      sddJoin(cwd, 'snapshots'),
+      sddJoin(cwd, 'reports'),
     );
   }
   const existing = targets.filter((target) => fs.existsSync(target));
@@ -1627,7 +1695,7 @@ function uninstall(args, cwd) {
         'PLAN',
         full
           ? 'preserves .specs/features, source code, and unknown paths'
-          : 'preserves .specs/features, .sdd/reports, .sdd/snapshots, source code, and unknown paths',
+          : `preserves .specs/features, ${SDD_PATHS.reports}, ${SDD_PATHS.snapshots}, source code, and unknown paths`,
       );
     return;
   }
@@ -1661,6 +1729,7 @@ const USAGE = {
   context: 'usage: context [status|refresh|autonomy-state]',
   'autonomous-resume':
     'usage: autonomous-resume [--force] | autonomous-resume --override-guard=<1-7> --reason="..."',
+  migrate: 'usage: migrate --plan | migrate --apply',
 };
 
 const KNOWN_COMMANDS = [
@@ -1671,6 +1740,7 @@ const KNOWN_COMMANDS = [
   'install',
   'doctor',
   'autonomous-resume',
+  'migrate',
   'uninstall',
   'help',
   'version',
@@ -1679,9 +1749,9 @@ const KNOWN_COMMANDS = [
 const COMMAND_HELP = {
   init: `sdd-agentic-flow init
 
-Create local SDD configuration for the current project (.sdd/config.yml,
-.sdd/context/project-context.md, .sdd/snapshots, .sdd/reports, .specs/features).
-Existing .sdd/config.yml is preserved; init never overwrites it.
+Create local SDD configuration for the current project (${SDD_PATHS.config},
+${SDD_PATHS.projectContext}, ${SDD_PATHS.snapshots}, ${SDD_PATHS.reports}, .specs/features).
+Existing ${SDD_PATHS.config} is preserved; init never overwrites it.
 
 USAGE
   sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
@@ -1752,7 +1822,7 @@ OPTIONS
   --autonomy       Also validate workflow.execution_mode/autonomy_level, the
                    execution_mode × autonomy_level matrix, each installed skill's
                    autonomy_profile support, workflow.autonomy_budget, and the last
-                   recorded .sdd/autonomy/loop-state.md. See docs/autonomy-levels.md.
+                   recorded .sdd-agentic-flow/autonomy/loop-state.md. See docs/autonomy-levels.md.
   --verbose        With --autonomy, also list all 7 guardrails and what each one gates.
   --check-updates  Make one request to the npm registry to check for a newer version.
                    The sole, explicit, opt-in exception to "no outbound network access
@@ -1781,10 +1851,10 @@ USAGE
 OPTIONS
   --plan                Show only what would be removed; makes no changes.
   --apply                Actually remove the listed assets.
-  --include-config       Also remove .sdd/config.yml (--apply only).
+  --include-config       Also remove .sdd-agentic-flow/config.yml (--apply only).
   --full                 Full/clean-reinstall reset (--apply only): also removes
-                         .sdd/context/project-context.md, .sdd/snapshots, and
-                         .sdd/reports (regenerable state). Implies --include-config.
+                         .sdd-agentic-flow/context/project-context.md, .sdd-agentic-flow/snapshots, and
+                         .sdd-agentic-flow/reports (regenerable state). Implies --include-config.
                          Never removes .specs/features.
   --scope user|project  Limit to one scope (default: both).
   --agent <name>         Limit user-scope removal to a single agent's directory.
@@ -1799,14 +1869,14 @@ EXAMPLES
   discover: `sdd-agentic-flow discover
 
 Auto-discover project signals (README, AI instruction files, docs/adr, monorepo
-tooling, test/CI/ORM/feature-flag config) into .sdd/context/project-context.md.
+tooling, test/CI/ORM/feature-flag config) into .sdd-agentic-flow/context/project-context.md.
 Also run automatically by init. Preserves an existing file unless --force is given.
 
 USAGE
   sdd-agentic-flow discover [--force] [--quiet]
 
 OPTIONS
-  --force   Regenerate .sdd/context/project-context.md even if it already exists.
+  --force   Regenerate .sdd-agentic-flow/context/project-context.md even if it already exists.
   --quiet   Accepted for symmetry with the other commands; discover currently has
             no decorative output to suppress.
 
@@ -1818,7 +1888,7 @@ EXAMPLES
 
 Inspect or refresh the generated project-context artifact's provenance
 (when it was generated, at which repository revision/branch), or inspect the
-last recorded .sdd/autonomy/loop-state.md (autonomy_level supervised/autonomous runs).
+last recorded .sdd-agentic-flow/autonomy/loop-state.md (autonomy_level supervised/autonomous runs).
 
 USAGE
   sdd-agentic-flow context
@@ -1841,7 +1911,7 @@ USAGE
   'autonomous-resume': `sdd-agentic-flow autonomous-resume
 
 Resume an autonomy_level supervised/autonomous workflow paused or stopped at a
-guardrail. Reads .sdd/autonomy/loop-state.md, clears any recorded pause=true/
+guardrail. Reads .sdd-agentic-flow/autonomy/loop-state.md, clears any recorded pause=true/
 stop=true, and appends an audited log entry. Never re-invokes a skill itself —
 this CLI has no orchestration engine; it prints the recorded next skill for the
 invoking agent to act on. See docs/autonomy-levels.md.
@@ -1861,6 +1931,23 @@ EXAMPLES
   sdd-agentic-flow autonomous-resume
   sdd-agentic-flow autonomous-resume --force
   sdd-agentic-flow autonomous-resume --override-guard=3 --reason="flaky test, verified manually"
+`,
+  migrate: `sdd-agentic-flow migrate
+
+Move legacy toolkit state from .sdd/ to .sdd-agentic-flow/ (v1.10.0+ canonical path).
+Never merges when both directories exist — resolve conflicts manually first.
+
+USAGE
+  sdd-agentic-flow migrate --plan
+  sdd-agentic-flow migrate --apply
+
+OPTIONS
+  --plan   Show what would be moved; makes no changes.
+  --apply  Move ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/ atomically.
+
+EXAMPLES
+  sdd-agentic-flow migrate --plan
+  sdd-agentic-flow migrate --apply
 `,
 };
 
@@ -1893,6 +1980,7 @@ COMMANDS
   install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
   doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
+  migrate --plan | migrate --apply  Move legacy .sdd/ toolkit state to .sdd-agentic-flow/
   uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
@@ -1915,14 +2003,14 @@ MORE HELP
 // CI, agent-invoked, or an explicit `help`/`--help`/`-h`/any explicit command — behavior is
 // unchanged from before v1.4.0: this screen only, no prompt, no implicit action, exit 0.
 function welcome(cwd) {
-  const configPath = path.join(cwd, '.sdd', 'config.yml');
+  const configPath = sddJoin(cwd, 'config.yml');
   const configFound = fs.existsSync(configPath);
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
   const skillsRoot = resolveSkillsRoot(cwd);
   const presence = coreSkillsPresence(skillsRoot);
   const skillsInstalled = presence.missing.length === 0;
   const skillsPartial = !skillsInstalled && presence.present.length > 0;
-  const contextFound = fs.existsSync(path.join(cwd, '.sdd', 'context', 'project-context.md'));
+  const contextFound = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'));
 
   process.stdout.write(
     `sdd-agentic-flow ${VERSION}\n` +
@@ -1931,7 +2019,7 @@ function welcome(cwd) {
   );
   log(
     configFound ? 'PASS' : 'INFO',
-    configFound ? '.sdd/config.yml found' : '.sdd/config.yml not found',
+    configFound ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`,
   );
   log(
     skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO',
@@ -2106,6 +2194,9 @@ async function runCommand(command, args, cwd) {
     if (!valid || (overrideGuard && !/^[1-7]$/.test(overrideGuard))) return fail(usage);
     if (overrideGuard && !reason) return fail('--override-guard requires --reason="...".');
     autonomousResume(cwd, { force, overrideGuard, reason });
+  } else if (command === 'migrate') {
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.migrate);
+    migrateSddRoot(args, cwd);
   } else if (command === 'uninstall') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
     else uninstall(args, cwd);

@@ -2,7 +2,7 @@
 name: sdd-brainstorm
 description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for sdd-create-specs — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: planning
 extends: null
 requires: [config]
@@ -33,19 +33,19 @@ Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is a
 ## Inputs
 
 - The user's idea, in whatever shape it currently exists — a sentence, a complaint, a rough goal.
-- `.sdd/config.yml`, when present.
-- `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md`, when present.
+- `.sdd-agentic-flow/config.yml`, when present.
+- `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md`, when present.
 - Relevant existing code or docs the idea touches.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first. If it is missing, tell the user to run `npx sdd-agentic-flow init` before a brief can be filed under `.specs/features/`; the conversation can still continue without it.
-2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist, and inspect the code or docs the idea touches, so the questions asked next never repeat what the repository already answers.
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, tell the user to run `npx sdd-agentic-flow init` before a brief can be filed under `.specs/features/`; the conversation can still continue without it.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, and inspect the code or docs the idea touches, so the questions asked next never repeat what the repository already answers.
 3. Determine the mode from the idea's current clarity, and re-evaluate it at every turn — a design conversation can reveal a hidden requirements gap that sends it back to exploratory:
    - **Exploratory mode** — the problem itself is not yet defined. Ask one systematic question at a time, only for what inspection could not already answer. Do not advance to solution design until the problem, its constraints, and why it matters are clear.
    - **Design mode** — the problem is clear but the approach is not. Explore alternatives, challenge implicit assumptions, and propose a small throwaway prototype only when the uncertainty is about implementation feasibility, never about requirements.
 4. Track state as `exploring` while the problem (and, in design mode, the approach) has not yet converged, `converged` once it has, or `abandoned` if the user drops the idea during the conversation.
-5. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path convention `.sdd/config.yml` declares), capturing the problem, why it matters, constraints, the decided approach at a level a specification can start from, and open questions worth flagging to `sdd-create-specs`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always delegated.
+5. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path convention `.sdd-agentic-flow/config.yml` declares), capturing the problem, why it matters, constraints, the decided approach at a level a specification can start from, and open questions worth flagging to `sdd-create-specs`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always delegated.
 6. Before handing off, split the brief's content explicitly into **Known** (confirmed by inspection or an explicit user statement — the brainstorm-stage counterpart to `sdd-create-specs`' existing-code-mode **Observed**), **Assumed** (a reasonable default neither inspection nor the user has confirmed — the counterpart to **Inferred**), **Unknown** (a real gap the conversation never closed), and **Needs research** (a specific, actionable question `sdd-create-specs` should investigate rather than guess). Never present an Assumed or Unknown item as Known.
 7. Report the brief's path and recommend `sdd-create-specs` as the next step.
 
@@ -68,4 +68,4 @@ When `converged`, also return the brief's file path, the Known/Assumed/Unknown/N
 
 ## Autonomy
 
-Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. Whether an idea has converged into a spec-ready brief is a human judgment call. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. Whether an idea has converged into a spec-ready brief is a human judgment call. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

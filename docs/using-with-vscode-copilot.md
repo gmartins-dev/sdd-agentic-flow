@@ -12,7 +12,7 @@ repository instead. VS Code can also be pointed at a custom skills location via 
 `chat.agentSkillsLocations` setting. See [installation scope](installation-scope.md).
 
 ```text
-Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd/config.yml. Do not modify files. Return findings and evidence only.
+Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd-agentic-flow/config.yml. Do not modify files. Return findings and evidence only.
 ```
 
 Manual validation against VS Code + GitHub Copilot has not been performed yet. See

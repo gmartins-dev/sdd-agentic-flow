@@ -14,7 +14,7 @@ Structured specs, clear boundaries, and human governance:
 
 - **Capability-contracted skills:** Markdown skills built on condensed TLC and TDD baselines.
 - **Adaptive sizing:** Feature-profile sizing with optional auto-discovered project context.
-- **Zero footprint by default:** User-local skill install; `.sdd/config.yml` only when you create it.
+- **Zero footprint by default:** User-local skill install; `.sdd-agentic-flow/config.yml` only when you create it.
 - **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
 - **Language-agnostic:** The CLI runs on Node.js >= 22; your project does not have to.
 
@@ -35,7 +35,20 @@ You delegate a task. The agent jumps to code, blurs boundaries, and marks work d
 | A PR loses traceability to the feature | `sdd-create-pr`, `sdd-pr-review`, and `sdd-pr-fix` |
 | A release ships without version or changelog checks | `sdd-release` (on demand, after validation) |
 
-See [why this exists](docs/why-this-exists.md) for the short form.
+See [why this exists](docs/why-this-exists.md) for the short form. For the four-layer mental model (Prompt → Context → Harness → Loop + SDD), see [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
+
+## Beyond prompts
+
+Most agent tooling stops at better prompts. **sdd-agentic-flow** adds the layers prompts alone cannot hold:
+
+| Layer | One-line role |
+| --- | --- |
+| Prompt | Task instructions per skill |
+| Context | Specs + project context + config |
+| Harness | Modes, contracts, safety, evidence rules |
+| Loop | Autonomy, guardrails, loop-state, resume |
+
+**SDD** defines done before implementation starts. The CLI installs and validates; your agent executes. Read the [mental model doc](docs/sdd-agentic-flow-model.md) for the full map.
 
 ## The solution
 
@@ -50,8 +63,8 @@ You stay the decision-maker; the toolkit holds the gates. It gives you a linear 
 | Task boundaries | Specs, task prompts, and `sdd-task-check` per slice |
 | Traceability | Spec → prompt → code → PR package in one chain |
 | Evidence before done | TDD baseline, check reports, validation reports |
-| Clearer agent input | Written specs and `.sdd/config.yml` replace repeated chat context |
-| Async teamwork | Versioned artifacts in `.specs/` and `.sdd/` |
+| Clearer agent input | Written specs and `.sdd-agentic-flow/config.yml` replace repeated chat context |
+| Async teamwork | Versioned artifacts in `.specs/` and `.sdd-agentic-flow/` |
 | Reversible setup | `uninstall --plan`, explicit install scope, [trust model](docs/trust-model.md) |
 
 > [!NOTE]
@@ -67,7 +80,7 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-That creates `.sdd/config.yml`, installs skills, and validates setup. Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
+That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
 Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md) and [configuration](docs/configuration.md).
 
@@ -108,13 +121,20 @@ These walkthroughs are not slide-deck claims—they run as integration tests in 
 | Project context | `discover` / `context` lifecycle | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | PR loop | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
 | Version migration | Upgrade path v0.8.0 → v0.9.0 | [version migration](examples/golden/version-migration/walkthrough.md) |
+| Legacy path rename | `.sdd/` → `.sdd-agentic-flow/` | [sdd-path-migrate](examples/golden/sdd-path-migrate/walkthrough.md) |
+| Autonomy AUTO-001 | Idea → spec under autonomous config | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
+| Autonomy AUTO-002 | Spec → validate chain | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
+| Autonomy AUTO-003 | Guardrail pause → resume | [autonomy-guardrail-pause-resume](examples/golden/autonomy-guardrail-pause-resume/walkthrough.md) |
+| Autonomy AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
+| Autonomy AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-The generic [task-management example](examples/golden/task-management/) shows one feature end to end.
+The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded auto-advance—not live LLM orchestration.
 
 ## Learn more
 
 | Topic | Doc |
 | --- | --- |
+| Mental model (4 layers + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
 | SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | All 14 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
@@ -139,7 +159,7 @@ Quick one-off scripts, fully autonomous no-review agents, automatic deploy/relea
 - The CLI is small, local-first, and has zero runtime dependencies.
 - It has no telemetry, postinstall script, or outbound CLI network access by default. The sole exception is the opt-in `doctor --check-updates` flag, which makes exactly one npm-registry request when you pass it.
 - It does not automatically commit, push, merge, deploy, or publish.
-- Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd/config.yml`. See [installation scope](docs/installation-scope.md).
+- Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd-agentic-flow/config.yml`. See [installation scope](docs/installation-scope.md).
 - `doctor` and `doctor --smoke` validate local setup, while publishable files are checked for blocked private-context markers.
 - Licensing and TLC attribution are documented in [NOTICE](NOTICE) and [LICENSING.md](LICENSING.md).
 - Human review remains the final authority.
@@ -215,7 +235,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full`. It also removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd-agentic-flow/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full`. It also removes `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
 
 ## Skill map
 

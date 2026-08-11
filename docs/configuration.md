@@ -1,6 +1,6 @@
 # Configuration
 
-`.sdd/config.yml` controls specs root, source type, language, workflow and safety.
+`.sdd-agentic-flow/config.yml` controls specs root, source type, language, workflow and safety.
 The generated file is intentionally explicit and can be edited by the project owner.
 
 It stores project name, default branch, agent target, language profile, human-output language,
@@ -26,7 +26,7 @@ orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `a
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
 combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. `init
 --autonomy-level`/`--execution-mode` set both at creation time; both default to their most
-conservative value, so an existing `.sdd/config.yml` predating v1.8.0 behaves identically once
+conservative value, so an existing `.sdd-agentic-flow/config.yml` predating v1.8.0 behaves identically once
 these fields are added (`WARN`, not `FAIL`, when missing). `workflow.autonomy_budget`
 (`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an
 `autonomous` run may do before it must stop and hand control back. See
@@ -36,11 +36,11 @@ every automatic transition, and `doctor --autonomy` / `context autonomy-state` /
 
 ## Project context
 
-`init` also creates `.sdd/context/project-context.md`, a read-only, auto-discovered record of
+`init` also creates `.sdd-agentic-flow/context/project-context.md`, a read-only, auto-discovered record of
 signals found in the repository (README, `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, `docs/`,
 ADR directories, `package.json` identity and workspace declarations, monorepo tooling config, test
 config, architectural folder naming, CI configuration, and ORM/feature-flag configuration). It is
-distinct from `.sdd/config.yml`: config.yml holds user-declared policy, while `project-context.md`
+distinct from `.sdd-agentic-flow/config.yml`: config.yml holds user-declared policy, while `project-context.md`
 holds discovered facts and is never written by hand.
 
 Signals detected (all presence-only checks; no file content is parsed beyond `package.json`):
@@ -60,7 +60,7 @@ Signals detected (all presence-only checks; no file content is parsed beyond `pa
 Run `sdd-agentic-flow discover` any time to refresh it after the project changes, or
 `sdd-agentic-flow discover --force` to fully regenerate it (this rewrites the whole file, so copy
 out any manual notes first). Skills that consult project context read it only when it exists and
-treat it as optional context, the same way they treat `.sdd/context/domain-glossary.md`.
+treat it as optional context, the same way they treat `.sdd-agentic-flow/context/domain-glossary.md`.
 
 ### Provenance and refresh
 
@@ -90,7 +90,7 @@ Two commands read and act on this provenance:
   remembering the flag, and is the recommended way to refresh context going forward; `discover
   [--force]` keeps working exactly as before for existing scripts and CI.
 - `sdd-agentic-flow context autonomy-state`: read-only report of `workflow.execution_mode`/
-  `autonomy_level` plus the last recorded `.sdd/autonomy/loop-state.md`, if any. See
+  `autonomy_level` plus the last recorded `.sdd-agentic-flow/autonomy/loop-state.md`, if any. See
   [autonomy levels](autonomy-levels.md).
 
 `doctor`'s `project_context` check also surfaces revision drift in its message when it detects

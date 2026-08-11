@@ -1,6 +1,6 @@
 # Using with Cursor
 
-Install a pack and let Cursor read the skill and `.sdd/config.yml` files.
+Install a pack and let Cursor read the skill and `.sdd-agentic-flow/config.yml` files.
 
 `install core` defaults to `--scope user` and writes to `~/.agents/skills/` and
 `~/.cursor/skills/` (Cursor's global skill directories). Pass `--scope project` to install into
@@ -8,7 +8,7 @@ Install a pack and let Cursor read the skill and `.sdd/config.yml` files.
 [installation scope](installation-scope.md).
 
 ```text
-Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd/config.yml. Do not modify files. Return findings and evidence only.
+Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd-agentic-flow/config.yml. Do not modify files. Return findings and evidence only.
 ```
 
 Keep configuration and skill files under project context. Cursor integrations are optional; this package does not require them.

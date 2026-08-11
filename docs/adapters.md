@@ -5,7 +5,7 @@ have authorized GitHub tooling; the CLI never contacts GitHub. Other tracker ada
 are outside v0.1.
 
 No adapter is required for the core workflow. Source selection stays project-local
-and controlled by `.sdd/config.yml`.
+and controlled by `.sdd-agentic-flow/config.yml`.
 
 As of v0.7.0 this scope is unchanged: adapters stay documentation-level only, with no
 network calls, tracker API integrations, or methodological logic. See the

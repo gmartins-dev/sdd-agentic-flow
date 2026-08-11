@@ -143,7 +143,7 @@ under that older, looser rule). From v1.0.0 onward, it no longer applies.
 
 ## What this does not promise
 
-This is not a promise about exact `doctor`/`.sdd/config.yml` non-JSON output formatting or
+This is not a promise about exact `doctor`/`.sdd-agentic-flow/config.yml` non-JSON output formatting or
 log/warning message wording. Those can still change with a documented `CHANGELOG.md` entry.
 It is a promise about the *shape and meaning* of skill contracts, baseline stages, the
 documented CLI argument surface, and the environment support matrix (all covered above), not

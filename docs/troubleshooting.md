@@ -6,11 +6,11 @@ first; it names the failing check.
 
 ## Consumer project checks
 
-### `config`: `.sdd/config.yml` not found
+### `config`: `.sdd-agentic-flow/config.yml` not found
 
 **Cause:** `init` was never run in this project.
 
-**Diagnose:** `sdd-agentic-flow doctor`. Look for `WARN .sdd/config.yml not found`.
+**Diagnose:** `sdd-agentic-flow doctor`. Look for `WARN .sdd-agentic-flow/config.yml not found`.
 
 **Fix:** `sdd-agentic-flow init` (or `init --interactive` to choose settings).
 
@@ -46,7 +46,7 @@ Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) sur
 
 **Fix:** same as `config`/`skills`.
 
-### `project_context`: `.sdd/context/project-context.md` not found
+### `project_context`: `.sdd-agentic-flow/context/project-context.md` not found
 
 **Cause:** `discover` (or `init`, which calls it) was never run, or the file was manually
 deleted.
@@ -90,20 +90,20 @@ the scope you're checking against.
 
 ### `adaptive-sizing`: "workflow.feature_profile not set in config"
 
-**Cause:** `.sdd/config.yml` predates feature profiles, or was hand-edited without one.
+**Cause:** `.sdd-agentic-flow/config.yml` predates feature profiles, or was hand-edited without one.
 
 **Diagnose:** `sdd-agentic-flow doctor`.
 
 **Fix:** add `workflow.feature_profile: <small_fix|medium_feature|large_feature|epic>` to
-`.sdd/config.yml`, or regenerate it with `init --feature-profile <profile>`.
+`.sdd-agentic-flow/config.yml`, or regenerate it with `init --feature-profile <profile>`.
 
 ### `evidence-first`: "quality.require_evidence_before_completion is not set to true"
 
-**Cause:** `.sdd/config.yml` was hand-edited and no longer matches the safe default.
+**Cause:** `.sdd-agentic-flow/config.yml` was hand-edited and no longer matches the safe default.
 
 **Diagnose:** `sdd-agentic-flow doctor`.
 
-**Fix:** set `quality.require_evidence_before_completion: true` in `.sdd/config.yml`.
+**Fix:** set `quality.require_evidence_before_completion: true` in `.sdd-agentic-flow/config.yml`.
 
 ### `language_profile`: `WARN`/`FAIL`
 
@@ -120,12 +120,12 @@ of `docs/language-profiles.md`'s supported profiles.
 
 ### `safety`: "required safety defaults are missing"
 
-**Cause:** `.sdd/config.yml`'s `safety.no_commit_by_default`/`no_push_by_default`/
+**Cause:** `.sdd-agentic-flow/config.yml`'s `safety.no_commit_by_default`/`no_push_by_default`/
 `no_merge_or_deploy` were hand-edited away from `true`.
 
 **Diagnose:** `sdd-agentic-flow doctor`.
 
-**Fix:** restore all three to `true` in `.sdd/config.yml`. This package does not support
+**Fix:** restore all three to `true` in `.sdd-agentic-flow/config.yml`. This package does not support
 disabling these defaults.
 
 ## Platform checks
@@ -210,24 +210,24 @@ the full model these checks validate.
 
 ### `autonomy_config`: `WARN` "workflow.execution_mode/autonomy_level not set"
 
-**Cause:** `.sdd/config.yml` predates v1.8.0, or was hand-written without these fields.
+**Cause:** `.sdd-agentic-flow/config.yml` predates v1.8.0, or was hand-written without these fields.
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
 
 **Fix:** none required — behavior defaults to `guided`/`manual`, identical to before v1.8.0. Add
-`workflow.execution_mode`/`autonomy_level` to `.sdd/config.yml` explicitly if you want a
+`workflow.execution_mode`/`autonomy_level` to `.sdd-agentic-flow/config.yml` explicitly if you want a
 different default, or re-run `init --execution-mode <mode> --autonomy-level <level>` against a
 fresh project.
 
 ### `autonomy_combo`: `FAIL` "execution_mode=... cannot combine with autonomy_level=..."
 
-**Cause:** `.sdd/config.yml` sets `execution_mode: plan` or `execution_mode: guided` together
+**Cause:** `.sdd-agentic-flow/config.yml` sets `execution_mode: plan` or `execution_mode: guided` together
 with `autonomy_level: autonomous` — an invalid combination (a plan-only workflow has nothing to
 auto-advance into; `guided`'s entire point is step-by-step confirmation).
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
 
-**Fix:** edit `.sdd/config.yml` to either raise `execution_mode` to `apply`/`review`/`full`, or
+**Fix:** edit `.sdd-agentic-flow/config.yml` to either raise `execution_mode` to `apply`/`review`/`full`, or
 lower `autonomy_level` to `manual`/`supervised`.
 
 ### `autonomy_skills`: `WARN` "skill(s) do not support autonomy_level=..."
@@ -245,7 +245,7 @@ pinning it explicitly.
 
 ### `autonomy_config`: `FAIL` "workflow.execution_mode/autonomy_level has an invalid value"
 
-**Cause:** `.sdd/config.yml` sets `execution_mode`/`autonomy_level` to something outside the
+**Cause:** `.sdd-agentic-flow/config.yml` sets `execution_mode`/`autonomy_level` to something outside the
 documented values (a typo, e.g. `autonomous2`, or a value from a different field). Unlike the
 `WARN` case above, this is an explicit wrong value, not a missing one — `autonomy_combo` also
 reports `FAIL` ("not evaluated") in this case rather than silently checking against
@@ -271,7 +271,7 @@ never overwrites an existing file.
 ### `autonomy_loop_state`: `WARN` "loop state recorded pause=true / stop=true"
 
 **Cause:** a human (or an agent honoring an explicit stop request) set `pause: true` or
-`stop: true` in `.sdd/autonomy/loop-state.md` during a `supervised`/`autonomous` run.
+`stop: true` in `.sdd-agentic-flow/autonomy/loop-state.md` during a `supervised`/`autonomous` run.
 
 **Diagnose:** `sdd-agentic-flow context autonomy-state`.
 

@@ -1,7 +1,7 @@
 # Adopting in a brownfield repo
 
 `init` and `discover` are read-only with respect to your source code. They only write
-`.sdd/config.yml` and `.sdd/context/project-context.md`. Follow these steps to adopt
+`.sdd-agentic-flow/config.yml` and `.sdd-agentic-flow/context/project-context.md`. Follow these steps to adopt
 `sdd-agentic-flow` in a repository that already has code, tests, and conventions.
 
 ## 1. Run `init`
@@ -10,9 +10,9 @@
 npx sdd-agentic-flow init
 ```
 
-This writes `.sdd/config.yml` (your declared policy — project name, source type, workflow
+This writes `.sdd-agentic-flow/config.yml` (your declared policy — project name, source type, workflow
 defaults, quality gates, safety defaults) and auto-runs discovery, writing
-`.sdd/context/project-context.md`. Existing `.sdd/config.yml` files are preserved, never
+`.sdd-agentic-flow/context/project-context.md`. Existing `.sdd-agentic-flow/config.yml` files are preserved, never
 overwritten — safe to re-run.
 
 Use `init --interactive` if you want to set a specific agent target, language profile, or
@@ -20,7 +20,7 @@ feature profile instead of the defaults. See [configuration](../configuration.md
 
 ## 2. Read what `discover` found
 
-`.sdd/context/project-context.md` records signals it found in the repository — see
+`.sdd-agentic-flow/context/project-context.md` records signals it found in the repository — see
 [configuration](../configuration.md#project-context) for the full signal list. Sections worth
 checking for a brownfield adoption:
 

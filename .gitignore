@@ -1,7 +1,7 @@
 node_modules/
 npm-debug.log*
 .DS_Store
-.sdd/
+.sdd-agentic-flow/
 .specs/
 .agents/
 *.tgz
@@ -10,3 +10,5 @@ skill-creator-workspaces/
 # Local/private files
 .npmrc
 .local/
+
+.sdd/

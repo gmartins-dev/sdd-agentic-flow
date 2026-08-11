@@ -34,7 +34,7 @@ a user, without ever running `npm publish`:
   exact tarball `npm publish` would ship, then installs and runs it via
   `npx "file:<tarball>"` in a brand-new project directory with an isolated `HOME` — real npm
   package resolution and `bin` shim, not a shortcut. The sandbox directories are left in place
-  afterward so you can inspect what got written (e.g. `.agents/skills`, `.sdd/`); pass `--clean`
+  afterward so you can inspect what got written (e.g. `.agents/skills`, `.sdd-agentic-flow/`); pass `--clean`
   to remove them automatically. Run this before a release, or whenever you want to confirm a
   change survives the actual packaging boundary.
 

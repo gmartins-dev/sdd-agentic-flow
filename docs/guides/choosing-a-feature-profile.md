@@ -1,6 +1,6 @@
 # Choosing a feature profile
 
-`workflow.feature_profile` in `.sdd/config.yml` sizes SDD rigor to the scope of the
+`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` sizes SDD rigor to the scope of the
 work. See [feature profiles](../../shared/references/feature-profiles.md) for the full
 contract each value implies. Pick the value that fits the piece of work.
 

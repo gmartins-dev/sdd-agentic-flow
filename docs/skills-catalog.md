@@ -18,7 +18,7 @@ catalog cannot silently drop one.
 **When not to use:** Do not use to implement a feature, generate a specification for an already
 configured flow, change global defaults, install tools, or access external services.
 
-**Inputs:** Repository root and requested scope; existing `.sdd/config.yml` if present;
+**Inputs:** Repository root and requested scope; existing `.sdd-agentic-flow/config.yml` if present;
 optional project name, artifact location, and workflow preferences; an optional domain
 glossary request with explicit authorization. Required input kind: `config`.
 
@@ -44,7 +44,7 @@ installed pack are unclear.
 **When not to use:** Do not use to implement, review, create a PR, change files, or replace the
 candidate skill's instructions.
 
-**Inputs:** The requested outcome and available local SDD artifacts; `.sdd/config.yml` when
+**Inputs:** The requested outcome and available local SDD artifacts; `.sdd-agentic-flow/config.yml` when
 present; installed skill directories and relevant candidate `SKILL.md` files. Required input
 kind: `config`.
 
@@ -76,7 +76,7 @@ not decided.
 delegated to `sdd-create-specs`. Do not use once the problem and approach are already decided,
 for a single ready task, or for explaining an already-specified feature (`sdd-explain-me`).
 
-**Inputs:** The user's idea in whatever shape it currently exists; `.sdd/config.yml`,
+**Inputs:** The user's idea in whatever shape it currently exists; `.sdd-agentic-flow/config.yml`,
 `project-context.md`, and `domain-glossary.md` when present; relevant existing code or docs the
 idea touches. Required input kind: `config`.
 
@@ -112,7 +112,7 @@ brainstorming request. Do not proceed without repository-local configuration; us
 `setup-sdd-agentic-flow` first.
 
 **Inputs:** Source-item mode: the requested outcome and known constraints. Existing-code mode:
-an explicit, user-named scope — never a whole-repository scope. `.sdd/config.yml`; relevant
+an explicit, user-named scope — never a whole-repository scope. `.sdd-agentic-flow/config.yml`; relevant
 repository evidence (code, tests, existing decisions, prior SDD artifacts). Required input
 kinds: `config`, `source-item`.
 
@@ -142,7 +142,7 @@ implementation prompts for one or more tasks.
 implementation, make repository changes outside prompt artifacts, or guess missing
 requirements. Use `sdd-create-specs` first when the specification is incomplete.
 
-**Inputs:** `.sdd/config.yml`; a validated specification package and its acceptance criteria;
+**Inputs:** `.sdd-agentic-flow/config.yml`; a validated specification package and its acceptance criteria;
 optional task ordering, ownership boundaries, and target agent constraints. Required input
 kinds: `config`, `spec-package`.
 
@@ -171,7 +171,7 @@ artifact.
 only explains an existing package. Do not use before a spec package exists (`sdd-create-specs`
 first) or for an idea still being shaped (`sdd-brainstorm` first).
 
-**Inputs:** One feature identifier with an existing spec package; `.sdd/config.yml`, the
+**Inputs:** One feature identifier with an existing spec package; `.sdd-agentic-flow/config.yml`, the
 feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation;
 `project-context.md`/`domain-glossary.md` when present. Required input kinds: `config`,
 `spec-package`.
@@ -201,7 +201,7 @@ increment.
 validation, PR review, or a task whose identity, scope, or dependencies are ambiguous.
 
 **Inputs:** A single canonical task reference or explicit feature/task identifiers; repository
-SDD artifacts, relevant code, and `.sdd/config.yml`; optional task prompt or prior handoff, as
+SDD artifacts, relevant code, and `.sdd-agentic-flow/config.yml`; optional task prompt or prior handoff, as
 supporting evidence only. Required input kinds: `config`, `task-identity`.
 
 **Outputs:** `code-change+tdd-evidence`.
@@ -229,7 +229,7 @@ execution plan.
 requests, specification creation, PR work, or when dependencies and task identities cannot be
 resolved.
 
-**Inputs:** One feature identifier and optional explicit task subset; `.sdd/config.yml`,
+**Inputs:** One feature identifier and optional explicit task subset; `.sdd-agentic-flow/config.yml`,
 feature SDD artifacts, and repository state; user-approved concurrency/worktree constraints
 when implementation orchestration is requested. Required input kinds: `config`,
 `spec-package`.
@@ -258,7 +258,7 @@ configured gates before handoff.
 **When not to use:** Do not use to implement fixes, review an entire feature, approve a PR, or
 infer an ambiguous task identity.
 
-**Inputs:** One canonical task reference; `.sdd/config.yml`, the task's SDD artifacts, current
+**Inputs:** One canonical task reference; `.sdd-agentic-flow/config.yml`, the task's SDD artifacts, current
 diff, and configured validation commands. Required input kinds: `config`, `task-evidence`.
 
 **Outputs:** `check-report`.
@@ -285,7 +285,7 @@ preparation or creation.
 scope, to fix code, or to publish a PR by default.
 
 **Inputs:** One validated task reference, branch/head context, and task-check evidence;
-`.sdd/config.yml`, SDD artifacts, current diff, and repository PR conventions; explicit
+`.sdd-agentic-flow/config.yml`, SDD artifacts, current diff, and repository PR conventions; explicit
 confirmation when an external PR mutation is requested. Required input kinds: `config`,
 `task-evidence`.
 
@@ -310,7 +310,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 **When not to use:** Do not use to implement fixes, validate a whole feature, create a PR, or
 review a PR whose task scope cannot be resolved.
 
-**Inputs:** PR URL/number or local branch plus one task reference; `.sdd/config.yml`, task SDD
+**Inputs:** PR URL/number or local branch plus one task reference; `.sdd-agentic-flow/config.yml`, task SDD
 artifacts, diff, and available check evidence. Required input kinds: `config`, `pr-reference`.
 
 **Outputs:** `review-findings`.
@@ -337,7 +337,7 @@ findings on one task-scoped PR.
 sibling tasks, or automatic commits and pushes.
 
 **Inputs:** One task reference and a review report, PR findings, or user-supplied evidence;
-`.sdd/config.yml`, SDD artifacts, current diff, and configured validation commands. Required
+`.sdd-agentic-flow/config.yml`, SDD artifacts, current diff, and configured validation commands. Required
 input kinds: `config`, `pr-reference`, `review-findings`.
 
 **Outputs:** `fix-evidence`.
@@ -365,7 +365,7 @@ SDD, after task work is accumulated.
 **When not to use:** Do not use to implement code, repair findings, validate only one task,
 create a PR, or infer a feature identity from ambiguous branch names.
 
-**Inputs:** One feature identifier; `.sdd/config.yml`, feature context/spec/design/tasks
+**Inputs:** One feature identifier; `.sdd-agentic-flow/config.yml`, feature context/spec/design/tasks
 artifacts, accumulated implementation, and configured gates. Required input kinds: `config`,
 `spec-package`, `task-evidence`.
 
@@ -393,7 +393,7 @@ and publish a release.
 **When not to use:** Do not use to implement code, write a changelog entry from scratch, create
 a git tag, or run a publish command — this skill only checks readiness and reports gaps.
 
-**Inputs:** `.sdd/config.yml`, including any declared release conventions; the repository's
+**Inputs:** `.sdd-agentic-flow/config.yml`, including any declared release conventions; the repository's
 current version marker and changelog file; accumulated `check-report`/`validation-report`
 evidence for the work being released. Required input kind: `config`.
 

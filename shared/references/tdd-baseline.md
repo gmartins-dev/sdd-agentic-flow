@@ -73,6 +73,6 @@ Implementation reports record:
 
 ## Language profile
 
-Render human-facing prose according to `.sdd/config.yml`. Keep `RED`, `GREEN`,
+Render human-facing prose according to `.sdd-agentic-flow/config.yml`. Keep `RED`, `GREEN`,
 `REFACTOR`, `TDD`, `seam`, `public interface`, `behavior`, `test command`,
 `PASS`, `WARN`, `FAIL`, `Blocked`, `Partial`, and `Completed` canonical.

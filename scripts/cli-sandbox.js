@@ -8,7 +8,7 @@
 // like a first-time consumer would get it. This is the same pack->extract->run recipe already
 // proven in test/cli.test.js's tarball e2e tests, made runnable interactively outside the test
 // runner. Pass `--clean` to remove the resulting sandbox afterward; by default it's left in
-// place so you can inspect what got written (e.g. `.agents/skills`, `.sdd/`).
+// place so you can inspect what got written (e.g. `.agents/skills`, `.sdd-agentic-flow/`).
 
 const os = require('node:os');
 const path = require('node:path');

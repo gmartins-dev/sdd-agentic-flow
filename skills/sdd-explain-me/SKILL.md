@@ -2,7 +2,7 @@
 name: sdd-explain-me
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -33,14 +33,14 @@ Do not use to author or replace `spec.md` (normative), `design.md` (technical), 
 ## Inputs
 
 - One feature identifier with an existing spec package.
-- `.sdd/config.yml`, the feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation when it exists.
-- `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md`, when present.
+- `.sdd-agentic-flow/config.yml`, the feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation when it exists.
+- `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md`, when present.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first. If it is missing, ask the user to run `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `npx sdd-agentic-flow init`.
 2. Resolve exactly one feature and read its full spec package (`context.md`, `spec.md`, `design.md` when present, `tasks.md` when present) and any accumulated implementation relevant to it.
-3. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist, so the explanation uses the project's own vocabulary rather than inventing new terms.
+3. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, so the explanation uses the project's own vocabulary rather than inventing new terms.
 4. Write `.specs/features/<feature>/explanation.md` using `../sdd-agentic-flow-shared/templates/explanation.template.md`: problem, context/current state, what changes, how the new flow works, important concepts, decisions, key scenarios, what this does NOT change, how to verify, and a glossary.
 5. Cross-check every claim in the explanation against the spec package and code it describes; never state a decision or behavior the source artifacts do not support.
 6. Report the explanation's path and a short summary a reader could act on without opening the other artifacts.
@@ -62,4 +62,4 @@ Return the explanation's file path and a short summary, plus:
 
 ## Autonomy
 
-Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd/config.yml`) — never `autonomous`. It produces an explanation for a human reader, not a step in the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. It produces an explanation for a human reader, not a step in the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

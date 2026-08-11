@@ -27,12 +27,12 @@ that order, with no additional top-level sections. Each one has one job:
   infer an ambiguous task identity."
 - **`## Inputs`**: the concrete inputs the skill needs before it can start, as a short list, not
   prose. Distinguish required from optional inputs.
-  _Minimal example:_ "One canonical task reference. `.sdd/config.yml`, the task's SDD artifacts,
+  _Minimal example:_ "One canonical task reference. `.sdd-agentic-flow/config.yml`, the task's SDD artifacts,
   current diff, and configured validation commands."
 - **`## Workflow`**: a numbered sequence, each step an action plus its stop condition. Steps
   read shared references explicitly by path rather than restating their content (see
   [evidence-standard.md](evidence-standard.md) below for the most duplicated example of this).
-  _Minimal example:_ "1. Read `.sdd/config.yml` first. If it is missing, ask the user to run
+  _Minimal example:_ "1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run
   `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy."
 - **`## Safety`**: what the skill will never do by default (mutate Git, publish, install, cross
   scope) and which shared safety reference governs it.

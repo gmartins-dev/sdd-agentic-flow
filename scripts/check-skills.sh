@@ -11,7 +11,7 @@ skills=(setup-sdd-agentic-flow sdd-create-specs sdd-create-prompts sdd-implement
 for skill in "${skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
-  for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
+  for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd-agentic-flow/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
   if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
@@ -21,7 +21,7 @@ done
 
 route_file="skills/sdd-route/SKILL.md"
 test -f "$route_file"
-for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth'; do
+for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd-agentic-flow/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth'; do
   grep -F -q -- "$marker" "$route_file"
 done
 
@@ -34,7 +34,7 @@ new_skills=(sdd-brainstorm sdd-explain-me sdd-release)
 for skill in "${new_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
-  for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd/config.yml' 'workflow-safety.md' 'npx sdd-agentic-flow init'; do
+  for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd-agentic-flow/config.yml' 'workflow-safety.md' 'npx sdd-agentic-flow init'; do
     grep -F -q -- "$marker" "$file"
   done
 done

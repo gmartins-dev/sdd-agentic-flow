@@ -2,7 +2,7 @@
 name: sdd-release
 description: Check whether a project or feature is ready to tag and publish a release — version consistency, changelog presence, and configured release checks. Use when the user asks if a release is ready; never tags, publishes, or pushes.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: core
 extends: null
 requires: [config]
@@ -37,20 +37,20 @@ skill consumes rather than re-derives.
 
 ## Inputs
 
-- `.sdd/config.yml` — there is no dedicated `release` section today, so this means whatever
+- `.sdd-agentic-flow/config.yml` — there is no dedicated `release` section today, so this means whatever
   release conventions (version-bearing files, the changelog path, configured build/test/lint
   commands) the project already expresses through its existing structure, not a config field
   this skill requires to be declared.
 - The repository's current version marker (for example `package.json`, a `VERSION` file, or
-  whatever `.sdd/config.yml` declares) and its changelog file.
+  whatever `.sdd-agentic-flow/config.yml` declares) and its changelog file.
 - Accumulated `check-report`/`validation-report` evidence for the work being released.
-- `.sdd/context/project-context.md`, when present, for repository conventions (primary
+- `.sdd-agentic-flow/context/project-context.md`, when present, for repository conventions (primary
   language, build/package tooling) that shape which version marker and checks are relevant.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow`
-   or `npx sdd-agentic-flow init`. Read `.sdd/context/project-context.md` when it exists, for
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow`
+   or `npx sdd-agentic-flow init`. Read `.sdd-agentic-flow/context/project-context.md` when it exists, for
    the repository's primary language and build/package tooling. Read any declared release
    conventions; when none are declared, fall back to the most common convention this project
    already uses (a single version-bearing manifest and a changelog file at the repository
@@ -88,7 +88,7 @@ session or agent boundary.
 ## Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in
-`.sdd/config.yml`). In `autonomous` mode, a `ready` decision still never triggers a tag or
+`.sdd-agentic-flow/config.yml`). In `autonomous` mode, a `ready` decision still never triggers a tag or
 publish — those remain human actions outside this skill's scope, regardless of autonomy level.
 Advancing autonomously past this skill requires a release-readiness-report with status `ready`
 and every configured check satisfied; a version mismatch, missing changelog content, or failed

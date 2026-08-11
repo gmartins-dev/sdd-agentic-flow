@@ -16,16 +16,16 @@ npx sdd-agentic-flow install core --plan                 # dry run: show what wo
 
 ## Ownership boundary
 
-The scope only applies to what `install` copies (skills). It never applies to `.sdd/config.yml`
-or `.sdd/context/project-context.md`, which are project policy, always created by
+The scope only applies to what `install` copies (skills). It never applies to `.sdd-agentic-flow/config.yml`
+or `.sdd-agentic-flow/context/project-context.md`, which are project policy, always created by
 `init`/`discover`, and always live in the project regardless of scope.
 
 | Category | Lives in | Owner |
 | --- | --- | --- |
 | Installed skills                   | user-local (default) / project (opt-in) | user / team  |
 | CLI installation config            | user-local                             | user         |
-| `.sdd/config.yml` (project policy) | project                                | team         |
-| `.sdd/context/project-context.md`  | project                                | team         |
+| `.sdd-agentic-flow/config.yml` (project policy) | project                                | team         |
+| `.sdd-agentic-flow/context/project-context.md`  | project                                | team         |
 | `.specs/features/**`               | project                                | team         |
 
 ## Agent Integration Layer
@@ -52,7 +52,7 @@ Restrict to a single agent with `--agent`:
 npx sdd-agentic-flow install core --agent claude-code
 ```
 
-If `.sdd/config.yml` declares a recognized `agent.target` (`codex`, `cursor`, `claude-code`, or
+If `.sdd-agentic-flow/config.yml` declares a recognized `agent.target` (`codex`, `cursor`, `claude-code`, or
 `vscode-copilot`), `install` uses it as the default `--agent` value when the flag is omitted.
 
 **Agents not covered:** if `--agent` names something the CLI does not recognize, `install`

@@ -2,13 +2,38 @@
 
 ## What is always preserved
 
-`install` never touches `.sdd/config.yml`. `uninstall` only removes it when explicitly asked
+`install` never touches `.sdd-agentic-flow/config.yml`. `uninstall` only removes it when explicitly asked
 (`--include-config` or `--full`); its default (`--apply` with neither flag) leaves it alone too.
 `.specs/features/**` is never removed by either command, under any flag combination. See
 [uninstall](uninstall.md) for the exact preservation list, including the `--full` reset for a
 clean reinstall. Re-running `install <pack>` is always safe: it is idempotent, and only writes
 files that are missing (`copyIfMissing`); it never overwrites an existing file. This holds
 across every version.
+
+## Migrating from `.sdd/` to `.sdd-agentic-flow/` (v1.10.0+)
+
+Before v1.10.0, toolkit state lived under `.sdd/`. The canonical path is now
+`.sdd-agentic-flow/` with the **same inner layout**:
+
+| Before (legacy) | After (v1.10.0+) |
+| --- | --- |
+| `.sdd/config.yml` | `.sdd-agentic-flow/config.yml` |
+| `.sdd/context/project-context.md` | `.sdd-agentic-flow/context/project-context.md` |
+| `.sdd/autonomy/loop-state.md` | `.sdd-agentic-flow/autonomy/loop-state.md` |
+| `.sdd/snapshots/` | `.sdd-agentic-flow/snapshots/` |
+| `.sdd/reports/` | `.sdd-agentic-flow/reports/` |
+
+**Steps:**
+
+```bash
+sdd-agentic-flow migrate --plan    # preview
+sdd-agentic-flow migrate --apply   # move .sdd/ → .sdd-agentic-flow/
+sdd-agentic-flow doctor
+```
+
+If both `.sdd/` and `.sdd-agentic-flow/` exist, the CLI does not merge them — resolve manually,
+then remove the leftover directory. Fresh `init` on v1.10.0+ creates `.sdd-agentic-flow/` only.
+See [sdd-path-migrate golden flow](../examples/golden/sdd-path-migrate/walkthrough.md).
 
 ## When is re-running `install` safe?
 

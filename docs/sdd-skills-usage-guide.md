@@ -13,7 +13,7 @@ npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when you want to choose project, agent, language,
-source, flow, and safety settings. The CLI writes `.sdd/config.yml` and keeps
+source, flow, and safety settings. The CLI writes `.sdd-agentic-flow/config.yml` and keeps
 an existing configuration unchanged.
 
 Use `npx sdd-agentic-flow list` to inspect available packs:
@@ -30,7 +30,7 @@ Use `npx sdd-agentic-flow list` to inspect available packs:
 
 ## 2. Read the project configuration
 
-`.sdd/config.yml` records the project name, branch, agent target, human output
+`.sdd-agentic-flow/config.yml` records the project name, branch, agent target, human output
 language, source type, default flow, and safety gates. Read it before asking an
 agent to use a skill. The agent should follow the file and stop when the
 request conflicts with its configured gates.
@@ -76,14 +76,14 @@ Recommended prompts:
 
 ```text
 Use the installed `sdd-create-specs` skill for this source item.
-Follow `.sdd/config.yml`. Create or update the feature specification only.
+Follow `.sdd-agentic-flow/config.yml`. Create or update the feature specification only.
 Do not implement code or create commits. Stop if requirements are ambiguous.
 Report evidence, open questions, and limitations.
 ```
 
 ```text
 Use the installed `sdd-implement-task` skill for the approved task below.
-Follow the task contract and `.sdd/config.yml`.
+Follow the task contract and `.sdd-agentic-flow/config.yml`.
 Change only the files required by this task. Run the required checks.
 Do not commit, push, merge, deploy, or publish. Report evidence and limitations.
 ```
@@ -137,7 +137,7 @@ at the relevant skill and ask it to follow the project configuration.
 
 ```text
 Use `.agents/skills/sdd-create-specs/SKILL.md` for this feature.
-Follow `.sdd/config.yml`, work in `plan` mode, and leave the final decision to me.
+Follow `.sdd-agentic-flow/config.yml`, work in `plan` mode, and leave the final decision to me.
 ```
 
 ### Claude Code
@@ -159,7 +159,7 @@ Work in `apply` mode only after I authorize the local changes. Do not commit or 
 
 ```text
 Use the installed Markdown skill that matches this step.
-Read `.sdd/config.yml` first. Keep changes local, preserve unrelated files,
+Read `.sdd-agentic-flow/config.yml` first. Keep changes local, preserve unrelated files,
 stop on ambiguity, and provide evidence before claiming completion.
 ```
 
@@ -196,8 +196,8 @@ npx sdd-agentic-flow uninstall --apply --full
 
 Uninstall removes known toolkit skills. It preserves source code, specs,
 reports, snapshots, and unknown paths. `--include-config` also removes
-`.sdd/config.yml`. `--full` is a complete reset for a clean reinstall: it also
-removes `.sdd/context/project-context.md`, `.sdd/snapshots`, and `.sdd/reports`
+`.sdd-agentic-flow/config.yml`. `--full` is a complete reset for a clean reinstall: it also
+removes `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports`
 (never `.specs/features`). See [uninstall](uninstall.md).
 
 ## 10. Safety boundaries

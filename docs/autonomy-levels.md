@@ -1,6 +1,6 @@
 # Autonomy levels
 
-`workflow.autonomy_level` in `.sdd/config.yml` is a **new axis orthogonal to**
+`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml` is a **new axis orthogonal to**
 [execution modes](execution-modes.md) (`plan`/`guided`/`apply`/`review`/`full`). It does not
 replace or duplicate them. `execution_mode` answers "what is a skill authorized to do";
 `autonomy_level` answers "does a skill need a human between it and the next one." Every existing
@@ -32,7 +32,7 @@ exact same outcome as `manual`: control returns to a human.
 `plan` and `guided` never combine with `autonomous`: a plan-only workflow has nothing to
 auto-advance into, and step-by-step confirmation is the entire point of `guided`. `doctor
 --autonomy` flags either combination as `FAIL`; `init --execution-mode --autonomy-level` rejects
-it before writing `.sdd/config.yml`.
+it before writing `.sdd-agentic-flow/config.yml`.
 
 ## The 7 guardrails
 
@@ -56,7 +56,7 @@ workflow:
 ```
 
 `init --execution-mode <mode> --autonomy-level <level>` sets both at creation time (also
-available via `init --interactive`). An `.sdd/config.yml` predating v1.8.0 that has neither field
+available via `init --interactive`). An `.sdd-agentic-flow/config.yml` predating v1.8.0 that has neither field
 is not an error. `doctor --autonomy` reports `WARN` and both default to `guided`/`manual`,
 identical to today's behavior. See [configuration](configuration.md).
 
@@ -79,7 +79,7 @@ workflow:
   level, `workflow.autonomy_budget`, and the last recorded loop state. `--verbose` also lists all
   7 guardrails and what each one gates.
 - `context autonomy-state`: read-only report of the current configuration and the last recorded
-  `.sdd/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
+  `.sdd-agentic-flow/autonomy/loop-state.md`, the execution-state file an agent maintains while running a
   `supervised`/`autonomous` workflow.
 - `autonomous-resume [--force] [--override-guard=<1-7> --reason="..."]`: clear a `pause=true`/
   `stop=true` recorded in `loop-state.md` and append an audited log entry, so the invoking agent

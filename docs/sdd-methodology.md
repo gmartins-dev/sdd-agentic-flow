@@ -47,7 +47,7 @@ This toolkit does not measure token savings or speed multipliers. A token econom
 
 ## With this toolkit
 
-1. **CLI** (`npx sdd-agentic-flow`) creates `.sdd/config.yml`, installs Markdown skills, and runs `doctor`.
+1. **CLI** (`npx sdd-agentic-flow`) creates `.sdd-agentic-flow/config.yml`, installs Markdown skills, and runs `doctor`.
 2. **Skills** (14 public) encode each phase as a capability contract with safety defaults.
 3. **Baselines** condense TLC for planning and TDD for implementation; see [baselines](baselines.md).
 

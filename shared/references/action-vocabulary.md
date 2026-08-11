@@ -14,7 +14,7 @@ step).
     acting on it.
   - Authority: read-only; never creates, edits, or deletes anything.
   - Output: loaded content available to inform the next step (for example, reading
-    `.sdd/config.yml` before using its artifact paths).
+    `.sdd-agentic-flow/config.yml` before using its artifact paths).
 - **Write**
   - Intent: record a decision or result as a durable artifact.
   - Authority: create or update exactly the file(s) the current step is scoped to; never touch
@@ -47,7 +47,7 @@ step).
   - Intent: pause for an explicit authorization or a missing decision only a human can make.
   - Authority: cannot proceed past the pause point without an explicit human answer.
   - Output: a recorded decision or authorization that unblocks the next step (for example,
-    asking before creating `.sdd/context/domain-glossary.md`).
+    asking before creating `.sdd-agentic-flow/context/domain-glossary.md`).
 - **Summarize**
   - Intent: condense findings, evidence, or a decision into a short report.
   - Authority: read-only against the source material; adds no new claims beyond what was

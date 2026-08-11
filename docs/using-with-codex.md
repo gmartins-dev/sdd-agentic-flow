@@ -1,6 +1,6 @@
 # Using with Codex CLI
 
-Install a pack, keep `.sdd/config.yml` in project context, and select a skill explicitly.
+Install a pack, keep `.sdd-agentic-flow/config.yml` in project context, and select a skill explicitly.
 
 ```bash
 npx sdd-agentic-flow install core
@@ -14,7 +14,7 @@ skill directory, which it discovers by searching parent directories). Add
 
 ```text
 Use the installed sdd-create-specs skill to turn this source item into an SDD feature spec.
-Follow .sdd/config.yml. Do not implement code or create commits. Stop if requirements are ambiguous. Report evidence and limitations.
+Follow .sdd-agentic-flow/config.yml. Do not implement code or create commits. Stop if requirements are ambiguous. Report evidence and limitations.
 ```
 
 Codex remains responsible for requesting authorization before local mutations and must not commit, push, merge, deploy, or publish by default.

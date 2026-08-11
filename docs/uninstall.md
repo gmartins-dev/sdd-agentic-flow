@@ -14,13 +14,13 @@ sdd-agentic-flow uninstall --apply --include-config
 sdd-agentic-flow uninstall --apply --full
 ```
 
-`--apply` removes only official skill directories under `.agents/skills` and `sdd-agentic-flow-shared`. It preserves `.specs/features`, `.sdd/reports`, `.sdd/snapshots`, `.sdd/config.yml`, source code, and unknown paths. `--include-config` additionally removes `.sdd/config.yml`; use it only when retiring the toolkit configuration. Any local edits inside an official toolkit skill directory are removed with that directory.
+`--apply` removes only official skill directories under `.agents/skills` and `sdd-agentic-flow-shared`. It preserves `.specs/features`, `.sdd-agentic-flow/reports`, `.sdd-agentic-flow/snapshots`, `.sdd-agentic-flow/config.yml`, source code, and unknown paths. `--include-config` additionally removes `.sdd-agentic-flow/config.yml`; use it only when retiring the toolkit configuration. Any local edits inside an official toolkit skill directory are removed with that directory.
 
 ## Full reset before a clean reinstall
 
 `--apply --full` is the complete-uninstall path for testing or re-onboarding from a blank
-slate. It implies `--include-config` and additionally removes `.sdd/context/project-context.md`,
-`.sdd/snapshots`, and `.sdd/reports`, all regenerable local state. **`.specs/features` is never
+slate. It implies `--include-config` and additionally removes `.sdd-agentic-flow/context/project-context.md`,
+`.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports`, all regenerable local state. **`.specs/features` is never
 removed, by any flag combination**, in any scope: it holds hand-authored specs, the same
 invariant as source code. If you also want those gone, delete them yourself
 (`rm -rf .specs/features`). That is a deliberate, manual step the CLI will not take for you.

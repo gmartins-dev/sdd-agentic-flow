@@ -1,6 +1,6 @@
 # Feature profiles
 
-`workflow.feature_profile` in `.sdd/config.yml` adaptively sizes SDD rigor to the scope of the
+`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` adaptively sizes SDD rigor to the scope of the
 work. Skills that read this value scale specification depth, task granularity, and evidence
 rigor accordingly; the underlying TLC and TDD baselines never change, only how much of them is
 invoked explicitly. Unset or unrecognized values fall back to `medium_feature` behavior.

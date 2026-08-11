@@ -1,6 +1,6 @@
 # Autonomy guardrails
 
-`workflow.autonomy_level` in `.sdd/config.yml` is a **new axis orthogonal to** `workflow.execution_mode`
+`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml` is a **new axis orthogonal to** `workflow.execution_mode`
 (`plan`/`guided`/`apply`/`review`/`full`, see [execution modes](../../docs/execution-modes.md)).
 `execution_mode` answers "what is a skill authorized to do"; `autonomy_level` answers "does a
 skill need a human between it and the next one." Neither replaces the other, and neither changes
@@ -49,15 +49,15 @@ completion as license to invoke the next skill.
    (see the main SDD flow diagram in `README.md`); a guardrail failure here blocks skipping or
    reversing a step, e.g. advancing straight from `sdd-create-specs` to `sdd-pr-review`.
 6. **Resource sufficiency** — the configured budget (`workflow.autonomy_budget` in
-   `.sdd/config.yml`: `max_iterations`, `max_tokens`, `max_runtime_hours`) is not exhausted, and
+   `.sdd-agentic-flow/config.yml`: `max_iterations`, `max_tokens`, `max_runtime_hours`) is not exhausted, and
    `pause_on_warning` triggers a stop, not just a warning, once remaining budget drops below 20%.
 7. **Human override gate** — no `pause: true` or `stop: true` is recorded in
-   `.sdd/autonomy/loop-state.md`. This is the one guardrail that is not evaluated automatically by
+   `.sdd-agentic-flow/autonomy/loop-state.md`. This is the one guardrail that is not evaluated automatically by
    construction — it exists specifically so a human can halt an in-flight autonomous run by
    editing state, without needing to kill a process.
 
 If any guardrail fails, the agent stops, records the failing guardrail and its reason in
-`.sdd/autonomy/loop-state.md`, and waits for a human to resolve it. The human fixes the underlying
+`.sdd-agentic-flow/autonomy/loop-state.md`, and waits for a human to resolve it. The human fixes the underlying
 cause and re-runs the skill, or runs `sdd-agentic-flow autonomous-resume`.
 
 ## `autonomy_profile` frontmatter
@@ -84,7 +84,7 @@ autonomy_profile:
 `scripts/check-skills.sh` validates that every installed skill declares `autonomy_profile` and
 that `supported_levels` is a subset of `{manual, supervised, autonomous}`.
 
-## `.sdd/autonomy/loop-state.md`
+## `.sdd-agentic-flow/autonomy/loop-state.md`
 
 The execution-state file an agent maintains while running a workflow under `supervised` or
 `autonomous`. It is the "memory of the loop": an agent (or a human) can read it to resume from the

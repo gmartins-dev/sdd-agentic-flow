@@ -2,7 +2,7 @@
 name: sdd-pr-review
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: pr
 extends: sdd-create-pr
 requires: [config, pr-reference]
@@ -33,11 +33,11 @@ Do not use to implement fixes, validate a whole feature, create a PR, or review 
 ## Inputs
 
 - PR URL/number or local branch plus one task reference.
-- `.sdd/config.yml`, task SDD artifacts, diff, and available check evidence.
+- `.sdd-agentic-flow/config.yml`, task SDD artifacts, diff, and available check evidence.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve the task, base, and head context.
+1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve the task, base, and head context.
 2. Review acceptance criteria, changed behavior, tests, scope boundaries, and configured quality/security expectations.
 3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Separate blocking defects from non-blocking observations; do not invent CI results.
 4. Produce a Markdown-first findings ledger with severity, file/line, evidence, required remediation, and re-review focus.
@@ -52,4 +52,4 @@ Return `approved`, `changes requested`, `blocked`, or `inconclusive`, plus the s
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). Autonomy only governs whether the workflow *advances* after this skill completes (to `sdd-pr-fix` on accepted findings, or to `sdd-validation` when ready) — this skill still never corrects a finding automatically, in any autonomy level. Advancing in `autonomous` mode requires review-findings present, every finding evidence-backed, and no unresolved blocking finding. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). Autonomy only governs whether the workflow *advances* after this skill completes (to `sdd-pr-fix` on accepted findings, or to `sdd-validation` when ready) — this skill still never corrects a finding automatically, in any autonomy level. Advancing in `autonomous` mode requires review-findings present, every finding evidence-backed, and no unresolved blocking finding. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

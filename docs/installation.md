@@ -14,7 +14,7 @@ npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when selecting initial project defaults. `init` always writes
-project-local configuration (`.sdd/config.yml`, `.sdd/context/project-context.md`). That part
+project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`). That part
 is unaffected by install scope.
 
 `install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill

@@ -6,7 +6,7 @@ for each of the 14 public skills.
 
 See the [invocation model](invocation-model.md) for orchestration guidance. `sdd-route` is read-only: it recommends a local next skill but does not invoke it.
 
-Each public skill reads `.sdd/config.yml`, uses the internal TLC baseline, and leaves
+Each public skill reads `.sdd-agentic-flow/config.yml`, uses the internal TLC baseline, and leaves
 final authority with the user. Implementation, checking, validation, and prompt skills
 also use the [TDD baseline](tdd-baseline.md) for code tasks. Skills are
 authored/normalized with `$skill-creator`; users do not need that development-time tool.

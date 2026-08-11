@@ -1,8 +1,8 @@
 ---
 name: sdd-create-prompts
-description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd/config.yml first and do not implement the work.
+description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -32,17 +32,17 @@ Do not use to create a specification from scratch, execute implementation, make 
 
 ## Inputs
 
-- `.sdd/config.yml`.
+- `.sdd-agentic-flow/config.yml`.
 - A validated specification package and its acceptance criteria.
 - Optional task ordering, ownership boundaries, and target agent constraints.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
 3. Read `../sdd-agentic-flow-shared/references/tdd-baseline.md`, `../sdd-agentic-flow-shared/references/task-slicing.md`, and `../sdd-agentic-flow-shared/references/workflow-safety.md` before producing prompts.
-4. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist.
-5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd/prompts`.
+4. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist.
+5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
 6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
 7. For code tasks, require behavior, public seam, test strategy, expected RED/GREEN commands, refactor scope, and TDD limitations.
 8. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands.
@@ -61,4 +61,4 @@ Return the prompt artifact paths plus a compact mapping of prompt to requirement
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-implement-task` or `sdd-implement-multi` requires prompts.md present with a paste-ready prompt for every task and no ambiguous task boundary; missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-implement-task` or `sdd-implement-multi` requires prompts.md present with a paste-ready prompt for every task and no ambiguous task boundary; missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

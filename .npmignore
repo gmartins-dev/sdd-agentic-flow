@@ -4,7 +4,7 @@ node_modules/
 *.log
 *.tgz
 .npmrc
-.sdd/
+.sdd-agentic-flow/
 .specs/
 .agents/
 skill-creator-workspaces/

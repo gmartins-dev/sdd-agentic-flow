@@ -7,7 +7,7 @@ or an agent swap does not depend on the invoking agent remembering to ask for it
 ## When a skill writes `handoff.md`
 
 A skill writes or updates `.specs/features/<feature>/handoff.md` (or the path convention
-`.sdd/config.yml` declares) only when work on a feature or task is paused before it reaches a
+`.sdd-agentic-flow/config.yml` declares) only when work on a feature or task is paused before it reaches a
 terminal state (`pass`/`ready`, per [evidence-standard.md](evidence-standard.md)'s `Status:`
 field) and is likely to resume in a different session, with a different agent, or after a human
 decision:
@@ -24,7 +24,7 @@ Do not write `handoff.md` when a skill completes with a terminal `Status:` and n
 The produced artifact (`check-report`, `validation-report`, `pr-package`) is sufficient
 continuity on its own. A redundant `handoff.md` would only drift out of sync with it.
 
-## Relationship to `.sdd/autonomy/loop-state.md`
+## Relationship to `.sdd-agentic-flow/autonomy/loop-state.md`
 
 `handoff.md` and `loop-state.md` serve different scopes and must not duplicate the same facts:
 
@@ -38,7 +38,7 @@ continuity on its own. A redundant `handoff.md` would only drift out of sync wit
 When both exist for the same paused work, `handoff.md`'s `## Current state` and `## Blockers`
 sections reference the relevant `loop-state.md` entry by skill name and timestamp instead of
 restating its content. For example: "Last recorded state: `sdd-implement-task` (completed),
-guardrail 3 failed. See `.sdd/autonomy/loop-state.md`." A skill running under `autonomy_level:
+guardrail 3 failed. See `.sdd-agentic-flow/autonomy/loop-state.md`." A skill running under `autonomy_level:
 manual` (no `loop-state.md` in use) omits that reference and describes the state directly.
 
 ## What belongs in each `handoff.template.md` section

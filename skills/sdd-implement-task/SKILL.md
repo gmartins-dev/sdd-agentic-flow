@@ -2,7 +2,7 @@
 name: sdd-implement-task
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
@@ -33,13 +33,13 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 ## Inputs
 
 - A single canonical task reference or explicit feature and task identifiers.
-- Repository SDD artifacts, relevant code, and `.sdd/config.yml`.
+- Repository SDD artifacts, relevant code, and `.sdd-agentic-flow/config.yml`.
 - Optional task prompt or prior handoff, treated as supporting evidence only.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
-2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one task from the configured SDD source. Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one task from the configured SDD source. Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict.
 4. Identify the behavior, public seam, test strategy, expected observable result, and narrowest test command. Stop when the seam is unclear.
 5. Use one vertical slice at a time: produce RED when practical, implement the smallest change for GREEN, then refactor only after GREEN.
@@ -56,4 +56,4 @@ Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no c
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-task-check` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-task-check` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

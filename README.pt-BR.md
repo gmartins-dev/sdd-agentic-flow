@@ -10,7 +10,7 @@ Specs estruturadas, limites claros e governança humana:
 
 - **Skills com contrato de capacidade:** skills Markdown sobre baselines TLC e TDD condensados.
 - **Dimensionamento adaptativo:** perfis de feature com contexto de projeto auto-descoberto opcional.
-- **Zero footprint por padrão:** instalação user-local; `.sdd/config.yml` só quando você cria.
+- **Zero footprint por padrão:** instalação user-local; `.sdd-agentic-flow/config.yml` só quando você cria.
 - **Humano no loop:** o toolkit estrutura o trabalho do agente; você mantém a autoridade final de revisão.
 - **Agnóstico de linguagem:** a CLI roda em Node.js >= 22; seu projeto não precisa ser Node.
 
@@ -28,7 +28,20 @@ Você delega uma tarefa. O agente pula para o código, mistura limites e marca t
 | PR perde rastreabilidade com a feature | `sdd-create-pr`, `sdd-pr-review` e `sdd-pr-fix` |
 | Release sai sem checagem de versão ou changelog | `sdd-release` (sob demanda, após validação) |
 
-Veja [por que o toolkit existe](docs/why-this-exists.md).
+Veja [por que o toolkit existe](docs/why-this-exists.md). Para o modelo mental das quatro camadas (Prompt → Context → Harness → Loop + SDD), leia [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
+
+## Além dos prompts
+
+A maioria das ferramentas para agentes para em prompts melhores. O **sdd-agentic-flow** adiciona camadas que prompt sozinho não sustenta:
+
+| Camada | Papel em uma linha |
+| --- | --- |
+| Prompt | Instruções por skill |
+| Context | Specs + contexto de projeto + config |
+| Harness | Modos, contratos, safety, evidência |
+| Loop | Autonomia, guardrails, loop-state, resume |
+
+**SDD** define o que é “pronto” antes da implementação. A CLI instala e valida; seu agente executa. Veja o [doc de modelo mental](docs/sdd-agentic-flow-model.md).
 
 ## A solução
 
@@ -43,8 +56,8 @@ Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linea
 | Limites de tarefa | Specs, prompts de tarefa e `sdd-task-check` por fatia |
 | Rastreabilidade | Spec → prompt → código → pacote de PR em uma cadeia |
 | Evidência antes de concluir | TDD baseline, check reports, validation reports |
-| Entrada mais clara para o agente | Specs escritas e `.sdd/config.yml` em vez de repetir contexto no chat |
-| Trabalho assíncrono | Artefatos versionados em `.specs/` e `.sdd/` |
+| Entrada mais clara para o agente | Specs escritas e `.sdd-agentic-flow/config.yml` em vez de repetir contexto no chat |
+| Trabalho assíncrono | Artefatos versionados em `.specs/` e `.sdd-agentic-flow/` |
 | Setup reversível | `uninstall --plan`, escopo de instalação explícito, [modelo de confiança](docs/trust-model.md) |
 
 > [!NOTE]
@@ -60,7 +73,7 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Isso cria `.sdd/config.yml`, instala skills e valida o setup. Depois: invoque `sdd-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. Depois: invoque `sdd-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
 Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md) e [configuração](docs/configuration.md).
 
@@ -101,13 +114,20 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 | Project context | Ciclo `discover` / `context` | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | Loop de PR | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
 | Migração de versão | Caminho v0.8.0 → v0.9.0 | [version migration](examples/golden/version-migration/walkthrough.md) |
+| Rename legado | `.sdd/` → `.sdd-agentic-flow/` | [sdd-path-migrate](examples/golden/sdd-path-migrate/walkthrough.md) |
+| Autonomia AUTO-001 | Idea → spec com config autônoma | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
+| Autonomia AUTO-002 | Cadeia spec → validate | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
+| Autonomia AUTO-003 | Guardrail pause → resume | [autonomy-guardrail-pause-resume](examples/golden/autonomy-guardrail-pause-resume/walkthrough.md) |
+| Autonomia AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
+| Autonomia AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta.
+O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. Os fluxos de autonomia comprovam contratos estáticos do CLI — não orquestração LLM ao vivo.
 
 ## Saiba mais
 
 | Tópico | Doc |
 | --- | --- |
+| Modelo mental (4 camadas + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
 | Metodologia SDD | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Arquitetura | [docs/architecture.md](docs/architecture.md) |
 | As 14 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |

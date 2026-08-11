@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.9.2
+  version: 1.10.0
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
@@ -33,12 +33,12 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 ## Inputs
 
 - One canonical task reference.
-- `.sdd/config.yml`, the task's SDD artifacts, current diff, and configured validation commands.
+- `.sdd-agentic-flow/config.yml`, the task's SDD artifacts, current diff, and configured validation commands.
 
 ## Workflow
 
-1. Read `.sdd/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve exactly one task.
-2. Read `.sdd/context/project-context.md` and `.sdd/context/domain-glossary.md` when they exist. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
+1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve exactly one task.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
 3. Check that code tasks identify a behavior and public seam, use behavior-focused tests, record executed commands, and explain missing RED evidence.
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified.
 5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands not run and why; never turn missing evidence into a pass.
@@ -54,4 +54,4 @@ Return task identity, criterion-to-evidence summary, executed checks, scope find
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd/config.yml`). In `autonomous` mode, advancing to `sdd-create-pr` or `sdd-validation` requires a check-report with status PASS and every configured gate satisfied; an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-create-pr` or `sdd-validation` requires a check-report with status PASS and every configured gate satisfied; an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

@@ -8,7 +8,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | --- | --- |
 | [installation.md](installation.md) | First install, pack selection, re-running install safely |
 | [installation-scope.md](installation-scope.md) | Choosing `--scope user` vs `--scope project` |
-| [configuration.md](configuration.md) | Editing `.sdd/config.yml`, project context, autonomy fields |
+| [configuration.md](configuration.md) | Editing `.sdd-agentic-flow/config.yml`, project context, autonomy fields |
 | [environment-compatibility.md](environment-compatibility.md) | Node.js version, OS, shell requirements |
 | [uninstall.md](uninstall.md) | Removing installed skills and optional config |
 | [upgrading.md](upgrading.md) | Updating the CLI and handling skill contract changes |
@@ -17,6 +17,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 
 | Doc | When to read |
 | --- | --- |
+| [sdd-agentic-flow-model.md](sdd-agentic-flow-model.md) | One-page mental model: 4 layers + SDD, glossary, control map |
 | [sdd-methodology.md](sdd-methodology.md) | What SDD means in this toolkit and why specs help agents |
 | [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) | Running the full SDD chain with coding agents |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |

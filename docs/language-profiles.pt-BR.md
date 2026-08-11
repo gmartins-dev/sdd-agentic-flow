@@ -26,7 +26,7 @@ sdd-agentic-flow init --en
 sdd-agentic-flow init --br
 ```
 
-O perfil padrão é `en-US`. O `init` não sobrescreve `.sdd/config.yml`
+O perfil padrão é `en-US`. O `init` não sobrescreve `.sdd-agentic-flow/config.yml`
 existente. Altere esse arquivo deliberadamente para mudar o perfil do projeto.
 
 Configuração gerada:

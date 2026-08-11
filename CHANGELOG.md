@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.10.0
+
+**Breaking change — toolkit path rename.** Canonical toolkit state moves from `.sdd/` to
+`.sdd-agentic-flow/` (same inner tree: `config.yml`, `context/`, `autonomy/`, `snapshots/`,
+`reports/`). `.specs/features/` is unchanged. The CLI no longer reads legacy `.sdd/`; use
+`sdd-agentic-flow migrate --apply` to move an existing tree atomically. `doctor` warns when
+`.sdd/` exists without `.sdd-agentic-flow/`. New `scripts/check-sdd-paths.sh` gate in
+`npm run check`.
+
+**P0 coherence (same release):** new [mental model doc](docs/sdd-agentic-flow-model.md) (four
+layers + SDD), README "Beyond prompts" / pt-BR "Além dos prompts", cross-agent parity section in
+[agent-compatibility.md](docs/agent-compatibility.md), five Autonomy Golden Flows (`AUTO-001`–
+`AUTO-005`) with fixtures and integration tests, plus a migrate golden flow.
+
 ## 1.9.2
 
 Docs-only patch, no breaking changes. Closes 2 of the 3 items from a `.local/gmm` candidate

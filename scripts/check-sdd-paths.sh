@@ -4,26 +4,20 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-if ! command -v rg >/dev/null 2>&1; then
-  echo "check-sdd-paths: ripgrep (rg) is required" >&2
-  exit 1
-fi
-
 # Legacy `.sdd/` is allowed only where migration narrative requires it (see docs/upgrading.md).
-matches="$(rg '\.sdd/' \
-  --glob '!node_modules/**' \
-  --glob '!.local/**' \
-  --glob '!CHANGELOG.md' \
-  --glob '!scripts/check-sdd-paths.sh' \
-  --glob '!bin/sdd-agentic-flow.js' \
-  --glob '!test/cli.test.js' \
-  --glob '!.gitignore' \
-  --glob '!docs/upgrading.md' \
-  --glob '!docs/sdd-agentic-flow-model.md' \
-  --glob '!examples/golden/sdd-path-migrate/**' \
-  --glob '!README.md' \
-  --glob '!README.pt-BR.md' \
-  --glob '!ROADMAP.md' \
+# Uses git grep (available in CI) instead of ripgrep.
+matches="$(git grep -n --fixed-strings '.sdd/' -- \
+  ':(exclude)CHANGELOG.md' \
+  ':(exclude)scripts/check-sdd-paths.sh' \
+  ':(exclude)bin/sdd-agentic-flow.js' \
+  ':(exclude)test/cli.test.js' \
+  ':(exclude).gitignore' \
+  ':(exclude)docs/upgrading.md' \
+  ':(exclude)docs/sdd-agentic-flow-model.md' \
+  ':(exclude)examples/golden/sdd-path-migrate/walkthrough.md' \
+  ':(exclude)README.md' \
+  ':(exclude)README.pt-BR.md' \
+  ':(exclude)ROADMAP.md' \
   || true)"
 
 if [[ -n "$matches" ]]; then

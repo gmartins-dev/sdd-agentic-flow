@@ -18,6 +18,12 @@ conventions the project already uses, falling back to the most common pattern (a
 manifest plus a root-level changelog) and saying so explicitly when nothing is declared,
 rather than assuming an undeclared convention silently.
 
+`init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub that points at the
+canonical skills usage guide on GitHub. Re-running `init` refreshes that file and never
+overwrites `config.yml`. Teams that want toolkit state hidden from `git status` without
+editing `.gitignore` can pass `init --local-git-exclude` (opt-in; excludes only
+`.sdd-agentic-flow/`, never `.specs/`). See [installation scope](installation-scope.md).
+
 ## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
 
 `workflow.execution_mode` (`plan`/`guided`/`apply`/`review`/`full`, default `guided`) and

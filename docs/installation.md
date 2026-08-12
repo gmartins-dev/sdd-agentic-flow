@@ -14,8 +14,15 @@ npx sdd-agentic-flow doctor
 ```
 
 Use `init --interactive` when selecting initial project defaults. `init` always writes
-project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`). That part
+project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`)
+and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) that points at the canonical
+[skills usage guide](https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md)
+on GitHub — the consumer project does not receive a copy of package `docs/`. That part
 is unaffected by install scope.
+
+Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` so
+toolkit state stays out of `git status` without editing the team's `.gitignore`. Default
+off. Specs under `.specs/` are not excluded. See [installation scope](installation-scope.md).
 
 `install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill
 directories (e.g. `~/.claude/skills`) and creates **zero files in the project**. Pass

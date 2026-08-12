@@ -19,6 +19,8 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 **SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Validation and release skills check evidence against that contract—not chat confidence.
 
+**Graph** is not a fifth runtime layer. Workflow rails already live in `sdd-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
+
 ## What controls what
 
 | Control | Artifact / CLI | Governs |

@@ -42,7 +42,7 @@ function listAllEntries(root, prefix = '') {
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
   assert.match(run(['help']).stdout, /autonomous-resume/);
-  assert.equal(run(['version']).stdout.trim(), '1.10.0');
+  assert.equal(run(['version']).stdout.trim(), '1.11.0');
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -113,6 +113,7 @@ test('bare invocation shows a contextual, read-only status screen and never muta
   assert.match(before.stdout, /^sdd-agentic-flow \d+\.\d+\.\d+/);
   assert.match(before.stdout, /Suggested next step/);
   assert.match(before.stdout, /npx sdd-agentic-flow init/);
+  assert.match(before.stdout, /doctor --check-updates/);
   assert.deepEqual(listAllEntries(cwd), []);
 
   assert.equal(run(['init'], cwd).status, 0);
@@ -158,6 +159,112 @@ test('--quiet suppresses decorative output on init, install, and uninstall', () 
   assert.equal(quietDiscover.status, 0);
 
   fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('init writes a resolvable usage guide stub and never points at a package docs path', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-usage-guide-'));
+  const first = run(['init'], cwd);
+  assert.equal(first.status, 0);
+  const usagePath = path.join(cwd, '.sdd-agentic-flow/usage.md');
+  assert.ok(fs.existsSync(usagePath));
+  const usage = fs.readFileSync(usagePath, 'utf8');
+  assert.match(usage, /sdd-route/);
+  assert.match(
+    usage,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+  );
+  assert.match(first.stdout, /\.sdd-agentic-flow\/usage\.md/);
+  assert.match(
+    first.stdout,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+  );
+  assert.doesNotMatch(first.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+
+  const second = run(['init'], cwd);
+  assert.equal(second.status, 0);
+  assert.ok(fs.existsSync(usagePath));
+  assert.match(second.stdout, /preserved existing/);
+  assert.doesNotMatch(second.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('install core next-steps point at a resolvable usage guide, not a package docs path', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-install-guide-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-install-guide-home-'));
+  assert.equal(run(['init'], cwd).status, 0);
+  const result = runIsolatedHome(['install', 'core'], cwd, home);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /\.sdd-agentic-flow\/usage\.md/);
+  assert.match(
+    result.stdout,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+  );
+  assert.doesNotMatch(result.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('init --local-git-exclude is opt-in, idempotent, and degrades without Git', () => {
+  const withGit = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-git-exclude-'));
+  const git = (gitArgs) => spawnSync('git', gitArgs, { cwd: withGit, encoding: 'utf8' });
+  assert.equal(spawnSync('git', ['--version']).status, 0);
+  git(['init', '-q']);
+  const excludePath = path.join(withGit, '.git/info/exclude');
+  const beforeExclude = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
+
+  const withoutFlag = run(['init'], withGit);
+  assert.equal(withoutFlag.status, 0);
+  const afterDefault = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
+  assert.equal(afterDefault, beforeExclude);
+  assert.doesNotMatch(afterDefault, /sdd-agentic-flow init --local-git-exclude/);
+
+  const withFlag = run(['init', '--local-git-exclude'], withGit);
+  assert.equal(withFlag.status, 0);
+  const exclude = fs.readFileSync(excludePath, 'utf8');
+  assert.match(exclude, /# sdd-agentic-flow init --local-git-exclude/);
+  assert.match(exclude, /^\.sdd-agentic-flow\/$/m);
+  assert.doesNotMatch(exclude, /^\.specs\/$/m);
+  const firstLength = exclude.length;
+
+  const second = run(['init', '--local-git-exclude'], withGit);
+  assert.equal(second.status, 0);
+  const again = fs.readFileSync(excludePath, 'utf8');
+  assert.equal(again, exclude);
+  assert.equal(again.length, firstLength);
+  fs.rmSync(withGit, { recursive: true, force: true });
+
+  const noGit = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-no-git-exclude-'));
+  const degraded = run(['init', '--local-git-exclude'], noGit);
+  assert.equal(degraded.status, 0);
+  assert.match(degraded.stdout, /no \.git directory/);
+  assert.ok(!fs.existsSync(path.join(noGit, '.git')));
+  fs.rmSync(noGit, { recursive: true, force: true });
+});
+
+test('explanation template requires source-artifact anchors and the required headings', () => {
+  const template = fs.readFileSync(
+    path.join(packageRoot, 'shared/templates/explanation.template.md'),
+    'utf8',
+  );
+  for (const heading of [
+    '## Problem',
+    '## Context / current state',
+    '## What changes',
+    '## How the new flow works',
+    '## Important concepts',
+    '## Decisions',
+    '## Key scenarios',
+    '## What this does NOT change',
+    '## How to verify',
+    '## Glossary',
+  ]) {
+    assert.ok(template.includes(heading), `missing heading ${heading}`);
+  }
+  assert.match(template, /Not in source artifacts/);
+  assert.match(template, /Never invent/);
+  assert.match(template, /spec\.md/);
+  assert.match(template, /design\.md/);
+  assert.match(template, /tasks\.md/);
 });
 
 test('interactive init writes selected safe configuration and preserves existing config', () => {
@@ -238,7 +345,7 @@ test('project-context.md carries provenance metadata, gracefully, outside a git 
   assert.equal(run(['init'], cwd).status, 0);
   const contextPath = path.join(cwd, '.sdd-agentic-flow/context/project-context.md');
   const content = fs.readFileSync(contextPath, 'utf8');
-  assert.match(content, /> Generated by sdd-agentic-flow 1\.10\.0/);
+  assert.match(content, /> Generated by sdd-agentic-flow 1\.11\.0/);
   assert.match(content, /> Generated at: \d{4}-\d{2}-\d{2}T/);
   assert.match(content, /> Repository revision: not a git repository/);
   assert.match(content, /> Branch: unknown/);
@@ -325,7 +432,7 @@ test('doctor JSON is parseable and smoke is isolated', () => {
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
   const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '1.10.0');
+  assert.equal(report.version, '1.11.0');
   assert.ok(Array.isArray(report.checks));
   assert.equal(report.language.profile, 'pt-BR');
   assert.equal(report.language.status, 'PASS');
@@ -509,7 +616,7 @@ test('doctor --contracts fails deterministically when requires_cli is not satisf
   assert.equal(check.status, 'FAIL');
   assert.match(
     check.message,
-    /sdd-create-specs: requires CLI >=99\.0\.0, installed CLI is 1\.10\.0/,
+    /sdd-create-specs: requires CLI >=99\.0\.0, installed CLI is 1\.11\.0/,
   );
 
   fs.writeFileSync(skillPath, original.replace('requires_cli: null', 'requires_cli: >=0.1.0'));
@@ -1006,11 +1113,13 @@ test('uninstall --full clears config and regenerable state, never .specs/feature
   assert.match(result.stdout, /project-context\.md/);
   assert.match(result.stdout, /snapshots/);
   assert.match(result.stdout, /reports/);
+  assert.match(result.stdout, /usage\.md/);
   assert.match(result.stdout, /preserved project specs, source code/);
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/config.yml')));
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/context/project-context.md')));
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/snapshots')));
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/reports')));
+  assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/usage.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.specs/features/.keep')));
   assert.ok(!fs.existsSync(path.join(home, '.agents/skills/sdd-create-specs')));
 
@@ -1439,7 +1548,7 @@ test('a real npm pack tarball installs and its extracted CLI passes init/discove
         encoding: 'utf8',
       });
 
-    assert.equal(runPacked(['version']).stdout.trim(), '1.10.0');
+    assert.equal(runPacked(['version']).stdout.trim(), '1.11.0');
     assert.equal(runPacked(['init']).status, 0);
     assert.equal(runPacked(['discover']).status, 0);
     assert.equal(runPacked(['install', 'core', '--scope', 'project']).status, 0);

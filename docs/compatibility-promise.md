@@ -97,7 +97,7 @@ internal convention.
 - **CLI argument surface.** The *documented* CLI surface includes every command and flag listed in
   `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
   `init [--interactive] [--language ...] [--execution-mode ...] [--autonomy-level ...]
-  [--quiet]`, `install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]`, `doctor
+  [--local-git-exclude] [--quiet]`, `install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]`, `doctor
   [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]`, `context
   [status|refresh|autonomy-state]`, `autonomous-resume [--force] [--override-guard=<1-7>
   --reason="..."]`, `uninstall --plan | --apply [--include-config] [--full] [--scope

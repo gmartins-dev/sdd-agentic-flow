@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.11.0
+
+Discovery and positioning, no breaking changes. Closes the post-1.10.0 Slice A gaps: the
+consumer can find the skills usage guide without a phantom package `docs/` path, can hide
+regenerable toolkit state from `git status` without editing the team's `.gitignore`, and
+the public docs state the AI-first audience without inventing a new mechanism.
+
+**`init` / `install` / `welcome`:** `init` writes `.sdd-agentic-flow/usage.md` (regenerable
+stub: Plan→Validate chain, invoke `sdd-route`, canonical GitHub URL). Re-running `init`
+refreshes that stub and still never overwrites `config.yml`. `install` next-steps and
+`init` stdout point at that local file and/or the GitHub URL — never
+`docs/sdd-skills-usage-guide.md` as if it existed in the consumer cwd. Bare `welcome`
+mentions `doctor --check-updates` and still makes **zero** network requests.
+
+**`init --local-git-exclude`:** opt-in, default off. Appends `.sdd-agentic-flow/` to
+`.git/info/exclude` (idempotent). Does not edit `.gitignore`, does not exclude `.specs/`.
+Degrades with `WARN` when Git is absent. `uninstall --apply --full` also removes
+`usage.md`.
+
+**`sdd-explain-me`:** explanation template and `## Output` now require a source-artifact
+anchor per section (`Not in source artifacts` or omit — never invent). `Status: written`
+only after the cross-check step.
+
+**Positioning:** Graph note on the mental-model table (`sdd-route` + optional `REQ-{id}`;
+`doctor --evidence-graph` remains a watched direction, not a command). README / pt-BR
+audience paragraph. Short citations in `docs/inspirations.md`. Vendor hooks stay in the
+agent product you use (`docs/recommended-harness.md`).
+
+**Explicitly excluded:** `doctor --evidence-graph` (Slice B), CLI UX foundation
+(`outputMode`, logo, structured `fail`), vendor hooks in `install`, automatic npm nags,
+`docs/references/agentic-foundations.md`.
+
 ## 1.10.0
 
 **Breaking change — toolkit path rename.** Canonical toolkit state moves from `.sdd/` to

@@ -18,6 +18,8 @@ Structured specs, clear boundaries, and human governance:
 - **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
 - **Language-agnostic:** The CLI runs on Node.js >= 22; your project does not have to.
 
+For AI-first and AI-driven teams, that split is the point: humans architect and verify; agents execute under this harness. Craftsmanship still matters — agents fail on code humans cannot read. This README does not quote token or speed multipliers.
+
 📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
 
 ---

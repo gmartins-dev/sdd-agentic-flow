@@ -35,6 +35,13 @@ If both `.sdd/` and `.sdd-agentic-flow/` exist, the CLI does not merge them — 
 then remove the leftover directory. Fresh `init` on v1.10.0+ creates `.sdd-agentic-flow/` only.
 See [sdd-path-migrate golden flow](../examples/golden/sdd-path-migrate/walkthrough.md).
 
+## Regenerable usage stub (v1.11.0+)
+
+`init` writes `.sdd-agentic-flow/usage.md`, a local pointer to the canonical skills usage
+guide. Re-running `init` on a project that already has `config.yml` refreshes that stub and
+does not overwrite config. `uninstall --apply --full` removes it with the other regenerable
+toolkit state.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

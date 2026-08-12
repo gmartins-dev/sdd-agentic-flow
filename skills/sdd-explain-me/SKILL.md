@@ -2,7 +2,7 @@
 name: sdd-explain-me
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 1.10.0
+  version: 1.11.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -41,8 +41,8 @@ Do not use to author or replace `spec.md` (normative), `design.md` (technical), 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `npx sdd-agentic-flow init`.
 2. Resolve exactly one feature and read its full spec package (`context.md`, `spec.md`, `design.md` when present, `tasks.md` when present) and any accumulated implementation relevant to it.
 3. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, so the explanation uses the project's own vocabulary rather than inventing new terms.
-4. Write `.specs/features/<feature>/explanation.md` using `../sdd-agentic-flow-shared/templates/explanation.template.md`: problem, context/current state, what changes, how the new flow works, important concepts, decisions, key scenarios, what this does NOT change, how to verify, and a glossary.
-5. Cross-check every claim in the explanation against the spec package and code it describes; never state a decision or behavior the source artifacts do not support.
+4. Write `.specs/features/<feature>/explanation.md` using `../sdd-agentic-flow-shared/templates/explanation.template.md`: problem, context/current state, what changes, how the new flow works, important concepts, decisions, key scenarios, what this does NOT change, how to verify, and a glossary. Every section must cite a source artifact (`spec.md` heading, `design.md` decision, or `tasks.md` id). If a section has no source, omit it or write `Not in source artifacts` — never invent.
+5. Cross-check every claim in the explanation against the spec package and code it describes; never state a decision or behavior the source artifacts do not support. Unanchored filler ("this feature allows users to…") is a failed cross-check.
 6. Report the explanation's path and a short summary a reader could act on without opening the other artifacts.
 
 ## Safety
@@ -56,7 +56,7 @@ Do not use to author or replace `spec.md` (normative), `design.md` (technical), 
 
 Return the explanation's file path and a short summary, plus:
 
-- Status: `written` / `blocked`
+- Status: `written` only if step 5 (cross-check) passed; `blocked` if the spec package is incomplete. Never `written` when any claim lacks a source-artifact anchor.
 - Next recommended skill: `none` (this is a terminal, on-demand step)
 - Reason: one line tying the status to the recommendation
 

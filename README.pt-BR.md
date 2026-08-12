@@ -14,6 +14,8 @@ Specs estruturadas, limites claros e governança humana:
 - **Humano no loop:** o toolkit estrutura o trabalho do agente; você mantém a autoridade final de revisão.
 - **Agnóstico de linguagem:** a CLI roda em Node.js >= 22; seu projeto não precisa ser Node.
 
+Para times AI-first e AI-driven, essa divisão é o ponto: humanos arquitetam e verificam; agentes executam sob este harness. Craftsmanship continua importando — agentes falham em código que humanos não conseguem ler. Este README não cita multiplicadores de token ou velocidade.
+
 📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md) · 🏗 [Arquitetura](docs/architecture.md)
 
 ## O problema

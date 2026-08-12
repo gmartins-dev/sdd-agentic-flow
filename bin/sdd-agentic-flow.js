@@ -12,7 +12,7 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.10.0';
+const VERSION = '1.11.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
@@ -64,7 +64,12 @@ const SDD_PATHS = {
   loopState: `${SDD_ROOT}/autonomy/loop-state.md`,
   snapshots: `${SDD_ROOT}/snapshots`,
   reports: `${SDD_ROOT}/reports`,
+  usage: `${SDD_ROOT}/usage.md`,
 };
+const USAGE_GUIDE_URL =
+  'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md';
+const LOCAL_GIT_EXCLUDE_COMMENT = '# sdd-agentic-flow init --local-git-exclude';
+const LOCAL_GIT_EXCLUDE_ENTRY = `${SDD_ROOT}/`;
 
 function sddJoin(cwd, ...segments) {
   return path.join(cwd, SDD_ROOT, ...segments);
@@ -343,7 +348,57 @@ function list() {
   }
 }
 
+function writeUsageGuide(cwd) {
+  const source = path.join(PACKAGE_ROOT, 'shared', 'templates', 'usage.template.md');
+  const destination = sddJoin(cwd, 'usage.md');
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.copyFileSync(source, destination);
+  log('PASS', `wrote ${SDD_PATHS.usage}`);
+}
+
+function applyLocalGitExclude(cwd) {
+  const gitDir = path.join(cwd, '.git');
+  if (!fs.existsSync(gitDir) || !fs.statSync(gitDir).isDirectory()) {
+    log('WARN', 'init --local-git-exclude: no .git directory; skipped (Git is optional)');
+    return;
+  }
+  const infoDir = path.join(gitDir, 'info');
+  const excludePath = path.join(infoDir, 'exclude');
+  fs.mkdirSync(infoDir, { recursive: true });
+  const existing = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
+  const alreadyListed = existing.split(/\r?\n/).some((line) => {
+    const trimmed = line.trim();
+    return trimmed === LOCAL_GIT_EXCLUDE_ENTRY || trimmed === SDD_ROOT;
+  });
+  if (alreadyListed) {
+    log('PASS', `local git exclude already lists ${LOCAL_GIT_EXCLUDE_ENTRY}`);
+    return;
+  }
+  const prefix = existing === '' || existing.endsWith('\n') ? '' : '\n';
+  fs.appendFileSync(
+    excludePath,
+    `${prefix}${LOCAL_GIT_EXCLUDE_COMMENT}\n${LOCAL_GIT_EXCLUDE_ENTRY}\n`,
+  );
+  log('PASS', `appended ${LOCAL_GIT_EXCLUDE_ENTRY} to .git/info/exclude`);
+}
+
+function applyInitSideEffects(cwd, options = {}) {
+  writeUsageGuide(cwd);
+  if (options.localGitExclude) applyLocalGitExclude(cwd);
+}
+
+function printUsageGuidePointer(cwd) {
+  const localExists = fs.existsSync(path.join(cwd, SDD_PATHS.usage));
+  if (localExists)
+    return (
+      `Skills usage guide (local stub, regenerable):\n  ${SDD_PATHS.usage}\n` +
+      `Canonical guide:\n  ${USAGE_GUIDE_URL}\n`
+    );
+  return `Skills usage guide:\n  ${USAGE_GUIDE_URL}\n`;
+}
+
 function init(cwd, options = {}) {
+  applyInitSideEffects(cwd, options);
   const configPath = sddJoin(cwd, 'config.yml');
   if (fs.existsSync(configPath)) {
     log('WARN', `preserved existing ${SDD_PATHS.config}`);
@@ -357,7 +412,11 @@ function init(cwd, options = {}) {
   log('PASS', 'initialized local SDD directories');
   discoverProject(cwd, { force: false });
   if (!options.quiet)
-    process.stdout.write('\nSuggested next step\n  npx sdd-agentic-flow install core\n');
+    process.stdout.write(
+      '\nSuggested next step\n' +
+        '  npx sdd-agentic-flow install core\n\n' +
+        printUsageGuidePointer(cwd),
+    );
   return true;
 }
 
@@ -615,9 +674,11 @@ async function initInteractive(
   quiet = false,
   executionModeDefault = 'guided',
   autonomyLevelDefault = 'manual',
+  localGitExclude = false,
 ) {
   if (fs.existsSync(sddJoin(cwd, 'config.yml'))) {
     log('WARN', `${SDD_PATHS.config} already exists; interactive init will not overwrite it`);
+    applyInitSideEffects(cwd, { localGitExclude });
     return;
   }
   const pipedAnswers = process.stdin.isTTY ? null : fs.readFileSync(0, 'utf8').split(/\r?\n/);
@@ -664,7 +725,7 @@ async function initInteractive(
       throw new Error(
         `Execution mode ${options.executionMode} cannot combine with autonomy level ${options.autonomyLevel}`,
       );
-    init(cwd, { ...options, quiet });
+    init(cwd, { ...options, quiet, localGitExclude });
   } catch (error) {
     // Invalid interactive input is a validation failure, exit 1 — same as every other bad-input
     // case in this CLI — not the generic exit-2 bucket main()'s own top-level catch reserves for
@@ -715,14 +776,14 @@ function installPresetToTarget(preset, target, summary, options = {}) {
     );
 }
 
-function printInstallNextSteps() {
+function printInstallNextSteps(cwd) {
   process.stdout.write(
     '\nSuggested next step\n' +
       '  npx sdd-agentic-flow doctor\n\n' +
       'Then ask your coding agent to run the `sdd-route` skill whenever the next step is\n' +
       'unclear — it recommends one skill from the main flow (Plan -> Prompt -> Implement ->\n' +
-      'Check -> PR -> Review -> Fix -> Validate) without changing files. Full guide:\n' +
-      'docs/sdd-skills-usage-guide.md.\n',
+      'Check -> PR -> Review -> Fix -> Validate) without changing files.\n\n' +
+      printUsageGuidePointer(cwd),
   );
 }
 
@@ -759,7 +820,7 @@ function install(pack, cwd, options = {}) {
     installPresetToTarget(preset, target, summary);
     log('PASS', `installed ${pack}: ${summary.installed} files`);
     if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
-    if (!options.quiet) printInstallNextSteps();
+    if (!options.quiet) printInstallNextSteps(cwd);
     return;
   }
 
@@ -796,7 +857,7 @@ function install(pack, cwd, options = {}) {
   );
   if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
   log('PASS', 'Repository changes: none');
-  if (!options.quiet) printInstallNextSteps();
+  if (!options.quiet) printInstallNextSteps(cwd);
 }
 
 function installationStatus(target) {
@@ -1676,7 +1737,7 @@ function uninstall(args, cwd) {
     path.join(root, 'sdd-agentic-flow-shared'),
   ]);
   if (includeConfig) targets.push(sddJoin(cwd, 'config.yml'));
-  // --full additionally clears regenerable local state (context, snapshots, reports).
+  // --full additionally clears regenerable local state (context, snapshots, reports, usage.md).
   // .specs/features is never a target here, in any mode: it holds hand-authored specs, the
   // same "preserved like source code" invariant documented throughout uninstall.md/upgrading.md.
   if (full) {
@@ -1684,6 +1745,7 @@ function uninstall(args, cwd) {
       sddJoin(cwd, 'context', 'project-context.md'),
       sddJoin(cwd, 'snapshots'),
       sddJoin(cwd, 'reports'),
+      sddJoin(cwd, 'usage.md'),
     );
   }
   const existing = targets.filter((target) => fs.existsSync(target));
@@ -1718,7 +1780,7 @@ function uninstall(args, cwd) {
 // alongside --quiet (v1.4.0) specifically because it lands in 4 of these strings at once, which
 // is exactly the kind of change that causes hand-duplicated copies to drift.
 const USAGE = {
-  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--quiet]',
+  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
   install:
     'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--quiet]',
   doctor:
@@ -1750,15 +1812,17 @@ const COMMAND_HELP = {
   init: `sdd-agentic-flow init
 
 Create local SDD configuration for the current project (${SDD_PATHS.config},
-${SDD_PATHS.projectContext}, ${SDD_PATHS.snapshots}, ${SDD_PATHS.reports}, .specs/features).
-Existing ${SDD_PATHS.config} is preserved; init never overwrites it.
+${SDD_PATHS.projectContext}, ${SDD_PATHS.snapshots}, ${SDD_PATHS.reports},
+${SDD_PATHS.usage}, .specs/features).
+Existing ${SDD_PATHS.config} is preserved; init never overwrites it. ${SDD_PATHS.usage}
+is regenerable toolkit state and is refreshed on every init.
 
 USAGE
   sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
                          [--execution-mode plan|guided|apply|review|full]
                          [--autonomy-level manual|supervised|autonomous]
-                         [--quiet]
+                         [--local-git-exclude] [--quiet]
 
 OPTIONS
   --interactive          Prompt for project name, agent target, language, source type,
@@ -1773,6 +1837,9 @@ OPTIONS
   --autonomy-level <l>   How a workflow advances between skills: manual | supervised |
                          autonomous. Default: manual. plan/guided never combine with
                          autonomous. See docs/autonomy-levels.md.
+  --local-git-exclude    Opt-in: append ${SDD_ROOT}/ to .git/info/exclude so toolkit
+                         state stays out of git status. Does not edit .gitignore and
+                         does not exclude .specs/. No-ops with WARN when Git is absent.
   --quiet                Suppress the "Suggested next step" line on success.
 
 EXAMPLES
@@ -1780,6 +1847,7 @@ EXAMPLES
   sdd-agentic-flow init --br
   sdd-agentic-flow init --interactive
   sdd-agentic-flow init --execution-mode full --autonomy-level supervised
+  sdd-agentic-flow init --local-git-exclude
 `,
   install: `sdd-agentic-flow install <pack>
 
@@ -1974,7 +2042,7 @@ QUICK START
 
 COMMANDS
   list                                   List packs
-  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Create local configuration
+  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
   discover [--force] [--quiet]           Refresh auto-discovered project context
   context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
   install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
@@ -2047,7 +2115,9 @@ function welcome(cwd) {
       '  npx sdd-agentic-flow install core       Install the core skill pack\n' +
       '  npx sdd-agentic-flow doctor             Validate local setup\n' +
       '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
-      'Run `npx sdd-agentic-flow help` for the full command reference.\n',
+      'Run `npx sdd-agentic-flow help` for the full command reference.\n\n' +
+      'To check for a newer version (opt-in, one npm request):\n' +
+      '  npx sdd-agentic-flow doctor --check-updates\n',
   );
 }
 
@@ -2068,11 +2138,13 @@ async function runCommand(command, args, cwd) {
       let executionMode = 'guided';
       let autonomyLevel = 'manual';
       let quiet = false;
+      let localGitExclude = false;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
         else if (args[index] === '--en') language = 'en-US';
         else if (args[index] === '--br') language = 'pt-BR';
         else if (args[index] === '--quiet') quiet = true;
+        else if (args[index] === '--local-git-exclude') localGitExclude = true;
         else if (args[index] === '--language' && LANGUAGE_PROFILES.includes(args[index + 1])) {
           language = args[index + 1];
           index += 1;
@@ -2101,8 +2173,24 @@ async function runCommand(command, args, cwd) {
           `--execution-mode ${executionMode} cannot combine with --autonomy-level ${autonomyLevel} (see docs/autonomy-levels.md).`,
         );
       if (interactive)
-        await initInteractive(cwd, language, featureProfile, quiet, executionMode, autonomyLevel);
-      else init(cwd, { profile: language, featureProfile, executionMode, autonomyLevel, quiet });
+        await initInteractive(
+          cwd,
+          language,
+          featureProfile,
+          quiet,
+          executionMode,
+          autonomyLevel,
+          localGitExclude,
+        );
+      else
+        init(cwd, {
+          profile: language,
+          featureProfile,
+          executionMode,
+          autonomyLevel,
+          quiet,
+          localGitExclude,
+        });
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);

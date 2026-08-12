@@ -26,7 +26,26 @@ or `.sdd-agentic-flow/context/project-context.md`, which are project policy, alw
 | CLI installation config            | user-local                             | user         |
 | `.sdd-agentic-flow/config.yml` (project policy) | project                                | team         |
 | `.sdd-agentic-flow/context/project-context.md`  | project                                | team         |
+| `.sdd-agentic-flow/usage.md` (regenerable stub) | project                                | toolkit      |
 | `.specs/features/**`               | project                                | team         |
+
+`init` and `install` are different commands:
+
+| Command | Writes in the project | Typical git status |
+| --- | --- | --- |
+| `init` | `.sdd-agentic-flow/` (config, context, usage stub, snapshots, reports) and `.specs/features/` | Untracked until the team decides what to commit |
+| `install --scope user` (default) | Nothing | Unchanged |
+| `install --scope project` | `.agents/skills/` | Untracked skill files |
+
+`.specs/features/` is project work and should normally be versioned. `.sdd-agentic-flow/config.yml` is project policy; teams that want shared defaults commit it. `usage.md` is regenerable — re-run `init` to refresh it.
+
+## Local git exclude (`init --local-git-exclude`)
+
+Opt-in, default off. When the current directory is a Git repository, `init --local-git-exclude`
+appends `.sdd-agentic-flow/` to `.git/info/exclude` (idempotent). That hides toolkit state from
+`git status` **without** editing the team's `.gitignore`. It does **not** exclude `.specs/`.
+
+If Git is absent, the command continues with a `WARN`. The CLI never auto-edits `.gitignore`.
 
 ## Agent Integration Layer
 

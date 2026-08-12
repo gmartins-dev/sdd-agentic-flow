@@ -15,6 +15,9 @@ This package follows a small set of design goals. See [design principles](design
 - **Human final authority:** agents propose and implement; you approve gates, PRs, and releases.
 - **Bounded work:** one task at a time, with explicit scope in specs and prompts.
 
+A rich domain model — named invariants, not only a list of screens — gives the agent
+something to check against. That is why specs help; it is not a DDD pack in this toolkit.
+
 ## Workflow phases
 
 The main chain runs in order, with review gates between implementation and acceptance:

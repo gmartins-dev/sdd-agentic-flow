@@ -23,6 +23,19 @@
 - local CLI, doctor, smoke validation, uninstall model, safety model, and agent-client-agnostic documentation
 - optional multi-worktree planning guidance
 
+## Adjacent writing (cited, not copied)
+
+Short pointers to public essays that describe layers this toolkit already implements. They
+are not product requirements and are not reproduced here.
+
+- Daniel Moka, *Agentic Engineering 101* (Craft Better Software, 2026) — prompt, context,
+  harness, loop, and graph as workflow rails.
+- Ruben Hassid, *What is an Agent?* (2026) — an agent as LLM + tools + memory + feedback
+  loop, on a spectrum of autonomy.
+- Eduardo Spinelli de Lima, *Harness para codebases* (2026) — instruction in context is
+  probabilistic; destructive guards belong in deterministic hooks on the **agent product
+  you use**, not in this toolkit.
+
 ## Interoperability references
 
 - Agent Skills Standard ([agentskills/agentskills](https://github.com/agentskills/agentskills),

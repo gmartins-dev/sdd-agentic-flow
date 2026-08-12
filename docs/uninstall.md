@@ -20,7 +20,7 @@ sdd-agentic-flow uninstall --apply --full
 
 `--apply --full` is the complete-uninstall path for testing or re-onboarding from a blank
 slate. It implies `--include-config` and additionally removes `.sdd-agentic-flow/context/project-context.md`,
-`.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports`, all regenerable local state. **`.specs/features` is never
+`.sdd-agentic-flow/snapshots`, `.sdd-agentic-flow/reports`, and `.sdd-agentic-flow/usage.md`, all regenerable local state. **`.specs/features` is never
 removed, by any flag combination**, in any scope: it holds hand-authored specs, the same
 invariant as source code. If you also want those gone, delete them yourself
 (`rm -rf .specs/features`). That is a deliberate, manual step the CLI will not take for you.

@@ -23,15 +23,18 @@ test('checkForUpdate reports PASS when already up to date', async () => {
   assert.match(result.message, /up to date/);
 });
 
-test('checkForUpdate reports WARN with both versions and the install command when outdated', async () => {
+test('checkForUpdate reports WARN with both versions and points at upgrade when outdated', async () => {
   const result = await checkForUpdate({
     currentVersion: '1.4.0',
     fetchImpl: async () => jsonResponse({ version: '1.9.0' }),
   });
   assert.equal(result.status, 'WARN');
+  assert.equal(result.updateAvailable, true);
+  assert.equal(result.latest, '1.9.0');
+  assert.equal(result.reachable, true);
   assert.match(result.message, /1\.4\.0/);
   assert.match(result.message, /1\.9\.0/);
-  assert.match(result.message, /npm install -g sdd-agentic-flow@latest/);
+  assert.match(result.message, /sdd-agentic-flow upgrade/);
 });
 
 test('checkForUpdate degrades to INFO when the fetch rejects (offline)', async () => {

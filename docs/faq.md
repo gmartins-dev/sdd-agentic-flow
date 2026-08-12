@@ -27,9 +27,10 @@ Yes. Skills are Markdown-first and documented for generic and project-local runt
 
 ## Does it contact a service?
 
-No, with one explicit exception: `doctor --check-updates` makes a single request to the npm
-registry to check for a newer version, only when you pass that flag. No other command, and no
-automatic/background check on any other invocation, ever makes a network call.
+No automatic/background calls. Network access has three explicit entry points:
+`doctor --check-updates` (diagnostic, read-only), `upgrade` / `upgrade --check` /
+`upgrade --plan` (upgrade-specific; mutations only after confirms), and an interactive bare
+welcome ask on human-rich TTY only (default **N**). See [trust model](trust-model.md).
 
 ## Can it remove its files?
 

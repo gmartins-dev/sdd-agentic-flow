@@ -19,6 +19,17 @@ const {
 } = require('./ui');
 const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
+const {
+  detectExecutionMode,
+  writeInstallProvenance,
+  readInstallProvenance,
+  collectManagedPairs,
+  classifyManagedPairs,
+  applyManagedPairs,
+  detectInstalledPacks,
+  runNpmGlobalInstall,
+  formatCheckReport,
+} = require('./upgrade');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const VERSION = JSON.parse(
@@ -355,6 +366,26 @@ function fail(message, codeOrOptions = 1) {
 function didYouMeanTry(input, candidates) {
   const match = didYouMean(input, candidates);
   return match ? `Did you mean \`${match}\`?` : null;
+}
+
+async function askYesNo(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const raw = await rl.question(question);
+    const trimmed = String(raw ?? '')
+      .trim()
+      .toLowerCase();
+    return trimmed === 'y' || trimmed === 'yes';
+  } finally {
+    rl.close();
+  }
+}
+
+function canPromptInteractively(mode = resolveMode()) {
+  return (
+    mode !== 'machine' &&
+    shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env)
+  );
 }
 
 // Suggested-next-step block for human-rich / human-plain only. Suppressed by --quiet and
@@ -898,6 +929,7 @@ function install(pack, cwd, options = {}) {
     }
     const summary = { installed: 0, preserved: 0 };
     installPresetToTarget(preset, target, summary);
+    if (summary.installed > 0) writeInstallProvenance(target, VERSION);
     logPassLine(`installed ${pack}: ${summary.installed} files`, { mode, quiet: options.quiet });
     if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
     if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
@@ -930,6 +962,7 @@ function install(pack, cwd, options = {}) {
     installPresetToTarget(preset, target, summary);
     totals.installed += summary.installed;
     totals.preserved += summary.preserved;
+    if (summary.installed > 0) writeInstallProvenance(target, VERSION);
   }
   logPassLine(
     `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
@@ -1288,6 +1321,20 @@ function doctorChecks(cwd) {
         'No project files created by installation',
         'Installation',
       );
+    if (!isPackage && skillsRoot) {
+      const provenance = readInstallProvenance(skillsRoot);
+      if (provenance?.packageVersion) {
+        const stale = provenance.packageVersion !== VERSION;
+        add(
+          'installation_provenance',
+          stale ? 'WARN' : 'PASS',
+          stale
+            ? `skills provenance ${provenance.packageVersion} (running CLI ${VERSION}) — run \`sdd-agentic-flow upgrade --skills-only\` after upgrading the CLI`
+            : `skills provenance ${provenance.packageVersion} matches running CLI`,
+          'Installation',
+        );
+      }
+    }
   }
   return checks;
 }
@@ -1893,6 +1940,7 @@ const USAGE = {
   'autonomous-resume':
     'usage: autonomous-resume [--force] | autonomous-resume --override-guard=<1-7> --reason="..."',
   migrate: 'usage: migrate --plan | migrate --apply',
+  upgrade: 'usage: upgrade [--check|--plan|--skills-only]',
 };
 
 const KNOWN_COMMANDS = [
@@ -1902,6 +1950,7 @@ const KNOWN_COMMANDS = [
   'context',
   'install',
   'doctor',
+  'upgrade',
   'autonomous-resume',
   'migrate',
   'uninstall',
@@ -2003,9 +2052,10 @@ OPTIONS
                    autonomy_profile support, workflow.autonomy_budget, and the last
                    recorded .sdd-agentic-flow/autonomy/loop-state.md. See docs/autonomy-levels.md.
   --verbose        With --autonomy, also list all 7 guardrails and what each one gates.
-  --check-updates  Make one request to the npm registry to check for a newer version.
-                   The sole, explicit, opt-in exception to "no outbound network access
-                   by default" (see docs/trust-model.md) — never run automatically.
+  --check-updates  Make one request to the npm registry to check for a newer version
+                   as part of the doctor diagnostic report (read-only). Prefer
+                   \`upgrade --check\` for an upgrade-specific read-only check, or
+                   \`upgrade\` to install after confirms. See docs/trust-model.md.
   --ascii          Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
 
 Useful when:
@@ -2018,6 +2068,36 @@ EXAMPLES
   sdd-agentic-flow doctor --smoke --contracts
   sdd-agentic-flow doctor --autonomy --verbose
   sdd-agentic-flow doctor --check-updates
+`,
+  upgrade: `sdd-agentic-flow upgrade
+
+Check the npm registry for a newer CLI version and, in an interactive TTY, confirm
+before upgrading the global CLI package and/or refreshing managed skills from the
+currently executing package. Never silent; never uses --yes.
+
+USAGE
+  sdd-agentic-flow upgrade
+  sdd-agentic-flow upgrade --check
+  sdd-agentic-flow upgrade --plan
+  sdd-agentic-flow upgrade --skills-only
+
+OPTIONS
+  --check         Upgrade-specific read-only registry check. Never prompts. Never mutates.
+  --plan          May access the registry. Prints the concrete CLI + skill plan.
+                  Never mutates. Never installs packages. Never overwrites files.
+  --skills-only   Never checks the registry. Never changes the CLI package. Refreshes
+                  managed skills from the currently executing package only (diff-safe).
+  --ascii         Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
+
+Useful when:
+  You want to update the toolkit after a new release, or refresh skills after
+  \`npx sdd-agentic-flow@latest\` without a silent overwrite of local edits.
+
+EXAMPLES
+  sdd-agentic-flow upgrade --check
+  sdd-agentic-flow upgrade --plan
+  sdd-agentic-flow upgrade
+  npx sdd-agentic-flow@latest upgrade --skills-only
 `,
   uninstall: `sdd-agentic-flow uninstall
 
@@ -2174,6 +2254,7 @@ COMMANDS
   context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
   install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
   doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+  upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
   migrate --plan | migrate --apply  Move legacy .sdd/ toolkit state to .sdd-agentic-flow/
   uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
@@ -2267,15 +2348,260 @@ async function welcome(cwd, options = {}) {
         '  npx sdd-agentic-flow doctor             Validate local setup\n' +
         '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
         'Run `npx sdd-agentic-flow help` for the full command reference.\n\n' +
-        'To check for a newer version (opt-in, one npm request):\n' +
-        '  npx sdd-agentic-flow doctor --check-updates\n',
+        'To check for a newer version (opt-in):\n' +
+        '  npx sdd-agentic-flow upgrade\n' +
+        '  (read-only: doctor --check-updates / upgrade --check)\n',
     );
   } else {
     nextStep(suggested, { quiet: options.quiet, mode });
     process.stdout.write(
-      '\nTo check for a newer version (opt-in, one npm request):\n' +
-        '  npx sdd-agentic-flow doctor --check-updates\n',
+      '\nTo check for a newer version (opt-in):\n' +
+        '  npx sdd-agentic-flow upgrade\n' +
+        '  (read-only: doctor --check-updates / upgrade --check)\n',
     );
+  }
+}
+
+function refreshSkillsAtTarget(target, packs, { overwriteDiffers = false } = {}) {
+  const totals = {
+    installed: 0,
+    refreshed: 0,
+    skippedIdentical: 0,
+    skippedDiffers: 0,
+    differs: [],
+  };
+  for (const pack of packs) {
+    const preset = readPreset(pack);
+    if (!preset) continue;
+    const pairs = collectManagedPairs(PACKAGE_ROOT, preset, target);
+    const classified = classifyManagedPairs(pairs);
+    totals.differs.push(...classified.differs.map((pair) => pair.rel));
+    totals.skippedIdentical += classified.identical.length;
+    const missingSummary = applyManagedPairs(classified.missing, { overwriteDiffers: true });
+    totals.installed += missingSummary.installed;
+    if (overwriteDiffers) {
+      const diffSummary = applyManagedPairs(classified.differs, { overwriteDiffers: true });
+      totals.refreshed += diffSummary.refreshed;
+    } else {
+      totals.skippedDiffers += classified.differs.length;
+    }
+  }
+  if (totals.installed + totals.refreshed > 0) writeInstallProvenance(target, VERSION);
+  return totals;
+}
+
+async function refreshInstalledSkills(cwd, options = {}) {
+  const mode = options.mode ?? resolveMode(options);
+  const interactive = Boolean(options.interactive && canPromptInteractively(mode));
+  const skillsRoot = resolveSkillsRoot(cwd);
+  const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+  if (!packs.length) {
+    log('WARN', 'no installed packs detected to refresh');
+    process.stdout.write('No changes were made.\n');
+    return { ok: true, skipped: true };
+  }
+
+  const projectRoot = path.join(cwd, '.agents', 'skills');
+  const targets = [];
+  if (hasCoreSkillsAt(projectRoot) || installationStatus(projectRoot)) targets.push(projectRoot);
+  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd), options.homeDir)) {
+    if (installationStatus(dir) && !targets.includes(dir)) targets.push(dir);
+  }
+  if (!targets.length) targets.push(skillsRoot);
+
+  let allDiffers = [];
+  for (const target of targets) {
+    for (const pack of packs) {
+      const preset = readPreset(pack);
+      if (!preset) continue;
+      const classified = classifyManagedPairs(collectManagedPairs(PACKAGE_ROOT, preset, target));
+      allDiffers = allDiffers.concat(classified.differs.map((pair) => `${target}: ${pair.rel}`));
+    }
+  }
+
+  let overwriteDiffers = false;
+  if (allDiffers.length) {
+    log('WARN', `${allDiffers.length} managed file(s) differ from the bundled package`);
+    for (const line of allDiffers.slice(0, 20)) process.stdout.write(`  ${line}\n`);
+    if (allDiffers.length > 20) process.stdout.write(`  … and ${allDiffers.length - 20} more\n`);
+    if (interactive) {
+      overwriteDiffers = await askYesNo(
+        'Overwrite differing managed files with the bundled package? [y/N] ',
+      );
+      if (!overwriteDiffers) {
+        log('WARN', 'skipped differing files (no silent overwrite)');
+      }
+    } else {
+      log('WARN', 'non-interactive: never overwriting differing managed files');
+    }
+  }
+
+  let wrote = 0;
+  let skippedDiffers = 0;
+  for (const target of targets) {
+    const summary = refreshSkillsAtTarget(target, packs, { overwriteDiffers });
+    wrote += summary.installed + summary.refreshed;
+    skippedDiffers += summary.skippedDiffers;
+    log(
+      'PASS',
+      `refreshed ${packs.join(', ')} at ${target}: ${summary.installed} new, ${summary.refreshed} updated, ${summary.skippedIdentical} identical, ${summary.skippedDiffers} differed (skipped)`,
+    );
+  }
+
+  if (!wrote && skippedDiffers) {
+    log('WARN', 'no skill files refreshed (all candidates differed or were identical)');
+    process.stdout.write('Recovery:\n  sdd-agentic-flow upgrade --skills-only\n');
+  }
+  return { ok: true, wrote, skippedDiffers, packs };
+}
+
+async function upgradeCommand(cwd, options = {}) {
+  const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
+  const interactive = canPromptInteractively(mode) && !options.check && !options.plan;
+  const execMode = detectExecutionMode(PACKAGE_ROOT);
+
+  if (options.skillsOnly) {
+    if (options.plan) {
+      const skillsRoot = resolveSkillsRoot(cwd);
+      const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+      process.stdout.write(
+        `Execution mode: ${execMode}\n` +
+          `Registry check: none (--skills-only)\n` +
+          `CLI package: unchanged\n` +
+          `Plan:\n  1. Refresh installed packs from the currently executing package (${VERSION})\n` +
+          `     packs: ${packs.length ? packs.join(', ') : '(none detected)'}\n\n` +
+          'Mutations (if applied):\n  managed skill files (after confirms / diff rules)\n\n' +
+          'No changes were made.\n',
+      );
+      return;
+    }
+    await refreshInstalledSkills(cwd, { mode, interactive, homeDir: options.homeDir });
+    return;
+  }
+
+  const result = await checkForUpdate({ currentVersion: VERSION });
+
+  if (options.check || (!interactive && !options.plan)) {
+    process.stdout.write(formatCheckReport(result));
+    if (!result.reachable) {
+      process.stdout.write('\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade\n');
+      process.exitCode = 1;
+      return;
+    }
+    if (!options.check && result.updateAvailable) {
+      process.stdout.write(
+        '\nThis invocation is non-interactive; no mutations were performed.\n' +
+          'Run `sdd-agentic-flow upgrade` in a TTY to confirm CLI/skills updates.\n',
+      );
+    }
+    return;
+  }
+
+  if (options.plan) {
+    const skillsRoot = resolveSkillsRoot(cwd);
+    const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+    if (!result.reachable) {
+      log('WARN', 'unable to check for updates');
+      process.stdout.write(
+        '\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade --plan\n',
+      );
+      process.exitCode = 1;
+      return;
+    }
+    process.stdout.write(
+      `Current CLI: ${VERSION}\n` +
+        `Latest CLI: ${result.latest}\n` +
+        `Execution mode: ${execMode}\n\n` +
+        'Plan:\n',
+    );
+    if (result.updateAvailable) {
+      if (execMode === 'global')
+        process.stdout.write(`  1. Upgrade CLI → ${result.latest} (npm install -g)\n`);
+      else
+        process.stdout.write(
+          `  1. Re-run via npx/local: npx sdd-agentic-flow@latest (no in-process self-replace)\n`,
+        );
+      process.stdout.write(
+        `  2. Refresh installed packs: ${packs.length ? packs.join(', ') : '(none detected)'}\n`,
+      );
+    } else {
+      process.stdout.write('  1. CLI already up to date — no package install\n');
+      process.stdout.write(
+        `  2. Optional skills refresh from current package: ${packs.length ? packs.join(', ') : '(none detected)'}\n`,
+      );
+    }
+    process.stdout.write(
+      '\nMutations (if applied):\n  npm global installation (global mode only)\n' +
+        '  managed skill files (after confirms / diff rules)\n\nNo changes were made.\n',
+    );
+    return;
+  }
+
+  // Interactive path
+  if (!result.reachable) {
+    log('WARN', 'unable to check for updates');
+    process.stdout.write(
+      '\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade\n',
+    );
+    return;
+  }
+
+  if (!result.updateAvailable) {
+    log('PASS', `up to date (${VERSION})`);
+    const refreshAnyway = await askYesNo(
+      'Refresh installed skills from this package anyway? [y/N] ',
+    );
+    if (refreshAnyway) await refreshInstalledSkills(cwd, { mode, interactive: true });
+    return;
+  }
+
+  log('WARN', `update available: ${VERSION} -> ${result.latest}`);
+  let cliOk = null;
+  const upgradeCli = await askYesNo(`Upgrade CLI to ${result.latest} now? [y/N] `);
+  if (upgradeCli) {
+    if (execMode === 'global') {
+      try {
+        process.stdout.write(`Running: npm install -g sdd-agentic-flow@latest\n`);
+        runNpmGlobalInstall();
+        log('PASS', `CLI upgraded toward ${result.latest}`);
+        cliOk = true;
+      } catch (error) {
+        cliOk = false;
+        fail(`CLI upgrade failed: ${error.message}`, {
+          reason: 'npm install -g exited non-zero.',
+          try: ['npm install -g sdd-agentic-flow@latest', 'sdd-agentic-flow upgrade --skills-only'],
+        });
+      }
+    } else {
+      process.stdout.write(
+        '\nThis session is running via npx/local, so the CLI cannot self-replace in-place.\n\n' +
+          'Run:\n  npx sdd-agentic-flow@latest\n\n' +
+          'Then, if you want skills refreshed from that newer package:\n' +
+          '  npx sdd-agentic-flow@latest upgrade --skills-only\n',
+      );
+      return;
+    }
+  }
+
+  const refreshSkills = await askYesNo('Refresh installed skills from this package? [y/N] ');
+  let skillsOk = null;
+  if (refreshSkills) {
+    try {
+      await refreshInstalledSkills(cwd, { mode, interactive: true });
+      skillsOk = true;
+    } catch (error) {
+      skillsOk = false;
+      log('FAIL', `skill refresh failed: ${error.message}`);
+    }
+  }
+
+  if (cliOk === true && skillsOk === false) {
+    process.stdout.write(
+      '\nCLI upgrade succeeded.\nSkill refresh failed.\n\n' +
+        `Result:\n  CLI: toward ${result.latest}\n  skills: previous / partial\n\n` +
+        'No automatic rollback was attempted.\n\nRecovery:\n  sdd-agentic-flow upgrade --skills-only\n',
+    );
+    process.exitCode = 1;
   }
 }
 
@@ -2355,9 +2681,14 @@ async function runCommand(command, rawArgs, cwd) {
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);
-    else if (!args.every((arg) => arg === '--force' || arg === '--quiet'))
-      return fail(USAGE.discover);
-    else
+    else if (!args.every((arg) => arg === '--force' || arg === '--quiet')) {
+      const bad = args.find((arg) => arg !== '--force' && arg !== '--quiet');
+      const hint = didYouMeanTry(bad, ['--force', '--quiet']);
+      return fail(USAGE.discover, {
+        reason: bad ? `Unknown argument: ${bad}` : 'Invalid arguments.',
+        try: ['sdd-agentic-flow discover --force', ...(hint ? [hint] : [])],
+      });
+    } else
       discoverProject(cwd, {
         force: args.includes('--force'),
         quiet: args.includes('--quiet'),
@@ -2367,15 +2698,18 @@ async function runCommand(command, rawArgs, cwd) {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.context);
     else {
       const sub = args[0] || 'status';
-      if (args.length > 1 || !['status', 'refresh', 'autonomy-state'].includes(sub))
+      if (args.length > 1 || !['status', 'refresh', 'autonomy-state'].includes(sub)) {
+        const hint = didYouMeanTry(sub, ['status', 'refresh', 'autonomy-state']);
         return fail('usage: context [status|refresh|autonomy-state]', {
           reason: 'Only status, refresh, and autonomy-state subcommands are supported.',
           try: [
             'sdd-agentic-flow context status',
             'sdd-agentic-flow context refresh',
             'sdd-agentic-flow context autonomy-state',
+            ...(hint ? [hint] : []),
           ],
         });
+      }
       if (sub === 'status') contextStatus(cwd);
       else if (sub === 'refresh') contextRefresh(cwd, { ascii });
       else autonomyStateReport(cwd);
@@ -2435,6 +2769,29 @@ async function runCommand(command, rawArgs, cwd) {
         checkUpdates: args.includes('--check-updates'),
         ascii,
       });
+  } else if (command === 'upgrade') {
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.upgrade);
+    const flags = new Set(['--check', '--plan', '--skills-only', '--quiet']);
+    const unknown = args.filter((arg) => !flags.has(arg));
+    if (unknown.length) {
+      const hint = didYouMeanTry(unknown[0], [...flags]);
+      return fail(USAGE.upgrade, {
+        reason: `Unknown argument: ${unknown[0]}`,
+        try: ['sdd-agentic-flow upgrade --check', ...(hint ? [hint] : [])],
+      });
+    }
+    if (args.includes('--check') && args.includes('--skills-only'))
+      return fail(USAGE.upgrade, {
+        reason: '--check and --skills-only cannot be combined.',
+        try: ['sdd-agentic-flow upgrade --check', 'sdd-agentic-flow upgrade --skills-only'],
+      });
+    await upgradeCommand(cwd, {
+      check: args.includes('--check'),
+      plan: args.includes('--plan'),
+      skillsOnly: args.includes('--skills-only'),
+      quiet: args.includes('--quiet'),
+      ascii,
+    });
   } else if (command === 'autonomous-resume') {
     const usage = USAGE['autonomous-resume'];
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP['autonomous-resume']);
@@ -2442,14 +2799,30 @@ async function runCommand(command, rawArgs, cwd) {
     let overrideGuard = null;
     let reason = null;
     let valid = true;
+    let badArg = null;
     for (const arg of args) {
       if (arg === '--force') force = true;
       else if (arg.startsWith('--override-guard='))
         overrideGuard = arg.slice('--override-guard='.length);
       else if (arg.startsWith('--reason=')) reason = arg.slice('--reason='.length);
-      else valid = false;
+      else {
+        valid = false;
+        badArg = arg;
+      }
     }
-    if (!valid || (overrideGuard && !/^[1-7]$/.test(overrideGuard))) return fail(usage);
+    if (!valid || (overrideGuard && !/^[1-7]$/.test(overrideGuard))) {
+      const hint = badArg
+        ? didYouMeanTry(badArg, ['--force', '--override-guard=3', '--reason=...'])
+        : null;
+      return fail(usage, {
+        reason: badArg ? `Unknown argument: ${badArg}` : 'Invalid arguments.',
+        try: [
+          'sdd-agentic-flow autonomous-resume --force',
+          'sdd-agentic-flow autonomous-resume --override-guard=3 --reason="..."',
+          ...(hint ? [hint] : []),
+        ],
+      });
+    }
     if (overrideGuard && !reason)
       return fail('--override-guard requires --reason="...".', {
         reason: 'Overrides must be audited with an explicit human reason.',
@@ -2458,6 +2831,18 @@ async function runCommand(command, rawArgs, cwd) {
     autonomousResume(cwd, { force, overrideGuard, reason });
   } else if (command === 'migrate') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.migrate);
+    if (!args.every((arg) => arg === '--plan' || arg === '--apply' || arg === '--quiet')) {
+      const bad = args.find((arg) => arg !== '--plan' && arg !== '--apply' && arg !== '--quiet');
+      const hint = didYouMeanTry(bad, ['--plan', '--apply', '--quiet']);
+      return fail(USAGE.migrate, {
+        reason: bad ? `Unknown argument: ${bad}` : 'Invalid arguments.',
+        try: [
+          'sdd-agentic-flow migrate --plan',
+          'sdd-agentic-flow migrate --apply',
+          ...(hint ? [hint] : []),
+        ],
+      });
+    }
     migrateSddRoot(args, cwd);
   } else if (command === 'uninstall') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
@@ -2511,11 +2896,24 @@ async function main() {
   if (!command || command === '--ascii') {
     const rest = stripAsciiFlag(command ? [command, ...args] : args);
     if (rest.length) return runCommand(rest[0], rest.slice(1), cwd);
-    await welcome(cwd, {
-      ascii: process.argv.includes('--ascii') || process.env.SDD_ASCII === '1',
-    });
-    if (shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env))
-      return runInteractiveMenu(cwd);
+    const welcomeAscii = process.argv.includes('--ascii') || process.env.SDD_ASCII === '1';
+    await welcome(cwd, { ascii: welcomeAscii });
+    const mode = resolveMode({ ascii: welcomeAscii });
+    const interactive = shouldShowInteractiveMenu(
+      { stdout: process.stdout, stdin: process.stdin },
+      process.env,
+    );
+    // Trust-model exception: human-rich TTY only — ask before any registry request (default N).
+    if (
+      mode === 'human-rich' &&
+      interactive &&
+      process.env.SDD_NO_UPDATE_PROMPT !== '1' &&
+      !process.env.CI
+    ) {
+      const wantsCheck = await askYesNo('Check for updates? [y/N] ');
+      if (wantsCheck) await upgradeCommand(cwd, { ascii: welcomeAscii });
+    }
+    if (interactive) return runInteractiveMenu(cwd);
     return;
   }
   return runCommand(command, args, cwd);

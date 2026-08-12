@@ -42,6 +42,35 @@ guide. Re-running `init` on a project that already has `config.yml` refreshes th
 does not overwrite config. `uninstall --apply --full` removes it with the other regenerable
 toolkit state.
 
+## CLI and skills upgrade (v1.13.0+)
+
+Use `sdd-agentic-flow upgrade` for a confirm-gated update flow:
+
+| Command | Registry | Mutates |
+| --- | --- | --- |
+| `upgrade --check` | yes | never |
+| `upgrade --plan` | yes | never |
+| `upgrade` (TTY) | yes | only after confirms |
+| `upgrade` (machine) | yes | never (prints next steps) |
+| `upgrade --skills-only` | no | managed skills only (diff-safe) |
+
+`upgrade --check` is the upgrade-specific read-only operation; `doctor --check-updates` remains
+the broader diagnostic that includes update awareness.
+
+**`--plan` may access the registry. `--plan` never performs package installation or filesystem
+mutation.**
+
+Skills refresh compares each managed file to the bundled package: missing files are installed;
+byte-identical files are skipped; differing files are never overwritten silently (interactive
+confirm required; non-interactive skips them). Successful install/refresh writes
+`sdd-agentic-flow-shared/install-provenance.yml` with `package` + `package_version`.
+
+Global CLI installs may run `npm install -g sdd-agentic-flow@latest` after confirm. npx/local
+sessions print `npx sdd-agentic-flow@latest` instead of pretending to self-replace.
+
+v1.13.0 does **not** change the baseline contract. Existing baseline remains compatible.
+Bundled skills refresh to the running package version; no new baseline migration is required.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

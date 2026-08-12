@@ -159,7 +159,10 @@ Quick one-off scripts, fully autonomous no-review agents, automatic deploy/relea
 
 - The source, CLI, docs, skills, and checks are open source and inspectable.
 - The CLI is small, local-first, and has zero runtime dependencies.
-- It has no telemetry, postinstall script, or outbound CLI network access by default. The sole exception is the opt-in `doctor --check-updates` flag, which makes exactly one npm-registry request when you pass it.
+- It has no telemetry, postinstall script, or outbound CLI network access by default. Network
+  access is limited to three explicit entry points: `doctor --check-updates`, `upgrade` (and
+  `--check`/`--plan`), and an interactive bare-welcome ask (human-rich TTY, default N). See
+  [the trust model](docs/trust-model.md).
 - It does not automatically commit, push, merge, deploy, or publish.
 - Installation is explicit; by default (`--scope user`) it writes only to per-agent global skill directories and creates zero files in your project. Configuration is explicit in `.sdd-agentic-flow/config.yml`. See [installation scope](docs/installation-scope.md).
 - `doctor` and `doctor --smoke` validate local setup, while publishable files are checked for blocked private-context markers.
@@ -176,6 +179,7 @@ discover [--force] [--quiet]          Refresh auto-discovered project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
 doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
 autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
 uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
@@ -183,7 +187,7 @@ list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` makes one request to the npm registry to check for a newer version. That flag is the sole, explicit, opt-in exception to "no network access by default"; see [the trust model](docs/trust-model.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [upgrading](docs/upgrading.md).
 
 `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Pass `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md).
 
@@ -278,7 +282,7 @@ For decision help, see [choosing a feature profile](docs/guides/choosing-a-featu
 
 ## Safety boundaries
 
-The CLI does not call external APIs, require a tracker, sync remotely, update itself, or perform Git/release operations. The opt-in `doctor --check-updates` flag checks for a newer version when you pass it and never installs it for you. This toolkit is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them. See [safety model](docs/safety-model.md).
+The CLI does not call external APIs, require a tracker, sync remotely, or perform Git/release operations by default. Opt-in update paths (`doctor --check-updates`, `upgrade`, welcome ask) never mutate without confirmation; `upgrade` may run `npm install -g` or refresh skills only after you say yes. This toolkit is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them. See [safety model](docs/safety-model.md).
 
 ## Publishing
 

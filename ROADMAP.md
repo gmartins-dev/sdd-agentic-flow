@@ -1,5 +1,9 @@
 # Roadmap
 
+- **v1.13.0 (2026-08-12):** Confirm-gated `upgrade` command + welcome opt-in update ask.
+  Additive minor; baseline unchanged. `--check` / `--plan` / `--skills-only`, skill
+  diff-safety + provenance, three documented network entry points, menu entry, orthogonal
+  did-you-mean on more commands. Evidence graph remains a separate future candidate.
 - **v1.12.0 (2026-08-12):** CLI UX foundation. Additive minor, no breaking changes.
   `outputMode` / `FORCE_COLOR` / `symbol`, structured `fail` (Reason/Try), `nextStep` on
   mutating commands, TTY-only welcome brand mark, contextual menu (`menuActionsFor`),

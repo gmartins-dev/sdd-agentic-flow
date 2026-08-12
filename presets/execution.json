@@ -1,6 +1,6 @@
 {
   "name": "execution",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Task execution and verification.",
   "skills": ["sdd-route", "sdd-implement-task", "sdd-implement-multi", "sdd-task-check"],
   "shared": true,

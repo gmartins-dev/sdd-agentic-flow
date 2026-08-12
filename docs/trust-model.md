@@ -2,10 +2,13 @@
 
 `sdd-agentic-flow` is inspectable local tooling: its CLI, skills, configuration, docs, and validation scripts are part of the package. It has zero runtime dependencies and no telemetry, postinstall hook, or outbound CLI network access by default.
 
-The one explicit, opt-in exception is `doctor --check-updates` (v1.4.0): only when that flag is
-passed, the CLI makes a single request to the npm registry to check for a newer version, bounded
-by a 3-second timeout. No other command makes a network call, and this one never runs
-automatically, on any other flag, or on bare invocation. See `bin/update-check.js`.
+Network access has **three explicit entry points** (never silent/background):
+
+1. **`doctor --check-updates`** — diagnostic read-only check (one npm registry request).
+2. **`upgrade`** (including `--check` / `--plan`) — upgrade-specific operations; mutations only after interactive confirms. `--skills-only` does not use the network.
+3. **Interactive bare welcome opt-in** — on human-rich TTY only (stdin+stdout TTY, no `CI`), the CLI may ask `Check for updates? [y/N]` (default **N**). Declining keeps zero network; accepting starts the same check path as `upgrade`. Set `SDD_NO_UPDATE_PROMPT=1` to skip the question.
+
+Machine / pipe / CI / `--quiet` / human-plain bare welcome never prompt and never call the registry unless you pass an explicit flag or command above. Offline is never reported as “up to date”. See `bin/update-check.js` and `bin/upgrade.js`.
 
 Installation and configuration are explicit local writes. By default (`install`'s `user`
 scope), skills are written only to per-agent global directories outside the project. See

@@ -20,6 +20,7 @@ const MENU_ACTIONS = [
   { label: 'Create local configuration', command: ['init'] },
   { label: 'Install the core skill pack', command: ['install', 'core'] },
   { label: 'Validate local setup', command: ['doctor'] },
+  { label: 'Check for updates / upgrade', command: ['upgrade'] },
   { label: 'Refresh auto-discovered project context', command: ['discover', '--force'] },
   { label: 'Preview what uninstall would remove (read-only)', command: ['uninstall', '--plan'] },
   { label: 'Show full command reference', command: ['help'] },
@@ -38,8 +39,8 @@ function menuActionsFor(state = {}) {
   const pick = (...commands) =>
     commands.map((command) => menuActionByCommand(...command)).filter(Boolean);
   if (!hasConfig) return pick(['init'], ['help']);
-  if (!hasSkills) return pick(['install', 'core'], ['doctor'], ['help']);
-  return pick(['doctor'], ['discover', '--force'], ['uninstall', '--plan'], ['help']);
+  if (!hasSkills) return pick(['install', 'core'], ['doctor'], ['upgrade'], ['help']);
+  return pick(['doctor'], ['upgrade'], ['discover', '--force'], ['uninstall', '--plan'], ['help']);
 }
 
 // Unifies every "no action" case (empty input, '0', 'q'/'Q', out-of-range, non-numeric) into a

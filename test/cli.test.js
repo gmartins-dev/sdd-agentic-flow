@@ -54,6 +54,7 @@ test('help <command> and <command> --help render identical, detailed content', (
     'init',
     'install',
     'doctor',
+    'upgrade',
     'uninstall',
     'discover',
     'context',
@@ -168,6 +169,7 @@ test('bare invocation shows a contextual, read-only status screen and never muta
   assert.match(before.stdout, /^sdd-agentic-flow \d+\.\d+\.\d+/);
   assert.match(before.stdout, /Suggested next step/);
   assert.match(before.stdout, /npx sdd-agentic-flow init/);
+  assert.match(before.stdout, /sdd-agentic-flow upgrade/);
   assert.match(before.stdout, /doctor --check-updates/);
   assert.deepEqual(listAllEntries(cwd), []);
 
@@ -549,7 +551,7 @@ test('doctor --check-updates reports an available update via a local registry st
   }
   assert.equal(updateCheck.status, 'WARN');
   assert.match(updateCheck.message, /99\.0\.0/);
-  assert.match(updateCheck.message, /npm install -g sdd-agentic-flow@latest/);
+  assert.match(updateCheck.message, /sdd-agentic-flow upgrade/);
 });
 
 test('doctor --contracts validates installed capability contracts', () => {
@@ -1826,4 +1828,111 @@ test('golden flow: autonomy AUTO-005 — doctor reads budget-exhausted loop stat
   assert.match(loop.message, /sdd-implement-task/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('upgrade --check is read-only and reports update available via test seam', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-check-'));
+  const result = spawnSync(process.execPath, [cli, 'upgrade', '--check'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 8000,
+    env: { ...process.env, SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '99.0.0', CI: '1' },
+  });
+  fs.rmSync(cwd, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /Update available: yes/);
+  assert.match(result.stdout, /99\.0\.0/);
+  assert.match(result.stdout, /sdd-agentic-flow upgrade/);
+});
+
+test('upgrade --check offline is not up-to-date and exits non-zero in machine mode', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-offline-'));
+  const result = spawnSync(process.execPath, [cli, 'upgrade', '--check'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 8000,
+    env: {
+      ...process.env,
+      CI: '1',
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: 'offline',
+    },
+  });
+  fs.rmSync(cwd, { recursive: true, force: true });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /unable to check for updates|Update available: \(unknown\)/);
+  assert.doesNotMatch(result.stdout, /up to date/i);
+});
+
+test('upgrade --plan may hit registry and never mutates', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-plan-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-plan-home-'));
+  assert.equal(runIsolatedHome(['init'], cwd, homeDir).status, 0);
+  assert.equal(runIsolatedHome(['install', 'core'], cwd, homeDir).status, 0);
+  const before = listAllEntries(homeDir).sort();
+  const result = spawnSync(process.execPath, [cli, 'upgrade', '--plan'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 8000,
+    env: {
+      ...process.env,
+      HOME: homeDir,
+      USERPROFILE: homeDir,
+      CI: '1',
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '99.0.0',
+      SDD_AGENTIC_FLOW_TEST_EXEC_MODE: 'global',
+    },
+  });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /No changes were made/);
+  assert.match(result.stdout, /Upgrade CLI|npm install -g|Latest CLI/);
+  assert.deepEqual(listAllEntries(homeDir).sort(), before);
+  fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(homeDir, { recursive: true, force: true });
+});
+
+test('upgrade --skills-only refreshes missing files and skips local modifications', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-skills-only-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-skills-only-home-'));
+  assert.equal(runIsolatedHome(['init'], cwd, homeDir).status, 0);
+  assert.equal(runIsolatedHome(['install', 'core'], cwd, homeDir).status, 0);
+  const skillPath = path.join(homeDir, '.agents/skills/sdd-create-specs/SKILL.md');
+  assert.ok(fs.existsSync(skillPath));
+  fs.writeFileSync(skillPath, 'locally-edited-skill\n');
+  const result = spawnSync(process.execPath, [cli, 'upgrade', '--skills-only'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 8000,
+    env: { ...process.env, HOME: homeDir, USERPROFILE: homeDir, CI: '1' },
+  });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /differ|skipped|non-interactive/i);
+  assert.equal(fs.readFileSync(skillPath, 'utf8'), 'locally-edited-skill\n');
+  fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(homeDir, { recursive: true, force: true });
+});
+
+test('discover/migrate/context unknown args include did-you-mean hints', () => {
+  assert.match(run(['discover', '--froce']).stderr, /Did you mean/);
+  assert.match(run(['migrate', '--plna']).stderr, /Did you mean/);
+  assert.match(run(['context', 'stauts']).stderr, /Did you mean/);
+  assert.match(run(['autonomous-resume', '--froce']).stderr, /Did you mean/);
+});
+
+test('machine upgrade does not mutate when an update is available', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-machine-'));
+  const result = spawnSync(process.execPath, [cli, 'upgrade'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 8000,
+    env: {
+      ...process.env,
+      CI: '1',
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '99.0.0',
+      SDD_AGENTIC_FLOW_TEST_NPM_INSTALL: 'fail',
+    },
+  });
+  fs.rmSync(cwd, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /Update available: yes|non-interactive/);
+  assert.doesNotMatch(result.stderr + result.stdout, /simulated npm install failure/);
 });

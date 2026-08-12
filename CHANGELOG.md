@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 1.13.0
+
+Confirm-gated CLI/skills upgrade UX. Additive minor; no breaking changes. Does **not**
+change the baseline contract.
+
+**Upgrade command:** `upgrade`, `upgrade --check`, `upgrade --plan`, `upgrade --skills-only`.
+`--check` is the upgrade-specific read-only registry check; `doctor --check-updates` remains
+the broader diagnostic. `--plan` may access the registry and never mutates. `--skills-only`
+never uses the network and never changes the CLI package. Interactive TTY confirms before
+global `npm install -g` or skills refresh; machine/non-interactive default is check-only
+(exit 0 when an update exists; non-zero when the registry is unreachable). npx/local sessions
+print `npx sdd-agentic-flow@latest` instead of self-replacing.
+
+**Welcome exception:** human-rich interactive TTY may ask `Check for updates? [y/N]` (default
+N) before any registry request. `SDD_NO_UPDATE_PROMPT=1` skips the ask. Machine/pipe/CI/plain
+never ask. Documented as one of three network entry points in
+[docs/trust-model.md](docs/trust-model.md).
+
+**Skills safety:** managed refresh compares bundled sources to installed files; never silently
+overwrites diffs. Writes `sdd-agentic-flow-shared/install-provenance.yml`. Partial CLI/skills
+failure reports state without rollback.
+
+**QoL (orthogonal):** did-you-mean on `discover` / `migrate` / `context` / `autonomous-resume`;
+menu entry **Check for updates / upgrade**.
+
 ## 1.12.0
 
 CLI UX foundation, no breaking changes. Completes the remaining items from the internal

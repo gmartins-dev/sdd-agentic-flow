@@ -48,6 +48,9 @@ independently of the package version. A baseline's stages or loop only change wh
 under a "Baseline changes" note. See [Baselines](baselines.md) for what this package
 ships versus the external skills it is inspired by.
 
+v1.13.0 does **not** change the baseline contract. Existing baseline remains compatible with
+CLI and bundled-skills refreshes from that release; no new baseline migration is required.
+
 ## Breaking vs. additive capability-contract changes
 
 This section makes explicit a rule that was already implicit in prior releases.
@@ -100,7 +103,8 @@ internal convention.
   `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
   `init [--interactive] [--language ...] [--execution-mode ...] [--autonomy-level ...]
   [--local-git-exclude] [--quiet]`, `install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]`, `doctor
-  [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]`, `context
+  [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]`, `upgrade
+  [--check|--plan|--skills-only]`, `context
   [status|refresh|autonomy-state]`, `autonomous-resume [--force] [--override-guard=<1-7>
   --reason="..."]`, `uninstall --plan | --apply [--include-config] [--full] [--scope
   user|project] [--agent ...] [--quiet]`, `discover [--force] [--quiet]`. These now follow the same

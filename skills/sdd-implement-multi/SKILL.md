@@ -2,7 +2,7 @@
 name: sdd-implement-multi
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 metadata:
-  version: 1.12.0
+  version: 1.13.0
   pack: multi-worktree
 extends: sdd-create-prompts
 requires: [config, spec-package]

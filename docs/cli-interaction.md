@@ -74,8 +74,9 @@ After a mutating command succeeds (`init`, `install`, `discover`, `migrate`,
 `Suggested next step` in human-rich / human-plain only. It is omitted under `--quiet`
 and in **machine** mode (pipe/CI/non-TTY/`--json`). Welcome (bare invocation) still
 points at one next command in every mode (compact status prose in machine) and, when
-relevant, the opt-in `doctor --check-updates` hint — with **zero** network unless that
-flag is passed explicitly.
+relevant, the opt-in `upgrade` / `doctor --check-updates` hint. On **human-rich** interactive
+TTY only, welcome may ask `Check for updates? [y/N]` (default **N**) before any registry
+request; machine/pipe/CI/human-plain never ask. See [trust model](trust-model.md).
 
 The doctor Fix/Next footer is **human-rich only** (never on `--json`, pipes, or
 human-plain).
@@ -83,8 +84,8 @@ human-plain).
 ## Interactive menu
 
 Shown only when stdout and stdin are TTYs and `CI` is unset. Actions are filtered by
-whether config and core skills are present. Uninstall in the menu is structurally
-`--plan` only.
+whether config and core skills are present. Includes **Check for updates / upgrade** once
+config exists. Uninstall in the menu is structurally `--plan` only.
 
 ## Related
 

@@ -11,4 +11,7 @@ skill-creator-workspaces/
 .npmrc
 .local/
 
+# Local-only brand scratch (embedded copy lives in bin/brand-art.js)
+public/assets/ascii-art-v2.txt
+
 .sdd/

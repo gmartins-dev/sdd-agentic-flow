@@ -62,6 +62,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | Doc | When to read |
 | --- | --- |
 | [architecture.md](architecture.md) | CLI, packs, skills, shared layer, consumer project |
+| [cli-interaction.md](cli-interaction.md) | Output modes, stdout/stderr, colors, branding vs protocol |
 | [compatibility-promise.md](compatibility-promise.md) | Versioning and capability-contract rules |
 | [compatibility-matrix.md](compatibility-matrix.md) | Supported combinations |
 | [design-principles.md](design-principles.md) | Design goals |

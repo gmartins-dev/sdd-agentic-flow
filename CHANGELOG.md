@@ -2,10 +2,35 @@
 
 ## Unreleased
 
-Maintainer version bump: `package.json` is the single source of truth. `npm run version:stamp`
-writes that number into every skill `metadata.version` and every `presets/*.json` `version`.
-The CLI reads `package.json` at runtime (no hardcoded `VERSION` constant). Consistency
-checks fail closed if a copy drifted.
+## 1.12.0
+
+CLI UX foundation, no breaking changes. Completes the remaining items from the internal
+CLI UX plan after v1.11.0 shipped usage.md / update hint / `--local-git-exclude`.
+
+**Output modes:** `bin/ui.js` adds `outputMode` (`human-rich` / `human-plain` / `machine`),
+`symbol()`, and `FORCE_COLOR` support (TTY only). `--ascii` / `SDD_ASCII=1` forces ASCII
+symbols. Brand marks and `│` connectors appear only in human-rich TTY sessions — never in
+pipes, CI, `--json`, or `--quiet`.
+
+**Errors and next steps:** `fail` on stderr uses What / Reason / Try; did-you-mean stays
+under `Try:` and never mutates the filesystem. `nextStep` after successful `init`,
+`install`, `discover`, `migrate`, `context refresh`, and `autonomous-resume`.
+
+**Onboarding:** Welcome prints the full three-chevron brand art on human TTY (embedded in
+`bin/brand-art.js`: Unicode blocks + stepped purple in human-rich; `#`/`+`/`=` in
+human-plain). human-rich TTY reveals the three bands left→right (~60ms); plain / `--ascii`
+are instant; `SDD_BRAND_ANIMATE=0` disables the reveal. Omitted in machine/pipe/CI.
+Contextual interactive menu via `menuActionsFor(state)`; `Useful when:` blocks on `init` /
+`install` / `doctor` / `context` / `migrate` help. Doctor human report gains a Fix/Next
+footer; `--json` shape unchanged.
+
+**Docs:** public [CLI interaction contract](docs/cli-interaction.md).
+
+**Maintainer:** `package.json` remains the single version source; `npm run version:stamp`
+writes skill/preset copies; consistency checks fail closed on drift.
+
+**Explicitly excluded:** `doctor --evidence-graph` (Slice B), TUI/runtime deps, automatic
+npm nags, new meta-commands (`status` / `setup` / CLI `sdd-route`).
 
 ## 1.11.0
 

@@ -1,14 +1,17 @@
 # Roadmap
 
+- **v1.12.0 (2026-08-12):** CLI UX foundation. Additive minor, no breaking changes.
+  `outputMode` / `FORCE_COLOR` / `symbol`, structured `fail` (Reason/Try), `nextStep` on
+  mutating commands, TTY-only welcome brand mark, contextual menu (`menuActionsFor`),
+  init/install rich connectors, help `Useful when:`, doctor Fix/Next footer, public
+  `docs/cli-interaction.md`, opt-in `--ascii`. Evidence graph (`doctor --evidence-graph`)
+  remains a future candidate (v1.9.3 audit / Slice B).
 - **v1.11.0 (2026-08-12):** Discovery and positioning. Additive minor, no breaking changes.
   `init` writes `.sdd-agentic-flow/usage.md` (resolvable usage-guide pointer for `--scope user`
   consumers). `welcome` mentions `doctor --check-updates` with zero network. Opt-in
   `init --local-git-exclude` appends `.sdd-agentic-flow/` to `.git/info/exclude` only.
   `sdd-explain-me` requires source-artifact anchors. README audience paragraph for AI-first
-  teams; Graph note on the mental-model doc. Evidence graph (`doctor --evidence-graph`)
-  remains a future candidate (v1.9.3 audit / Slice B). CLI UX foundation (output modes,
-  logo, structured errors) stays in `.local/gmm/sdd-agentic-flow/cli-ux-upgrade-plan.md`,
-  unpulled.
+  teams; Graph note on the mental-model doc.
 - **v1.10.0 (2026-08-11):** Toolkit path rename + system coherence. **Breaking:** `.sdd/` →
   `.sdd-agentic-flow/` for all toolkit state; `migrate --plan|--apply`, `doctor` `legacy_sdd_root`
   WARN, `docs/upgrading.md` migration table, grep gate `scripts/check-sdd-paths.sh`. **Additive:**

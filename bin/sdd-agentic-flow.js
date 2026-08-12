@@ -8,8 +8,16 @@ const readline = require('node:readline/promises');
 const { execFileSync } = require('node:child_process');
 const { validateContractReferences, parseContractArray } = require('./contract-graph');
 const { satisfiesRange } = require('./version-compat');
-const { styleStatus, didYouMean } = require('./ui');
-const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
+const {
+  styleStatus,
+  didYouMean,
+  outputMode,
+  isRich,
+  symbol,
+  writeBrand,
+  doctorFooterLines,
+} = require('./ui');
+const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
@@ -312,9 +320,63 @@ function log(status, message) {
   process.stdout.write(`${styleStatus(status, process.stdout)} ${message}\n`);
 }
 
-function fail(message, code = 1) {
-  process.stderr.write(`${styleStatus('FAIL', process.stderr)} ${message}\n`);
+function resolveMode(flags = {}) {
+  return outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
+    ascii:
+      Boolean(flags.ascii) || process.argv.includes('--ascii') || process.env.SDD_ASCII === '1',
+    quiet: Boolean(flags.quiet),
+    json: Boolean(flags.json),
+  });
+}
+
+function stripAsciiFlag(args) {
+  return args.filter((arg) => arg !== '--ascii');
+}
+
+// Structured stderr errors (What / Reason / Try). Second arg may be an exit code (legacy) or
+// `{ code, reason, try }`. Did-you-mean suggestions belong in Try — never auto-executed.
+function fail(message, codeOrOptions = 1) {
+  let code = 1;
+  let reason = null;
+  let tryLines = [];
+  if (typeof codeOrOptions === 'number') code = codeOrOptions;
+  else if (codeOrOptions && typeof codeOrOptions === 'object') {
+    code = codeOrOptions.code ?? 1;
+    reason = codeOrOptions.reason ?? null;
+    tryLines = codeOrOptions.try ?? [];
+  }
+  let out = `${styleStatus('FAIL', process.stderr)} ${message}\n`;
+  if (reason) out += `\nReason:\n  ${reason}\n`;
+  if (tryLines.length) out += `\nTry:\n${tryLines.map((line) => `  ${line}`).join('\n')}\n`;
+  process.stderr.write(out);
   process.exitCode = code;
+}
+
+function didYouMeanTry(input, candidates) {
+  const match = didYouMean(input, candidates);
+  return match ? `Did you mean \`${match}\`?` : null;
+}
+
+// Suggested-next-step block for human-rich / human-plain only. Suppressed by --quiet and
+// by machine mode (pipe/CI/non-TTY/`--json`). Welcome's machine screen prints its own
+// contextual next line inline — that is status prose, not this helper.
+function nextStep(lines, options = {}) {
+  if (options.quiet) return;
+  const mode = options.mode ?? resolveMode(options);
+  if (mode === 'machine') return;
+  const list = (Array.isArray(lines) ? lines : [lines]).filter(Boolean);
+  if (!list.length) return;
+  process.stdout.write(`\nSuggested next step\n${list.map((line) => `  ${line}`).join('\n')}\n`);
+}
+
+function logPassLine(message, options = {}) {
+  const mode = options.mode ?? resolveMode(options);
+  if (isRich(mode)) {
+    process.stdout.write(`│\n`);
+    process.stdout.write(`${styleStatus('PASS', process.stdout)} ${message}\n`);
+    return;
+  }
+  log('PASS', message);
 }
 
 function readPreset(name) {
@@ -329,11 +391,6 @@ function presetNames() {
     .filter((file) => file.endsWith('.json'))
     .map((file) => file.replace(/\.json$/, ''))
     .sort();
-}
-
-function suggest(input, candidates) {
-  const match = didYouMean(input, candidates);
-  return match ? ` Did you mean \`${match}\`?` : '';
 }
 
 function list() {
@@ -400,6 +457,7 @@ function printUsageGuidePointer(cwd) {
 }
 
 function init(cwd, options = {}) {
+  const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
   applyInitSideEffects(cwd, options);
   const configPath = sddJoin(cwd, 'config.yml');
   if (fs.existsSync(configPath)) {
@@ -410,15 +468,13 @@ function init(cwd, options = {}) {
     fs.mkdirSync(path.join(cwd, relative), { recursive: true });
   }
   fs.writeFileSync(configPath, configFor(options), 'utf8');
-  log('PASS', `created ${SDD_PATHS.config}`);
-  log('PASS', 'initialized local SDD directories');
-  discoverProject(cwd, { force: false });
-  if (!options.quiet)
-    process.stdout.write(
-      '\nSuggested next step\n' +
-        '  npx sdd-agentic-flow install core\n\n' +
-        printUsageGuidePointer(cwd),
-    );
+  logPassLine(`created ${SDD_PATHS.config}`, { mode, quiet: options.quiet });
+  logPassLine('initialized local SDD directories', { mode, quiet: options.quiet });
+  discoverProject(cwd, { force: false, quiet: true, ascii: options.ascii });
+  if (!options.quiet) {
+    nextStep('npx sdd-agentic-flow install core', { quiet: options.quiet, mode });
+    process.stdout.write(`\n${printUsageGuidePointer(cwd)}`);
+  }
   return true;
 }
 
@@ -562,6 +618,7 @@ function discoverProject(cwd, options = {}) {
   fs.mkdirSync(path.dirname(contextPath), { recursive: true });
   fs.writeFileSync(contextPath, projectContextFor(scanProjectSignals(cwd), provenance), 'utf8');
   log('PASS', `created ${SDD_PATHS.projectContext}`);
+  if (!options.quiet) nextStep('npx sdd-agentic-flow doctor', { quiet: options.quiet });
   return true;
 }
 
@@ -599,8 +656,8 @@ function contextStatus(cwd) {
   }
 }
 
-function contextRefresh(cwd) {
-  discoverProject(cwd, { force: true });
+function contextRefresh(cwd, options = {}) {
+  discoverProject(cwd, { force: true, quiet: options.quiet, ascii: options.ascii });
 }
 
 // `context autonomy-state`: read-only report of .sdd-agentic-flow/config.yml's workflow.execution_mode /
@@ -663,6 +720,8 @@ function autonomousResume(cwd, options = {}) {
   log('PASS', `resumed: cleared human override recorded at skill '${state.skill}'`);
   log('INFO', `next skill: ${state.next || `unknown — inspect ${SDD_PATHS.loopState}`}`);
   log('INFO', 'the invoking agent re-checks all 7 guardrails before advancing to it.');
+  if (state.next) nextStep(`invoke the ${state.next} skill`, { quiet: options.quiet });
+  else nextStep('invoke the sdd-route skill', { quiet: options.quiet });
 }
 
 function validValue(value, allowed) {
@@ -778,11 +837,17 @@ function installPresetToTarget(preset, target, summary, options = {}) {
     );
 }
 
-function printInstallNextSteps(cwd) {
+function printInstallNextSteps(cwd, options = {}) {
+  const mode = options.mode ?? resolveMode(options);
+  nextStep('npx sdd-agentic-flow doctor', { quiet: options.quiet, mode, ascii: options.ascii });
+  if (options.quiet) return;
+  // Machine: keep the resolvable usage pointer (v1.11.0 contract); omit decorative prose.
+  if (mode === 'machine') {
+    process.stdout.write(`\n${printUsageGuidePointer(cwd)}`);
+    return;
+  }
   process.stdout.write(
-    '\nSuggested next step\n' +
-      '  npx sdd-agentic-flow doctor\n\n' +
-      'Then ask your coding agent to run the `sdd-route` skill whenever the next step is\n' +
+    '\nThen ask your coding agent to run the `sdd-route` skill whenever the next step is\n' +
       'unclear — it recommends one skill from the main flow (Plan -> Prompt -> Implement ->\n' +
       'Check -> PR -> Review -> Fix -> Validate) without changing files.\n\n' +
       printUsageGuidePointer(cwd),
@@ -790,18 +855,31 @@ function printInstallNextSteps(cwd) {
 }
 
 function install(pack, cwd, options = {}) {
+  const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
   const preset = readPreset(pack);
-  if (!preset)
-    return fail(
-      `unknown pack: ${pack}. Run \`sdd-agentic-flow list\`.${suggest(pack, presetNames())}`,
-    );
+  if (!preset) {
+    const hint = didYouMeanTry(pack, presetNames());
+    return fail(`unknown pack: ${pack}.`, {
+      reason: `Pack \`${pack}\` does not exist.`,
+      try: ['sdd-agentic-flow list', ...(hint ? [hint] : [])],
+    });
+  }
   const scope = options.scope || 'user';
   if (scope !== 'user' && scope !== 'project')
-    return fail('unknown scope: use --scope user or --scope project');
-  if (options.agent && !KNOWN_AGENTS.includes(options.agent))
-    return fail(
-      `unknown agent: ${options.agent}. Supported: ${KNOWN_AGENTS.join(', ')}.${suggest(options.agent, KNOWN_AGENTS)}`,
-    );
+    return fail('unknown scope: use --scope user or --scope project', {
+      reason: 'Only user and project scopes are supported.',
+      try: [
+        'sdd-agentic-flow install <pack> --scope user',
+        'sdd-agentic-flow install <pack> --scope project',
+      ],
+    });
+  if (options.agent && !KNOWN_AGENTS.includes(options.agent)) {
+    const hint = didYouMeanTry(options.agent, KNOWN_AGENTS);
+    return fail(`unknown agent: ${options.agent}.`, {
+      reason: `Supported agents: ${KNOWN_AGENTS.join(', ')}.`,
+      try: hint ? [hint] : [`sdd-agentic-flow install ${pack} --agent ${KNOWN_AGENTS[0]}`],
+    });
+  }
 
   if (scope === 'project') {
     const target = path.join(cwd, '.agents', 'skills');
@@ -820,9 +898,9 @@ function install(pack, cwd, options = {}) {
     }
     const summary = { installed: 0, preserved: 0 };
     installPresetToTarget(preset, target, summary);
-    log('PASS', `installed ${pack}: ${summary.installed} files`);
+    logPassLine(`installed ${pack}: ${summary.installed} files`, { mode, quiet: options.quiet });
     if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
-    if (!options.quiet) printInstallNextSteps(cwd);
+    if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
     return;
   }
 
@@ -853,13 +931,13 @@ function install(pack, cwd, options = {}) {
     totals.installed += summary.installed;
     totals.preserved += summary.preserved;
   }
-  log(
-    'PASS',
+  logPassLine(
     `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
+    { mode, quiet: options.quiet },
   );
   if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
-  log('PASS', 'Repository changes: none');
-  if (!options.quiet) printInstallNextSteps(cwd);
+  logPassLine('Repository changes: none', { mode, quiet: options.quiet });
+  if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
 }
 
 function installationStatus(target) {
@@ -1207,7 +1285,7 @@ function doctorChecks(cwd) {
       add(
         'installation_no_project_footprint',
         'PASS',
-        '✓ No project files created by installation',
+        'No project files created by installation',
         'Installation',
       );
   }
@@ -1601,17 +1679,31 @@ const FIX_HINTS = {
   language_profile: 'sdd-agentic-flow init --language <profile>',
 };
 
-function renderDoctor(checks) {
+function renderDoctorFooter(checks, mode) {
+  // Plan: doctor Fix/Next footer is human-rich presentation only — not machine/plain/json.
+  if (mode !== 'human-rich') return;
+  const lines = doctorFooterLines(checks);
+  if (!lines.length) return;
+  process.stdout.write(`\n${lines.join('\n')}\n`);
+}
+
+function renderDoctor(checks, options = {}) {
+  const mode = options.mode ?? resolveMode({ json: options.json, ascii: options.ascii });
   let section = null;
   for (const check of checks) {
     if (check.section !== section) {
       section = check.section;
       process.stdout.write(`\n${section}\n`);
     }
-    log(check.status, check.message);
+    const message =
+      check.name === 'installation_no_project_footprint'
+        ? `${symbol('success', mode)} ${check.message}`
+        : check.message;
+    log(check.status, message);
     if ((check.status === 'WARN' || check.status === 'FAIL') && FIX_HINTS[check.name])
       process.stdout.write(`  fix: ${FIX_HINTS[check.name]}\n`);
   }
+  renderDoctorFooter(checks, mode);
 }
 
 function smokeCheck() {
@@ -1666,7 +1758,7 @@ async function doctor(cwd, options = {}) {
     language: languageReport(cwd),
   };
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
-  else renderDoctor(checks);
+  else renderDoctor(checks, { mode: resolveMode({ json: options.json, ascii: options.ascii }) });
   if (result.status === 'FAIL') process.exitCode = 1;
 }
 
@@ -1676,9 +1768,12 @@ function describePath(cwd, target) {
 }
 
 function migrateSddRoot(args, cwd) {
+  const quiet = args.includes('--quiet');
   const plan = args.includes('--plan');
   const apply = args.includes('--apply');
-  const rest = args.filter((arg) => !['--plan', '--apply', '--help', '--quiet'].includes(arg));
+  const rest = args.filter(
+    (arg) => !['--plan', '--apply', '--help', '--quiet', '--ascii'].includes(arg),
+  );
   if (rest.length || plan === apply) return fail(USAGE.migrate);
 
   const legacyPath = legacySddJoin(cwd);
@@ -1689,9 +1784,12 @@ function migrateSddRoot(args, cwd) {
     return;
   }
   if (fs.existsSync(newRootPath)) {
-    return fail(
-      `${SDD_ROOT}/ already exists; resolve the conflict manually before migrating from ${LEGACY_SDD_ROOT}/`,
-    );
+    return fail(`${SDD_ROOT}/ already exists.`, {
+      reason: `Resolve the conflict manually before migrating from ${LEGACY_SDD_ROOT}/.`,
+      try: [
+        `Merge any needed files from ${LEGACY_SDD_ROOT}/ into ${SDD_ROOT}/, then remove ${LEGACY_SDD_ROOT}/`,
+      ],
+    });
   }
 
   if (plan) {
@@ -1701,6 +1799,7 @@ function migrateSddRoot(args, cwd) {
 
   fs.renameSync(legacyPath, newRootPath);
   log('PASS', `migrated ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/`);
+  nextStep('npx sdd-agentic-flow doctor', { quiet });
 }
 
 function uninstall(args, cwd) {
@@ -1824,7 +1923,7 @@ USAGE
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
                          [--execution-mode plan|guided|apply|review|full]
                          [--autonomy-level manual|supervised|autonomous]
-                         [--local-git-exclude] [--quiet]
+                         [--local-git-exclude] [--quiet] [--ascii]
 
 OPTIONS
   --interactive          Prompt for project name, agent target, language, source type,
@@ -1843,6 +1942,11 @@ OPTIONS
                          state stays out of git status. Does not edit .gitignore and
                          does not exclude .specs/. No-ops with WARN when Git is absent.
   --quiet                Suppress the "Suggested next step" line on success.
+  --ascii                Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
+
+Useful when:
+  Starting a project with this toolkit for the first time, or regenerating
+  .sdd-agentic-flow/usage.md without touching an existing config.yml.
 
 EXAMPLES
   sdd-agentic-flow init
@@ -1860,13 +1964,18 @@ Pass --scope project to install into .agents/skills/ inside the project instead.
 USAGE
   sdd-agentic-flow install <pack> [--scope user|project]
                                    [--agent codex|cursor|claude-code|vscode-copilot]
-                                   [--plan] [--quiet]
+                                   [--plan] [--quiet] [--ascii]
 
 OPTIONS
   --scope user|project  Install target: global per-agent dirs (default) or the project.
   --agent <name>         Restrict a user-scope install to a single agent's directory.
   --plan                 Print what would be installed without writing any file.
   --quiet                Suppress the "Suggested next step" line on success.
+  --ascii                Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
+
+Useful when:
+  You have run init and need the core (or another) skill pack available to your
+  coding agent before planning or implementing work.
 
 EXAMPLES
   sdd-agentic-flow install core
@@ -1883,7 +1992,7 @@ baselines, language profile, safety defaults, and platform/environment.
 
 USAGE
   sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose]
-                          [--check-updates]
+                          [--check-updates] [--ascii]
 
 OPTIONS
   --json           Print machine-readable JSON only (no human-readable report).
@@ -1897,6 +2006,11 @@ OPTIONS
   --check-updates  Make one request to the npm registry to check for a newer version.
                    The sole, explicit, opt-in exception to "no outbound network access
                    by default" (see docs/trust-model.md) — never run automatically.
+  --ascii          Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
+
+Useful when:
+  You want a read-only health check of config, skills, and safety defaults before
+  (or after) an SDD step — or an opt-in npm update check via --check-updates.
 
 EXAMPLES
   sdd-agentic-flow doctor
@@ -1966,6 +2080,10 @@ USAGE
   sdd-agentic-flow context refresh
   sdd-agentic-flow context autonomy-state
 
+Useful when:
+  You need to know whether project-context.md is stale after git moves, or to
+  inspect the last autonomy loop-state without mutating anything.
+
 EXAMPLES
   sdd-agentic-flow context status
   sdd-agentic-flow context refresh
@@ -2015,6 +2133,10 @@ OPTIONS
   --plan   Show what would be moved; makes no changes.
   --apply  Move ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/ atomically.
 
+Useful when:
+  An older checkout still has toolkit state under .sdd/ and you need a one-shot
+  rename to .sdd-agentic-flow/ before doctor/install will see it.
+
 EXAMPLES
   sdd-agentic-flow migrate --plan
   sdd-agentic-flow migrate --apply
@@ -2024,10 +2146,13 @@ EXAMPLES
 function help(command) {
   if (command) {
     const topic = COMMAND_HELP[command];
-    if (!topic)
-      return fail(
-        `unknown command: ${command}. Run \`sdd-agentic-flow help\`.${suggest(command, KNOWN_COMMANDS)}`,
-      );
+    if (!topic) {
+      const hint = didYouMeanTry(command, KNOWN_COMMANDS);
+      return fail(`unknown command: ${command}.`, {
+        reason: 'That name is not a CLI command topic.',
+        try: ['sdd-agentic-flow help', ...(hint ? [hint] : [])],
+      });
+    }
     process.stdout.write(topic);
     return;
   }
@@ -2072,7 +2197,8 @@ MORE HELP
 // explaining afterward how to run `--apply` explicitly. In every other case — piped, scripted,
 // CI, agent-invoked, or an explicit `help`/`--help`/`-h`/any explicit command — behavior is
 // unchanged from before v1.4.0: this screen only, no prompt, no implicit action, exit 0.
-function welcome(cwd) {
+async function welcome(cwd, options = {}) {
+  const mode = options.mode ?? resolveMode(options);
   const configPath = sddJoin(cwd, 'config.yml');
   const configFound = fs.existsSync(configPath);
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
@@ -2082,51 +2208,83 @@ function welcome(cwd) {
   const skillsPartial = !skillsInstalled && presence.present.length > 0;
   const contextFound = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'));
 
-  process.stdout.write(
-    `sdd-agentic-flow ${VERSION}\n` +
-      'A local-first, zero-dependency Spec Driven Development toolkit for coding-agent workflows.\n\n' +
-      'Status\n',
-  );
-  log(
-    configFound ? 'PASS' : 'INFO',
-    configFound ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`,
-  );
-  log(
-    skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO',
-    skillsInstalled
-      ? `core skills installed (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
-      : skillsPartial
-        ? `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present) — re-run \`sdd-agentic-flow install core\` to repair`
-        : 'no skills installed yet (project or user scope)',
-  );
-  log(
-    contextFound ? 'PASS' : 'INFO',
-    contextFound ? 'project context generated' : 'project context not generated yet',
-  );
+  if (mode === 'human-rich' || mode === 'human-plain') {
+    // Full embedded chevron art — human TTY only; never machine/pipe/CI.
+    // human-rich: left→right band reveal (~60ms); plain / SDD_BRAND_ANIMATE=0: instant.
+    await writeBrand(mode, process.stdout, process.env, { quiet: options.quiet });
+    process.stdout.write(
+      `sdd-agentic-flow ${VERSION}\n\n` +
+        '  Spec-driven agent harness for human-guided workflows.\n\n',
+    );
+  } else {
+    process.stdout.write(
+      `sdd-agentic-flow ${VERSION}\n` +
+        'A local-first, zero-dependency Spec Driven Development toolkit for coding-agent workflows.\n\n' +
+        'Status\n',
+    );
+  }
 
-  const nextStep = !configFound
+  const configLabel = configFound ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`;
+  const skillsLabel = skillsInstalled
+    ? `core skills installed (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
+    : skillsPartial
+      ? `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present) — re-run \`sdd-agentic-flow install core\` to repair`
+      : 'no skills installed yet (project or user scope)';
+  const contextLabel = contextFound
+    ? 'project context generated'
+    : 'project context not generated yet';
+
+  if (mode === 'human-rich' || mode === 'human-plain') {
+    log(configFound ? 'PASS' : 'INFO', configFound ? 'config found' : 'config not found');
+    log(
+      skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO',
+      skillsInstalled
+        ? 'core skills installed'
+        : skillsPartial
+          ? skillsLabel
+          : 'no skills installed yet',
+    );
+    if (contextFound) log('PASS', 'project context generated');
+  } else {
+    log(configFound ? 'PASS' : 'INFO', configLabel);
+    log(skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO', skillsLabel);
+    log(contextFound ? 'PASS' : 'INFO', contextLabel);
+  }
+
+  const suggested = !configFound
     ? 'npx sdd-agentic-flow init'
     : !skillsInstalled
       ? 'npx sdd-agentic-flow install core'
       : 'npx sdd-agentic-flow doctor';
-  process.stdout.write(
-    '\nSuggested next step\n' +
-      `  ${nextStep}\n\n` +
-      'Quick commands\n' +
-      '  npx sdd-agentic-flow init              Create local configuration\n' +
-      '  npx sdd-agentic-flow install core       Install the core skill pack\n' +
-      '  npx sdd-agentic-flow doctor             Validate local setup\n' +
-      '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
-      'Run `npx sdd-agentic-flow help` for the full command reference.\n\n' +
-      'To check for a newer version (opt-in, one npm request):\n' +
-      '  npx sdd-agentic-flow doctor --check-updates\n',
-  );
+  if (mode === 'machine') {
+    // Compact status screen (CLI-001): contextual next + quick commands; not nextStep().
+    process.stdout.write(
+      '\nSuggested next step\n' +
+        `  ${suggested}\n\n` +
+        'Quick commands\n' +
+        '  npx sdd-agentic-flow init              Create local configuration\n' +
+        '  npx sdd-agentic-flow install core       Install the core skill pack\n' +
+        '  npx sdd-agentic-flow doctor             Validate local setup\n' +
+        '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
+        'Run `npx sdd-agentic-flow help` for the full command reference.\n\n' +
+        'To check for a newer version (opt-in, one npm request):\n' +
+        '  npx sdd-agentic-flow doctor --check-updates\n',
+    );
+  } else {
+    nextStep(suggested, { quiet: options.quiet, mode });
+    process.stdout.write(
+      '\nTo check for a newer version (opt-in, one npm request):\n' +
+        '  npx sdd-agentic-flow doctor --check-updates\n',
+    );
+  }
 }
 
 // The command dispatch body, extracted verbatim from main() (v1.4.0) so the interactive menu
 // (see runInteractiveMenu below) can route a numbered selection through the exact same code
 // path a typed command uses — never a second, weaker implementation of command behavior.
-async function runCommand(command, args, cwd) {
+async function runCommand(command, rawArgs, cwd) {
+  const args = stripAsciiFlag(rawArgs);
+  const ascii = rawArgs.includes('--ascii') || process.env.SDD_ASCII === '1';
   if (command === 'list') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.list);
     else list();
@@ -2192,6 +2350,7 @@ async function runCommand(command, args, cwd) {
           autonomyLevel,
           quiet,
           localGitExclude,
+          ascii,
         });
     }
   } else if (command === 'discover') {
@@ -2202,15 +2361,23 @@ async function runCommand(command, args, cwd) {
       discoverProject(cwd, {
         force: args.includes('--force'),
         quiet: args.includes('--quiet'),
+        ascii,
       });
   } else if (command === 'context') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.context);
     else {
       const sub = args[0] || 'status';
       if (args.length > 1 || !['status', 'refresh', 'autonomy-state'].includes(sub))
-        return fail('usage: context [status|refresh|autonomy-state]');
+        return fail('usage: context [status|refresh|autonomy-state]', {
+          reason: 'Only status, refresh, and autonomy-state subcommands are supported.',
+          try: [
+            'sdd-agentic-flow context status',
+            'sdd-agentic-flow context refresh',
+            'sdd-agentic-flow context autonomy-state',
+          ],
+        });
       if (sub === 'status') contextStatus(cwd);
-      else if (sub === 'refresh') contextRefresh(cwd);
+      else if (sub === 'refresh') contextRefresh(cwd, { ascii });
       else autonomyStateReport(cwd);
     }
   } else if (command === 'install') {
@@ -2239,7 +2406,7 @@ async function runCommand(command, args, cwd) {
       else valid = false;
     }
     if (!valid || !pack) return fail(usage);
-    install(pack, cwd, { scope, agent, plan, quiet });
+    install(pack, cwd, { scope, agent, plan, quiet, ascii });
   } else if (command === 'doctor') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);
     const valid = args.every(
@@ -2266,6 +2433,7 @@ async function runCommand(command, args, cwd) {
         autonomy: args.includes('--autonomy'),
         verbose: args.includes('--verbose'),
         checkUpdates: args.includes('--check-updates'),
+        ascii,
       });
   } else if (command === 'autonomous-resume') {
     const usage = USAGE['autonomous-resume'];
@@ -2282,7 +2450,11 @@ async function runCommand(command, args, cwd) {
       else valid = false;
     }
     if (!valid || (overrideGuard && !/^[1-7]$/.test(overrideGuard))) return fail(usage);
-    if (overrideGuard && !reason) return fail('--override-guard requires --reason="...".');
+    if (overrideGuard && !reason)
+      return fail('--override-guard requires --reason="...".', {
+        reason: 'Overrides must be audited with an explicit human reason.',
+        try: ['sdd-agentic-flow autonomous-resume --override-guard=3 --reason="..."'],
+      });
     autonomousResume(cwd, { force, overrideGuard, reason });
   } else if (command === 'migrate') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.migrate);
@@ -2293,10 +2465,13 @@ async function runCommand(command, args, cwd) {
   } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
   else if (command === 'version' || command === '--version' || command === '-v')
     process.stdout.write(`${VERSION}\n`);
-  else
-    fail(
-      `unknown command: ${command}. Run \`sdd-agentic-flow help\`.${suggest(command, KNOWN_COMMANDS)}`,
-    );
+  else {
+    const hint = didYouMeanTry(command, KNOWN_COMMANDS);
+    fail(`unknown command: ${command}.`, {
+      reason: 'That name is not a CLI command.',
+      try: ['sdd-agentic-flow help', ...(hint ? [hint] : [])],
+    });
+  }
 }
 
 // Only offered when the process is genuinely interactive on both streams and process.env.CI is
@@ -2305,8 +2480,11 @@ async function runCommand(command, args, cwd) {
 // runCommand() a typed command uses; the "uninstall" entry is structurally --plan only (see
 // bin/menu.js's MENU_ACTIONS), so the menu can never trigger a destructive action directly.
 async function runInteractiveMenu(cwd) {
+  const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
+  const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
+  const actions = menuActionsFor({ hasConfig: configFound, hasSkills: skillsInstalled });
   process.stdout.write('\nWhat would you like to do?\n');
-  MENU_ACTIONS.forEach((action, index) => {
+  actions.forEach((action, index) => {
     log('INFO', `${index + 1}. ${action.label}`);
   });
   process.stdout.write('  0. Exit (press Enter, 0, or q)\n\n');
@@ -2317,7 +2495,7 @@ async function runInteractiveMenu(cwd) {
   } finally {
     rl.close();
   }
-  const selection = resolveMenuSelection(raw, MENU_ACTIONS);
+  const selection = resolveMenuSelection(raw, actions);
   if (!selection) return;
   process.stdout.write(`\nRunning: sdd-agentic-flow ${selection.command.join(' ')}\n\n`);
   await runCommand(selection.command[0], selection.command.slice(1), cwd);
@@ -2330,8 +2508,12 @@ async function runInteractiveMenu(cwd) {
 async function main() {
   const [command, ...args] = process.argv.slice(2);
   const cwd = process.cwd();
-  if (!command) {
-    welcome(cwd);
+  if (!command || command === '--ascii') {
+    const rest = stripAsciiFlag(command ? [command, ...args] : args);
+    if (rest.length) return runCommand(rest[0], rest.slice(1), cwd);
+    await welcome(cwd, {
+      ascii: process.argv.includes('--ascii') || process.env.SDD_ASCII === '1',
+    });
     if (shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env))
       return runInteractiveMenu(cwd);
     return;

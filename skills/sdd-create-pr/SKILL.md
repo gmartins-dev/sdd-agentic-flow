@@ -2,7 +2,7 @@
 name: sdd-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 1.11.0
+  version: 1.12.0
   pack: pr
 extends: sdd-task-check
 requires: [config, task-evidence]

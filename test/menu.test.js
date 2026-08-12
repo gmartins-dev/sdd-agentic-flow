@@ -2,7 +2,12 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('../bin/menu');
+const {
+  shouldShowInteractiveMenu,
+  MENU_ACTIONS,
+  menuActionsFor,
+  resolveMenuSelection,
+} = require('../bin/menu');
 
 test('shouldShowInteractiveMenu requires both streams to be a real TTY and no CI env var', () => {
   assert.equal(
@@ -43,8 +48,26 @@ test('resolveMenuSelection never throws on out-of-range or non-numeric input', (
   assert.equal(resolveMenuSelection(null), null);
 });
 
-test('the uninstall menu entry is hard-coded to --plan only, never --apply', () => {
+test('CLI-008: the uninstall menu entry is hard-coded to --plan only, never --apply', () => {
   const uninstallEntry = MENU_ACTIONS.find((action) => /uninstall/i.test(action.label));
   assert.ok(uninstallEntry, 'expected an uninstall entry in MENU_ACTIONS');
   assert.deepEqual(uninstallEntry.command, ['uninstall', '--plan']);
+  const installed = menuActionsFor({ hasConfig: true, hasSkills: true });
+  const filtered = installed.find((action) => action.command[0] === 'uninstall');
+  assert.deepEqual(filtered.command, ['uninstall', '--plan']);
+});
+
+test('menuActionsFor filters by config/skills state', () => {
+  assert.deepEqual(
+    menuActionsFor({ hasConfig: false, hasSkills: false }).map((a) => a.command),
+    [['init'], ['help']],
+  );
+  assert.deepEqual(
+    menuActionsFor({ hasConfig: true, hasSkills: false }).map((a) => a.command),
+    [['install', 'core'], ['doctor'], ['help']],
+  );
+  assert.deepEqual(
+    menuActionsFor({ hasConfig: true, hasSkills: true }).map((a) => a.command),
+    [['doctor'], ['discover', '--force'], ['uninstall', '--plan'], ['help']],
+  );
 });

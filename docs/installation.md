@@ -16,8 +16,8 @@ npx sdd-agentic-flow doctor
 Use `init --interactive` when selecting initial project defaults. `init` always writes
 project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`)
 and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) that points at the canonical
-[skills usage guide](https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md)
-on GitHub — the consumer project does not receive a copy of package `docs/`. That part
+[skills usage guide](sdd-skills-usage-guide.md) (the same document on GitHub, because the
+consumer project does not receive a copy of package `docs/`). That part
 is unaffected by install scope.
 
 Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` so

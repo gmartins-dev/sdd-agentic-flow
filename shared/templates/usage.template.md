@@ -16,8 +16,8 @@ that chain. It does not run the workflow for you.
 This consumer project does not ship the package `docs/` tree (default `install --scope user`
 is zero footprint). Read the full guide here:
 
-- English: <https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md>
-- Português: <https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.pt-BR.md>
+- English: `https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md`
+- Português: `https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.pt-BR.md`
 
 Then run:
 

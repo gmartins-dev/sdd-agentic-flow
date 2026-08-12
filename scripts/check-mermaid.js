@@ -71,6 +71,46 @@ function hasMermaidBlock(file) {
   return /```mermaid\b/.test(content);
 }
 
+function isTransientLaunchError(message) {
+  return /Timed out after \d+ ms while waiting for the WS endpoint|No usable sandbox|Target closed|Protocol error/i.test(
+    message,
+  );
+}
+
+function renderMermaid(file, tempDir, puppeteerConfig, attempts = 3) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      execFileSync(
+        mmdc,
+        [
+          '-i',
+          path.join(root, file),
+          '-o',
+          path.join(tempDir, `out-${attempt}.svg`),
+          '-q',
+          '-p',
+          puppeteerConfig,
+        ],
+        // Windows can't spawn a `.cmd` shim directly without a shell (EINVAL) since Node's
+        // CVE-2024-27980 hardening; POSIX doesn't need it, so scope to win32 only.
+        { stdio: 'pipe', shell: process.platform === 'win32' },
+      );
+      return;
+    } catch (error) {
+      lastError = error;
+      const message = error.stderr?.toString() || error.message || '';
+      if (!isTransientLaunchError(message) || attempt === attempts) throw error;
+      // Brief backoff before relaunching Chromium on CI flakes (esp. Node 26 runners).
+      const until = Date.now() + 500 * attempt;
+      while (Date.now() < until) {
+        /* spin */
+      }
+    }
+  }
+  throw lastError;
+}
+
 function main() {
   const files = trackedMarkdownFiles().filter(hasMermaidBlock);
   if (!files.length) {
@@ -83,21 +123,7 @@ function main() {
   try {
     for (const file of files) {
       try {
-        execFileSync(
-          mmdc,
-          [
-            '-i',
-            path.join(root, file),
-            '-o',
-            path.join(tempDir, 'out.svg'),
-            '-q',
-            '-p',
-            puppeteerConfig,
-          ],
-          // Windows can't spawn a `.cmd` shim directly without a shell (EINVAL) since Node's
-          // CVE-2024-27980 hardening; POSIX doesn't need it, so scope to win32 only.
-          { stdio: 'pipe', shell: process.platform === 'win32' },
-        );
+        renderMermaid(file, tempDir, puppeteerConfig);
         console.log(`PASS ${file}`);
       } catch (error) {
         failures.push({ file, message: error.stderr?.toString() || error.message });

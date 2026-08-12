@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+Maintainer version bump: `package.json` is the single source of truth. `npm run version:stamp`
+writes that number into every skill `metadata.version` and every `presets/*.json` `version`.
+The CLI reads `package.json` at runtime (no hardcoded `VERSION` constant). Consistency
+checks fail closed if a copy drifted.
+
 ## 1.11.0
 
 Discovery and positioning, no breaking changes. Closes the post-1.10.0 Slice A gaps: the

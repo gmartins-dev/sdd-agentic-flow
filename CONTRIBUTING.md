@@ -19,6 +19,13 @@ The local test suite shells out to the system `tar` CLI for one packaging-bounda
 extracts a real `npm pack` tarball and runs the extracted CLI); that test skips itself if `tar`
 is not on `PATH`.
 
+## Version bumps
+
+Edit only `package.json` `"version"`, then run `npm run version:stamp` and add the matching
+`## x.y.z` section to `CHANGELOG.md`. The stamp writes skill `metadata.version` and preset
+`version` fields; the CLI reads `package.json` at runtime. See [docs/publishing.md](docs/publishing.md).
+Do not hand-edit those copies, and do not stamp changelog or roadmap history.
+
 ## Testing CLI changes locally, without publishing
 
 Two scripts let you try out a CLI change (wording, a new flag, onboarding flow) as if you were

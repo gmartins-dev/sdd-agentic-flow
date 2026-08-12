@@ -12,8 +12,10 @@ const { styleStatus, didYouMean } = require('./ui');
 const { shouldShowInteractiveMenu, MENU_ACTIONS, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 
-const VERSION = '1.11.0';
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const VERSION = JSON.parse(
+  fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8'),
+).version;
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
 const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'];

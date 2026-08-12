@@ -6,6 +6,25 @@ Run `npm run release:check` first. It chains `npm run check`, `npm run pack:dry`
 manual command list this section used to carry, so this doc never needs an edit on a routine
 version bump again.
 
+## Version bump
+
+`package.json` `version` is the only number to edit by hand. Then:
+
+```bash
+npm run version:stamp
+```
+
+That writes the same `x.y.z` into every `skills/*/SKILL.md` `metadata.version` and every
+`presets/*.json` `version` (copies that must exist on disk after `install` — agents and
+`doctor --contracts` read the skill file, not this repository's `package.json`). The CLI
+reads `package.json` at runtime; do not put a literal `const VERSION = 'x.y.z'` back in
+`bin/sdd-agentic-flow.js`.
+
+Add the matching `## x.y.z` section to `CHANGELOG.md`. `npm run check` / `release:check`
+fail if any stamped copy drifted, and print `npm run version:stamp` as the fix. Do not
+stamp `CHANGELOG.md`, `ROADMAP.md`, or narrative “vX.Y.Z+” mentions in docs — those are
+history, not pins.
+
 ## Tag and GitHub release: automatic (since v1.6.0)
 
 Once a version-bump commit reaches `main` and `.github/workflows/ci.yml` finishes successfully

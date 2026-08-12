@@ -77,8 +77,9 @@ const presets = presetFiles.map((file) => JSON.parse(fs.readFileSync(`presets/${
 let drift = false;
 
 // Version consistency: package.json is the single source of truth. Every skill's
-// metadata.version and every preset's "version" must match it exactly. The walk and
-// comparison live in scripts/check-version-consistency.js (Milestone 2, v1.6.0), shared with
+// metadata.version and every preset's "version" must match it exactly (stamp with
+// `npm run version:stamp`). The walk and comparison live in
+// scripts/check-version-consistency.js (Milestone 2, v1.6.0), shared with
 // scripts/release-checklist.sh, so this check never needs manual editing on a version bump.
 const { checkVersionConsistency } = require(
   path.resolve(process.cwd(), 'scripts/check-version-consistency.js'),
@@ -92,7 +93,7 @@ if (!parseVersion(packageVersion)) {
 for (const entry of versionCheck.skills) {
   if (entry.drifted) {
     console.error(
-      `skills/${entry.name}/SKILL.md metadata.version is '${entry.version}', expected '${packageVersion}' (from package.json)`,
+      `skills/${entry.name}/SKILL.md metadata.version is '${entry.version}', expected '${packageVersion}' (from package.json). Run \`npm run version:stamp\`.`,
     );
     drift = true;
   }
@@ -100,16 +101,17 @@ for (const entry of versionCheck.skills) {
 for (const entry of versionCheck.presets) {
   if (entry.drifted) {
     console.error(
-      `${entry.file} version is '${entry.version}', expected '${packageVersion}' (from package.json)`,
+      `${entry.file} version is '${entry.version}', expected '${packageVersion}' (from package.json). Run \`npm run version:stamp\`.`,
     );
     drift = true;
   }
 }
-// v1.9.1: bin/sdd-agentic-flow.js's own VERSION const drifted from package.json during v1.9.0
-// with nothing catching it — check-version-consistency.js now walks bin/ too.
+// The CLI must read VERSION from package.json (v1.9.1 hardcoded const drifted during v1.9.0).
 if (versionCheck.cli.drifted) {
   console.error(
-    `${versionCheck.cli.file} VERSION is '${versionCheck.cli.version}', expected '${packageVersion}' (from package.json)`,
+    versionCheck.cli.derived
+      ? `${versionCheck.cli.file} VERSION is '${versionCheck.cli.version}', expected '${packageVersion}' (from package.json)`
+      : `${versionCheck.cli.file} must read VERSION from package.json, not a hardcoded string (found '${versionCheck.cli.version}')`,
   );
   drift = true;
 }

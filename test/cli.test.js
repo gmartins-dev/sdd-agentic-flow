@@ -9,6 +9,9 @@ const { spawnSync } = require('node:child_process');
 
 const cli = path.resolve(__dirname, '../bin/sdd-agentic-flow.js');
 const packageRoot = path.resolve(__dirname, '..');
+const packageVersion = JSON.parse(
+  fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'),
+).version;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-test-'));
 
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
@@ -42,7 +45,7 @@ function listAllEntries(root, prefix = '') {
 test('help, version, and list are available', () => {
   assert.match(run(['help']).stdout, /uninstall --plan/);
   assert.match(run(['help']).stdout, /autonomous-resume/);
-  assert.equal(run(['version']).stdout.trim(), '1.11.0');
+  assert.equal(run(['version']).stdout.trim(), packageVersion);
   assert.match(run(['list']).stdout, /PACK core/);
 });
 
@@ -432,7 +435,7 @@ test('doctor JSON is parseable and smoke is isolated', () => {
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
   const result = run(['doctor', '--json'], cwd);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.version, '1.11.0');
+  assert.equal(report.version, packageVersion);
   assert.ok(Array.isArray(report.checks));
   assert.equal(report.language.profile, 'pt-BR');
   assert.equal(report.language.status, 'PASS');
@@ -1548,7 +1551,7 @@ test('a real npm pack tarball installs and its extracted CLI passes init/discove
         encoding: 'utf8',
       });
 
-    assert.equal(runPacked(['version']).stdout.trim(), '1.11.0');
+    assert.equal(runPacked(['version']).stdout.trim(), packageVersion);
     assert.equal(runPacked(['init']).status, 0);
     assert.equal(runPacked(['discover']).status, 0);
     assert.equal(runPacked(['install', 'core', '--scope', 'project']).status, 0);

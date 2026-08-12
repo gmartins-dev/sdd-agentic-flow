@@ -4,8 +4,10 @@
 
 ## What changes together
 
-- `package.json` version, every skill's `metadata.version`, and every `presets/*.json`
-  `version` move together on each release.
+- `package.json` version is the single source of truth. Every skill's `metadata.version`
+  and every `presets/*.json` `version` are stamped from it (`npm run version:stamp`) and
+  must match on each release. The CLI reads `package.json` at runtime and must not
+  hardcode a `VERSION` constant.
 - A skill's capability contract (`extends`, `requires`, `consumes`, `produces`, `baseline`,
   `compatible_with`, plus the optional `depends_on`/`conflicts`/`requires_cli`) only changes on
   a minor or major release. Patch releases never change a contract.

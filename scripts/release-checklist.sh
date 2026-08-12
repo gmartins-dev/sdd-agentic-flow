@@ -25,12 +25,19 @@ const { packageVersion, skills, presets, cli } = checkVersionConsistency();
 const drifted = [
   ...skills.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
   ...presets.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
-  ...(cli.drifted ? [`${cli.file} (version: ${cli.version})`] : []),
+    ...(cli.drifted
+      ? [
+          cli.derived
+            ? `${cli.file} (version: ${cli.version})`
+            : `${cli.file} must read VERSION from package.json (found ${cli.version})`,
+        ]
+      : []),
 ];
 
 if (drifted.length) {
   console.error(`version mismatch against package.json (${packageVersion}):`);
   for (const entry of drifted) console.error(`  - ${entry}`);
+  console.error('run `npm run version:stamp` and commit the result');
   process.exit(1);
 }
 console.log(`all skill, preset, and CLI versions match package.json (${packageVersion})`);

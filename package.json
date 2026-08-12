@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js",
-    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js && node --check ./test/cli.test.js && node --check ./test/version-compat.test.js",
+    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js && node --check ./test/cli.test.js && node --check ./test/version-compat.test.js && node --check ./test/version-consistency.test.js && node --check ./scripts/check-version-consistency.js",
     "test": "node --test --experimental-test-coverage",
     "check": "npm run lint:check && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && bash ./scripts/check-sdd-paths.sh && npm run build && npm run lint && npm test",
     "lint:check": "biome check .",
@@ -49,7 +49,8 @@
     "pack:dry": "node scripts/pack-dry.js",
     "cli:dev": "node scripts/cli-dev.js",
     "cli:sandbox": "node scripts/cli-sandbox.js",
-    "release:check": "bash scripts/release-checklist.sh"
+    "release:check": "bash scripts/release-checklist.sh",
+    "version:stamp": "node scripts/check-version-consistency.js --stamp"
   },
   "keywords": [
     "sdd",

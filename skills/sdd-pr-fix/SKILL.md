@@ -2,7 +2,7 @@
 name: sdd-pr-fix
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 1.17.0
+  version: 1.18.0
   pack: pr
 extends: sdd-pr-review
 requires: [config, pr-reference, review-findings]
@@ -24,7 +24,7 @@ autonomy_profile:
 
 ## When to use
 
-Use for explicitly requested repairs to verified findings on one task-scoped PR. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md) and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use for explicitly requested repairs to verified findings on one task-scoped PR. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -39,7 +39,7 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
 2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. Do not close findings by reclassifying missing evidence as preference. Do not close spec drift by pretending the spec changed; stop and reconcile with the human.
-3. Apply the smallest patch per actionable finding and add or update focused regression evidence.
+3. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md`. Apply the smallest patch per actionable finding and add or update focused regression evidence. No opportunistic cleanup.
 4. Run configured targeted checks, update the ledger, and hand off to `sdd-pr-review` for focused re-review.
 
 ## Safety

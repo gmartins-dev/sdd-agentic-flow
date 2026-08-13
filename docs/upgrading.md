@@ -132,6 +132,21 @@ v1.17.0 does **not** add CLI flags, skills, packs, a `docs/references/` folder,
 token/speed multipliers, or a survey-driven feature backlog. It does not claim
 the product is an autonomous agent, multi-agent framework, or software factory.
 
+## Additive 1.18.0 (baseline still 0.7.0)
+
+v1.18.0 is an additive methodology/skills/docs minor: one language-agnostic
+shared contract (`shared/references/engineering-principles.md`) for how agents
+change code. It is **not a skill** and **not a TLC/TDD baseline**. Seven
+consuming skills gain a pointer; `check-skills.sh` gates the file and those
+greps. `baseline_version` stays `0.7.0`. Loop and stages do not change.
+Refresh bundled skills to pick up `engineering-principles.md`; no baseline
+migration is required.
+
+v1.18.0 does **not** add a 15th skill, a web or security pack, CLI flags,
+`workflow.engineering_principles`, a registry baseline, or stack-specific
+CSP/Helmet/`npm audit`/Lighthouse catalogs in core. Engineering-fit findings
+do not flip check/validation `PASS` by themselves.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

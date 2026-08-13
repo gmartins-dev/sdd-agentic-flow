@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 1.18.0
+
+Shared engineering-principles contract for how agents change code. Language- and
+architecture-agnostic. Consumed by implement / prompts / specs / check /
+pr-review / pr-fix. Not a 15th skill. Not a web or security pack. Not a
+`baseline_version` bump.
+
+**Explicit non-goals (not in this release):**
+
+- No `skills/engineering-principles/`, no pack `web` / `security`.
+- No stack-specific CSP / Helmet / `npm audit` / Lighthouse catalog in core.
+- No CLI flag, no `workflow.engineering_principles`, no registry baseline.
+- Engineering-fit findings do not flip check/validation `PASS` by themselves.
+
 ## 1.17.0
 
 Positioning and curated foundations (documentation-only). Skills are the

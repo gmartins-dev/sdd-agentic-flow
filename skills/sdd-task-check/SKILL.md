@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.17.0
+  version: 1.18.0
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
@@ -24,7 +24,7 @@ autonomy_profile:
 
 ## When to use
 
-Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [artifact contracts](../sdd-agentic-flow-shared/references/artifact-contracts.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after implementing one task and before commit or PR handoff. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [artifact contracts](../sdd-agentic-flow-shared/references/artifact-contracts.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -42,7 +42,8 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 3. Identify the task's required behaviors. Select the smallest sensor set that still covers those behaviors and relevant failure modes (minimize redundancy, not coverage). Confirm each sensor observes a contractual seam and that its oracle/acceptance condition is grounded in spec, repo contracts, or configured gates — not inferred solely from the implementation. Flag tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid. For each required behavior, name one wrong implementation that the current sensors would still pass (**non-shallow litmus**). If you cannot, record **Shallow sensor** or an evidence gap — not PASS.
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS an implementation of one interpretation. On spec drift, write `needs changes` with a reconciliation note — do not rewrite the spec to match the code.
 5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as **evidence** (command, exit status, observed result, requirement mapping). Distinguish current vs historical vs not-run in Evidence / Limitations prose. Record missing or inadequate sensors as explicit gaps. Never turn missing evidence into a pass. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence (`self-report is not evidence`). This skill must not inherit author narrative.
-6. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
+6. Independently judge **engineering fit** against `../sdd-agentic-flow-shared/references/engineering-principles.md` (project conventions, extra abstraction, unnecessary files). Keep that judgment separate from spec/correctness. Engineering-fit issues are findings; they do not flip PASS unless they hit an AC, a safety rule, or an explicit human bar. `PASS` stays owned by evidence-standard and the false-positive catalog.
+7. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
 
 ## Safety
 

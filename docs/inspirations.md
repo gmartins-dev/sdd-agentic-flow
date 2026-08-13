@@ -163,7 +163,7 @@ than duplicated here.
 
 ## No endorsement
 
-Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md).
+Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md). This toolkit did not ingest obra/superpowers or web-quality-skills as a catalog; SWE-Skills-Bench is a reason not to grow generic skills.
 
 Both upstream sources are pinned to a specific version, tracked in
 `shared/baselines/registry.yml`, and updated deliberately rather than silently.

@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.18.0 (2026-08-13):** Shared engineering-principles contract for how
+  agents change code. Language- and architecture-agnostic; not a skill and not
+  a TLC/TDD baseline. Consumed by implement / prompts / specs / check /
+  pr-review / pr-fix. `baseline_version` stays `0.7.0`. No 15th skill, no web
+  or security pack, no CLI flag, no registry baseline. KISS/YAGNI/DRY findings
+  do not flip check/validation `PASS` by themselves.
 - **v1.17.0 (2026-08-13):** Positioning and curated foundations. Documentation
   minor; `baseline_version` stays `0.7.0`. Public definition: local-first
   agentic software-engineering harness; skills are the **execution layer**, not

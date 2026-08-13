@@ -5,6 +5,7 @@
   "ignorePatterns": [
     { "pattern": "^https://www.npmjs.com" },
     { "pattern": "^https://github.com" },
+    { "pattern": "^https://openai.com" },
     { "pattern": "^\\.\\./sdd-agentic-flow-shared/" }
   ]
 }

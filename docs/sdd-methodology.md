@@ -35,7 +35,25 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate �
 | Validate | `sdd-validation` | Feature validation report |
 | Release | `sdd-release` | Release readiness report (read-only) |
 
-When the next step is unclear, invoke `sdd-route`. It recommends a skill; it does not run the workflow for you. See [workflow](workflow.md) and the [invocation model](invocation-model.md).
+When the next step is unclear, invoke `sdd-route`. It recommends a skill; it does not run the workflow for you. See [workflow](workflow.md) and the [invocation model](invocation-model.md). Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue — not a separate Plan skill.
+
+Work **intent** (`feature` / `bugfix` / `refactor` / `investigation` / `maintenance`) is inferred and stated in the spec package. It is not a config key. Combine it with `feature_profile`. See [work types](../shared/references/work-types.md). Specifications are **living** control artifacts: on drift, stop and reconcile; do not silently implement a better requirement.
+
+### Named feedback loop (not auto-run)
+
+```text
+IMPLEMENT
+    ↓
+CHECK  (sdd-task-check)
+    ↓
+NEEDS_CHANGES ──► IMPLEMENT   (bounded; human-gated)
+    ↓
+VALIDATION
+    ↓
+HUMAN GATE
+```
+
+PR path remains `sdd-create-pr` → `sdd-pr-review` → `sdd-pr-fix`. Suggest a bound (for example three check→implement cycles, then escalate) as **guidance**, not a CLI `max_iterations`. This package does not auto-run the loop.
 
 ## Why specs help agents
 

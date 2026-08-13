@@ -1,22 +1,36 @@
 # Choosing a feature profile
 
-`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` sizes SDD rigor to the scope of the
-work. See [feature profiles](../../shared/references/feature-profiles.md) for the full
-contract each value implies. Pick the value that fits the piece of work.
+`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` sizes SDD rigor to the
+**uncertainty and risk** of the work, not only the size of the diff. See
+[feature profiles](../../shared/references/feature-profiles.md) for the full contract each
+value implies, and [work types](../../shared/references/work-types.md) for inferred intent
+(`feature` / `bugfix` / `refactor` / `investigation` / `maintenance`). Intent and profile are
+independent axes. Do not add a fifth profile or a CLI `--type`.
+
+Selection rule:
+
+> Upsize when uncertainty or risk is high even if the diff is small.
+> Downsize when the behavior is obvious and gates would be theater.
+> Default remains `medium_feature`.
+
+Example: a 5-line change in authentication can be `medium_feature` or `large_feature`; a
+500-line well-known CRUD can stay `small_fix` / `medium_feature`.
+
+When inferred intent is **bugfix**, at **any** profile (not only `small_fix`), the spec
+package must include current broken behavior, a **reproduction sensor** that fails on current
+code, expected fixed behavior, **unchanged behavior** with regression sensors, root cause, and
+fix boundary. “Fixed” without a current reproduction sensor is false success. “Fixed” without
+unchanged behavior plus regression is a silent gap on preservation.
 
 ## `small_fix`
 
-Use for a narrow, low-risk change where the desired behavior is already obvious and there is no
-real design decision to record. A short inline `context.md`/`spec.md` is enough; skip
-`design.md`.
+Use for a narrow, well-understood, low-uncertainty change where the desired behavior is already
+obvious and there is no real design decision to record. A short inline `context.md`/`spec.md`
+is enough; skip `design.md`. Spec analysis may skip only when the work is also well-understood;
+record the skip.
 
 Examples: fixing a typo in a user-facing error message, correcting an off-by-one in a pagination
 helper, adding a missing null check flagged by a bug report with a clear repro.
-
-When the work is a **defect**, keep `small_fix` (no fifth profile, no CLI `--type=bugfix`).
-The spec package must include current broken behavior, a **reproduction sensor** that fails
-on current code, expected fixed behavior, and a regression sensor after the change. “Fixed”
-without a current reproduction sensor is false success.
 
 ## `medium_feature` (default)
 
@@ -50,7 +64,7 @@ initiative to make a monolith's core domain testable in isolation.
 ## If you're unsure
 
 Default to `medium_feature` — it's the config's own fallback for unset or unrecognized values.
-Move up to `large_feature` only once you notice the work genuinely needs sequencing or
-cross-cutting design decisions; move down to `small_fix` only when you're confident there's
-nothing to design. Getting it "slightly wrong" is low-cost: profiles change how much of the TLC
-and TDD baselines a skill invokes explicitly, not the baselines themselves.
+Upsize when uncertainty or risk is high (even a small auth diff); downsize when the behavior is
+obvious and extra gates would be theater. Getting it "slightly wrong" is low-cost: profiles
+change how much of the TLC and TDD baselines a skill invokes explicitly, not the baselines
+themselves.

@@ -62,6 +62,9 @@ changes** and [upgrading](upgrading.md#baseline-070-v1140).
 v1.15.0 does **not** bump `baseline_version` (still `0.7.0`). Loop and stages move only
 with `baseline_version`. See [upgrading](upgrading.md#additive-1150-baseline-still-070).
 
+v1.16.0 does **not** bump `baseline_version` (still `0.7.0`). See
+[upgrading](upgrading.md#additive-1160-baseline-still-070).
+
 ## Breaking vs. additive capability-contract changes
 
 This section makes explicit a rule that was already implicit in prior releases.

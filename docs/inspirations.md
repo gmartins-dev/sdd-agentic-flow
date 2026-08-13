@@ -53,7 +53,9 @@ are not product requirements and are not reproduced here.
   finished; observe current sensors. Do not add another LLM-judge as a verifier.
 - Kiro, *Spec correctness / property-based testing* — properties/invariants as a way to
   state “always true” rules; PBT is evidence, not proof. Adjacent only: this toolkit does
-  not ship a PBT engine and does not require a `## Invariants` spec header.
+  not ship a PBT engine and does not require a `## Invariants` spec header. Kiro is
+  **not a runtime to copy**; this package ships a portable workflow contract, not an
+  agent runtime.
 
 ## Interoperability references
 

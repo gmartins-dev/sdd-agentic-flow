@@ -24,6 +24,14 @@ Do not write `handoff.md` when a skill completes with a terminal `Status:` and n
 The produced artifact (`check-report`, `validation-report`, `pr-package`) is sufficient
 continuity on its own. A redundant `handoff.md` would only drift out of sync with it.
 
+## Named feedback loop (not auto-run)
+
+The portable cycle is implement → check (`sdd-task-check`) → needs-changes back to implement
+(bounded; human-gated) → validation → **human gate**. PR path remains `sdd-create-pr` →
+`sdd-pr-review` → `sdd-pr-fix`. A suggested bound (for example three check→implement cycles
+then escalate) is **guidance**, not a CLI flag. This package does not auto-run that loop.
+`handoff.md` is for pausing inside it, not for executing it.
+
 ## Relationship to `.sdd-agentic-flow/autonomy/loop-state.md`
 
 `handoff.md` and `loop-state.md` serve different scopes and must not duplicate the same facts:

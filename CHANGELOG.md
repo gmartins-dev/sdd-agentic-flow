@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+## 1.16.0
+
+Progressive rigor and work-type content contracts. Additive minor on the v1.14.0
+evidence contract and v1.15.0 completion integrity. No `baseline_version` bump
+(`tdd` and `tlc-spec-driven` stay `0.7.0`). No skill renamed. No
+capability-contract field removed. Artifact field labels stay. No fifth
+`feature_profile`. No `workflow.work_type`. No CLI `--type`.
+
+**What changed:**
+
+- Inferred **work intent** (`feature` / `bugfix` / `refactor` / `investigation` /
+  `maintenance`) is documented in `shared/references/work-types.md` and stated in
+  the spec package. Combine with existing `feature_profile` for ceremony.
+- **Bugfix** at any profile requires **unchanged behavior** plus regression
+  sensors (and the v1.15.0 reproduction sensor). Not a new header, not
+  `bugfix.md`.
+- Feature-profile **selection follows uncertainty and risk**, not only diff
+  size. Default remains `medium_feature`.
+- `sdd-create-specs` runs a **spec-analysis** pass (or records an explicit skip
+  when `small_fix` and well-understood). No 15th skill.
+- **Living specs:** on drift, stop and reconcile with the human. Do not silently
+  implement a better requirement or rewrite the spec to match the code.
+- `sdd-implement-multi` documents **DAG → waves**. No runtime scheduler.
+  Worktrees stay explicit-user-only.
+- Named **feedback loop** (implement → check → needs-changes → validation →
+  human). Not auto-run. Direct → brainstorm → specs remains the Plan analogue.
+- **Sensor taxonomy** (example / property / contract / static / integration /
+  differential-mutation) as methodology classes, not shipped engines.
+
+**Explicit non-goals (not in this release):**
+
+- No CLI `--type`, no `workflow.work_type`, no fifth `feature_profile`, no 15th
+  skill, no Analyze CLI, no DAG executor.
+- No PBT / fuzz / mutation engines, no Kiro review-loop runtime, no required
+  `## Unchanged behavior` or `## System Invariants` headers.
+- No claim that this toolkit is Kiro or that it ships property-based testing.
+- The v1.15.0 false-positive catalog is unchanged.
+
 ## 1.15.0
 
 Completion integrity and false-positive resistance. Additive minor on the v1.14.0

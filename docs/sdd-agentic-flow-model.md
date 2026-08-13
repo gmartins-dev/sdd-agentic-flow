@@ -4,7 +4,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 ## Positioning
 
-**sdd-agentic-flow** is a spec-driven **agent harness**: Markdown skills, local CLI, evidence-first gates—not an agent runtime or scheduler.
+**sdd-agentic-flow** is a spec-driven **agent harness**: Markdown skills, local CLI, evidence-first gates—not an agent runtime or scheduler. The **workflow contract is portable** across capable agents; this toolkit does not copy an IDE/CLI/sub-agent runtime (Kiro is adjacent market evidence, not a product to clone).
 
 > Prompts tell AI what to do. Context tells it what to know. Harnesses tell it how to operate. Loops help it finish. **SDD tells it what "done" means.**
 
@@ -44,7 +44,7 @@ Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agen
 | --- | --- |
 | **Skill** | Markdown contract (`SKILL.md`) the agent reads and follows |
 | **Capability contract** | Frontmatter fields (`requires`, `consumes`, `produces`, …) linking skills |
-| **Feature profile** | Sizing hint (`small_fix` … `epic`) in config |
+| **Feature profile** | Uncertainty/risk sizing hint (`small_fix` … `epic`) in config; independent of inferred work intent |
 | **Execution mode** | Authorization axis: what work type is allowed |
 | **Autonomy level** | Advance axis: manual / supervised / autonomous |
 | **Guardrail** | Deterministic gate before auto-advancing to the next skill |

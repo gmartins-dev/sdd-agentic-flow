@@ -1,5 +1,14 @@
 # Roadmap
 
+- **v1.16.0 (2026-08-13):** Progressive rigor and work-type content contracts.
+  Additive minor; `baseline_version` stays `0.7.0`. Inferred work intent
+  (feature / bugfix / refactor / investigation / maintenance) plus existing
+  `feature_profile`. Bugfix at any profile names unchanged behavior and
+  regression sensors. Rigor follows uncertainty and risk, not only diff size.
+  Spec analysis is a skippable step in `sdd-create-specs`. Living specs.
+  DAG → waves documented (no orchestrator). Named feedback loop (not auto-run).
+  Sensor taxonomy as methodology only. No CLI `--type`, no 15th skill, no PBT
+  engine, not a Kiro runtime.
 - **v1.15.0 (2026-08-13):** Completion integrity and false-positive resistance.
   Additive minor; `baseline_version` stays `0.7.0`. Named catalog of illegitimate
   completion (green-but-wrong, inherited author narrative, suite weakening,

@@ -9,7 +9,11 @@ format. This is a presence check, not full-schema validation. It does not verify
 - `spec.md`: required `# Specification — {feature_slug}`, one `## Requirement {id}` per
   requirement, `## Acceptance criteria`. Produced by `sdd-create-specs`. Optional invariant
   sentences may live **inside** those existing headers (`INV-…` is an allowed ID, like
-  optional `REQ-{id}`). There is no required `## Invariants` header.
+  optional `REQ-{id}`). There is no required `## Invariants` header. Work-type content
+  (feature / bugfix / refactor / investigation / maintenance — see
+  [work-types.md](work-types.md)) also lives **inside** those existing headers: unchanged
+  behavior, regression sensors, root cause, and fix boundary are required *content* when
+  intent is bugfix, not a required `## Unchanged behavior` H2 and not a `bugfix.md` file.
 - `design.md`: required when the artifact exists (optional for `small_fix`; see
   `feature-profiles.md`): `# Design — {feature_slug}`, `## Decision`, `## Path ownership`.
   Produced by `sdd-create-specs`.

@@ -2,7 +2,7 @@
 name: sdd-implement-multi
 description: Plan or coordinate implementation of multiple dependency-aware SDD tasks. Use only when the user explicitly requests multi-task or feature orchestration; use sdd-implement-task for one task.
 metadata:
-  version: 1.15.0
+  version: 1.16.0
   pack: multi-worktree
 extends: sdd-create-prompts
 requires: [config, spec-package]
@@ -39,7 +39,7 @@ Do not use for one task, vague feature requests, specification creation, PR work
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Resolve one feature, enumerate tasks, and build a candidate dependency-wave grouping from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Resolve one feature, enumerate tasks, and build a candidate dependency-wave grouping from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing. The documented chain is: tasks → dependencies → **DAG** (must be **acyclic**) → **waves** (independent tasks in a wave) → parallel worktrees only with explicit user authorization. See `../sdd-agentic-flow-shared/references/worktree-orchestration.md`. Do not add a runtime scheduler.
 3. Before recommending that any two tasks run in parallel, analyze whether they are genuinely independent: check for files either task writes that the other also touches, shared contracts or types, shared runtime or test state, and any ordering the tasks' own evidence implies even if not stated as a formal dependency. Only place tasks in the same parallel wave when this analysis confirms real independence; when it does not, keep them sequential regardless of what the candidate grouping in step 2 suggested. This is the analysis the worktree-isolation rule in `## Safety` depends on — decide eligibility here, do not restate the rule itself.
 4. Default to a read-only plan. Before creating worktrees, delegating, or changing code, require explicit user authorization and verify isolation rules from configuration.
 5. Plan each ready task as an independently verifiable vertical slice with a contractual seam (field label: `Public seam`), targeted sensor command, and evidence owner. Justify horizontal work explicitly. Expected RED is a diagnostic sensor hint (`n/a — not used as proof` is valid); do not instruct faking RED.

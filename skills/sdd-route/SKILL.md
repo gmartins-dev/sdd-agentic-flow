@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 1.15.0
+  version: 1.16.0
   pack: core
 extends: null
 requires: [config]
@@ -25,7 +25,7 @@ autonomy_profile:
 
 ## When to use
 
-Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear.
+Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue; this skill recommends that path — it is not a new Plan skill.
 
 ## When not to use
 

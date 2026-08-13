@@ -105,6 +105,20 @@ CLI `--type` flags, a new `feature_profile`, a required `## Invariants` header, 
 a new Status enum. It does not claim TDD is inferior and does not quote token-multiplier
 savings as a product fact.
 
+## Additive 1.16.0 (baseline still 0.7.0)
+
+v1.16.0 is additive skill/docs/contract prose: work-type content contracts,
+uncertainty/risk profile selection, spec analysis inside `sdd-create-specs`,
+living specs, DAG → waves documentation, a named feedback loop, and a sensor
+taxonomy. `baseline_version` stays `0.7.0`. Loop and stages do not change.
+Refresh bundled skills to pick up `work-types.md`; no baseline migration is
+required.
+
+v1.16.0 does **not** add CLI `--type`, a `workflow.work_type` key, a fifth
+`feature_profile`, a 15th skill, a DAG executor, PBT/fuzz/mutation engines, or
+required `## Unchanged behavior` / `## System Invariants` headers. It does not
+claim to be Kiro or to ship property-based testing.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

@@ -2,7 +2,7 @@
 name: sdd-brainstorm
 description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for sdd-create-specs — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
 metadata:
-  version: 1.15.0
+  version: 1.16.0
   pack: planning
 extends: null
 requires: [config]
@@ -24,11 +24,11 @@ autonomy_profile:
 
 ## When to use
 
-Use when a user has an idea that is not yet ready for `sdd-create-specs` — either the problem itself is still vague ("improve X" with no defined problem), or the problem is clear but the solution approach is not decided. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting.
+Use when a user has an idea that is not yet ready for `sdd-create-specs` — either the problem itself is still vague ("improve X" with no defined problem), or the problem is clear but the solution approach is not decided. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting. Direct → brainstorm → specs is the Plan-mode analogue. This skill is not a new Plan skill.
 
 ## When not to use
 
-Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always `sdd-create-specs`'s job, and this skill only ever hands off to it. Do not use once the problem and approach are already decided; go straight to `sdd-create-specs`. Do not use for a single ready task (`sdd-implement-task`) or an already-specified feature that just needs explaining (`sdd-explain-me`).
+Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always `sdd-create-specs`'s job, and this skill only ever hands off to it. Do not use once the problem and approach are already decided; go straight to `sdd-create-specs`. Do not use for a single ready task (`sdd-implement-task`) or an already-specified feature that just needs explaining (`sdd-explain-me`). Do not become a new Plan skill.
 
 ## Inputs
 

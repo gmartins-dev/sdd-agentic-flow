@@ -251,7 +251,7 @@ if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.e
   exit 1
 fi
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md handoff-standard.md; do
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md handoff-standard.md work-types.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.7.0' "shared/references/$ref"
@@ -327,6 +327,21 @@ grep -F -q 'reproduction sensor' shared/references/feature-profiles.md
 grep -F -q 'green-but-wrong' examples/golden/task-management/validation-report.md
 if grep -F -q -- '--type=bugfix' bin/sdd-agentic-flow.js; then
   echo "CLI must not gain --type=bugfix in v1.15.0" >&2
+  exit 1
+fi
+# v1.16.0: work-type contracts, unchanged behavior, spec analysis, living spec
+# (presence checks). These greps fail if those contracts are deleted.
+grep -F -q 'unchanged behavior' shared/references/work-types.md
+grep -F -q 'Spec analysis' skills/sdd-create-specs/SKILL.md
+grep -F -q 'living' shared/references/tlc-baseline.md
+grep -F -q 'work intent' skills/sdd-create-specs/SKILL.md
+grep -F -q 'uncertainty' shared/references/feature-profiles.md
+grep -F -q 'DAG' shared/references/worktree-orchestration.md
+grep -F -q 'waves' shared/references/worktree-orchestration.md
+grep -F -q 'Named feedback loop' docs/sdd-methodology.md
+grep -F -q 'not a runtime to copy' docs/inspirations.md
+if grep -F -q -- 'workflow.work_type' .sdd-agentic-flow/config.yml 2>/dev/null; then
+  echo "config must not gain workflow.work_type" >&2
   exit 1
 fi
 # Upstream version pins (v0.9.0): each baseline entry must declare which upstream skill

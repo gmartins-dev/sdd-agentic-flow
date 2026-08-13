@@ -57,6 +57,27 @@ to look “minimal.”
 spec → required behavior → contractual seam → sensor
 ```
 
+## Sensor taxonomy
+
+Methodology only — **which class of sensor is appropriate**, not six engines this package
+ships. Execution remains repository-provided (pytest, vitest, fast-check, pact, typecheck,
+lint, …). Property-based testing is a **class of evidence**, not a product claim; weak
+properties can still pass. Differential / mutation is a later, costlier class; it is not
+implemented here.
+
+```text
+Evidence sensors
+├── Example-based     (specific scenarios)
+├── Property-based    (invariants over input spaces)  — class, not engine
+├── Contract-based    (API / schema / types)
+├── Static            (typecheck / lint / analysis)
+├── Integration       (real component boundaries)
+└── Differential / mutation   — later, costlier; not implemented
+```
+
+Do not add a required `## System Invariants` spec header. Optional `INV-…` sentences inside
+existing requirement/AC text remain allowed (v1.15.0).
+
 ## Contractual seam
 
 Observe the behavior at the point where the **contract can actually be discriminated**. Prefer

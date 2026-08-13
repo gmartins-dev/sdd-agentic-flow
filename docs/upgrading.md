@@ -119,6 +119,19 @@ v1.16.0 does **not** add CLI `--type`, a `workflow.work_type` key, a fifth
 required `## Unchanged behavior` / `## System Invariants` headers. It does not
 claim to be Kiro or to ship property-based testing.
 
+## Additive 1.17.0 (baseline still 0.7.0)
+
+v1.17.0 is documentation-only positioning: README “What is” (skills are the
+execution layer of a local-first harness, not the whole product), curated
+`docs/inspirations.md` with epistemic roles and a not-normative caveat, and
+short pointers in why-this-exists / the mental-model Positioning section.
+`baseline_version` stays `0.7.0`. Loop and stages do not change. No skill
+refresh is required for behavior; re-read public docs after upgrade.
+
+v1.17.0 does **not** add CLI flags, skills, packs, a `docs/references/` folder,
+token/speed multipliers, or a survey-driven feature backlog. It does not claim
+the product is an autonomous agent, multi-agent framework, or software factory.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

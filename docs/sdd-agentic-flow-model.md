@@ -4,7 +4,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 ## Positioning
 
-**sdd-agentic-flow** is a spec-driven **agent harness**: Markdown skills, local CLI, evidence-first gates—not an agent runtime or scheduler. The **workflow contract is portable** across capable agents; this toolkit does not copy an IDE/CLI/sub-agent runtime (Kiro is adjacent market evidence, not a product to clone).
+**sdd-agentic-flow** is a spec-driven **agent harness**: Markdown skills, local CLI, evidence-first gates—not an agent runtime or scheduler. Skills are the **execution layer**, not the whole harness. The **workflow contract is portable** across capable agents; this toolkit does not copy an IDE/CLI/sub-agent runtime (Kiro is adjacent market evidence, not a product to clone).
 
 > Prompts tell AI what to do. Context tells it what to know. Harnesses tell it how to operate. Loops help it finish. **SDD tells it what "done" means.**
 

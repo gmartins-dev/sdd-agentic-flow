@@ -6,9 +6,21 @@ Versão prática em português. Leia o [README principal em inglês](README.md) 
 
 Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpriu a intenção. Este toolkit fecha esse gap: **spec primeiro, evidência antes de concluir, você aprova o merge.**
 
+## O que é o sdd-agentic-flow?
+
+**O sdd-agentic-flow é um harness local-first de engenharia de software assistida por agentes que transforma desenvolvimento orientado a especificações em um workflow estruturado e verificável para coding agents.**
+
+Não é só um pacote de Agent Skills. As skills são a **camada de execução** (*execution layer*). Em volta delas: metodologia, contratos de artefato, baselines, modelo de evidência, configuração, CLI e lifecycle.
+
+O objetivo não é autonomia do agente. O objetivo é engenharia assistida por agentes, estruturada, rastreável e verificável, com humanos como o gate.
+
+*O agente faz o trabalho. A especificação define o que deve ser verdadeiro. Sensores fornecem evidência. O humano permanece o gate.*
+
+Fontes que informam este desenho — com papéis epistêmicos, não como specs — estão em [inspirations](docs/inspirations.md).
+
 Specs estruturadas, limites claros e governança humana:
 
-- **Skills com contrato de capacidade:** skills Markdown sobre baselines TLC e TDD condensados.
+- **Camada de execução:** skills Markdown com contrato de capacidade sobre baselines TLC e TDD condensados.
 - **Dimensionamento adaptativo:** perfis de feature com contexto de projeto auto-descoberto opcional.
 - **Zero footprint por padrão:** instalação user-local; `.sdd-agentic-flow/config.yml` só quando você cria.
 - **Humano no loop:** o toolkit estrutura o trabalho do agente; você mantém a autoridade final de revisão.

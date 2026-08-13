@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 1.17.0
+
+Positioning and curated foundations (documentation-only). Skills are the
+**execution layer** of a local-first agentic software-engineering harness, not
+the whole product. `docs/inspirations.md` now opens with an epistemic-role
+hierarchy and the caveat that those sources are not normative specifications.
+No skill renamed. No CLI flag. No `baseline_version` bump.
+
+**Explicit non-goals (not in this release):**
+
+- No `docs/references/` folder.
+- No token or speed multipliers.
+- No survey-driven feature backlog from Awesome-Issue-Solving.
+
 ## 1.16.0
 
 Progressive rigor and work-type content contracts. Additive minor on the v1.14.0

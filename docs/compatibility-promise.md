@@ -65,6 +65,9 @@ with `baseline_version`. See [upgrading](upgrading.md#additive-1150-baseline-sti
 v1.16.0 does **not** bump `baseline_version` (still `0.7.0`). See
 [upgrading](upgrading.md#additive-1160-baseline-still-070).
 
+v1.17.0 does **not** bump `baseline_version` (still `0.7.0`). See
+[upgrading](upgrading.md#additive-1170-baseline-still-070).
+
 ## Breaking vs. additive capability-contract changes
 
 This section makes explicit a rule that was already implicit in prior releases.

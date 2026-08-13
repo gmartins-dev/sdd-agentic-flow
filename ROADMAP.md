@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.17.0 (2026-08-13):** Positioning and curated foundations. Documentation
+  minor; `baseline_version` stays `0.7.0`. Public definition: local-first
+  agentic software-engineering harness; skills are the **execution layer**, not
+  the whole product. `docs/inspirations.md` has epistemic roles and the caveat
+  that sources are not specifications. No CLI flag, no skill rename, no
+  `docs/references/` folder, no token multipliers, no survey-driven backlog.
 - **v1.16.0 (2026-08-13):** Progressive rigor and work-type content contracts.
   Additive minor; `baseline_version` stays `0.7.0`. Inferred work intent
   (feature / bugfix / refactor / investigation / maintenance) plus existing

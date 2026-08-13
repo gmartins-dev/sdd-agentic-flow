@@ -1,5 +1,18 @@
 # Inspirations
 
+These sources inform the design of `sdd-agentic-flow`; they are not normative specifications. The project’s own contracts, baselines, and compatibility guarantees remain authoritative.
+
+## Authority hierarchy
+
+1. **Normative** — this repo’s contracts and baselines (`shared/references/*`,
+   [compatibility promise](compatibility-promise.md))
+2. **Methodological** — TLC Spec-Driven
+3. **Architectural** — harness / feedback sensors / humans-on-the-loop
+4. **Empirical** — tests-as-input, false-success, eval validity
+5. **Practice** — Anthropic Claude Code expertise
+6. **Interop / CLI craft** — Agent Skills Standard; CLIG as adjacent CLI craft
+7. **Landscape** — Awesome-Issue-Solving as a **map of the field**, not a backlog
+
 ## Core inspirations
 
 - TLC / `tlc-spec-driven`
@@ -23,6 +36,91 @@
 - local CLI, doctor, smoke validation, uninstall model, safety model, and agent-client-agnostic documentation
 - optional multi-worktree planning guidance
 
+## Curated sources by role
+
+Working URLs validated 2026-08-13 unless noted. Role tags are epistemic, not a
+second specification.
+
+### Methodological
+
+- TLC Spec-Driven
+  ([agent-skills.techleads.club](https://agent-skills.techleads.club/skills/tlc-spec-driven/))
+  — Specify → Discuss → Design → Tasks → Execute → Verify. Condensed locally;
+  this repo’s TLC baseline is authoritative.
+
+### Architectural
+
+- Martin Fowler, *Harness engineering for coding agent users*
+  ([martinfowler.com](https://martinfowler.com/articles/harness-engineering.html))
+- Thoughtworks Radar, *Feedback sensors for coding agents*
+  ([thoughtworks.com](https://www.thoughtworks.com/radar/techniques/feedback-sensors-for-coding-agents))
+  — compilers, linters, typecheckers, and test suites as session feedback. This
+  toolkit uses **configured** gates; it does not reimplement scanners or mutation
+  engines.
+- Kief Morris, *Humans and Agents in Software Engineering Loops*
+  ([martinfowler.com](https://martinfowler.com/articles/exploring-gen-ai/humans-and-agents.html))
+  — humans remain on the loop. Adjacent framing, not a product spec.
+
+### Empirical
+
+- Mathews & Nagappan, *Test-Driven Development for Code Generation*
+  ([arXiv:2402.13521](https://arxiv.org/abs/2402.13521)) — tests **given as
+  input** can improve generation. That is not the same as requiring the TDD
+  ritual as verification evidence.
+- Piya & Sullivan, *LLM4TDD* ([arXiv:2312.04687](https://arxiv.org/abs/2312.04687))
+  — tests / prompts / problem shape affect outcomes. Separate “tests as
+  information” from “TDD as ritual.”
+- *TDFlow* ([arXiv:2510.23761](https://arxiv.org/abs/2510.23761)) — strong
+  results when human tests are the target. This toolkit stays **compatible with
+  TDD**; it does not treat the ritual as epistemic proof, and it does not claim
+  TDD is worse than test-last.
+- *SWT-Bench* ([arXiv:2406.12952](https://arxiv.org/abs/2406.12952)) — generated
+  tests can filter candidate patches. Tests are sensors, not infallible oracles.
+- Konstantinou, Tambon & Papadakis, *On the risk of coding before testing*
+  ([arXiv:2607.05139](https://arxiv.org/abs/2607.05139)) — same-model
+  implementation → tests can propagate error. The oracle must be grounded in
+  an independent authority (spec, contracts, configured gates).
+- Laksh Advani, *From Confident Closing to Silent Failure: Characterizing False
+  Success in LLM Agents* ([arXiv:2606.09863](https://arxiv.org/abs/2606.09863),
+  2026) — agents can assert completion while environment state disagrees; LLM
+  judges grade the story, not the state. Adjacent only: those percentages are
+  not this toolkit’s measured risk. Do not ask the agent whether it finished;
+  observe current sensors. Do not add another LLM-judge as a verifier.
+- Wang, Pradel & Liu, *Are “Solved Issues” in SWE-bench Really Solved
+  Correctly?*
+  ([PDF](https://software-lab.org/publications/icse2026_SWE-bench-correctness.pdf))
+  — GREEN on a benchmark is not the same as matching intent.
+- OpenAI, *Separating signal from noise in coding evaluations*
+  ([openai.com](https://openai.com/index/separating-signal-from-noise-coding-evaluations/))
+  — automated clients may see 403; the URL is the public article. Eval design
+  can inflate apparent success. Adjacent only.
+
+### Practice
+
+- Anthropic, *Agentic coding and persistent returns to expertise* (Claude Code
+  expertise)
+  ([anthropic.com](https://www.anthropic.com/research/claude-code-expertise))
+  — practice report, not a specification for this toolkit.
+
+### Interop / CLI craft
+
+- Agent Skills Standard ([agentskills/agentskills](https://github.com/agentskills/agentskills),
+  [agentskills.io](https://agentskills.io/home)): an open specification for
+  `SKILL.md` frontmatter, structure, and progressive-disclosure conventions
+  shared across multiple AI coding clients. Listed as a compatibility
+  reference, not a claim of formal compliance. See the longer paragraph under
+  [Interoperability references](#interoperability-references).
+- Command Line Interface Guidelines (CLIG) ([clig.dev](https://clig.dev/)) —
+  adjacent CLI craft (TTY vs machine, actionable errors). Not a copied spec.
+
+### Landscape
+
+- Awesome-Issue-Solving ([Zhonghao Jiang](https://github.com/ZhonghaoJiang/Awesome-Issue-Solving))
+  — a **map** of scaffold design, process-aware evaluation, and failure modes
+  in agentic issue solving. It is **not a commitment** to implement
+  localization, reproduction engines, patch selection, or multi-agent runtimes
+  in this toolkit.
+
 ## Adjacent writing (cited, not copied)
 
 Short pointers to public essays that describe layers this toolkit already implements. They
@@ -39,23 +137,15 @@ are not product requirements and are not reproduced here.
   forcing the full RED → GREEN ritual did not show a consistent quality win; same-agent RED
   is not semantic proof. Adjacent only: this toolkit does not treat that article as
   project-normative and does not claim TDD is generally worse than test-last.
-- Thoughtworks Radar, *Feedback sensors for coding agents*, and Fowler, *Harness
-  engineering for coding agent users* — compilers, linters, typecheckers, and test suites
-  as session feedback. This toolkit uses **configured** gates; it does not reimplement
-  scanners or mutation engines.
-- Mathews & Nagappan, *Test-Driven Development for Code Generation* (arXiv:2402.13521) —
-  tests **given as input** can improve generation. That is not the same as requiring the
-  TDD ritual as verification evidence.
-- Laksh Advani, *From Confident Closing to Silent Failure: Characterizing False Success in
-  LLM Agents* (arXiv:2606.09863, 2026) — agents can assert completion while environment
-  state disagrees; LLM judges grade the story, not the state. Adjacent only: those
-  percentages are not this toolkit’s measured risk. Do not ask the agent whether it
-  finished; observe current sensors. Do not add another LLM-judge as a verifier.
 - Kiro, *Spec correctness / property-based testing* — properties/invariants as a way to
   state “always true” rules; PBT is evidence, not proof. Adjacent only: this toolkit does
   not ship a PBT engine and does not require a `## Invariants` spec header. Kiro is
   **not a runtime to copy**; this package ships a portable workflow contract, not an
   agent runtime.
+
+Fowler harness engineering, Thoughtworks feedback sensors, Mathews & Nagappan, and Advani
+are listed with role tags under [Curated sources by role](#curated-sources-by-role) rather
+than duplicated here.
 
 ## Interoperability references
 

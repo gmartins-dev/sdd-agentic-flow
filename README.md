@@ -10,9 +10,21 @@
 
 Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
 
+## What is sdd-agentic-flow?
+
+**sdd-agentic-flow is a local-first agentic software-engineering harness that turns specification-driven development into a structured, verifiable workflow for coding agents.**
+
+It is not just a collection of Agent Skills. Skills are the **execution layer**. Around them sit the methodology, artifact contracts, condensed TLC and TDD baselines, evidence model, configuration, CLI, and lifecycle.
+
+The goal is not agent autonomy. The goal is structured, traceable, verifiable agent-assisted engineering, with humans as the gate.
+
+*The agent does the work. The specification defines what should be true. Sensors provide evidence. The human remains the gate.*
+
+Sources that inform this design — tagged by epistemic role, not as specifications — are listed in [inspirations](docs/inspirations.md).
+
 Structured specs, clear boundaries, and human governance:
 
-- **Capability-contracted skills:** Markdown skills built on condensed TLC and TDD baselines.
+- **Execution layer:** capability-contracted Markdown skills on condensed TLC and TDD baselines.
 - **Adaptive sizing:** Feature-profile sizing with optional auto-discovered project context.
 - **Zero footprint by default:** User-local skill install; `.sdd-agentic-flow/config.yml` only when you create it.
 - **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
@@ -276,7 +288,7 @@ Language profiles select human-facing output language; a domain glossary records
 
 ## Inspiration and guides
 
-The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
+The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. Those inspirations now include epistemic roles; project contracts remain authoritative. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
 
 For decision help, see [choosing a feature profile](docs/guides/choosing-a-feature-profile.md), [adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and [condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).
 

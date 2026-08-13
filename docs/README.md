@@ -94,4 +94,4 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [AGENTS.md](../AGENTS.md) | Agent routing for install, workflow, trust, and maintainer branches |
 | [faq.md](faq.md) | Common questions |
 | [troubleshooting.md](troubleshooting.md) | `doctor` warnings and failures |
-| [inspirations.md](inspirations.md) | TLC, TDD, and SDD influences |
+| [inspirations.md](inspirations.md) | Curated sources with epistemic roles; project contracts remain authoritative |

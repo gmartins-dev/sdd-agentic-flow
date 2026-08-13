@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.13.1
+
+Compact welcome brand mark. Presentation-only patch; no baseline or command-contract
+changes.
+
+**Brand art:** Replaces the tall/wide three-chevron splash with a terminal-safe compact
+mark (~8–10 lines, ≤52 columns). Human-rich TTY reveal steps are ~160ms (was ~60ms).
+Tiny TTY (`columns` / `rows` too small) falls back to a one-line `›››` / `>>>` mark with
+no animation. Machine / pipe / CI / `SDD_BRAND_ANIMATE=0` behavior unchanged.
+
 ## 1.13.0
 
 Confirm-gated CLI/skills upgrade UX. Additive minor; no breaking changes. Does **not**

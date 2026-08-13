@@ -4,19 +4,28 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const {
   formatBrandArt,
+  formatOneLineBrand,
   writeBrandArt,
   shouldAnimateBrandArt,
+  brandArtFitsTerminal,
   brandArtLineCount,
+  brandArtWidth,
   BRAND_ART_RICH,
   BRAND_ART_ASCII,
+  MAX_ART_WIDTH,
 } = require('../bin/brand-art');
 
-test('brand art is embedded as three chevron bands', () => {
+test('brand art is a compact three-chevron mark', () => {
   assert.equal(BRAND_ART_RICH.length, 3);
   assert.equal(BRAND_ART_ASCII.length, 3);
-  assert.equal(brandArtLineCount('human-rich'), 38);
-  assert.equal(brandArtLineCount('human-plain'), 38);
+  const richLines = brandArtLineCount('human-rich');
+  const plainLines = brandArtLineCount('human-plain');
+  assert.ok(richLines >= 8 && richLines <= 10);
+  assert.equal(plainLines, richLines);
   assert.equal(brandArtLineCount('machine'), 0);
+  assert.ok(brandArtWidth('human-rich') <= MAX_ART_WIDTH);
+  assert.ok(brandArtWidth('human-plain') <= MAX_ART_WIDTH);
+  assert.equal(brandArtWidth('machine'), 0);
 });
 
 test('formatBrandArt is empty in machine mode and full otherwise', () => {
@@ -53,11 +62,24 @@ test('shouldAnimateBrandArt only for human-rich TTY without CI/quiet', () => {
   assert.equal(shouldAnimateBrandArt('human-rich', tty, {}, { animate: false }), false);
 });
 
+test('brandArtFitsTerminal rejects narrow or short TTY reports', () => {
+  const wide = { isTTY: true, columns: 80, rows: 40 };
+  const width = brandArtWidth('human-rich');
+  const height = brandArtLineCount('human-rich');
+  assert.equal(brandArtFitsTerminal('human-rich', wide), true);
+  assert.equal(brandArtFitsTerminal('human-rich', { isTTY: true, columns: width - 1 }), false);
+  assert.equal(brandArtFitsTerminal('human-rich', { isTTY: true, rows: height + 9 }), false);
+  assert.equal(brandArtFitsTerminal('machine', wide), false);
+});
+
 test('writeBrandArt animates left-to-right on rich TTY and is instant otherwise', async () => {
   const esc = String.fromCharCode(27);
+  const lineCount = brandArtLineCount('human-rich');
   const chunks = [];
   const stream = {
     isTTY: true,
+    columns: 80,
+    rows: 40,
     write(chunk) {
       chunks.push(String(chunk));
       return true;
@@ -68,16 +90,36 @@ test('writeBrandArt animates left-to-right on rich TTY and is instant otherwise'
   const out = chunks.join('');
   assert.match(out, /▓/);
   assert.match(out, /▒/);
-  // Two cursor-up rewrites between the three band frames (38 art lines).
-  assert.equal((out.match(new RegExp(`${esc}\\[38A`, 'g')) || []).length, 2);
+  assert.equal((out.match(new RegExp(`${esc}\\[${lineCount}A`, 'g')) || []).length, 2);
 
   chunks.length = 0;
   await writeBrandArt('human-plain', stream, {}, { delayMs: 0 });
   const plain = chunks.join('');
   assert.match(plain, /#{2,}/);
-  assert.equal(plain.includes(`${esc}[38A`), false);
+  assert.equal(plain.includes(`${esc}[${lineCount}A`), false);
 
   chunks.length = 0;
   await writeBrandArt('machine', stream, {}, {});
   assert.equal(chunks.join(''), '');
+});
+
+test('writeBrandArt falls back to one-line mark on tiny TTY', async () => {
+  const chunks = [];
+  const narrow = {
+    isTTY: true,
+    columns: brandArtWidth('human-rich') - 1,
+    rows: 40,
+    write(chunk) {
+      chunks.push(String(chunk));
+      return true;
+    },
+  };
+
+  await writeBrandArt('human-rich', narrow, { NO_COLOR: '1' }, { delayMs: 0 });
+  assert.equal(chunks.join(''), formatOneLineBrand('human-rich', narrow, { NO_COLOR: '1' }));
+  assert.ok(!chunks.join('').includes('▓'));
+
+  chunks.length = 0;
+  await writeBrandArt('human-plain', narrow, {}, { delayMs: 0 });
+  assert.equal(chunks.join(''), '>>>\n');
 });

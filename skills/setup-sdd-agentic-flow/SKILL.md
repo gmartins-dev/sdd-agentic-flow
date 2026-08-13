@@ -2,7 +2,7 @@
 name: setup-sdd-agentic-flow
 description: Initialize the public SDD Agentic Flow structure in a repository. Use when a user asks to set up, bootstrap, or configure this SDD workflow; create only the requested repository-local planning files and start from .sdd-agentic-flow/config.yml.
 metadata:
-  version: 1.13.0
+  version: 1.13.1
   pack: core
 extends: null
 requires: [config]

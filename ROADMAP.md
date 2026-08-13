@@ -1,5 +1,7 @@
 # Roadmap
 
+- **v1.13.1 (2026-08-12):** Compact welcome brand (~8–10×≤52) + slower reveal + tiny-TTY
+  one-line fallback. Presentation-only patch.
 - **v1.13.0 (2026-08-12):** Confirm-gated `upgrade` command + welcome opt-in update ask.
   Additive minor; baseline unchanged. `--check` / `--plan` / `--skills-only`, skill
   diff-safety + provenance, three documented network entry points, menu entry, orthogonal

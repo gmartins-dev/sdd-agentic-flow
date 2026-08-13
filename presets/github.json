@@ -1,6 +1,6 @@
 {
   "name": "github",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Core and PR guidance for GitHub-aware agents.",
   "skills": [
     "setup-sdd-agentic-flow",

@@ -1,256 +1,27 @@
 'use strict';
 
-// Embedded welcome brand art for the published CLI package (no runtime read of public/).
-// Three chevrons from the project symbol — Unicode blocks for human-rich, #/+/ = for ASCII.
+// Compact welcome brand art (v1.13.1) — three chevrons, terminal-safe size.
+// Target: ~7–10 lines, ≤52 columns (CLIG / Hermes ASCII sizing). No public/ runtime read.
 // Shown only in human-rich / human-plain; omitted in machine (pipe/CI/agents).
 
 const BRAND_ANSI = ['38;2;75;62;168', '38;2;109;94;240', '38;2;139;125;255'];
 const GAP = '  ';
+const DEFAULT_BRAND_ANIMATE_MS = 160;
+const MAX_ART_WIDTH = 52;
+const ONE_LINE_RICH = ['›', '›', '›'];
+const ONE_LINE_PLAIN = '>>>';
 
+// Compact three-chevron bands (height 9). Joined width stays well under 52 columns.
 const BRAND_ART_RICH = [
-  [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '▓▓',
-    '▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓',
-    '▓▓',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ],
-  [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '▓',
-    '▓▓▓▓',
-    '▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓▓▓',
-    '▓▓▓▓▓▓',
-    '▓▓▓▓',
-    '▓',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ],
-  [
-    '▒▒▒',
-    '▒▒▒▒▒',
-    '▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒▒▒',
-    '▒▒▒▒▒▒▒',
-    '▒▒▒▒▒',
-    '▒▒▒',
-  ],
+  ['▓', '▓▓', '▓▓▓▓', '▓▓▓▓▓▓', '▓▓▓▓▓▓▓▓', '▓▓▓▓▓▓', '▓▓▓▓', '▓▓', '▓'],
+  ['▓▓', '▓▓▓▓', '▓▓▓▓▓▓', '▓▓▓▓▓▓▓▓', '▓▓▓▓▓▓▓▓▓▓', '▓▓▓▓▓▓▓▓', '▓▓▓▓▓▓', '▓▓▓▓', '▓▓'],
+  ['▒▒', '▒▒▒▒', '▒▒▒▒▒▒', '▒▒▒▒▒▒▒▒', '▒▒▒▒▒▒▒▒▒▒', '▒▒▒▒▒▒▒▒', '▒▒▒▒▒▒', '▒▒▒▒', '▒▒'],
 ];
 
 const BRAND_ART_ASCII = [
-  [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '##',
-    '######',
-    '#########',
-    '############',
-    '################',
-    '################',
-    '############',
-    '#########',
-    '######',
-    '##',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ],
-  [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '+',
-    '++++',
-    '++++++',
-    '++++++++',
-    '+++++++++++',
-    '+++++++++++++',
-    '+++++++++++++++',
-    '++++++++++++++++++',
-    '++++++++++++++++++++',
-    '++++++++++++++++++++++',
-    '+++++++++++++++++++++++++',
-    '+++++++++++++++++++++++++',
-    '++++++++++++++++++++++',
-    '++++++++++++++++++++',
-    '++++++++++++++++++',
-    '+++++++++++++++',
-    '+++++++++++++',
-    '+++++++++++',
-    '++++++++',
-    '++++++',
-    '++++',
-    '+',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ],
-  [
-    '===',
-    '=====',
-    '=======',
-    '=========',
-    '==========',
-    '============',
-    '==============',
-    '================',
-    '==================',
-    '====================',
-    '=====================',
-    '=======================',
-    '=========================',
-    '===========================',
-    '=============================',
-    '===============================',
-    '================================',
-    '==================================',
-    '====================================',
-    '====================================',
-    '==================================',
-    '================================',
-    '===============================',
-    '=============================',
-    '===========================',
-    '=========================',
-    '=======================',
-    '=====================',
-    '====================',
-    '==================',
-    '================',
-    '==============',
-    '============',
-    '==========',
-    '=========',
-    '=======',
-    '=====',
-    '===',
-  ],
+  ['#', '##', '####', '######', '########', '######', '####', '##', '#'],
+  ['++', '++++', '++++++', '++++++++', '++++++++++', '++++++++', '++++++', '++++', '++'],
+  ['==', '====', '======', '========', '==========', '========', '======', '====', '=='],
 ];
 
 function artColorEnabled(stream, env = process.env) {
@@ -260,8 +31,18 @@ function artColorEnabled(stream, env = process.env) {
   return true;
 }
 
+function bandWidths(parts) {
+  return parts.map((band) => Math.max(0, ...band.map((line) => line.length)));
+}
+
+function joinedWidth(parts) {
+  if (!parts?.length) return 0;
+  const widths = bandWidths(parts);
+  return widths.reduce((sum, width) => sum + width, 0) + GAP.length * (parts.length - 1);
+}
+
 function joinArt(parts) {
-  const widths = parts.map((band) => Math.max(0, ...band.map((line) => line.length)));
+  const widths = bandWidths(parts);
   return parts[0].map((_, row) =>
     parts
       .map((band, index) => (band[row] || '').padEnd(widths[index], ' '))
@@ -271,7 +52,7 @@ function joinArt(parts) {
 }
 
 function paintArt(parts, stream, env) {
-  const widths = parts.map((band) => Math.max(0, ...band.map((line) => line.length)));
+  const widths = bandWidths(parts);
   const colorOn = artColorEnabled(stream, env);
   return parts[0].map((_, row) =>
     parts
@@ -286,21 +67,51 @@ function paintArt(parts, stream, env) {
   );
 }
 
+function artPartsFor(mode) {
+  if (mode === 'machine') return null;
+  return mode === 'human-rich' ? BRAND_ART_RICH : BRAND_ART_ASCII;
+}
+
 /** Full brand block for welcome. Empty in machine mode. Trailing newline when non-empty. */
 function formatBrandArt(mode = 'human-rich', stream, env = process.env) {
-  if (mode === 'machine') return '';
-  const parts = mode === 'human-rich' ? BRAND_ART_RICH : BRAND_ART_ASCII;
+  const parts = artPartsFor(mode);
+  if (!parts) return '';
   const painted = mode === 'human-rich' ? paintArt(parts, stream, env) : joinArt(parts);
   return `${painted.join('\n')}\n`;
 }
 
 function brandArtLineCount(mode = 'human-rich') {
-  if (mode === 'machine') return 0;
-  const parts = mode === 'human-rich' ? BRAND_ART_RICH : BRAND_ART_ASCII;
-  return parts[0]?.length || 0;
+  const parts = artPartsFor(mode);
+  return parts?.[0]?.length || 0;
 }
 
-const DEFAULT_BRAND_ANIMATE_MS = 60;
+function brandArtWidth(mode = 'human-rich') {
+  const parts = artPartsFor(mode);
+  return parts ? joinedWidth(parts) : 0;
+}
+
+function formatOneLineBrand(mode = 'human-rich', stream, env = process.env) {
+  if (mode === 'machine') return '';
+  if (mode !== 'human-rich') return `${ONE_LINE_PLAIN}\n`;
+  if (!artColorEnabled(stream, env)) return `${ONE_LINE_RICH.join('')}\n`;
+  return `${ONE_LINE_RICH.map((mark, index) => {
+    const code = BRAND_ANSI[index] || BRAND_ANSI[0];
+    return `\x1b[${code}m${mark}\x1b[0m`;
+  }).join('')}\n`;
+}
+
+/** False when the TTY reports columns/rows too small for the compact block. */
+function brandArtFitsTerminal(mode, stream) {
+  const parts = artPartsFor(mode);
+  if (!parts) return false;
+  const height = parts[0].length;
+  const width = joinedWidth(parts);
+  if (typeof stream?.columns === 'number' && stream.columns > 0 && stream.columns < width)
+    return false;
+  if (typeof stream?.rows === 'number' && stream.rows > 0 && stream.rows < height + 10)
+    return false;
+  return true;
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -318,13 +129,21 @@ function shouldAnimateBrandArt(mode, stream, env = process.env, options = {}) {
 }
 
 /**
- * Write welcome brand art to stream. human-rich TTY reveals bands 1→2→3 (~60ms steps);
- * human-plain / machine / CI / --quiet / SDD_BRAND_ANIMATE=0 stay instant (or empty).
+ * Write welcome brand art to stream. Compact block; human-rich TTY reveals bands 1→2→3
+ * (~160ms steps). Tiny TTY (columns/rows) falls back to a one-line mark. Plain / machine /
+ * CI / --quiet / SDD_BRAND_ANIMATE=0 stay instant (or empty).
  */
 async function writeBrandArt(mode = 'human-rich', stream, env = process.env, options = {}) {
   if (mode === 'machine' || !stream) return;
 
-  const parts = mode === 'human-rich' ? BRAND_ART_RICH : BRAND_ART_ASCII;
+  const parts = artPartsFor(mode);
+  if (!parts) return;
+
+  if (!brandArtFitsTerminal(mode, stream)) {
+    stream.write(formatOneLineBrand(mode, stream, env));
+    return;
+  }
+
   const delayMs = options.delayMs ?? DEFAULT_BRAND_ANIMATE_MS;
   const animate = shouldAnimateBrandArt(mode, stream, env, options);
 
@@ -345,10 +164,14 @@ async function writeBrandArt(mode = 'human-rich', stream, env = process.env, opt
 
 module.exports = {
   formatBrandArt,
+  formatOneLineBrand,
   writeBrandArt,
   shouldAnimateBrandArt,
+  brandArtFitsTerminal,
   brandArtLineCount,
+  brandArtWidth,
   BRAND_ART_RICH,
   BRAND_ART_ASCII,
   DEFAULT_BRAND_ANIMATE_MS,
+  MAX_ART_WIDTH,
 };

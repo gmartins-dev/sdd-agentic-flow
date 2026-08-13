@@ -34,10 +34,12 @@ Rules:
   a pipe (CLIG / picocolors convention).
 - Status words (`PASS` / `WARN` / `FAIL` / …) may be colored; symbols are optional extras
   in human modes only.
-- Welcome prints the **full** three-chevron brand art in human-rich / human-plain only
-  (embedded in `bin/brand-art.js` so it ships in the npm package — no runtime read of
-  `public/`). In human-rich TTY, the three bands reveal left→right (~60ms steps) to echo
-  the chevron flow; human-plain / `--ascii` stay instant. Set `SDD_BRAND_ANIMATE=0` to
+- Welcome prints a **compact** three-chevron brand mark (~8–10 lines, ≤52 columns) in
+  human-rich / human-plain only (embedded in `bin/brand-art.js` so it ships in the npm
+  package — no runtime read of `public/`). In human-rich TTY, the three bands reveal
+  left→right (~160ms steps) to echo the chevron flow; human-plain / `--ascii` stay
+  instant. If the TTY reports `columns` or `rows` too small for the block, welcome falls
+  back to a one-line mark (`›››` / `>>>`) with no animation. Set `SDD_BRAND_ANIMATE=0` to
   skip the reveal. Machine / pipe / CI / agents get no art. SVG is never rendered in the CLI.
 
 ## stdout vs stderr

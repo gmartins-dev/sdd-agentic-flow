@@ -2291,7 +2291,7 @@ async function welcome(cwd, options = {}) {
 
   if (mode === 'human-rich' || mode === 'human-plain') {
     // Full embedded chevron art — human TTY only; never machine/pipe/CI.
-    // human-rich: left→right band reveal (~60ms); plain / SDD_BRAND_ANIMATE=0: instant.
+    // human-rich: left→right band reveal (~160ms); plain / SDD_BRAND_ANIMATE=0: instant.
     await writeBrand(mode, process.stdout, process.env, { quiet: options.quiet });
     process.stdout.write(
       `sdd-agentic-flow ${VERSION}\n\n` +

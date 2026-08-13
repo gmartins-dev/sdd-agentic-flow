@@ -115,7 +115,8 @@ full external `tlc-spec-driven`/`tdd` skills they are inspired by. See
 `doctor` enforces a Baseline Compliance gate that checks the shipped baseline files,
 adaptive-sizing guidance, traceability guidance, and the evidence-first quality gate are present
 and configured. See [Baselines](baselines.md) for the exact scope of what this gate
-can and cannot verify.
+can and cannot verify. The canonical sensor → evidence → verification → decision contract
+lives in [evidence-standard.md](../shared/references/evidence-standard.md).
 
 ## Project context
 

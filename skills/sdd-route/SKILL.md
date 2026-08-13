@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 1.13.1
+  version: 1.14.0
   pack: core
 extends: null
 requires: [config]

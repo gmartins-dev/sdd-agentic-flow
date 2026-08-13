@@ -232,7 +232,7 @@ The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `re
 
 ## TDD baseline
 
-`sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD baseline for implementation. The TDD baseline uses behavior-focused tests at agreed public seams through RED → GREEN → REFACTOR loops and vertical slices. See [TDD baseline](docs/tdd-baseline.md) and [baselines](docs/baselines.md) for what this package ships versus the external skills it adapts from.
+`sdd-agentic-flow` uses a TLC baseline for planning and specifications and a TDD baseline for implementation. The TDD baseline requires adequate behavioral sensors at a contractual seam and recorded current evidence. Test-first is recommended when it sharpens the spec. Full RED → GREEN → REFACTOR is optional and is never treated as harness proof. A passing sensor is evidence, not a correctness verdict. See [TDD baseline](docs/tdd-baseline.md) and [baselines](docs/baselines.md) for what this package ships versus the external skills it adapts from.
 
 ## Uninstall and rollback
 

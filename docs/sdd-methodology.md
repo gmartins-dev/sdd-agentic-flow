@@ -53,6 +53,8 @@ This toolkit does not measure token savings or speed multipliers. A token econom
 1. **CLI** (`npx sdd-agentic-flow`) creates `.sdd-agentic-flow/config.yml`, installs Markdown skills, and runs `doctor`.
 2. **Skills** (14 public) encode each phase as a capability contract with safety defaults.
 3. **Baselines** condense TLC for planning and TDD for implementation; see [baselines](baselines.md).
+   Humans decide *what* must be true; agents may choose *how* to produce the code; sensors
+   produce evidence; verification evaluates that evidence against the spec; the human decides.
 
 Start with the [skills usage guide](sdd-skills-usage-guide.md). Follow a proven path in the [task-management golden example](../examples/golden/task-management/walkthrough.md).
 

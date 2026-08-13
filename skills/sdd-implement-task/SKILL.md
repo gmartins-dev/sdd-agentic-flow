@@ -2,7 +2,7 @@
 name: sdd-implement-task
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 1.13.1
+  version: 1.14.0
   pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
@@ -41,9 +41,9 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one task from the configured SDD source. Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict.
-4. Identify the behavior, public seam, test strategy, expected observable result, and narrowest test command. Stop when the seam is unclear.
-5. Use one vertical slice at a time: produce RED when practical, implement the smallest change for GREEN, then refactor only after GREEN.
-6. If strict TDD is impractical, apply `../sdd-agentic-flow-shared/references/evidence-standard.md` and report why, the replacement validation, remaining risk, and a follow-up test.
+4. Identify the required behavior from the spec, the contractual seam (field label: `Public seam`; prefer public/observable when practical), the sensor, and the oracle/acceptance condition from spec, repo contracts, or configured gates — never solely from the implementation. Stop when the seam is unclear.
+5. Use one vertical slice at a time: name the behavior, place a sensor at the contractual seam, implement the smallest change, and record executed **current** evidence. Test-first is recommended when it sharpens the spec. Full RED → GREEN → REFACTOR is optional and is never harness proof. Do not fabricate RED. Do not weaken required behavioral coverage because the ritual is optional.
+6. Apply `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands, results, limitations, and untested risks. A passing sensor is evidence, not a correctness verdict.
 7. Report TDD evidence, changed files, checks, remaining risks, and the next SDD step. Do not commit, push, open a PR, or update external trackers unless the user separately asks.
 
 ## Safety

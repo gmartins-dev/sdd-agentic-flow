@@ -17,7 +17,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 | **Harness** | How may the agent operate safely? | `execution_mode`, safety defaults, capability contracts, evidence standard |
 | **Loop** | How does work continue across steps/sessions? | `autonomy_level`, 7 guardrails, `.sdd-agentic-flow/autonomy/loop-state.md`, handoffs |
 
-**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Validation and release skills check evidence against that contract—not chat confidence.
+**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Sensors produce evidence. Validation and release skills evaluate that evidence against the contract—not chat confidence. A passing sensor is not a correctness verdict; the human remains the gate.
 
 **Graph** is not a fifth runtime layer. Workflow rails already live in `sdd-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
 
@@ -49,7 +49,7 @@ Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agen
 | **Autonomy level** | Advance axis: manual / supervised / autonomous |
 | **Guardrail** | Deterministic gate before auto-advancing to the next skill |
 | **Loop state** | Append-only execution memory for supervised/autonomous runs |
-| **Evidence** | Artifacts + `Status:` proving a step actually completed |
+| **Evidence** | Sensor results + `Status:` establishing confidence about specified properties |
 | **Handoff** | Cross-session bridge when a skill spans agent boundaries |
 | **Golden flow** | Fixture + walkthrough + `test/cli.test.js` integration proof |
 | **Doctor** | Local validator; never invokes skills or runs your tests |

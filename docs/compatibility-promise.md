@@ -51,6 +51,14 @@ ships versus the external skills it is inspired by.
 v1.13.0 does **not** change the baseline contract. Existing baseline remains compatible with
 CLI and bundled-skills refreshes from that release; no new baseline migration is required.
 
+v1.14.0 **does** change the condensed baseline loop. `tdd` and `tlc-spec-driven`
+`baseline_version` move `0.6.0` → `0.7.0`. The TDD loop becomes
+`[name-behavior, test-at-contractual-seam, implement, record-evidence]`. TLC stages are
+unchanged; the TLC invariant no longer embeds RED → GREEN as proof. Field labels stay.
+This is a minor Baseline change under the rule above, not a major: no skill renamed, no
+capability-contract field removed. See [CHANGELOG.md](../CHANGELOG.md) **Baseline
+changes** and [upgrading](upgrading.md#baseline-070-v1140).
+
 ## Breaking vs. additive capability-contract changes
 
 This section makes explicit a rule that was already implicit in prior releases.

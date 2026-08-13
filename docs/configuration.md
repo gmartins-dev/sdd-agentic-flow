@@ -12,6 +12,12 @@ overwriting it. See [language profiles](language-profiles.md).
 Keep `quality` gates enabled unless the project records an explicit exception. The `safety`
 keys keep commit, push, and merge/deploy disabled by default.
 
+`quality.require_tdd: true` keeps that key name. In v1.14.0 it means the **evidence
+contract**: adequate behavioral sensors at contractual seams, plus recorded current
+evidence. It does **not** mean the RED → GREEN → REFACTOR ritual is mandatory. Do not
+rename or deprecate the key. See [TDD baseline](tdd-baseline.md) and
+[shared/references/evidence-standard.md](../shared/references/evidence-standard.md).
+
 There is no dedicated `release` section yet — `sdd-release` (see the
 [skills catalog](skills-catalog.md)) reads whatever version-bearing files and changelog
 conventions the project already uses, falling back to the most common pattern (a single

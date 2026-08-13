@@ -1,6 +1,6 @@
 {
   "name": "planning",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "description": "Specification and task-prompt planning.",
   "skills": [
     "setup-sdd-agentic-flow",

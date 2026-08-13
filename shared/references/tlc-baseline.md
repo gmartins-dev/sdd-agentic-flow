@@ -1,6 +1,6 @@
 # TLC baseline
 
-Baseline version: 0.6.0
+Baseline version: 0.7.0
 
 This package adapts a minimum methodology from `tlc-spec-driven`.
 See `NOTICE` and `LICENSING.md` for attribution and licensing.
@@ -8,8 +8,8 @@ See `NOTICE` and `LICENSING.md` for attribution and licensing.
 ## Minimum flow
 
 Use **Specify → Discuss → Design → Tasks → Execute → Verify**. Clarify ambiguity
-before execution, keep requirements traceable to acceptance criteria, derive tests
-from those criteria, and preserve evidence before completion.
+before execution, keep requirements traceable to acceptance criteria, derive
+sensors from those criteria, and preserve current evidence before completion.
 
 ## Internal implementation
 
@@ -27,5 +27,7 @@ the consumer explicitly changes its policy.
 
 - Do not invent requirements or silently resolve material drift.
 - Stop and report `Blocked` when evidence or authority is missing.
-- Use RED → GREEN → REFACTOR for implementation work.
+- Implementation work records current adequate behavioral evidence at contractual
+  seams (see [tdd-baseline.md](tdd-baseline.md)). The RED → GREEN → REFACTOR
+  ritual is optional and is not the proof mechanism.
 - Do not claim completion without runnable or inspectable evidence.

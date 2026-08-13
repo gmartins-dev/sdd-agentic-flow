@@ -10,9 +10,11 @@
 - Your team wants presence/configuration checks (`doctor`'s Baseline Compliance gate) rather
   than a full behavioral verification system.
 - You're adopting SDD practices for the first time and want the condensed version's smaller
-  surface area: **Specify → Discuss → Design → Tasks → Execute → Verify** for planning, plain
-  RED → GREEN → REFACTOR for implementation — without sub-agent delegation, a discrimination
-  sensor, `LESSONS.md` distillation, or a Knowledge Verification Chain.
+  surface area: **Specify → Discuss → Design → Tasks → Execute → Verify** for planning, and
+  behavioral sensors at contractual seams for implementation (test-first recommended when
+  useful; full RED → GREEN → REFACTOR optional, never harness proof) — without sub-agent
+  delegation, a discrimination sensor, `LESSONS.md` distillation, or a Knowledge Verification
+  Chain.
 - You need every skill to stay agent-neutral and installable via simple file copy, not a runtime
   that invokes other skills on your behalf.
 

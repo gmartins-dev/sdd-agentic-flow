@@ -14,11 +14,19 @@ Use the baseline when a task changes code or behavior. Documentation-only work c
 
 ## Summary
 
-For each vertical slice: name the behavior, confirm the public seam, produce RED with the smallest useful failing test, make the smallest change for GREEN, refactor only after GREEN, and record commands, results, risks, and limitations.
+The required loop is: name the behavior from the spec → place a sensor at the contractual seam → implement → record current evidence.
 
-Tests observe behavior through public interfaces. Work one behavior at a time; do not batch all tests then all implementation.
+Three levels:
 
-When RED is not practical, record why, use a suitable alternative (characterization or regression test), state remaining risk, and identify a future test when appropriate.
+1. **Required** — adequate behavioral sensors at the contractual seam, plus recorded current evidence. Field label `Public seam` still means that seam; prefer public/observable when practical.
+2. **Recommended** — test-first / scenarios before code when they sharpen the spec. This is not the RED → GREEN → REFACTOR ritual.
+3. **Optional** — full TDD ritual when the human wants that granularity. Same-agent RED is not proof. `Expected RED command` may be `n/a`. Do not fabricate RED.
+
+Tests and other sensors remain required as behavioral evidence. Test-first and TDD remain valid implementation strategies. This package does not claim test-first is inferior to test-last. Required behavioral coverage is not weakened because the ritual is optional.
+
+A passing sensor is evidence, not a correctness verdict. The human remains the gate. See [evidence-standard.md](../shared/references/evidence-standard.md).
+
+`quality.require_tdd: true` keeps its name. It means this evidence contract, not “RED → GREEN is mandatory.”
 
 ## Related docs
 

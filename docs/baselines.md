@@ -8,10 +8,12 @@ skills, and this package does not install or invoke either.
 
 - `shared/references/tlc-baseline.md`: the condensed planning baseline: **Specify → Discuss →
   Design → Tasks → Execute → Verify**, with invariants (no invented requirements, stop-and-report
-  on missing evidence or authority, RED → GREEN → REFACTOR for implementation, no completion
-  claims without evidence).
-- `shared/references/tdd-baseline.md`: the condensed implementation baseline: a
-  RED → GREEN → REFACTOR loop over behavior-focused tests at public seams and vertical slices.
+  on missing evidence or authority, current adequate behavioral evidence at contractual seams
+  for implementation, no completion claims without evidence). The RED → GREEN → REFACTOR ritual
+  is optional and is not the proof mechanism.
+- `shared/references/tdd-baseline.md`: the condensed implementation baseline: name the behavior,
+  place a sensor at the contractual seam, implement, and record current evidence. Test-first is
+  recommended when it sharpens the spec. Full TDD ritual is optional.
 - `shared/baselines/registry.yml`: registers both with an independent `baseline_version`.
 
 ## What this package does not ship
@@ -52,8 +54,9 @@ Execute is not invoked. See the full mapping in
 `doctor` checks `baseline-tlc`, `adaptive-sizing`, `traceability`, and `evidence-first`. These
 are **presence and configuration checks**, not behavioral verification: `doctor` confirms the
 shipped baseline files and quality-gate configuration are intact. It cannot observe whether an
-agent actually followed Specify → Verify or RED → GREEN → REFACTOR in a given session. That
-remains a human-review responsibility.
+agent actually followed Specify → Verify or recorded current adequate evidence in a given
+session. That remains a human-review responsibility. Doctor does not verify that an agent
+ran RED → GREEN → REFACTOR.
 
 ## Synchronization policy
 

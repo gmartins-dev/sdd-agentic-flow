@@ -28,7 +28,12 @@ Expand-contract strategy: n/a
 - Behavior under test: `createTask` accepts required fields and rejects an invalid initial status.
 - Public seam: `createTask(input)`
 - Test strategy: unit test at the entity boundary
-- Expected RED command: `npm test -- task.spec.ts` (fails: `createTask` not implemented)
+<!--
+Historical/diagnostic field only.
+RED is not required and must not be fabricated.
+Use n/a when RED is not meaningful or was not used as evidence.
+-->
+- Expected RED command: n/a — not used as proof
 - Expected GREEN command: `npm test -- task.spec.ts`
 - Refactor scope: extract field validation helpers only
 - TDD limitations: none
@@ -57,7 +62,12 @@ Expand-contract strategy: n/a
 - Behavior under test: `transitionTask` allows valid transitions and rejects invalid ones with a message naming the attempted transition.
 - Public seam: `transitionTask(task, nextStatus)`
 - Test strategy: unit test at the entity boundary
-- Expected RED command: `npm test -- transitions.spec.ts` (fails: invalid transitions currently throw a generic error)
+<!--
+Historical/diagnostic field only.
+RED is not required and must not be fabricated.
+Use n/a when RED is not meaningful or was not used as evidence.
+-->
+- Expected RED command: n/a — not used as proof
 - Expected GREEN command: `npm test -- transitions.spec.ts`
 - Refactor scope: table-drive the transition matrix
 - TDD limitations: none
@@ -86,7 +96,12 @@ Expand-contract strategy: n/a
 - Behavior under test: assignment and due-soon checks each record exactly one notification record of the correct type.
 - Public seam: `notifyOnAssignment(task)`, `notifyIfDueSoon(task, now)`
 - Test strategy: unit test against the local notification interface (no delivery mechanism)
-- Expected RED command: `npm test -- notifications.spec.ts` (fails: functions not implemented)
+<!--
+Historical/diagnostic field only.
+RED is not required and must not be fabricated.
+Use n/a when RED is not meaningful or was not used as evidence.
+-->
+- Expected RED command: n/a — not used as proof
 - Expected GREEN command: `npm test -- notifications.spec.ts`
 - Refactor scope: none
 - TDD limitations: delivery mechanism is out of scope; only local record creation is tested

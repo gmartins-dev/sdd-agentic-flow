@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.13.1
+  version: 1.14.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]
@@ -39,10 +39,10 @@ Do not use to implement code, repair findings, validate only one task, create a 
 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise resolve exactly one feature and its configured validation paths and commands.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance to calibrate expected rigor. Build a Markdown-first evidence matrix from requirements, scenarios, decisions, tasks, code, tests, and delivery scope.
-3. Confirm task-level TDD evidence for code changes, including behavior, public seams, GREEN checks, explained deviations, and untested risks.
+3. Re-read the spec **and** normative repo contracts. Confirm task-level TDD evidence for code changes: behavior, contractual seams, current passing-sensor commands, explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale results as context, not current proof. Record explicit evidence gaps. Distinguish verification limits from implementation failures.
 4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies.
-5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual commands and results; evidence from prior runs is context, not proof.
-6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current evidence and required gates pass.
+5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands and results; evidence from prior runs is context, not proof. A passing sensor is evidence, not a correctness verdict.
+6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current adequate evidence and required gates pass. Never silent PASS.
 7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; never create `validation.md` under `.specs`.
 
 ## Safety

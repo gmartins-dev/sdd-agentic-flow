@@ -28,7 +28,12 @@ Expand-contract strategy: n/a
 - Behavior under test: `setQuietHours` stores a window and defaults to off when never set.
 - Public seam: `setQuietHours(userId, window)`
 - Test strategy: unit test at the settings boundary
-- Expected RED command: `npm test -- quiet-hours-setting.spec.ts` (fails: `setQuietHours` not implemented)
+<!--
+Historical/diagnostic field only.
+RED is not required and must not be fabricated.
+Use n/a when RED is not meaningful or was not used as evidence.
+-->
+- Expected RED command: n/a — not used as proof
 - Expected GREEN command: `npm test -- quiet-hours-setting.spec.ts`
 - Refactor scope: none
 - TDD limitations: none
@@ -60,7 +65,12 @@ Expand-contract strategy: n/a
   delivery timestamp.
 - Public seam: `recordNotification(userId, notification, now)`
 - Test strategy: unit test against the local notification record (no delivery mechanism)
-- Expected RED command: `npm test -- quiet-hours-delivery.spec.ts` (fails: deferral not implemented)
+<!--
+Historical/diagnostic field only.
+RED is not required and must not be fabricated.
+Use n/a when RED is not meaningful or was not used as evidence.
+-->
+- Expected RED command: n/a — not used as proof
 - Expected GREEN command: `npm test -- quiet-hours-delivery.spec.ts`
 - Refactor scope: none
 - TDD limitations: delivery mechanism itself is out of scope; only the record's delivery

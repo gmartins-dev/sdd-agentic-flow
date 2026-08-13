@@ -16,17 +16,24 @@ format. This is a presence check, not full-schema validation. It does not verify
   Dependencies, Horizontal-slice justification, and Expand-contract strategy), plus a nested
   `## TDD baseline` subsection (Behavior under test, Public seam, Test strategy, Expected RED
   command, Expected GREEN command, Refactor scope, TDD limitations) for code tasks. Produced by
-  `sdd-create-specs`.
+  `sdd-create-specs`. Field **labels** are frozen. `Public seam` means the contractual seam
+  (prefer public/observable when practical). `Expected RED command` is historical/diagnostic;
+  `n/a` is valid and must not be fabricated. `Expected GREEN command` is the passing-sensor
+  command(s) for the slice. Optional extra bullets when useful: Spec anchor, Anti-tautology,
+  Independent of authoring assumptions.
 - task-prompt: required `# Task prompt — {task_id}`, `## Task slice` (same six fields as a
   `tasks.md` entry), `## TDD baseline` (same seven fields as above). Produced by
   `sdd-create-prompts`.
 - check-report: required `# Task check — {task_id}`, a top-line `Status:` field (see
   [evidence-standard.md](evidence-standard.md)'s `Status:` field/guardrail 1 mapping),
   `## Evidence`, `## TDD evidence` (Behavior tested, Seam, RED, GREEN, REFACTOR, Broader checks,
-  Limitations). Produced by `sdd-task-check`.
+  Limitations). Produced by `sdd-task-check`. `Seam` is the contractual seam. Distinguish
+  current vs historical vs not-run in Evidence / Limitations prose. Missing RED is not an
+  automatic fail. A passing sensor is evidence, not a correctness verdict.
 - validation-report: required `# Feature validation — {feature_slug}`, a top-line `Status:`
   field (same convention as check-report), `## Evidence`, `## TDD evidence` (same seven fields as
-  above). Produced by `sdd-validation`.
+  above). Produced by `sdd-validation`. Same freshness and gap rules as check-report: current
+  evidence only; never silent PASS.
 - pr-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`. Produced by
   `sdd-create-pr`.
 - release-readiness-report: required `# Release readiness — {release_identity}`, a top-line

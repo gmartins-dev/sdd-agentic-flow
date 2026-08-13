@@ -4,7 +4,7 @@
 
 - TLC / `tlc-spec-driven`
 - Spec-Driven Development
-- TDD / test-first development
+- Behavioral evidence at contractual seams (TDD remains a valid technique)
 - `mattpocock/skills` public `tdd` skill
 - Markdown-first agent skills
 - safe-by-default local tooling
@@ -15,7 +15,7 @@
 - TLC-style phase discipline
 - traceability, acceptance criteria, and evidence before completion
 - staged planning, implementation, review, and validation
-- behavior-focused TDD at public seams and vertical slices
+- behavior-focused sensors at contractual seams; TDD ritual optional, never harness proof
 
 ## What this toolkit expands
 
@@ -35,6 +35,17 @@ are not product requirements and are not reproduced here.
 - Eduardo Spinelli de Lima, *Harness para codebases* (2026) — instruction in context is
   probabilistic; destructive guards belong in deterministic hooks on the **agent product
   you use**, not in this toolkit.
+- Birgitta Böckeler / Martin Fowler, *TDD inside the agent loop* (2026) — in that setup,
+  forcing the full RED → GREEN ritual did not show a consistent quality win; same-agent RED
+  is not semantic proof. Adjacent only: this toolkit does not treat that article as
+  project-normative and does not claim TDD is generally worse than test-last.
+- Thoughtworks Radar, *Feedback sensors for coding agents*, and Fowler, *Harness
+  engineering for coding agent users* — compilers, linters, typecheckers, and test suites
+  as session feedback. This toolkit uses **configured** gates; it does not reimplement
+  scanners or mutation engines.
+- Mathews & Nagappan, *Test-Driven Development for Code Generation* (arXiv:2402.13521) —
+  tests **given as input** can improve generation. That is not the same as requiring the
+  TDD ritual as verification evidence.
 
 ## Interoperability references
 
@@ -55,5 +66,5 @@ are not product requirements and are not reproduced here.
 Inspiration and attribution do not imply endorsement by original authors or projects. See [NOTICE](../NOTICE), [LICENSING.md](../LICENSING.md), the adapted [TLC baseline](../shared/references/tlc-baseline.md), and the adapted [TDD baseline](../shared/references/tdd-baseline.md).
 
 Both upstream sources are pinned to a specific version, tracked in
-`shared/baselines/registry.yml`, and updated deliberately rather than silently. See
+`shared/baselines/registry.yml`, and updated deliberately rather than silently.
 See [Baselines](baselines.md#upstream-version-pins).

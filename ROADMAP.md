@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.14.0 (2026-08-12):** Behavioral evidence and feedback sensors. Baseline minor:
+  `tdd` / `tlc-spec-driven` `0.6.0` → `0.7.0`. Required loop is name-behavior →
+  sensor at contractual seam → implement → record current evidence. Test-first
+  recommended when useful; full TDD ritual optional and never harness proof. Passing
+  sensor = evidence, not a correctness verdict. `quality.require_tdd` kept (evidence
+  contract, not ritual). No mutation engine, Verifier, or `doctor --quality`.
 - **v1.13.1 (2026-08-12):** Compact welcome brand (~8–10×≤52) + slower reveal + tiny-TTY
   one-line fallback. Presentation-only patch.
 - **v1.13.0 (2026-08-12):** Confirm-gated `upgrade` command + welcome opt-in update ask.

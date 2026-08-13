@@ -193,7 +193,8 @@ on demand at any point once a spec package exists.
 ## `sdd-implement-task`
 
 **Purpose:** Implement exactly one validated SDD task as the smallest tested, merge-ready
-increment.
+increment. Required evidence is adequate behavioral sensors at the contractual seam plus
+recorded current results; the RED → GREEN ritual is optional and is not harness proof.
 
 **When to use:** Use for one unambiguous task that is ready to implement or resume.
 
@@ -251,7 +252,8 @@ and `sdd-task-check`, when tasks have cross-dependencies.
 ## `sdd-task-check`
 
 **Purpose:** Independently check one implemented SDD task against its acceptance criteria and
-configured gates before handoff.
+configured gates before handoff. Ground the oracle in spec / repo contracts / configured
+gates. Treat PASS as evidence, not a verdict. Missing RED is not an automatic fail.
 
 **When to use:** Use after implementing one task and before commit or PR handoff.
 
@@ -357,7 +359,8 @@ focused re-review.
 ## `sdd-validation`
 
 **Purpose:** Independently validate an accumulated SDD feature implementation against its
-specification and configured gates.
+specification and configured gates. Re-read spec and repo contracts; reject stale results
+as current proof; record explicit evidence gaps.
 
 **When to use:** Use when the user asks whether one implemented feature is ready against its
 SDD, after task work is accumulated.

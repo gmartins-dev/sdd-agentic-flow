@@ -2,7 +2,7 @@ version: 1
 
 baselines:
   - id: tlc-spec-driven
-    baseline_version: 0.6.0
+    baseline_version: 0.7.0
     role: planning
     source: references/tlc-baseline.md
     stages: [specify, discuss, design, tasks, execute, verify]
@@ -15,10 +15,10 @@ baselines:
     upstream_version_checked_at: '2026-08-08'
 
   - id: tdd
-    baseline_version: 0.6.0
+    baseline_version: 0.7.0
     role: implementation
     source: references/tdd-baseline.md
-    loop: [red, green, refactor]
+    loop: [name-behavior, test-at-contractual-seam, implement, record-evidence]
     upstream_attribution: see NOTICE and LICENSING.md
     # The upstream `tdd` skill itself carries no metadata.version, so this pins the
     # mattpocock/skills repository release tag instead, as the closest available version

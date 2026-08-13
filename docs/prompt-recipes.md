@@ -29,7 +29,7 @@ Use the installed sdd-implement-task skill for this approved task. Follow .sdd-a
 ## Apply an approved code task with TDD evidence
 
 ```text
-Use the installed sdd-implement-task skill and TDD baseline for this approved code task. Confirm the behavior, public seam, test command, and smallest vertical slice before editing. Record RED and GREEN evidence. If RED is impractical, explain the alternative validation and remaining risk. Do not commit, push, merge, deploy, or publish.
+Use the installed sdd-implement-task skill and TDD baseline for this approved code task. Name the required behavior from the spec, confirm the contractual seam (Public seam field), place a sensor that can fail if that behavior is wrong, implement the smallest change, and record current evidence. Test-first is welcome when it sharpens the spec. Full RED → GREEN → REFACTOR is optional; do not fabricate RED. A passing sensor is evidence, not a correctness verdict. Do not commit, push, merge, deploy, or publish.
 ```
 
 ## Check release readiness

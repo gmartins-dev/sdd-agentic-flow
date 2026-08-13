@@ -125,6 +125,10 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 
 O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. Os fluxos de autonomia comprovam contratos estáticos do CLI — não orquestração LLM ao vivo.
 
+## TDD baseline
+
+O toolkit usa um baseline TLC para planejamento e um baseline TDD para implementação. O contrato exigido é evidência comportamental adequada na costura contratual (campo `Public seam`), com resultados atuais gravados. Test-first é recomendado quando afia a spec. O ritual completo RED → GREEN → REFACTOR é opcional e não é prova do harness. Um sensor que passa é evidência, não veredito de correção. Detalhe canônico: [TDD baseline](docs/tdd-baseline.md) e [baselines](docs/baselines.md).
+
 ## Saiba mais
 
 | Tópico | Doc |
@@ -139,7 +143,7 @@ O [exemplo task-management](examples/golden/task-management/) mostra uma feature
 
 ## Para quem é indicado?
 
-Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates de revisão, fatia specs e tarefas como tech lead, delega fatias rastreáveis a agentes, pratica TDD-first ou coordena trabalho multi-agente ou multi-worktree com controle humano.
+Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates de revisão, fatia specs e tarefas como tech lead, delega fatias rastreáveis a agentes, exige evidência comportamental (TDD e test-first continuam estratégias válidas) ou coordena trabalho multi-agente ou multi-worktree com controle humano.
 
 ## Não é otimizado para
 

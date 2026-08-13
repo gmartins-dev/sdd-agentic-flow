@@ -71,6 +71,28 @@ sessions print `npx sdd-agentic-flow@latest` instead of pretending to self-repla
 v1.13.0 does **not** change the baseline contract. Existing baseline remains compatible.
 Bundled skills refresh to the running package version; no new baseline migration is required.
 
+## Baseline 0.7.0 (v1.14.0)
+
+v1.14.0 bumps `tdd` and `tlc-spec-driven` `baseline_version` from `0.6.0` to `0.7.0`.
+This is a documented **Baseline change** (minor, not major): no skill is renamed, and no
+capability-contract field is removed. Artifact field **labels** (`Public seam`,
+`Expected RED command`, `## TDD baseline`, `## TDD evidence`) stay.
+
+What changes for consumers:
+
+- Implementation loop is `name-behavior` → `test-at-contractual-seam` → `implement` →
+  `record-evidence`. Adequate behavioral sensors remain required.
+- Full RED → GREEN → REFACTOR is optional. `Expected RED command` may be `n/a`. Do not
+  fabricate RED.
+- `quality.require_tdd` is unchanged. It now clearly means the evidence contract, not
+  the ritual.
+- Refresh bundled skills (`upgrade --skills-only` or re-`install`) to pick up the new
+  baseline files. Existing `tasks.md` / reports remain valid if the seven TDD field
+  labels are present.
+
+v1.14.0 does **not** add mutation testing, a Verifier sub-agent, `doctor --quality`,
+or a new Status enum.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

@@ -6,5 +6,5 @@ Implements REQ-1 (task lifecycle fields) as the smallest tested increment: `crea
 
 ## Evidence
 
-- `npm test -- task.spec.ts` — RED then GREEN, see `tasks.md#T1`.
+- `npm test -- task.spec.ts` — current passing-sensor evidence; see `tasks.md#T1`.
 - No unrelated files changed.

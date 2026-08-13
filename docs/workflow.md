@@ -19,7 +19,7 @@ When the current phase is unclear, invoke `sdd-route`. It recommends the next sk
 
 Create specs before implementation. Implement one task at a time. Run `sdd-task-check` on task evidence before accepting work. Run `sdd-validation` after integration.
 
-Use the TLC baseline for planning and the [TDD baseline](tdd-baseline.md) for code tasks. Confirm behavior and public seams before tests. Work in vertical slices. Report RED/GREEN evidence or an explicit limitation.
+Use the TLC baseline for planning and the [TDD baseline](tdd-baseline.md) for code tasks. Confirm required behavior and contractual seams. Work in vertical slices. Record current sensor evidence (or an explicit gap). RED is optional and diagnostic; do not fabricate it.
 
 Use multi-worktree orchestration only after explicit planning identifies independent paths and dependencies. PR skills extend the loop; they do not replace task checking.
 

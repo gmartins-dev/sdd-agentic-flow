@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+## 1.14.0
+
+Behavioral evidence and feedback sensors. Baseline minor (`tdd` and `tlc-spec-driven`
+`0.6.0` → `0.7.0`). No skill renamed. No capability-contract field removed. Artifact
+field labels stay (`Public seam`, `Expected RED command`, `## TDD baseline`,
+`## TDD evidence`). `quality.require_tdd` is not renamed or deprecated.
+
+**Baseline changes:**
+
+- TDD loop: `[red, green, refactor]` →
+  `[name-behavior, test-at-contractual-seam, implement, record-evidence]`.
+- Required: name the behavior from the spec, place a sensor at the contractual seam,
+  implement, record **current** evidence. Required behavioral coverage is not weakened.
+- Recommended: test-first / scenarios before code when they sharpen the spec. This
+  package does not claim test-first is inferior to test-last.
+- Optional: full RED → GREEN → REFACTOR when the human wants that granularity. Same-agent
+  RED is not harness proof. `Expected RED command` may be `n/a` and must not be
+  fabricated.
+- TLC stages unchanged. TLC invariant no longer embeds RED → GREEN as the proof
+  mechanism.
+- `shared/references/evidence-standard.md` is the operational contract: sensor →
+  evidence → verification → decision; adequacy; anti-tautology / epistemic independence
+  (oracle grounded in authority, not a second agent or second test suite); authority
+  order; freshness; sensor composition; explicit gaps. A passing sensor is evidence,
+  not a correctness verdict. The human remains the gate.
+- `produces: [code-change+tdd-evidence]` and `evidence_required: [tests, tdd-evidence]`
+  keep their names. Meaning: adequate behavioral sensors + recorded current evidence.
+
+**Explicit non-goals (not in this release):**
+
+- No claim that TDD or test-first is generally inferior to test-last.
+- No wording that “TDD was replaced by tests.”
+- No mutation engine, TLC Discrimination Sensor, TLC Verifier, second-agent verifier,
+  quality-gate CLI, `doctor --quality`, `doctor --evidence-graph`, or
+  `workflow.risk_profile`.
+- No Böckeler generalization and no 3–8× token-savings claim in README or model docs.
+- No new Status enum, no new evidence file format, no rename of frozen field labels.
+- No `docs/references/agentic-foundations.md` catalog.
+
 ## 1.13.1
 
 Compact welcome brand mark. Presentation-only patch; no baseline or command-contract

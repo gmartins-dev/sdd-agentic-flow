@@ -254,7 +254,7 @@ fi
 for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md autonomy-guardrails.md handoff-standard.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
-    grep -F -q 'Baseline version: 0.6.0' "shared/references/$ref"
+    grep -F -q 'Baseline version: 0.7.0' "shared/references/$ref"
   fi
 done
 for skill in sdd-create-specs sdd-implement-task sdd-validation; do
@@ -264,6 +264,39 @@ done
 test -f "shared/baselines/registry.yml"
 grep -F -q 'tlc-spec-driven' shared/baselines/registry.yml
 grep -F -q 'tdd' shared/baselines/registry.yml
+# v1.14.0: both condensed baselines bump together; the TDD loop token is the
+# contractual-seam sensor loop, not red/green/refactor-as-proof.
+[[ "$(grep -F -c -- 'baseline_version: 0.7.0' shared/baselines/registry.yml)" -eq 2 ]]
+grep -F -q 'test-at-contractual-seam' shared/baselines/registry.yml
+if grep -F -q 'produce RED when practical' skills/sdd-implement-task/SKILL.md; then
+  echo "sdd-implement-task still contains 'produce RED when practical'" >&2
+  exit 1
+fi
+for marker in 'adequacy' 'anti-tautology' 'authority' 'contractual seam' 'oracle' 'invariant' 'minimize redundancy'; do
+  grep -F -i -q -- "$marker" shared/references/evidence-standard.md
+done
+grep -F -q '## TDD baseline' README.md README.pt-BR.md
+for template in tasks task-prompt; do
+  grep -F -q '## TDD baseline' "shared/templates/$template.template.md"
+  grep -F -q 'Public seam' "shared/templates/$template.template.md"
+  grep -F -q 'Expected RED command' "shared/templates/$template.template.md"
+done
+for template in check-report validation-report; do
+  grep -F -q '## TDD evidence' "shared/templates/$template.template.md"
+done
+grep -F -q 'quality.require_tdd' docs/configuration.md
+grep -F -q 'require_tdd:' bin/sdd-agentic-flow.js
+# v1.14.0: golden tasks keep Expected RED but must not instruct fabricating a fail.
+if grep -E -n 'Expected RED command:.*fails:' examples/golden/*/tasks.md; then
+  echo "golden tasks still instruct a fabricated RED failure" >&2
+  exit 1
+fi
+for f in examples/golden/task-management/tasks.md examples/golden/idea-to-spec/tasks.md; do
+  grep -F -q 'n/a — not used as proof' "$f"
+done
+for template in check-report validation-report; do
+  grep -F -q 'current vs historical vs not-run' "shared/templates/$template.template.md"
+done
 # Upstream version pins (v0.9.0): each baseline entry must declare which upstream skill
 # version/tag it was adapted from, mechanically, not only in NOTICE/docs prose that could
 # drift unnoticed.

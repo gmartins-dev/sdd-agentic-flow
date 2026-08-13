@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]
@@ -15,7 +15,7 @@ conflicts: []
 requires_cli: null
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'validation-report present with status PASS and every specification requirement satisfied'
+  auto_continue_condition: 'validation-report present with status PASS (PASS invalid on a false-positive catalog hit) and every specification requirement satisfied'
   blocking_conditions: [requirements_unmet, gates_failed]
   evidence_required: [validation-report]
 ---
@@ -38,16 +38,16 @@ Do not use to implement code, repair findings, validate only one task, create a 
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise resolve exactly one feature and its configured validation paths and commands.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance to calibrate expected rigor. Build a Markdown-first evidence matrix from requirements, scenarios, decisions, tasks, code, tests, and delivery scope.
-3. Re-read the spec **and** normative repo contracts. Confirm task-level TDD evidence for code changes: behavior, contractual seams, current passing-sensor commands, explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale results as context, not current proof. Record explicit evidence gaps. Distinguish verification limits from implementation failures.
-4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies.
-5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands and results; evidence from prior runs is context, not proof. A passing sensor is evidence, not a correctness verdict.
-6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current adequate evidence and required gates pass. Never silent PASS.
+2. Follow this **fresh-eyes** order at feature scope (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance to calibrate expected rigor.
+3. Re-read the spec **and** normative repo contracts. Confirm task-level TDD evidence for code changes: behavior, contractual seams, current passing-sensor commands, explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale results as context, not current proof. Record explicit evidence gaps. Distinguish verification limits from implementation failures. For each required behavior, name one wrong implementation that the current sensors would still pass (**non-shallow litmus**). If you cannot, record **Shallow sensor** or an evidence gap — not `Status: ready`.
+4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies. An unmapped AC cannot silently PASS.
+5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands and results (command, exit status, observed result, requirement mapping); evidence from prior runs is context, not proof. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence (`self-report is not evidence`). This skill must not inherit author narrative.
+6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current adequate evidence and required gates pass. Never silent PASS. Never write `Status: ready` on a false-positive catalog hit.
 7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; never create `validation.md` under `.specs`.
 
 ## Safety
 
-Remain read-only except for permitted local report or disposable test artifacts. Do not change code, specs, Git history, PR metadata, trackers, remote services, or default configuration. Preserve existing work and redact secrets, PII, and absolute paths.
+Remain read-only except for permitted local report or disposable test artifacts. Do not change code, specs, Git history, PR metadata, trackers, remote services, or default configuration. Preserve existing work and redact secrets, PII, and absolute paths. Self-report is not evidence. This skill must not inherit author narrative.
 
 ## Output
 
@@ -55,4 +55,4 @@ Return feature identity, decision, requirement/task evidence counts, required ga
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, treating the feature as ready for `sdd-create-pr` requires a validation-report with status PASS and every specification requirement satisfied; an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, treating the feature as ready for `sdd-create-pr` requires a validation-report with status PASS and every specification requirement satisfied (PASS invalid on a false-positive catalog hit); an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

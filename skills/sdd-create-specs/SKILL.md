@@ -2,7 +2,7 @@
 name: sdd-create-specs
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd-agentic-flow/config.yml before producing artifacts.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: core
 extends: null
 requires: [config, source-item]
@@ -48,7 +48,7 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
    - **Source-item mode:** inspect only evidence needed to state the current behavior, desired behavior, constraints, risks, and acceptance criteria. Mark unknowns as open questions rather than inventing facts.
    - **Existing-code mode:** inspect the named code, its tests, and its call sites within the confirmed scope. Classify every finding as **Observed** (directly shown by code or a passing test), **Inferred** (a reasonable reading of the code that no test directly confirms), or **Unknown** (a gap neither the code nor its tests answer). Never present an Inferred or Unknown finding as Observed.
 7. Create the artifacts:
-   - **Source-item mode:** create exactly `context.md`, `spec.md`, `design.md`, and `tasks.md`; never create `validation.md`. Keep requirements traceable to evidence, acceptance criteria observable, and code tasks vertically sliced where practical.
+   - **Source-item mode:** create exactly `context.md`, `spec.md`, `design.md`, and `tasks.md`; never create `validation.md`. Keep requirements traceable to evidence, give each acceptance criterion an **observable expected outcome** (status, code, persisted state, or invariant), and slice code tasks vertically where practical. Optional invariant sentences live **inside** existing requirement/AC text (`INV-…` allowed). Do not add a required `## Invariants` header. When the work is a bug fix (especially under `small_fix`), include current broken behavior, a **reproduction sensor** that fails on current code, expected fixed behavior, and a regression sensor after the change.
    - **Existing-code mode:** create exactly `context.md`, `spec.md`, and `design.md`, labeling every requirement and decision Observed, Inferred, or Unknown; only create `tasks.md` if the user confirms follow-up work is needed. Never create `validation.md`.
 8. Check internal links, paths, and consistency with existing artifacts. In source-item mode, summarize unresolved decisions. In existing-code mode, summarize Observed behavior, Inferred behavior, Unknown/open questions, and any gaps between observed behavior and observed tests, so the user can confirm or correct each Inferred and Unknown item before it is relied on.
 

@@ -1,5 +1,12 @@
 # Roadmap
 
+- **v1.15.0 (2026-08-13):** Completion integrity and false-positive resistance.
+  Additive minor; `baseline_version` stays `0.7.0`. Named catalog of illegitimate
+  completion (green-but-wrong, inherited author narrative, suite weakening,
+  completion theater, …); fresh-eyes state-checking in check/validation; requirement
+  coverage mapping; evidence strength ladder; observable expected outcomes in specs
+  and prompts; reproduction sensor under existing `small_fix`. Self-report is not
+  evidence. No Verifier, LLM-judge, PBT, CLI `--type`, or fifth profile.
 - **v1.14.0 (2026-08-12):** Behavioral evidence and feedback sensors. Baseline minor:
   `tdd` / `tlc-spec-driven` `0.6.0` → `0.7.0`. Required loop is name-behavior →
   sensor at contractual seam → implement → record current evidence. Test-first

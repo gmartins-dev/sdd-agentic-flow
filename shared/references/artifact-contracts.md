@@ -7,7 +7,9 @@ format. This is a presence check, not full-schema validation. It does not verify
 *content*, only that the required headers exist.
 
 - `spec.md`: required `# Specification — {feature_slug}`, one `## Requirement {id}` per
-  requirement, `## Acceptance criteria`. Produced by `sdd-create-specs`.
+  requirement, `## Acceptance criteria`. Produced by `sdd-create-specs`. Optional invariant
+  sentences may live **inside** those existing headers (`INV-…` is an allowed ID, like
+  optional `REQ-{id}`). There is no required `## Invariants` header.
 - `design.md`: required when the artifact exists (optional for `small_fix`; see
   `feature-profiles.md`): `# Design — {feature_slug}`, `## Decision`, `## Path ownership`.
   Produced by `sdd-create-specs`.

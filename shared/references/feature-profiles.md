@@ -8,6 +8,10 @@ invoked explicitly. Unset or unrecognized values fall back to `medium_feature` b
 - `small_fix`: narrow, low-risk change. A short inline `context.md`/`spec.md` is acceptable;
   skip `design.md` unless a decision needs recording. Tasks stay as a single vertical slice.
   Evidence: one focused current sensor command for the changed behavior at its contractual seam.
+  When the work is a defect, the package also includes: current broken behavior; a
+  **reproduction sensor** that fails on current code; expected fixed behavior; a regression
+  sensor after the change. “Fixed” without a current reproduction sensor is false success.
+  This is a package shape under `small_fix`, not a fifth profile and not a CLI `--type`.
 - `medium_feature`: default. Full `context.md`/`spec.md`/`tasks.md`; add `design.md` only when
   there is a real decision to record. Tasks are vertically sliced. Evidence: current
   passing-sensor command(s) per slice plus any directly related broader checks. RED is

@@ -17,7 +17,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 | **Harness** | How may the agent operate safely? | `execution_mode`, safety defaults, capability contracts, evidence standard |
 | **Loop** | How does work continue across steps/sessions? | `autonomy_level`, 7 guardrails, `.sdd-agentic-flow/autonomy/loop-state.md`, handoffs |
 
-**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Sensors produce evidence. Validation and release skills evaluate that evidence against the contract—not chat confidence. A passing sensor is not a correctness verdict; the human remains the gate.
+**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Sensors produce evidence. Validation and release skills evaluate that evidence against the contract—not chat confidence. A passing sensor is not a correctness verdict; the human remains the gate. The [evidence standard](../shared/references/evidence-standard.md) names false-positive classes and an evidence strength ladder so self-report and ungrounded agent tests cannot outrank spec and contracts.
 
 **Graph** is not a fifth runtime layer. Workflow rails already live in `sdd-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
 

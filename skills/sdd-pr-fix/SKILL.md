@@ -2,7 +2,7 @@
 name: sdd-pr-fix
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: pr
 extends: sdd-pr-review
 requires: [config, pr-reference, review-findings]
@@ -38,7 +38,7 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
-2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them.
+2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. Do not close findings by reclassifying missing evidence as preference.
 3. Apply the smallest patch per actionable finding and add or update focused regression evidence.
 4. Run configured targeted checks, update the ledger, and hand off to `sdd-pr-review` for focused re-review.
 

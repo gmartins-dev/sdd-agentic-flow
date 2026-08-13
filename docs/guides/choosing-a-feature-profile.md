@@ -13,6 +13,11 @@ real design decision to record. A short inline `context.md`/`spec.md` is enough;
 Examples: fixing a typo in a user-facing error message, correcting an off-by-one in a pagination
 helper, adding a missing null check flagged by a bug report with a clear repro.
 
+When the work is a **defect**, keep `small_fix` (no fifth profile, no CLI `--type=bugfix`).
+The spec package must include current broken behavior, a **reproduction sensor** that fails
+on current code, expected fixed behavior, and a regression sensor after the change. “Fixed”
+without a current reproduction sensor is false success.
+
 ## `medium_feature` (default)
 
 Use for typical feature work: a new endpoint, a new UI flow, a behavior change that touches a

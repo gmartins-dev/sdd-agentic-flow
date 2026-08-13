@@ -2,7 +2,7 @@
 name: sdd-task-check
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: core
 extends: sdd-implement-task
 requires: [config, task-evidence]
@@ -15,7 +15,7 @@ conflicts: []
 requires_cli: null
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'check-report present with status PASS and every configured gate satisfied'
+  auto_continue_condition: 'check-report present with status PASS (PASS invalid on a false-positive catalog hit) and every configured gate satisfied'
   blocking_conditions: [acceptance_criteria_unmet, gates_failed]
   evidence_required: [check-report]
 ---
@@ -38,15 +38,15 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve exactly one task.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Map every task criterion to concrete implementation and executable evidence. Inspect changed files for scope drift and pre-existing changes.
-3. Identify the task's required behaviors. Select the smallest sensor set that still covers those behaviors and relevant failure modes (minimize redundancy, not coverage). Confirm each sensor observes a contractual seam and that its oracle/acceptance condition is grounded in spec, repo contracts, or configured gates — not inferred solely from the implementation. Flag tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid.
-4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified.
-5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as **evidence**. Distinguish current vs historical vs not-run in Evidence / Limitations prose. Record missing or inadequate sensors as explicit gaps. Never turn missing evidence into a pass. A passing sensor is evidence, not a correctness verdict.
-6. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. Do not implement fixes, edit tests to force PASS, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
+2. Follow this **fresh-eyes** order (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Inspect changed files for scope drift and pre-existing changes.
+3. Identify the task's required behaviors. Select the smallest sensor set that still covers those behaviors and relevant failure modes (minimize redundancy, not coverage). Confirm each sensor observes a contractual seam and that its oracle/acceptance condition is grounded in spec, repo contracts, or configured gates — not inferred solely from the implementation. Flag tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid. For each required behavior, name one wrong implementation that the current sensors would still pass (**non-shallow litmus**). If you cannot, record **Shallow sensor** or an evidence gap — not PASS.
+4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified. An unmapped AC cannot silently PASS.
+5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as **evidence** (command, exit status, observed result, requirement mapping). Distinguish current vs historical vs not-run in Evidence / Limitations prose. Record missing or inadequate sensors as explicit gaps. Never turn missing evidence into a pass. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence (`self-report is not evidence`). This skill must not inherit author narrative.
+6. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
 
 ## Safety
 
-This is read-only except for disposable test artifacts permitted by configuration. Do not change code, specs, Git, trackers, PRs, remote services, or default configuration.
+This is read-only except for disposable test artifacts permitted by configuration. Do not change code, specs, Git, trackers, PRs, remote services, or default configuration. Self-report is not evidence. This skill must not inherit author narrative.
 
 ## Output
 
@@ -54,4 +54,4 @@ Return task identity, criterion-to-evidence summary, executed checks, scope find
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-create-pr` or `sdd-validation` requires a check-report with status PASS and every configured gate satisfied; an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-create-pr` or `sdd-validation` requires a check-report with status PASS and every configured gate satisfied (PASS invalid on a false-positive catalog hit); an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

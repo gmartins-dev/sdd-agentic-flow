@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+## 1.15.0
+
+Completion integrity and false-positive resistance. Additive minor on the v1.14.0
+evidence contract. No `baseline_version` bump (`tdd` and `tlc-spec-driven` stay
+`0.7.0`). No skill renamed. No capability-contract field removed. Artifact field
+labels stay. `quality.require_tdd` is not renamed.
+
+**What changed:**
+
+- `shared/references/evidence-standard.md` names ten **false-positive classes**. A
+  catalog hit forbids `Status: pass` / `Status: ready`. Self-report is not evidence.
+- Check and validation follow a fresh-eyes **state-checking** order: re-read spec and
+  repo contracts, re-derive expected, re-run current sensors, map
+  `requirement → sensor → current result`, apply the catalog, then Status. They must
+  not inherit the author’s evidence narrative.
+- Complementary **evidence strength ladder**. Lower rungs cannot outrank spec or
+  repository contracts. Agent narrative is never sufficient.
+- Specs require an **observable expected outcome** per acceptance criterion. Optional
+  invariants live inside existing headers (`INV-…`); no required `## Invariants`
+  section. Prompts copy those outcomes; implementers must not derive expected from
+  the code.
+- `sdd-implement-task` refuses completion on self-assessment and refuses suite
+  weakening.
+- Bug-fix work under existing `small_fix` requires a **reproduction sensor** that
+  fails on current code. No new profile. No CLI `--type`.
+- Non-shallow litmus: name a wrong implementation current sensors would still pass,
+  or record a shallow-sensor / evidence gap.
+- `scripts/check-skills.sh` greps the catalog and fresh-eyes tokens (presence
+  checks).
+
+**Explicit non-goals (not in this release):**
+
+- No Verifier sub-agent, LLM-judge, PBT, mutation, discrimination, or TF-IDF detector.
+- No CLI `--type=bugfix` / `--type=quick`, no fifth `feature_profile`, no new config
+  key, no `doctor --quality` or `doctor --evidence-graph`.
+- No new Status enum, no new evidence file format, no required `## Invariants` header.
+- No claim that TDD is inferior. No 3–8× / 60–80% token-savings claim as a product
+  fact. Advani (2026) percentages are not this toolkit’s measured risk.
+
 ## 1.14.0
 
 Behavioral evidence and feedback sensors. Baseline minor (`tdd` and `tlc-spec-driven`

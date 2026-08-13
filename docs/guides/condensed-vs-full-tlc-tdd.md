@@ -14,7 +14,9 @@
   behavioral sensors at contractual seams for implementation (test-first recommended when
   useful; full RED → GREEN → REFACTOR optional, never harness proof) — without sub-agent
   delegation, a discrimination sensor, `LESSONS.md` distillation, or a Knowledge Verification
-  Chain.
+  Chain. Check and validation take TLC’s *intent* (author ≠ verifier, spec-anchored) as a
+  state-checking protocol: re-derive expected from the spec and re-run sensors. They do not
+  run TLC’s Verifier runtime. An LLM-judge that LGTMs the author’s write-up is not a verifier.
 - You need every skill to stay agent-neutral and installable via simple file copy, not a runtime
   that invokes other skills on your behalf.
 

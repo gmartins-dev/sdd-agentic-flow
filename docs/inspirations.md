@@ -46,6 +46,14 @@ are not product requirements and are not reproduced here.
 - Mathews & Nagappan, *Test-Driven Development for Code Generation* (arXiv:2402.13521) —
   tests **given as input** can improve generation. That is not the same as requiring the
   TDD ritual as verification evidence.
+- Laksh Advani, *From Confident Closing to Silent Failure: Characterizing False Success in
+  LLM Agents* (arXiv:2606.09863, 2026) — agents can assert completion while environment
+  state disagrees; LLM judges grade the story, not the state. Adjacent only: those
+  percentages are not this toolkit’s measured risk. Do not ask the agent whether it
+  finished; observe current sensors. Do not add another LLM-judge as a verifier.
+- Kiro, *Spec correctness / property-based testing* — properties/invariants as a way to
+  state “always true” rules; PBT is evidence, not proof. Adjacent only: this toolkit does
+  not ship a PBT engine and does not require a `## Invariants` spec header.
 
 ## Interoperability references
 

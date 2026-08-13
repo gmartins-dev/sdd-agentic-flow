@@ -25,3 +25,7 @@ Use n/a when RED is not meaningful or was not used as evidence.
 - Expected GREEN command: {{green_command}}
 - Refactor scope: {{refactor_scope}}
 - TDD limitations: {{tdd_limitations}}
+<!--
+Expected outcomes come from the spec (observable expected outcome per AC), not from the code.
+When the work is a defect, include a reproduction sensor that fails on current code.
+-->

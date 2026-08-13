@@ -24,7 +24,7 @@ Three levels:
 
 Tests and other sensors remain required as behavioral evidence. Test-first and TDD remain valid implementation strategies. This package does not claim test-first is inferior to test-last. Required behavioral coverage is not weakened because the ritual is optional.
 
-A passing sensor is evidence, not a correctness verdict. The human remains the gate. See [evidence-standard.md](../shared/references/evidence-standard.md).
+A passing sensor is evidence, not a correctness verdict. The human remains the gate. See [evidence-standard.md](../shared/references/evidence-standard.md), including the false-positive catalog and evidence strength ladder. Self-report is not evidence.
 
 `quality.require_tdd: true` keeps its name. It means this evidence contract, not “RED → GREEN is mandatory.”
 

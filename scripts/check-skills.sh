@@ -297,6 +297,38 @@ done
 for template in check-report validation-report; do
   grep -F -q 'current vs historical vs not-run' "shared/templates/$template.template.md"
 done
+# v1.15.0: false-positive catalog and fresh-eyes protocol (presence checks).
+# These greps fail if the catalog or the check/validation order is deleted.
+for class in \
+  'Tautological oracle' \
+  'Error propagation' \
+  'Green-but-wrong' \
+  'Shallow sensor' \
+  'Stale evidence' \
+  'Silent gap' \
+  'False success / self-assessment' \
+  'Inherited author narrative' \
+  'Suite weakening' \
+  'Completion theater'; do
+  grep -F -q -- "$class" shared/references/evidence-standard.md
+done
+grep -F -q 'self-report is not evidence' shared/references/evidence-standard.md
+grep -F -q 'requirement → sensor → current result' shared/references/evidence-standard.md
+grep -F -q 'strength ladder' shared/references/evidence-standard.md
+for skill in sdd-task-check sdd-validation; do
+  grep -F -q 'must not inherit author narrative' "skills/$skill/SKILL.md"
+  grep -F -q 'self-report is not evidence' "skills/$skill/SKILL.md"
+  grep -F -q 'requirement → sensor → current result' "skills/$skill/SKILL.md"
+done
+grep -F -q 'self-assessment' skills/sdd-implement-task/SKILL.md
+grep -F -q 'suite weakening' skills/sdd-implement-task/SKILL.md
+grep -F -q 'observable expected outcome' skills/sdd-create-specs/SKILL.md
+grep -F -q 'reproduction sensor' shared/references/feature-profiles.md
+grep -F -q 'green-but-wrong' examples/golden/task-management/validation-report.md
+if grep -F -q -- '--type=bugfix' bin/sdd-agentic-flow.js; then
+  echo "CLI must not gain --type=bugfix in v1.15.0" >&2
+  exit 1
+fi
 # Upstream version pins (v0.9.0): each baseline entry must declare which upstream skill
 # version/tag it was adapted from, mechanically, not only in NOTICE/docs prose that could
 # drift unnoticed.

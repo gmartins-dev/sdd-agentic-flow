@@ -5,7 +5,9 @@ maintenance cost. This file is the single generic statement; each consuming skil
 domain-specific vocabulary listed below and references this file for the shared rule.
 
 This file is also the canonical **operational contract** for sensors, evidence, verification,
-and decision (v1.14.0). Do not collapse those four terms.
+and decision (v1.14.0). Do not collapse those four terms. v1.15.0 adds the false-positive
+catalog, requirement coverage mapping, and evidence strength ladder on top of that contract
+without changing the four terms or the Status enum.
 
 ## The principle
 
@@ -121,6 +123,25 @@ Authoritative requirements → derived execution instructions → observed imple
 If a task says X and a normative repo contract requires Y, the task is wrong or incomplete.
 Surface that as a spec/task gap; do not let the task override the contract.
 
+## Evidence strength ladder
+
+The authority order above is **which source wins**. This ladder is **how strong a piece of
+evidence is**. Lower rungs must not outrank higher ones. A passing typecheck is evidence about
+types, not about a business acceptance criterion. GREEN is evidence only of the property that
+sensor actually observes.
+
+1. Validated specification / acceptance criteria / stated invariants
+2. Normative repository contracts and configured gates
+3. Human-authored or pre-existing behavioral tests that encode those ACs
+4. Spec-derived executable sensors (current run)
+5. Mechanical gates (typecheck, lint, build) for the properties they actually observe
+6. Agent-authored tests after independent spec-grounding
+7. Agent-authored tests without independent grounding
+8. Agent narrative / self-report (**never sufficient**)
+
+Self-report is not evidence. Confident closing language, chat “done”, or an LLM restatement of
+the author’s write-up cannot override spec, contracts, or a current executed sensor.
+
 ## Freshness
 
 Prior runs are context, not proof. Reports distinguish current vs historical vs not-run **in
@@ -149,6 +170,18 @@ No adequate sensor for a required behavior → record an evidence gap; identify 
 state the limitation; map to existing Status. **Never** silent PASS. **Never** invent an
 irrelevant sensor. Gap is **not** automatically `blocked`.
 
+## Requirement coverage
+
+Every required behavior maps to:
+
+```text
+requirement → sensor → current result
+```
+
+Record the mapping inside existing `## Evidence`. No new artifact. An uncovered requirement is
+an evidence gap. A green suite with an unmapped acceptance criterion is **not** fully verified
+(`silent gap` and/or `green-but-wrong`) and must not silently PASS.
+
 ## RED / PASS
 
 RED is an observable event, not proof the test discriminates the right failure.
@@ -160,6 +193,38 @@ decision uses existing Status values.
 
 Mutation testing may be named as a later, costlier sensor class. It is not implemented in this
 package.
+
+## False-positive classes
+
+Named classes of **illegitimate completion**. A hit **forbids** `Status: pass` and
+`Status: ready` and forbids treating the work as complete. Self-report is not evidence
+(`self-report is not evidence`). `Status:` is a decision label, not evidence. No new
+Status enum (v1.9.0 freeze stands).
+
+These names are stable tokens for skills and `check-skills.sh`. Point at existing
+[Anti-tautology / epistemic independence](#anti-tautology--epistemic-independence) rather than
+rewriting it: that section already covers **Tautological oracle** and the independence rule
+behind **Error propagation**.
+
+1. **Tautological oracle** — expected derived from the implementation.
+2. **Error propagation** — tests/assertions written from the same misread as the code.
+3. **Green-but-wrong** — sensors pass; a spec AC is unmet or unasserted.
+4. **Shallow sensor** — would still pass if the required behavior were inverted (mock-called,
+   HTTP 200 only, “function exists”).
+5. **Stale evidence** — prior run presented as current (named class of the
+   [Freshness](#freshness) rule).
+6. **Silent gap** — missing/inadequate sensor treated as PASS or quiet N/A.
+7. **False success / self-assessment** — “done/functional” from conversation or confident
+   closing language, not from a current executed sensor.
+8. **Inherited author narrative** — check/validation trusts the implementer’s evidence section
+   (or an LLM restatement of it) without re-deriving expected and re-running sensors.
+9. **Suite weakening** — green achieved by deleting, skipping, or narrowing tests that encoded
+   the AC.
+10. **Completion theater** — `tasks.md` / loop-state / chat marked complete while check-report
+    is missing, non-pass, or lists blocking gaps.
+
+Minimum current-evidence record for PASS: command, exit status, observed result, requirement
+mapping. Skepticism without a command result is still self-report.
 
 ## Local vocabulary per skill
 
@@ -206,8 +271,9 @@ positive value to a pass: `pass` (`sdd-task-check`) and `ready` (`sdd-validation
 `PASS`; every other local value (`needs changes`, `not ready`, `blocked`, `inconclusive`) counts
 as not-`PASS` and blocks an `autonomous` advance the same way a literal `FAIL` would. A skill
 must never write `Status: pass`/`Status: ready` while a required check in `## Evidence` recorded
-a failure. The same "missing evidence is never silently upgraded to a pass" rule above applies
-to this field specifically.
+a failure. A skill must never write `Status: pass`/`Status: ready` on a
+[False-positive classes](#false-positive-classes) hit. The same "missing evidence is never
+silently upgraded to a pass" rule above applies to this field specifically.
 
 This same field is also what [handoff-standard.md](handoff-standard.md) keys off to decide
 whether a skill needs to write `handoff.md`: a terminal `Status:` (`pass`/`ready`) with no open

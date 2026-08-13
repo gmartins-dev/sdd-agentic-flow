@@ -20,6 +20,11 @@ evidence, not a correctness verdict. See [evidence-standard.md](evidence-standar
 
 Do not weaken required behavioral coverage because the RED ritual is optional.
 
+Apply the [false-positive classes](evidence-standard.md#false-positive-classes) in
+[evidence-standard.md](evidence-standard.md) when classifying completion. Self-report is
+not completion. Do not treat a passing sensor as a correctness verdict, and do not
+weaken the suite to obtain green.
+
 ## Three levels
 
 1. **Required** — name the behavior from the spec → place a sensor at the

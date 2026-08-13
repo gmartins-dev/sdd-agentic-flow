@@ -2,7 +2,7 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -45,7 +45,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
 6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
 7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy, Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations.
-8. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands.
+8. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands. Copy spec-derived expected outcomes into each prompt. Do not invite the implementer to derive expected from the implementation.
 9. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
 
 ## Safety
@@ -54,6 +54,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 - Do not include secrets, personal data, private conversation context, or unsupported claims.
 - Keep instructions repository-local and flag any step requiring elevated access, external coordination, or destructive action for the user.
 - Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` for safety boundaries.
+- Do not invite the implementer to derive expected outcomes from the code.
 
 ## Output
 

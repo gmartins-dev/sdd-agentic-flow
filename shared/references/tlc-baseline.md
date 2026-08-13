@@ -31,3 +31,6 @@ the consumer explicitly changes its policy.
   seams (see [tdd-baseline.md](tdd-baseline.md)). The RED → GREEN → REFACTOR
   ritual is optional and is not the proof mechanism.
 - Do not claim completion without runnable or inspectable evidence.
+  Self-report is not completion. A claim of done that is not backed by a current
+  executed sensor is illegitimate (see [false-positive classes](evidence-standard.md#false-positive-classes)
+  in [evidence-standard.md](evidence-standard.md)).

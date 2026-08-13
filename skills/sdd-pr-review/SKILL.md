@@ -2,7 +2,7 @@
 name: sdd-pr-review
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 metadata:
-  version: 1.14.0
+  version: 1.15.0
   pack: pr
 extends: sdd-create-pr
 requires: [config, pr-reference]
@@ -39,7 +39,7 @@ Do not use to implement fixes, validate a whole feature, create a PR, or review 
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve the task, base, and head context.
 2. Review acceptance criteria, changed behavior, tests, scope boundaries, and configured quality/security expectations.
-3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Separate blocking defects from non-blocking observations; do not invent CI results.
+3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Separate blocking defects from non-blocking observations; do not invent CI results; do not invent done.
 4. Produce a Markdown-first findings ledger with severity, file/line, evidence, required remediation, and re-review focus.
 
 ## Safety

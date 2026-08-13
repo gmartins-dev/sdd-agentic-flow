@@ -93,6 +93,18 @@ What changes for consumers:
 v1.14.0 does **not** add mutation testing, a Verifier sub-agent, `doctor --quality`,
 or a new Status enum.
 
+## Additive 1.15.0 (baseline still 0.7.0)
+
+v1.15.0 is additive skill/docs/contract prose: a named false-positive catalog, a
+fresh-eyes state-checking order, requirement coverage mapping, and an evidence
+strength ladder. `baseline_version` stays `0.7.0`. Loop and stages do not change.
+Refresh bundled skills to pick up the catalog; no baseline migration is required.
+
+v1.15.0 does **not** add a Verifier sub-agent, an LLM-judge, PBT/mutation engines,
+CLI `--type` flags, a new `feature_profile`, a required `## Invariants` header, or
+a new Status enum. It does not claim TDD is inferior and does not quote token-multiplier
+savings as a product fact.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

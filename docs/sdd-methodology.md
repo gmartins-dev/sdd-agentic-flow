@@ -43,7 +43,7 @@ Agents work best with a narrow, verifiable target—the five-second moment you w
 
 - **Scope:** a spec names what is in and out of the task, so the agent does not expand silently.
 - **Context:** artifacts in `.specs/features/` give the agent stable input across sessions instead of re-explaining in chat.
-- **Review gates:** `sdd-task-check` and `sdd-validation` separate "the agent said it done" from "evidence says it passes."
+- **Review gates:** `sdd-task-check` and `sdd-validation` separate "the agent said it done" from "evidence says it passes." They re-derive expected from the spec, re-run current sensors, and apply the false-positive catalog. Self-report is not evidence. They must not inherit author narrative.
 - **Model choice:** a clear spec and task prompt reduce ambiguity; that makes smaller or cheaper models usable for bounded slices (quality still depends on the task and your review).
 
 This toolkit does not measure token savings or speed multipliers. A token economics benchmark is planned for a future release; see [ROADMAP.md](../ROADMAP.md).

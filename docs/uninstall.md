@@ -33,8 +33,8 @@ The per-target `PLAN`/`PASS`/`WARN` action lines are unaffected.
 
 Run `doctor` after removal to verify the remaining project state.
 
-See [upgrading](upgrading.md) for what's preserved and what changes when you update to a new
-CLI version.
+See [v2 breaking changes](v2-breaking-changes.md) for the 2.0 cut, and
+[CHANGELOG.md](../CHANGELOG.md) for 1.x history.
 
 ## From the interactive menu
 

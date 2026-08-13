@@ -152,7 +152,7 @@ test('doctor --json shape stays field-stable; help Useful when blocks exist', ()
   assert.match(run(['help', 'install']).stdout, /Useful when:/);
   assert.match(run(['help', 'doctor']).stdout, /Useful when:/);
   assert.match(run(['help', 'context']).stdout, /Useful when:/);
-  assert.match(run(['help', 'migrate']).stdout, /Useful when:/);
+  assert.notEqual(run(['help', 'migrate']).status, 0);
 });
 
 test('uninstall with neither --plan nor --apply points at --plan as the safe first step', () => {
@@ -685,6 +685,106 @@ test('doctor --contracts fails deterministically when requires_cli is not satisf
   const okReport = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
   assert.equal(okReport.checks.find((c) => c.name === 'capability_contracts').status, 'PASS');
   fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('init --preset writes the two fields, prints the canonical pair, and rejects XOR / unknown tokens', () => {
+  const cases = [
+    { args: ['--preset', 'manual'], mode: 'guided', level: 'manual', printed: /preset manual/ },
+    {
+      args: ['--preset', 'supervised'],
+      mode: 'apply',
+      level: 'supervised',
+      printed: /preset supervised/,
+    },
+    {
+      args: ['--preset', 'autonomous'],
+      mode: 'full',
+      level: 'autonomous',
+      printed: /preset autonomous/,
+    },
+    {
+      args: ['--preset', 'man'],
+      mode: 'guided',
+      level: 'manual',
+      printed: /preset manual \(alias: man\)/,
+    },
+    {
+      args: ['--preset', 'assist'],
+      mode: 'apply',
+      level: 'supervised',
+      printed: /preset supervised \(alias: assist\)/,
+    },
+    {
+      args: ['--preset', 'assisted'],
+      mode: 'apply',
+      level: 'supervised',
+      printed: /preset supervised \(alias: assisted\)/,
+    },
+    {
+      args: ['--preset', 'auto'],
+      mode: 'full',
+      level: 'autonomous',
+      printed: /preset autonomous \(alias: auto\)/,
+    },
+  ];
+  for (const item of cases) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-preset-'));
+    const result = run(['init', ...item.args], cwd);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    const config = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
+    assert.match(config, new RegExp(`execution_mode: ${item.mode}`));
+    assert.match(config, new RegExp(`autonomy_level: ${item.level}`));
+    assert.doesNotMatch(config, /workflow\.mode/);
+    assert.match(result.stdout, item.printed);
+    assert.match(result.stdout, new RegExp(`execution_mode: ${item.mode}`));
+    assert.match(result.stdout, new RegExp(`autonomy_level: ${item.level}`));
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+
+  const xorCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-preset-xor-'));
+  const xor = run(['init', '--preset', 'auto', '--autonomy-level', 'manual'], xorCwd);
+  assert.equal(xor.status, 1);
+  assert.match(xor.stderr, /cannot combine/);
+  assert.equal(fs.existsSync(path.join(xorCwd, '.sdd-agentic-flow/config.yml')), false);
+  fs.rmSync(xorCwd, { recursive: true, force: true });
+
+  const unknownCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-preset-unknown-'));
+  const unknown = run(['init', '--preset', 'autonumous'], unknownCwd);
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /unknown --preset/);
+  assert.match(unknown.stderr, /man, assist\|assisted, auto/);
+  assert.equal(fs.existsSync(path.join(unknownCwd, '.sdd-agentic-flow/config.yml')), false);
+  fs.rmSync(unknownCwd, { recursive: true, force: true });
+
+  const execAutoCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-exec-auto-'));
+  const execAuto = run(['init', '--execution-mode', 'auto'], execAutoCwd);
+  assert.equal(execAuto.status, 1);
+  assert.equal(fs.existsSync(path.join(execAutoCwd, '.sdd-agentic-flow/config.yml')), false);
+  fs.rmSync(execAutoCwd, { recursive: true, force: true });
+
+  const aliasCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-autonomy-alias-'));
+  const alias = run(['init', '--autonomy-level', 'auto', '--execution-mode', 'full'], aliasCwd);
+  assert.equal(alias.status, 0, alias.stderr + alias.stdout);
+  const aliasConfig = fs.readFileSync(path.join(aliasCwd, '.sdd-agentic-flow/config.yml'), 'utf8');
+  assert.match(aliasConfig, /execution_mode: full/);
+  assert.match(aliasConfig, /autonomy_level: autonomous/);
+  fs.rmSync(aliasCwd, { recursive: true, force: true });
+
+  const guidedAutoCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-guided-auto-'));
+  const guidedAuto = run(
+    ['init', '--execution-mode', 'guided', '--autonomy-level', 'auto'],
+    guidedAutoCwd,
+  );
+  assert.equal(guidedAuto.status, 1);
+  assert.match(guidedAuto.stderr, /cannot combine with/);
+  assert.equal(fs.existsSync(path.join(guidedAutoCwd, '.sdd-agentic-flow/config.yml')), false);
+  fs.rmSync(guidedAutoCwd, { recursive: true, force: true });
+});
+
+test('init --help lists operating presets and aliases', () => {
+  const help = run(['init', '--help']).stdout;
+  assert.match(help, /--preset manual\|supervised\|autonomous/);
+  assert.match(help, /aliases: man, assist\|assisted, auto/);
 });
 
 test('init --execution-mode/--autonomy-level writes both fields, and an invalid combination fails without writing a config', () => {
@@ -1698,32 +1798,19 @@ function copyGoldenLoopState(cwd, flowId) {
   fs.copyFileSync(path.join(fixtureDir, 'loop-state.md'), path.join(targetDir, 'loop-state.md'));
 }
 
-test('golden flow: migrate legacy .sdd/ to .sdd-agentic-flow/', () => {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-golden-migrate-'));
+test('migrate is not a command; doctor WARNs leftover .sdd/ without migrate --apply', () => {
+  const unknown = run(['migrate', '--help']);
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /unknown command: migrate/);
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-legacy-sdd-'));
   fs.mkdirSync(path.join(cwd, '.sdd/context'), { recursive: true });
-  fs.writeFileSync(
-    path.join(cwd, '.sdd/config.yml'),
-    'version: 1\nworkflow:\n  execution_mode: guided\n  autonomy_level: manual\n',
-    'utf8',
-  );
-
-  const plan = run(['migrate', '--plan'], cwd);
-  assert.equal(plan.status, 0);
-  assert.match(plan.stdout, /move \.sdd\/ → \.sdd-agentic-flow\//);
-  assert.ok(fs.existsSync(path.join(cwd, '.sdd/config.yml')));
-
-  assert.equal(run(['migrate', '--apply'], cwd).status, 0);
-  assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/config.yml')));
-  assert.ok(!fs.existsSync(path.join(cwd, '.sdd')));
-
+  fs.writeFileSync(path.join(cwd, '.sdd/config.yml'), 'version: 1\n', 'utf8');
   const report = JSON.parse(run(['doctor', '--json'], cwd).stdout);
   const legacy = report.checks.find((c) => c.name === 'legacy_sdd_root');
-  assert.ok(legacy?.status !== 'WARN');
-
-  const nothing = run(['migrate', '--apply'], cwd);
-  assert.equal(nothing.status, 0);
-  assert.match(nothing.stdout, /nothing to migrate/);
-
+  assert.equal(legacy.status, 'WARN');
+  assert.match(legacy.message, /rename \.sdd\/ to \.sdd-agentic-flow\/ yourself/);
+  assert.doesNotMatch(legacy.message, /migrate --apply/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
@@ -1911,9 +1998,8 @@ test('upgrade --skills-only refreshes missing files and skips local modification
   fs.rmSync(homeDir, { recursive: true, force: true });
 });
 
-test('discover/migrate/context unknown args include did-you-mean hints', () => {
+test('discover/context unknown args include did-you-mean hints', () => {
   assert.match(run(['discover', '--froce']).stderr, /Did you mean/);
-  assert.match(run(['migrate', '--plna']).stderr, /Did you mean/);
   assert.match(run(['context', 'stauts']).stderr, /Did you mean/);
   assert.match(run(['autonomous-resume', '--froce']).stderr, /Did you mean/);
 });

@@ -19,5 +19,6 @@ optional.
 
 `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`) is a separate, orthogonal axis on
 top of these five modes: execution mode says what a skill may do, autonomy level says whether it
-needs a human before the next one runs. `plan` and `guided` never combine with `autonomous`. See
+needs a human before the next one runs. `plan` and `guided` never combine with `autonomous`.
+Daily use can set both axes with `init --preset` instead of naming these tokens. See
 [autonomy levels](autonomy-levels.md).

@@ -82,18 +82,28 @@ Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linea
 Requer Node.js >= 22 só para a CLI. Seu projeto não precisa ser Node.js. Veja [compatibilidade de ambiente](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init
+npx sdd-agentic-flow init --preset manual
 npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. Depois: invoque `sdd-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. `init --preset` grava os dois campos existentes (`execution_mode`, `autonomy_level`) — não é um terceiro eixo de config.
 
-Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md) e [configuração](docs/configuration.md).
+| Preset | Grava | Como o caminho corre |
+| --- | --- | --- |
+| `manual` (padrão; alias `man`) | `guided` + `manual` | Para depois de cada skill |
+| `supervised` (aliases `assist`, `assisted`) | `apply` + `supervised` | Propõe a próxima skill; você confirma |
+| `autonomous` (alias `auto`) | `full` + `autonomous` | A mesma sessão pode seguir o próximo `SKILL.md` no caminho enquanto os 7 guardrails passam |
+
+Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous does not mean unattended.** Commit, push, merge, tag e publish continuam humanos em todo preset. A CLI não executa skills.
+
+Depois: invoque `sdd-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+
+Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md).
 
 ## Como funciona
 
-Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (sob demanda)
+**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (sob demanda)
 
 ```mermaid
 flowchart TD
@@ -127,8 +137,6 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 | Código existente | Specs a partir de código sem docs | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
 | Project context | Ciclo `discover` / `context` | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | Loop de PR | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
-| Migração de versão | Caminho v0.8.0 → v0.9.0 | [version migration](examples/golden/version-migration/walkthrough.md) |
-| Rename legado | `.sdd/` → `.sdd-agentic-flow/` | [sdd-path-migrate](examples/golden/sdd-path-migrate/walkthrough.md) |
 | Autonomia AUTO-001 | Idea → spec com config autônoma | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
 | Autonomia AUTO-002 | Cadeia spec → validate | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
 | Autonomia AUTO-003 | Guardrail pause → resume | [autonomy-guardrail-pause-resume](examples/golden/autonomy-guardrail-pause-resume/walkthrough.md) |
@@ -175,6 +183,6 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Veja [desinstalação](docs/uninstall.md) e [atualização](docs/upgrading.md).
+Veja [desinstalação](docs/uninstall.md) e [mudanças incompatíveis da v2](docs/v2-breaking-changes.md).
 
 </details>

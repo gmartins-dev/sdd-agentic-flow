@@ -71,7 +71,7 @@ does not suggest nonexistent flags such as `init --force`.
 
 ## Next steps
 
-After a mutating command succeeds (`init`, `install`, `discover`, `migrate`,
+After a mutating command succeeds (`init`, `install`, `discover`,
 `context refresh`, `autonomous-resume`), the CLI may print a short, copy-pasteable
 `Suggested next step` in human-rich / human-plain only. It is omitted under `--quiet`
 and in **machine** mode (pipe/CI/non-TTY/`--json`). Welcome (bare invocation) still

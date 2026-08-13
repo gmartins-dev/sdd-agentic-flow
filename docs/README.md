@@ -11,7 +11,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [configuration.md](configuration.md) | Editing `.sdd-agentic-flow/config.yml`, project context, autonomy fields |
 | [environment-compatibility.md](environment-compatibility.md) | Node.js version, OS, shell requirements |
 | [uninstall.md](uninstall.md) | Removing installed skills and optional config |
-| [upgrading.md](upgrading.md) | Updating the CLI and handling skill contract changes |
+| [v2-breaking-changes.md](v2-breaking-changes.md) | What 2.0 removes; leftover short toolkit directory is a manual rename |
 
 ## SDD workflow
 

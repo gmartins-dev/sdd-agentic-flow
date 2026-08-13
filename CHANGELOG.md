@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## 2.0.0
+
+Public-readiness / consolidation major. One methodology, one **canonical workflow
+path** (Plan → Prompt → Implement → Check → PR → Review → Fix → Validate; Release
+on demand), three operating presets, one router. TLC condensed stages remain the
+methodology; the skill path implements that methodology.
+
+`init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`).
+Aliases (`man`, `assist`|`assisted`, `auto`) resolve to canonical names; config stores
+canonical values only. `--preset` cannot combine with `--execution-mode` or
+`--autonomy-level`. `--execution-mode` does not accept `auto` as `full`.
+
+CLI `migrate` is removed. Leftover `.sdd/` is a `doctor` WARN and a manual rename.
+Breaking notes live in `docs/v2-breaking-changes.md`, not onboarding.
+`docs/upgrading.md` is gone from the getting-started path.
+
+Autonomous does not mean unattended. No configuration value overrides safety.
+Commit, push, merge, tag, and publish stay human on every preset. 14 skills; no
+public `auto-sdd` / `sdd-run`; the CLI does not run a skill loop. No third stored
+config axis (`workflow.mode`).
+
+**Baseline changes:** reviewed, no `baseline_version` bump (stays `0.7.0`).
+
+**Explicit non-goals (not in this release):**
+
+- No `workflow.mode` / third config axis.
+- No CLI skill orchestrator / public `auto-sdd`.
+- No graph engine / `doctor --evidence-graph`.
+
 ## 1.19.0
 
 Spec package lifecycle and scoped context. Path `.specs/features/<slug>/`

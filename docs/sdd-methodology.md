@@ -20,7 +20,15 @@ something to check against. That is why specs help; it is not a DDD pack in this
 
 ## Workflow phases
 
-The main chain runs in order, with review gates between implementation and acceptance:
+TLC condensed stages (Specify → Discuss → Design → Tasks → Execute → Verify) are the
+**methodology**. The skill sequence below is how this toolkit **implements** that
+methodology. They are not two products. After this paragraph, this toolkit calls that
+skill sequence the **canonical workflow path** (not a “linear chain” — review, fix, and
+multi-worktree are controlled branches). Operating **presets** (`init --preset`) only
+choose how much human interaction that path asks for. `sdd-route` discovers the next
+operation; it does not run the path.
+
+The canonical workflow path:
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
 

@@ -19,12 +19,28 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 **SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Sensors produce evidence. Validation and release skills evaluate that evidence against the contract—not chat confidence. A passing sensor is not a correctness verdict; the human remains the gate. The [evidence standard](../shared/references/evidence-standard.md) names false-positive classes and an evidence strength ladder so self-report and ungrounded agent tests cannot outrank spec and contracts.
 
+## Instruction precedence
+
+When texts conflict, this order wins (no extra doc):
+
+1. Toolkit safety (`no_commit` / `no_push` / no publish / untrusted input)
+2. Explicit human instruction in the current request
+3. Active SDD package (resolve one; spec over lifecycle metadata)
+4. Condensed methodology (tlc, tdd, evidence, lifecycle, work-types, profiles)
+5. Engineering principles (how to change code; never flips PASS)
+6. Skill Workflow / Safety (operational; must not contradict 1–5)
+7. Agent / model defaults
+
+`config.yml` parametrizes execution and autonomy **inside** (1). No configuration value
+overrides safety. Skill Workflow does not outrank the methodology.
+
 **Graph** is not a fifth runtime layer. Workflow rails already live in `sdd-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
 
 ## What controls what
 
 | Control | Artifact / CLI | Governs |
 | --- | --- | --- |
+| Operating preset | `init --preset` (UX) | Writes the two fields below; not a third stored axis |
 | `execution_mode` | `.sdd-agentic-flow/config.yml` | What a skill may do (plan / guided / apply / review / full) |
 | `autonomy_level` | same config | Whether the next skill needs a human between steps |
 | `autonomy_budget` | same config | Iteration/token/runtime limits (guardrail 6) |
@@ -34,7 +50,6 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 | Evidence | check/validation reports, `Status:` field | Whether "done" is believable |
 | Routing | `sdd-route` + `workflow-routing.md` | Which skill is on-path |
 | Doctor | `sdd-agentic-flow doctor` | Static validation of config, skills, autonomy setup |
-| Migrate | `sdd-agentic-flow migrate --apply` | Move legacy `.sdd/` → `.sdd-agentic-flow/` |
 
 Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agentic-flow/`) belongs to **this installation** and is regenerable except hand-edited config.
 
@@ -60,4 +75,4 @@ Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agen
 - [SDD methodology](sdd-methodology.md) — phase table and flow
 - [Architecture](architecture.md) — layers and file layout
 - [Autonomy levels](autonomy-levels.md) · [Autonomy guardrails](autonomy-guardrails.md)
-- [Upgrading](upgrading.md) — migrating from legacy `.sdd/`
+- [v2 breaking changes](v2-breaking-changes.md) — what 2.0 removes; leftover `.sdd/` is a manual rename

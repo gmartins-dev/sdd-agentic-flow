@@ -1,6 +1,6 @@
 # Autonomy guardrails
 
-Seven deterministic checks an agent evaluates before a skill running at `workflow.autonomy_level: autonomous` advances to the next skill without asking a human. Each check is auditable from the skill's reported output, its declared `autonomy_profile`, and `.sdd-agentic-flow/config.yml`. One failure blocks the advance and returns control to the human, same as `autonomy_level: manual`.
+**Autonomous does not mean unattended.** Seven deterministic checks an agent evaluates before a skill running at `workflow.autonomy_level: autonomous` advances to the next skill without asking a human. Each check is auditable from the skill's reported output, its declared `autonomy_profile`, and `.sdd-agentic-flow/config.yml`. One failure blocks the advance and returns control to the human, same as `autonomy_level: manual`.
 
 For level definitions and configuration, see [autonomy levels](autonomy-levels.md). For the full guardrail definitions, `autonomy_profile` frontmatter shape, and `.sdd-agentic-flow/autonomy/loop-state.md` format, see [shared/references/autonomy-guardrails.md](../shared/references/autonomy-guardrails.md). To read which SDD flow phase a `loop-state.md` entry's `Skill:` value corresponds to, see the `Phase | Typical skill` table in [sdd-methodology.md](sdd-methodology.md#workflow-phases).
 

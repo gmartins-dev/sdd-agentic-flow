@@ -1,6 +1,8 @@
 # Compatibility promise
 
-`sdd-agentic-flow` extends canonical engineering baselines. It never forks them.
+This document is the **v2 contract**. `sdd-agentic-flow` extends canonical engineering
+baselines. It never forks them. Breaking capability-contract changes require a major
+release. Historical 1.x notes stay in [CHANGELOG.md](../CHANGELOG.md).
 
 ## What changes together
 
@@ -57,22 +59,10 @@ v1.14.0 **does** change the condensed baseline loop. `tdd` and `tlc-spec-driven`
 unchanged; the TLC invariant no longer embeds RED → GREEN as proof. Field labels stay.
 This is a minor Baseline change under the rule above, not a major: no skill renamed, no
 capability-contract field removed. See [CHANGELOG.md](../CHANGELOG.md) **Baseline
-changes** and [upgrading](upgrading.md#baseline-070-v1140).
+changes**.
 
-v1.15.0 does **not** bump `baseline_version` (still `0.7.0`). Loop and stages move only
-with `baseline_version`. See [upgrading](upgrading.md#additive-1150-baseline-still-070).
-
-v1.16.0 does **not** bump `baseline_version` (still `0.7.0`). See
-[upgrading](upgrading.md#additive-1160-baseline-still-070).
-
-v1.17.0 does **not** bump `baseline_version` (still `0.7.0`). See
-[upgrading](upgrading.md#additive-1170-baseline-still-070).
-
-v1.18.0 does **not** bump `baseline_version` (still `0.7.0`). See
-[upgrading](upgrading.md#additive-1180-baseline-still-070).
-
-v1.19.0 does **not** bump `baseline_version` (still `0.7.0`). See
-[upgrading](upgrading.md#additive-1190-baseline-still-070).
+v1.15.0–v1.19.0 do **not** bump `baseline_version` (still `0.7.0`). Loop and stages move only
+with `baseline_version`. See [CHANGELOG.md](../CHANGELOG.md).
 
 ## Breaking vs. additive capability-contract changes
 
@@ -82,7 +72,7 @@ This section makes explicit a rule that was already implicit in prior releases.
 
 - Removing a capability-contract field (required or optional).
 - Removing a skill, or replacing one skill with another under a different name without a
-  documented migration (see [upgrading](upgrading.md) for how the v0.8.0
+  documented migration (see [CHANGELOG.md](../CHANGELOG.md) for how the v0.8.0
   `sdd-reverse-engineer` → `sdd-create-specs` merge was handled as a worked example).
 - Changing the semantic meaning of an existing field without changing its name. For example,
   `sdd-create-specs`'s `requires: [config, source-item]` in v0.8.0 came to cover two distinct
@@ -100,8 +90,7 @@ This section makes explicit a rule that was already implicit in prior releases.
 **When each is allowed:** during the beta (every release before v1.0.0), breaking
 capability-contract changes are permitted in a **minor** release, always documented in
 [CHANGELOG.md](../CHANGELOG.md) under an explicit "Breaking capability-contract change" note.
-From v1.0.0 onward, this changes to a stricter stability commitment for skill contracts and
-baseline versions: breaking capability-contract changes now require a **major** release, the
+This contract requires a **major** release for breaking capability-contract changes, the
 same as the CLI argument surface and environment matrix below.
 
 ## Adapters stay documentation-level

@@ -48,6 +48,37 @@ const INVALID_AUTONOMY_COMBOS = new Set(['plan:autonomous', 'guided:autonomous']
 function autonomyComboValid(executionMode, autonomyLevel) {
   return !INVALID_AUTONOMY_COMBOS.has(`${executionMode}:${autonomyLevel}`);
 }
+
+// Operating presets are UX over the two existing fields. Not a third stored axis.
+// Aliases are input sugar for --preset and --autonomy-level only.
+const OPERATING_PRESETS = {
+  manual: { executionMode: 'guided', autonomyLevel: 'manual' },
+  supervised: { executionMode: 'apply', autonomyLevel: 'supervised' },
+  autonomous: { executionMode: 'full', autonomyLevel: 'autonomous' },
+};
+const AUTONOMY_ALIASES = {
+  man: 'manual',
+  assist: 'supervised',
+  assisted: 'supervised',
+  auto: 'autonomous',
+};
+const OPERATING_PRESET_HELP = 'manual|supervised|autonomous (aliases: man, assist|assisted, auto)';
+
+function resolveAutonomyToken(token) {
+  if (!token || String(token).startsWith('--')) return null;
+  if (AUTONOMY_LEVELS.includes(token)) return token;
+  return AUTONOMY_ALIASES[token] || null;
+}
+
+function resolveOperatingPreset(token) {
+  const canonical = resolveAutonomyToken(token);
+  if (!canonical || !OPERATING_PRESETS[canonical]) return null;
+  return {
+    name: canonical,
+    alias: token === canonical ? null : token,
+    ...OPERATING_PRESETS[canonical],
+  };
+}
 const OFFICIAL_SKILLS = [
   'setup-sdd-agentic-flow',
   'sdd-route',
@@ -501,6 +532,12 @@ function init(cwd, options = {}) {
   fs.writeFileSync(configPath, configFor(options), 'utf8');
   logPassLine(`created ${SDD_PATHS.config}`, { mode, quiet: options.quiet });
   logPassLine('initialized local SDD directories', { mode, quiet: options.quiet });
+  if (options.presetName) {
+    const aliasNote = options.presetAlias ? ` (alias: ${options.presetAlias})` : '';
+    log('INFO', `preset ${options.presetName}${aliasNote}`);
+    log('INFO', `execution_mode: ${options.executionMode || 'guided'}`);
+    log('INFO', `autonomy_level: ${options.autonomyLevel || 'manual'}`);
+  }
   discoverProject(cwd, { force: false, quiet: true, ascii: options.ascii });
   if (!options.quiet) {
     nextStep('npx sdd-agentic-flow install core', { quiet: options.quiet, mode });
@@ -1135,7 +1172,7 @@ function doctorChecks(cwd) {
         add(
           'legacy_sdd_root',
           'WARN',
-          `${LEGACY_SDD_ROOT}/ found without ${SDD_ROOT}/ — run \`sdd-agentic-flow migrate --apply\``,
+          `${LEGACY_SDD_ROOT}/ found without ${SDD_ROOT}/ — rename ${LEGACY_SDD_ROOT}/ to ${SDD_ROOT}/ yourself`,
           'Config',
         );
       } else if (fs.existsSync(legacyPath) && fs.existsSync(newRootPath)) {
@@ -1814,41 +1851,6 @@ function describePath(cwd, target) {
   return relative.startsWith('..') || path.isAbsolute(relative) ? target : relative;
 }
 
-function migrateSddRoot(args, cwd) {
-  const quiet = args.includes('--quiet');
-  const plan = args.includes('--plan');
-  const apply = args.includes('--apply');
-  const rest = args.filter(
-    (arg) => !['--plan', '--apply', '--help', '--quiet', '--ascii'].includes(arg),
-  );
-  if (rest.length || plan === apply) return fail(USAGE.migrate);
-
-  const legacyPath = legacySddJoin(cwd);
-  const newRootPath = path.join(cwd, SDD_ROOT);
-
-  if (!fs.existsSync(legacyPath)) {
-    log('WARN', `nothing to migrate — ${LEGACY_SDD_ROOT}/ not found`);
-    return;
-  }
-  if (fs.existsSync(newRootPath)) {
-    return fail(`${SDD_ROOT}/ already exists.`, {
-      reason: `Resolve the conflict manually before migrating from ${LEGACY_SDD_ROOT}/.`,
-      try: [
-        `Merge any needed files from ${LEGACY_SDD_ROOT}/ into ${SDD_ROOT}/, then remove ${LEGACY_SDD_ROOT}/`,
-      ],
-    });
-  }
-
-  if (plan) {
-    log('PLAN', `move ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/`);
-    return;
-  }
-
-  fs.renameSync(legacyPath, newRootPath);
-  log('PASS', `migrated ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/`);
-  nextStep('npx sdd-agentic-flow doctor', { quiet });
-}
-
 function uninstall(args, cwd) {
   const usage = USAGE.uninstall;
   const plan = args.includes('--plan');
@@ -1928,7 +1930,7 @@ function uninstall(args, cwd) {
 // alongside --quiet (v1.4.0) specifically because it lands in 4 of these strings at once, which
 // is exactly the kind of change that causes hand-duplicated copies to drift.
 const USAGE = {
-  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
+  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--preset manual|supervised|autonomous] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
   install:
     'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--quiet]',
   doctor:
@@ -1939,7 +1941,6 @@ const USAGE = {
   context: 'usage: context [status|refresh|autonomy-state]',
   'autonomous-resume':
     'usage: autonomous-resume [--force] | autonomous-resume --override-guard=<1-7> --reason="..."',
-  migrate: 'usage: migrate --plan | migrate --apply',
   upgrade: 'usage: upgrade [--check|--plan|--skills-only]',
 };
 
@@ -1952,7 +1953,6 @@ const KNOWN_COMMANDS = [
   'doctor',
   'upgrade',
   'autonomous-resume',
-  'migrate',
   'uninstall',
   'help',
   'version',
@@ -1970,6 +1970,7 @@ is regenerable toolkit state and is refreshed on every init.
 USAGE
   sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
+                         [--preset manual|supervised|autonomous]
                          [--execution-mode plan|guided|apply|review|full]
                          [--autonomy-level manual|supervised|autonomous]
                          [--local-git-exclude] [--quiet] [--ascii]
@@ -1982,10 +1983,16 @@ OPTIONS
   --en                   Alias for --language en-US.
   --br                   Alias for --language pt-BR.
   --feature-profile <p>  Adaptive sizing: small_fix | medium_feature | large_feature | epic.
+  --preset <p>           Operating policy: manual | supervised | autonomous
+                         (aliases: man, assist|assisted, auto).
+                         Writes execution_mode and autonomy_level. Cannot combine
+                         with --execution-mode or --autonomy-level.
   --execution-mode <m>   What a skill is authorized to do: plan | guided | apply | review |
                          full. Default: guided. See docs/execution-modes.md.
+                         Does not accept auto as a synonym of full.
   --autonomy-level <l>   How a workflow advances between skills: manual | supervised |
-                         autonomous. Default: manual. plan/guided never combine with
+                         autonomous (aliases: man, assist|assisted, auto).
+                         Default: manual. plan/guided never combine with
                          autonomous. See docs/autonomy-levels.md.
   --local-git-exclude    Opt-in: append ${SDD_ROOT}/ to .git/info/exclude so toolkit
                          state stays out of git status. Does not edit .gitignore and
@@ -2001,6 +2008,8 @@ EXAMPLES
   sdd-agentic-flow init
   sdd-agentic-flow init --br
   sdd-agentic-flow init --interactive
+  sdd-agentic-flow init --preset autonomous
+  sdd-agentic-flow init --preset auto
   sdd-agentic-flow init --execution-mode full --autonomy-level supervised
   sdd-agentic-flow init --local-git-exclude
 `,
@@ -2200,27 +2209,6 @@ EXAMPLES
   sdd-agentic-flow autonomous-resume --force
   sdd-agentic-flow autonomous-resume --override-guard=3 --reason="flaky test, verified manually"
 `,
-  migrate: `sdd-agentic-flow migrate
-
-Move legacy toolkit state from .sdd/ to .sdd-agentic-flow/ (v1.10.0+ canonical path).
-Never merges when both directories exist — resolve conflicts manually first.
-
-USAGE
-  sdd-agentic-flow migrate --plan
-  sdd-agentic-flow migrate --apply
-
-OPTIONS
-  --plan   Show what would be moved; makes no changes.
-  --apply  Move ${LEGACY_SDD_ROOT}/ → ${SDD_ROOT}/ atomically.
-
-Useful when:
-  An older checkout still has toolkit state under .sdd/ and you need a one-shot
-  rename to .sdd-agentic-flow/ before doctor/install will see it.
-
-EXAMPLES
-  sdd-agentic-flow migrate --plan
-  sdd-agentic-flow migrate --apply
-`,
 };
 
 function help(command) {
@@ -2249,14 +2237,13 @@ QUICK START
 
 COMMANDS
   list                                   List packs
-  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
+  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
   discover [--force] [--quiet]           Refresh auto-discovered project context
   context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
   install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
   doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
   upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
-  migrate --plan | migrate --apply  Move legacy .sdd/ toolkit state to .sdd-agentic-flow/
   uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
@@ -2618,6 +2605,18 @@ async function runCommand(command, rawArgs, cwd) {
     const usage = USAGE.init;
     if (args.includes('--help')) process.stdout.write(`${COMMAND_HELP.init}`);
     else {
+      if (
+        args.includes('--preset') &&
+        (args.includes('--execution-mode') || args.includes('--autonomy-level'))
+      ) {
+        return fail('init --preset cannot combine with --execution-mode or --autonomy-level.', {
+          reason: 'Choose a preset or set the two fields explicitly, not both.',
+          try: [
+            'sdd-agentic-flow init --preset manual',
+            'sdd-agentic-flow init --execution-mode full --autonomy-level supervised',
+          ],
+        });
+      }
       let interactive = false;
       let language = 'en-US';
       let featureProfile = 'medium_feature';
@@ -2625,6 +2624,8 @@ async function runCommand(command, rawArgs, cwd) {
       let autonomyLevel = 'manual';
       let quiet = false;
       let localGitExclude = false;
+      let presetName = null;
+      let presetAlias = null;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
         else if (args[index] === '--en') language = 'en-US';
@@ -2640,17 +2641,45 @@ async function runCommand(command, rawArgs, cwd) {
         ) {
           featureProfile = args[index + 1];
           index += 1;
-        } else if (
-          args[index] === '--execution-mode' &&
-          EXECUTION_MODES.includes(args[index + 1])
-        ) {
+        } else if (args[index] === '--preset') {
+          const resolved = resolveOperatingPreset(args[index + 1]);
+          if (!resolved) {
+            return fail(`unknown --preset ${args[index + 1] || '(missing)'}.`, {
+              reason: `Presets are ${OPERATING_PRESET_HELP}.`,
+              try: [
+                'sdd-agentic-flow init --preset manual',
+                'sdd-agentic-flow init --preset supervised',
+                'sdd-agentic-flow init --preset autonomous',
+              ],
+            });
+          }
+          presetName = resolved.name;
+          presetAlias = resolved.alias;
+          executionMode = resolved.executionMode;
+          autonomyLevel = resolved.autonomyLevel;
+          index += 1;
+        } else if (args[index] === '--execution-mode') {
+          if (!EXECUTION_MODES.includes(args[index + 1])) {
+            return fail(usage, {
+              reason: args[index + 1]
+                ? `Unknown --execution-mode: ${args[index + 1]}`
+                : 'Missing --execution-mode value.',
+              try: ['sdd-agentic-flow init --execution-mode guided'],
+            });
+          }
           executionMode = args[index + 1];
           index += 1;
-        } else if (
-          args[index] === '--autonomy-level' &&
-          AUTONOMY_LEVELS.includes(args[index + 1])
-        ) {
-          autonomyLevel = args[index + 1];
+        } else if (args[index] === '--autonomy-level') {
+          const resolved = resolveAutonomyToken(args[index + 1]);
+          if (!resolved) {
+            return fail(usage, {
+              reason: args[index + 1]
+                ? `Unknown --autonomy-level: ${args[index + 1]}`
+                : 'Missing --autonomy-level value.',
+              try: ['sdd-agentic-flow init --autonomy-level manual'],
+            });
+          }
+          autonomyLevel = resolved;
           index += 1;
         } else return fail(usage);
       }
@@ -2674,6 +2703,8 @@ async function runCommand(command, rawArgs, cwd) {
           featureProfile,
           executionMode,
           autonomyLevel,
+          presetName,
+          presetAlias,
           quiet,
           localGitExclude,
           ascii,
@@ -2829,21 +2860,6 @@ async function runCommand(command, rawArgs, cwd) {
         try: ['sdd-agentic-flow autonomous-resume --override-guard=3 --reason="..."'],
       });
     autonomousResume(cwd, { force, overrideGuard, reason });
-  } else if (command === 'migrate') {
-    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.migrate);
-    if (!args.every((arg) => arg === '--plan' || arg === '--apply' || arg === '--quiet')) {
-      const bad = args.find((arg) => arg !== '--plan' && arg !== '--apply' && arg !== '--quiet');
-      const hint = didYouMeanTry(bad, ['--plan', '--apply', '--quiet']);
-      return fail(USAGE.migrate, {
-        reason: bad ? `Unknown argument: ${bad}` : 'Invalid arguments.',
-        try: [
-          'sdd-agentic-flow migrate --plan',
-          'sdd-agentic-flow migrate --apply',
-          ...(hint ? [hint] : []),
-        ],
-      });
-    }
-    migrateSddRoot(args, cwd);
   } else if (command === 'uninstall') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.uninstall);
     else uninstall(args, cwd);

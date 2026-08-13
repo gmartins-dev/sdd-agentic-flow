@@ -15,9 +15,14 @@ fully-supervised behavior the toolkit already had.
 | `supervised` | Reports evidence and asks "continue to `<next skill>`?"; a human decides. | `confirm` |
 | `autonomous` | Advances on its own, but only when every one of the 7 guardrails passes. | `continue`, gated |
 
-`autonomous` is not "no oversight." Oversight moves from every transition to the guardrail
+**Autonomous does not mean unattended.** Oversight moves from every transition to the guardrail
 definitions themselves, checked mechanically before each one. Any guardrail failure produces the
-exact same outcome as `manual`: control returns to a human.
+exact same outcome as `manual`: control returns to a human. Commit, push, merge, tag, and
+publish stay human on every preset.
+
+Daily use can set both axes with `init --preset` (`manual` / `supervised` / `autonomous`;
+aliases `man` / `assist`|`assisted` / `auto`). That is UX over the two fields below, not a
+third stored axis. The 5×3 matrix stays for power users.
 
 ## `execution_mode` × `autonomy_level` compatibility
 
@@ -33,6 +38,20 @@ exact same outcome as `manual`: control returns to a human.
 auto-advance into, and step-by-step confirmation is the entire point of `guided`. `doctor
 --autonomy` flags either combination as `FAIL`; `init --execution-mode --autonomy-level` rejects
 it before writing `.sdd-agentic-flow/config.yml`.
+
+## Capability / gate matrix (across presets)
+
+| Action | manual | supervised | autonomous |
+| --- | --- | --- | --- |
+| Read repository | yes | yes | yes |
+| Create/update SDD artifacts | yes | yes | yes |
+| Implement code | per `execution_mode` | yes (`apply`) | yes (`full`) |
+| Run tests / sensors | yes | yes | yes |
+| Task check / feature validation | yes | yes | yes |
+| Local PR **package** (`sdd-create-pr`) | yes | yes | yes |
+| Open GitHub/Git PR, commit, push | **human** | **human** | **human** |
+| Tag / npm publish / deploy | **human** | **human** | **human** |
+| Advance to next skill without asking | no | confirm | yes, if 7 guardrails pass |
 
 ## The 7 guardrails
 

@@ -89,18 +89,30 @@ You stay the decision-maker; the toolkit holds the gates. It gives you a linear 
 Requires Node.js >= 22 for the CLI only. Your project does not need Node.js. See [environment compatibility](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init
+npx sdd-agentic-flow init --preset manual
 npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
+That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. `init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`) — it is not a third config axis.
 
-Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md) and [configuration](docs/configuration.md).
+| Preset | Writes | How the path runs |
+| --- | --- | --- |
+| `manual` (default; alias `man`) | `guided` + `manual` | Stop after each skill |
+| `supervised` (aliases `assist`, `assisted`) | `apply` + `supervised` | Propose next skill; you confirm |
+| `autonomous` (alias `auto`) | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` while all 7 guardrails pass |
+
+Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users can still set those two flags without `--preset`. See [configuration](docs/configuration.md).
+
+**Autonomous does not mean unattended.** Commit, push, merge, tag, and publish stay human on every preset. The CLI does not run skills.
+
+Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
+
+Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md).
 
 ## How it works
 
-Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
+**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
 
 ```mermaid
 flowchart TD
@@ -134,8 +146,6 @@ These walkthroughs are not slide-deck claims—they run as integration tests in 
 | Existing code | Specs from undocumented code | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
 | Project context | `discover` / `context` lifecycle | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | PR loop | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
-| Version migration | Upgrade path v0.8.0 → v0.9.0 | [version migration](examples/golden/version-migration/walkthrough.md) |
-| Legacy path rename | `.sdd/` → `.sdd-agentic-flow/` | [sdd-path-migrate](examples/golden/sdd-path-migrate/walkthrough.md) |
 | Autonomy AUTO-001 | Idea → spec under autonomous config | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
 | Autonomy AUTO-002 | Spec → validate chain | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
 | Autonomy AUTO-003 | Guardrail pause → resume | [autonomy-guardrail-pause-resume](examples/golden/autonomy-guardrail-pause-resume/walkthrough.md) |
@@ -199,7 +209,7 @@ list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [upgrading](docs/upgrading.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [v2 breaking changes](docs/v2-breaking-changes.md).
 
 `install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Pass `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md).
 
@@ -253,7 +263,7 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --apply
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd-agentic-flow/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full`. It also removes `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [upgrading](docs/upgrading.md) for what's safe to re-run after updating the CLI.
+Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd-agentic-flow/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full`. It also removes `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports` (all regenerable); `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and [v2 breaking changes](docs/v2-breaking-changes.md) for what's safe to re-run after updating the CLI.
 
 ## Skill map
 

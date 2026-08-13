@@ -36,7 +36,9 @@ editing `.gitignore` can pass `init --local-git-exclude` (opt-in; excludes only
 `workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) are two
 orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `autonomy_level`
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
-combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. `init
+combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. `init --preset` writes both fields from an operating-policy name (`manual` →
+`guided`+`manual`, `supervised` → `apply`+`supervised`, `autonomous` → `full`+`autonomous`)
+and cannot combine with `--execution-mode` or `--autonomy-level`. `init
 --autonomy-level`/`--execution-mode` set both at creation time; both default to their most
 conservative value, so an existing `.sdd-agentic-flow/config.yml` predating v1.8.0 behaves identically once
 these fields are added (`WARN`, not `FAIL`, when missing). `workflow.autonomy_budget`

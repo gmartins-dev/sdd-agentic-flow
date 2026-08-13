@@ -1,5 +1,12 @@
 # Roadmap
 
+- **v2.0.0 (2026-08-13):** Public-readiness / consolidation major. One
+  methodology, one canonical workflow path, three operating presets
+  (`init --preset`), one router. `migrate` removed; leftover `.sdd/` is a
+  `doctor` WARN and a manual rename. Breaking notes in
+  `docs/v2-breaking-changes.md`. Autonomous does not mean unattended; no
+  config value overrides safety. 14 skills; no public `auto-sdd` / `sdd-run`;
+  no third stored axis. `baseline_version` stays `0.7.0`.
 - **v1.19.0 (2026-08-13):** Spec package lifecycle and scoped context. Path
   `.specs/features/<slug>/` unchanged. Skills resolve one package, then load
   only artifacts the active operation already requires. Optional advisory

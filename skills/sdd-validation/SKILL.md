@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.19.0
+  version: 2.0.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]

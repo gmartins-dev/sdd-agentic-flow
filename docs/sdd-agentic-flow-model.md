@@ -13,7 +13,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 | Layer | Question it answers | Where it lives |
 | --- | --- | --- |
 | **Prompt** | What should the agent do next? | Skill `SKILL.md` bodies, task prompts from `sdd-create-prompts` |
-| **Context** | What does the project already know? | `.specs/features/`, `.sdd-agentic-flow/context/`, `.sdd-agentic-flow/config.yml` |
+| **Context** | What does the project already know? | Packages under `.specs/features/` (resolve one, then load narrowly), `.sdd-agentic-flow/context/`, `.sdd-agentic-flow/config.yml` |
 | **Harness** | How may the agent operate safely? | `execution_mode`, safety defaults, capability contracts, evidence standard |
 | **Loop** | How does work continue across steps/sessions? | `autonomy_level`, 7 guardrails, `.sdd-agentic-flow/autonomy/loop-state.md`, handoffs |
 

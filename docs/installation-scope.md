@@ -37,7 +37,7 @@ or `.sdd-agentic-flow/context/project-context.md`, which are project policy, alw
 | `install --scope user` (default) | Nothing | Unchanged |
 | `install --scope project` | `.agents/skills/` | Untracked skill files |
 
-`.specs/features/` is project work and should normally be versioned. `.sdd-agentic-flow/config.yml` is project policy; teams that want shared defaults commit it. `usage.md` is regenerable — re-run `init` to refresh it.
+`.specs/features/` is project work and should normally be versioned. This toolkit repository gitignores `.specs/` for local dogfooding only — that exception is not the consumer default. `.sdd-agentic-flow/config.yml` is project policy; teams that want shared defaults commit it. `usage.md` is regenerable — re-run `init` to refresh it.
 
 ## Local git exclude (`init --local-git-exclude`)
 

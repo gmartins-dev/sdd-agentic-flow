@@ -147,6 +147,21 @@ v1.18.0 does **not** add a 15th skill, a web or security pack, CLI flags,
 CSP/Helmet/`npm audit`/Lighthouse catalogs in core. Engineering-fit findings
 do not flip check/validation `PASS` by themselves.
 
+## Additive 1.19.0 (baseline still 0.7.0)
+
+v1.19.0 is an additive methodology/skills/docs minor: one shared contract
+(`shared/references/spec-lifecycle.md`) for which spec package to resolve and
+which artifacts to load. The public path stays `.specs/features/<slug>/`.
+Seven consuming skills gain a pointer; `check-skills.sh` gates the file and
+those greps. `baseline_version` stays `0.7.0`. Loop and stages do not change.
+Refresh bundled skills to pick up `spec-lifecycle.md`; no baseline migration
+is required.
+
+v1.19.0 does **not** add `.specs/active/` + `.specs/archive/`, a CLI `archive`
+command, `specs.active_slug`, auto-archive, TLC `STATE.md` / `LESSONS.md` /
+`validation.md` under `.specs`, a required YAML `status:` header, or a 15th
+skill. Lifecycle metadata is advisory and does not control routing.
+
 ## When is re-running `install` safe?
 
 Always. Whatever pack and scope you already used, running `install <pack>` again, with the

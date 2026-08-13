@@ -71,6 +71,9 @@ v1.17.0 does **not** bump `baseline_version` (still `0.7.0`). See
 v1.18.0 does **not** bump `baseline_version` (still `0.7.0`). See
 [upgrading](upgrading.md#additive-1180-baseline-still-070).
 
+v1.19.0 does **not** bump `baseline_version` (still `0.7.0`). See
+[upgrading](upgrading.md#additive-1190-baseline-still-070).
+
 ## Breaking vs. additive capability-contract changes
 
 This section makes explicit a rule that was already implicit in prior releases.

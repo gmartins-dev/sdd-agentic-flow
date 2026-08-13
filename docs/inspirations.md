@@ -142,6 +142,9 @@ are not product requirements and are not reproduced here.
   not ship a PBT engine and does not require a `## Invariants` spec header. Kiro is
   **not a runtime to copy**; this package ships a portable workflow contract, not an
   agent runtime.
+- Spec Kit and OpenSpec appear here as **landscape** (how other toolkits persist or archive
+  specs). This toolkit does **not** copy Spec Kit’s folder conventions or OpenSpec’s
+  delta → canonical layout; packages stay under `.specs/features/<slug>/`.
 
 Fowler harness engineering, Thoughtworks feedback sensors, Mathews & Nagappan, and Advani
 are listed with role tags under [Curated sources by role](#curated-sources-by-role) rather

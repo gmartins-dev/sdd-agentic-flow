@@ -28,6 +28,8 @@ the consumer explicitly changes its policy.
 - Do not invent requirements or silently resolve material drift. Specifications are
   **living** control artifacts: on spec drift, stop and reconcile with the human; do not
   silently implement a “better” requirement or rewrite the spec to match the code.
+- Load artifacts on demand for the current feature and operation; do not
+  load multiple feature specs simultaneously. See [spec-lifecycle.md](spec-lifecycle.md).
 - Stop and report `Blocked` when evidence or authority is missing.
 - Implementation work records current adequate behavioral evidence at contractual
   seams (see [tdd-baseline.md](tdd-baseline.md)). The RED → GREEN → REFACTOR

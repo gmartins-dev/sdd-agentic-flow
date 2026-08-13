@@ -2,7 +2,7 @@
 name: sdd-implement-task
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 1.18.0
+  version: 1.19.0
   pack: core
 extends: sdd-create-prompts
 requires: [config, task-identity]
@@ -24,7 +24,7 @@ autonomy_profile:
 
 ## When to use
 
-Use for one unambiguous task that is ready to implement or resume. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) before acting.
+Use for one unambiguous task that is ready to implement or resume. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) before acting.
 
 ## When not to use
 
@@ -39,7 +39,7 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one task from the configured SDD source. Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict. Specifications are **living** control artifacts: if you find spec drift, stop and reconcile the spec with the human. Do not silently implement a “better” requirement. Do not silently rewrite the spec to match the code.
 4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. Do not add a competing architecture, new dependency, or new convention without confirmation (decision path step 5).
 5. Identify the required behavior from the spec, the contractual seam (field label: `Public seam`; prefer public/observable when practical), the sensor, and the oracle/acceptance condition from spec, repo contracts, or configured gates — never solely from the implementation. Stop when the seam is unclear. Stay inside the fix boundary; do not expand into **unchanged behavior**. For bugfix or refactor intent, record regression sensors. Do not complete an **investigation** as a fix (`Status: pass` on findings is forbidden).

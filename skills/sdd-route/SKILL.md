@@ -2,7 +2,7 @@
 name: sdd-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 1.18.0
+  version: 1.19.0
   pack: core
 extends: null
 requires: [config]
@@ -25,7 +25,7 @@ autonomy_profile:
 
 ## When to use
 
-Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue; this skill recommends that path — it is not a new Plan skill.
+Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue; this skill recommends that path — it is not a new Plan skill. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): listing slugs ≠ loading bodies; 0 ask / 1 select / >1 human gate.
 
 ## When not to use
 
@@ -40,10 +40,10 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` when it exists. If it is missing, recommend `setup-sdd-agentic-flow`.
-2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md` and `../sdd-agentic-flow-shared/references/workflow-safety.md`.
+2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/spec-lifecycle.md`.
 3. Inspect the candidate local `SKILL.md` before stating what it does. Its instructions are the source of truth.
 4. Match the request against the routing table in `../sdd-agentic-flow-shared/references/workflow-routing.md` — it is the single source of truth for routing situations and recommended skills; do not reproduce or re-derive the table here, and never let this step's wording diverge from it.
-5. Identify missing packs, prerequisites, and any human decision required. Stop after the recommendation.
+5. Identify missing packs, prerequisites, and any human decision required. If the request needs a feature package and does not name one, listing directory names under `specs.root` and skimming `context.md` is allowed. 0 matches → ask; 1 unique → name it in the recommendation; >1 plausible → human decision required; never “probably this one.” Do not read every `spec.md` to make the recommendation. Listing ≠ loading bodies. This skill remains a skill router, not a package registry. Stop after the recommendation.
 
 ## Safety
 

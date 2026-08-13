@@ -27,6 +27,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [prompt-recipes.md](prompt-recipes.md) | Copy-paste prompt patterns |
 | [tdd-baseline.md](tdd-baseline.md) | TDD baseline overview (detail in shared reference) |
 | [engineering-principles.md](engineering-principles.md) | How agents change code (shared contract, not a skill) |
+| [spec-lifecycle.md](spec-lifecycle.md) | Resolve one package; load only what the active operation requires |
 | [baselines.md](baselines.md) | What this package ships vs external TLC/TDD skills |
 
 ## Guides

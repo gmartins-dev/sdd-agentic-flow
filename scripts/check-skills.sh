@@ -251,7 +251,7 @@ if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.e
   exit 1
 fi
 
-for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md engineering-principles.md autonomy-guardrails.md handoff-standard.md work-types.md; do
+for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md sdd-global-guidance.md workflow-safety.md language-policy.md reviewability.md worktree-orchestration.md feature-profiles.md artifact-contracts.md skill-authoring-standard.md evidence-standard.md engineering-principles.md autonomy-guardrails.md handoff-standard.md work-types.md spec-lifecycle.md; do
   test -f "shared/references/$ref"
   if [[ "$ref" == "tlc-baseline.md" || "$ref" == "tdd-baseline.md" ]]; then
     grep -F -q 'Baseline version: 0.7.0' "shared/references/$ref"
@@ -373,6 +373,18 @@ for skill in sdd-create-specs sdd-create-prompts sdd-implement-task \
   sdd-implement-multi sdd-task-check sdd-pr-review sdd-pr-fix; do
   grep -F -q 'engineering-principles.md' "skills/$skill/SKILL.md"
 done
+# v1.19.0: spec-package lifecycle and scoped context. Not a skill, not a CLI.
+for skill in sdd-create-specs sdd-create-prompts sdd-implement-task \
+  sdd-task-check sdd-explain-me sdd-validation sdd-route; do
+  grep -F -q 'spec-lifecycle.md' "skills/$skill/SKILL.md"
+done
+grep -F -q 'Load rule' shared/references/spec-lifecycle.md
+grep -F -q 'do not glob' shared/references/spec-lifecycle.md
+grep -F -q 'spec-lifecycle.md' shared/references/tlc-baseline.md
+if grep -F -q -- 'specs.active_slug' bin/sdd-agentic-flow.js; then
+  echo "CLI must not gain specs.active_slug in v1.19.0" >&2
+  exit 1
+fi
 
 # v1.9.0 (Handoff Standard): the 7 skills whose work can pause across a session/agent boundary
 # must reference the shared handoff-standard.md rather than re-deriving when to write handoff.md.
@@ -392,7 +404,7 @@ done
 for preset in core planning execution pr multi-worktree full local-files github; do
   node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
 done
-for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/engineering-principles.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/baselines.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/upgrading.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/engineering-principles.md docs/spec-lifecycle.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/baselines.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/upgrading.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md

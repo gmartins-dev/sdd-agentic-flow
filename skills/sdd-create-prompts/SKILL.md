@@ -2,7 +2,7 @@
 name: sdd-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 1.18.0
+  version: 1.19.0
   pack: planning
 extends: sdd-create-specs
 requires: [config, spec-package]
@@ -24,7 +24,7 @@ autonomy_profile:
 
 ## When to use
 
-Use after an SDD specification package is ready and the user needs bounded implementation prompts for one or more tasks.
+Use after an SDD specification package is ready and the user needs bounded implementation prompts for one or more tasks. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): resolve one package; load this skill's existing Inputs only.
 
 ## When not to use
 
@@ -38,7 +38,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`. Resolve **one** package; load this skill's existing Inputs/Workflow list only. Related slugs only if named or requested (one hop). Do not glob sibling `spec.md`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
 3. Read `../sdd-agentic-flow-shared/references/tdd-baseline.md`, `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts.
 4. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist.

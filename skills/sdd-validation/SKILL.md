@@ -2,7 +2,7 @@
 name: sdd-validation
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 1.18.0
+  version: 1.19.0
   pack: core
 extends: sdd-task-check
 requires: [config, spec-package, task-evidence]
@@ -24,7 +24,7 @@ autonomy_profile:
 
 ## When to use
 
-Use when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -43,7 +43,7 @@ Do not use to implement code, repair findings, validate only one task, create a 
 4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS / `Status: ready` an implementation of one interpretation. On spec drift, write `not ready` with a reconciliation note — do not rewrite the spec to match the code.
 5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands and results (command, exit status, observed result, requirement mapping); evidence from prior runs is context, not proof. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence (`self-report is not evidence`). This skill must not inherit author narrative.
 6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current adequate evidence and required gates pass. Never silent PASS. Never write `Status: ready` on a false-positive catalog hit.
-7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; never create `validation.md` under `.specs`.
+7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; never create `validation.md` under `.specs`. Never move or delete `.specs/features/<slug>/`. After a PASS report, **may recommend** the human set `Lifecycle: implemented`; must not write that line itself.
 
 ## Safety
 

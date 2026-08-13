@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v1.19.0 (2026-08-13):** Spec package lifecycle and scoped context. Path
+  `.specs/features/<slug>/` unchanged. Skills resolve one package, then load
+  only artifacts the active operation already requires. Optional advisory
+  `Lifecycle:` (`implemented`, not `completed`) and `Extends:` / `Supersedes:`.
+  TLC on-demand load invariant; `baseline_version` stays `0.7.0`. No CLI, no
+  auto-archive, no `STATE.md`, no `validation.md` under `.specs`, no 15th skill.
 - **v1.18.0 (2026-08-13):** Shared engineering-principles contract for how
   agents change code. Language- and architecture-agnostic; not a skill and not
   a TLC/TDD baseline. Consumed by implement / prompts / specs / check /

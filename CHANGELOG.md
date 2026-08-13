@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 1.19.0
+
+Spec package lifecycle and scoped context. Path `.specs/features/<slug>/`
+unchanged. Skills resolve one feature package, then load only artifacts the
+active operation already requires. Do not glob every `spec.md`. Optional
+advisory `Lifecycle:` (`implemented`, not `completed`) and canonical
+`Extends:` / `Supersedes:` lines. No CLI, no auto-archive, no `STATE.md`, no
+`validation.md` under `.specs`.
+
+**Baseline changes:** reviewed, added on-demand load invariant (never load
+multiple feature specs simultaneously). No `baseline_version` bump (stays
+`0.7.0`).
+
+**Explicit non-goals (not in this release):**
+
+- No `.specs/active/` + `.specs/archive/` restructure.
+- No CLI `archive` / `specs status`; no `specs.active_slug`.
+- No auto-archive on validation PASS; no TLC `STATE.md` / `LESSONS.md` /
+  `.specs/**/validation.md`.
+- No required YAML `status:` / `## Lifecycle` H2; no 15th skill.
+
 ## 1.18.0
 
 Shared engineering-principles contract for how agents change code. Language- and

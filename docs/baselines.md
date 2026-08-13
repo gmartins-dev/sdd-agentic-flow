@@ -9,7 +9,8 @@ skills, and this package does not install or invoke either.
 - `shared/references/tlc-baseline.md`: the condensed planning baseline: **Specify → Discuss →
   Design → Tasks → Execute → Verify**, with invariants (no invented requirements, stop-and-report
   on missing evidence or authority, current adequate behavioral evidence at contractual seams
-  for implementation, no completion claims without evidence). The RED → GREEN → REFACTOR ritual
+  for implementation, no completion claims without evidence, on-demand load for the current
+  feature and operation — do not load multiple feature specs simultaneously). The RED → GREEN → REFACTOR ritual
   is optional and is not the proof mechanism.
 - `shared/references/tdd-baseline.md`: the condensed implementation baseline: name the behavior,
   place a sensor at the contractual seam, implement, and record current evidence. Test-first is

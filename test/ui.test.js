@@ -101,7 +101,8 @@ test('doctorFooterLines covers Fix/Next rules for human-rich footer content', ()
     ['Fix: npx sdd-agentic-flow discover --force'],
   );
   assert.deepEqual(doctorFooterLines([{ name: 'safety', status: 'PASS', message: 'ok' }]), [
-    'Next: invoke the sdd-route skill',
+    'Next: use your coding agent with the installed SDD workflow',
+    'Next: npx sdd-agentic-flow doctor',
   ]);
   assert.deepEqual(doctorFooterLines([{ name: 'skills', status: 'WARN', message: 'missing' }]), []);
 });

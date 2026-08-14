@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+## 2.1.0
+
+DX / CLI UX / onboarding minor. Turns the CLI into a coherent **control plane** for setup,
+inspect, guide, and maintain on top of v2.0.0 — without invoking skills or adding runtime
+dependencies.
+
+**Added:**
+
+- `config` command: `config show`, `config policy`, `--plan`, `--yes` (operating policy only).
+- Configuration domain module (`bin/config-domain.js`) for read/validate/mutate of
+  `workflow.execution_mode` and `workflow.autonomy_level`.
+- Install preflight classification (CREATE / PRESERVE / COLLISION) and enhanced
+  `install --plan` output; FOREIGN collisions block mutating apply.
+- `install --interactive` wizard (installation model, targets, preflight, confirm).
+- Minimal UI primitives (`renderSection`, `renderKeyValue`, `renderStep`, …) respecting
+  `outputMode()`.
+- State-aware welcome (policy + installation summary) and menu routes (`config policy`,
+  `install core --plan`, `learn-sdd`).
+- Redesigned `init --interactive` (seven steps, preset UX, review; existing config →
+  `config policy`).
+- `docs/what-is-sdd.md`, `docs/commands.md`.
+
+**Changed:**
+
+- Doctor/welcome/install next-step copy no longer implies the CLI invokes `sdd-route` or any
+  skill.
+- `init --interactive` step order aligns with preset-first operating policy UX.
+
+**Baseline changes:** reviewed, no `baseline_version` bump (stays `0.7.0`).
+
+**Explicit non-goals (not in this release):**
+
+- No third config axis; no CLI skill orchestrator; no `config language`.
+- No project multi-path install selection; `--scope project` still writes `.agents/skills/` only.
+- No multi `--agent` flag expansion (deferred).
+- No full-screen TUI or new runtime dependencies.
+
 ## 2.0.0
 
 Public-readiness / consolidation major. One methodology, one **canonical workflow

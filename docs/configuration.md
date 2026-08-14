@@ -41,7 +41,11 @@ combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL
 and cannot combine with `--execution-mode` or `--autonomy-level`. `init
 --autonomy-level`/`--execution-mode` set both at creation time; both default to their most
 conservative value, so an existing `.sdd-agentic-flow/config.yml` predating v1.8.0 behaves identically once
-these fields are added (`WARN`, not `FAIL`, when missing). `workflow.autonomy_budget`
+these fields are added (`WARN`, not `FAIL`, when missing). After init, change operating policy with
+`config policy` (interactive TTY, or `--plan` / `--yes` for CI). Only `execution_mode` and
+`autonomy_level` are CLI-editable in v2.1.0; other keys remain manual YAML edits. See
+[commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides` —
+documented here, not editable via `config policy` yet. `workflow.autonomy_budget`
 (`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an
 `autonomous` run may do before it must stop and hand control back. See
 [autonomy levels](autonomy-levels.md) for the full model, including the 7 guardrails that gate

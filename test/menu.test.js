@@ -60,14 +60,21 @@ test('CLI-008: the uninstall menu entry is hard-coded to --plan only, never --ap
 test('menuActionsFor filters by config/skills state', () => {
   assert.deepEqual(
     menuActionsFor({ hasConfig: false, hasSkills: false }).map((a) => a.command),
-    [['init'], ['help']],
+    [['init'], ['learn-sdd'], ['help']],
   );
   assert.deepEqual(
     menuActionsFor({ hasConfig: true, hasSkills: false }).map((a) => a.command),
-    [['install', 'core'], ['doctor'], ['upgrade'], ['help']],
+    [['install', 'core'], ['install', 'core', '--plan'], ['doctor'], ['upgrade'], ['help']],
   );
   assert.deepEqual(
     menuActionsFor({ hasConfig: true, hasSkills: true }).map((a) => a.command),
-    [['doctor'], ['upgrade'], ['discover', '--force'], ['uninstall', '--plan'], ['help']],
+    [
+      ['doctor'],
+      ['config', 'policy'],
+      ['upgrade'],
+      ['discover', '--force'],
+      ['uninstall', '--plan'],
+      ['help'],
+    ],
   );
 });

@@ -1,6 +1,6 @@
 {
   "name": "multi-worktree",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Multi-task orchestration guidance.",
   "skills": ["sdd-route", "sdd-implement-multi"],
   "shared": true,

@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v2.1.0 (2026-08-14):** DX / CLI UX / onboarding minor. Control-plane commands:
+  `config show|policy`, install preflight + `install --interactive`, welcome/menu policy
+  blocks, `learn-sdd`, redesigned `init --interactive`. Collision-safe install; inspect-before-
+  mutate for policy. `baseline_version` stays `0.7.0`. No third config axis; no CLI skill
+  runner; project install still single path (`.agents/skills/`).
 - **v2.0.0 (2026-08-13):** Public-readiness / consolidation major. One
   methodology, one canonical workflow path, three operating presets
   (`init --preset`), one router. `migrate` removed; leftover `.sdd/` is a

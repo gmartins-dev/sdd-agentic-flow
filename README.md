@@ -94,7 +94,9 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. `init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`) — it is not a third config axis.
+That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspect, guide, and maintain — it does not invoke skills. See [What is SDD?](docs/what-is-sdd.md) and the [commands reference](docs/commands.md).
+
+`init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`) — it is not a third config axis.
 
 | Preset | Writes | How the path runs |
 | --- | --- | --- |

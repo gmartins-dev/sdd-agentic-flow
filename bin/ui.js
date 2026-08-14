@@ -94,8 +94,42 @@ function doctorFooterLines(checks = []) {
   ) {
     lines.push('Fix: npx sdd-agentic-flow discover --force');
   }
-  if (!problems.length) lines.push('Next: invoke the sdd-route skill');
+  if (!problems.length) {
+    lines.push('Next: use your coding agent with the installed SDD workflow');
+    lines.push('Next: npx sdd-agentic-flow doctor');
+  }
   return lines;
+}
+
+function terminalColumns(stream = process.stdout, fallback = 80) {
+  const width = stream?.columns;
+  return typeof width === 'number' && width > 0 ? width : fallback;
+}
+
+function renderSection(title, mode = 'human-rich') {
+  if (mode === 'machine') return [`section=${title}`];
+  return [`\n${title}`, `${'-'.repeat(Math.min(title.length, terminalColumns()))}`];
+}
+
+function renderKeyValue(key, value, mode = 'human-rich') {
+  if (mode === 'machine') return [`${key}=${value}`];
+  const padding = Math.max(1, 14 - key.length);
+  return [`${key}${' '.repeat(padding)}${value}`];
+}
+
+function renderStep(current, total, label, mode = 'human-rich') {
+  if (mode === 'machine') return [`step=${current}/${total} label=${label}`];
+  return [`Step ${current}/${total}  ${label}`];
+}
+
+function renderWarning(message, mode = 'human-rich') {
+  if (mode === 'machine') return `WARN ${message}`;
+  return `${symbol('warn', mode)} ${message}`;
+}
+
+function renderSuccess(message, mode = 'human-rich') {
+  if (mode === 'machine') return `PASS ${message}`;
+  return `${symbol('success', mode)} ${message}`;
 }
 
 function levenshtein(a, b) {
@@ -143,4 +177,10 @@ module.exports = {
   writeBrand,
   doctorFooterLines,
   didYouMean,
+  terminalColumns,
+  renderSection,
+  renderKeyValue,
+  renderStep,
+  renderWarning,
+  renderSuccess,
 };

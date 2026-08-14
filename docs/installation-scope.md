@@ -79,9 +79,22 @@ fails and states the limitation. It never falls back to writing into the project
 
 ## `--plan`
 
-`install <pack> --plan` is a dry run, same pattern as `uninstall --plan`: it lists what would
-be created without touching anything. In `user` scope it always prints
-`Repository changes: none`; in `project` scope it lists the real paths that would be written.
+`install <pack> --plan` is a dry run: it prints an **installation plan** (mode, scope,
+targets, repository changes, preflight counts) without touching anything. In `user` scope
+it reports `Repository changes: none`; in `project` scope it lists Git-visible paths under
+`.agents/skills/`. Mutating install with preflight **COLLISION** > 0 exits non-zero.
+
+Use `install <pack> --interactive` for a guided wizard (model, targets, preflight summary,
+confirm). Non-interactive `install core` remains the default backward-compatible path.
+
+## UX labels (v2.1.0)
+
+| UX label | CLI | Footprint |
+| --- | --- | --- |
+| **Local / User** | `--scope user` (default) | No files in the project |
+| **Project / Team — Shared** | `--scope project` | `.agents/skills/` (Git-visible) |
+
+Project scope still writes **only** `.agents/skills/` in v2.1.0 — not multi-path selection.
 
 ## `doctor`
 

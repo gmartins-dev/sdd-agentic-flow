@@ -16,9 +16,20 @@ const {
   symbol,
   writeBrand,
   doctorFooterLines,
+  renderSection,
+  renderKeyValue,
+  renderStep,
 } = require('./ui');
 const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
+const { runConfigCommand, renderPolicySummary } = require('./config');
+const { readConfig } = require('./config-domain');
+const {
+  buildInstallPlan,
+  applyInstallPlan,
+  USER_TARGET_LABELS,
+  targetLabelFor,
+} = require('./install-preflight');
 const {
   detectExecutionMode,
   writeInstallProvenance,
@@ -805,8 +816,16 @@ async function initInteractive(
   autonomyLevelDefault = 'manual',
   localGitExclude = false,
 ) {
-  if (fs.existsSync(sddJoin(cwd, 'config.yml'))) {
-    log('WARN', `${SDD_PATHS.config} already exists; interactive init will not overwrite it`);
+  const configPath = sddJoin(cwd, 'config.yml');
+  const mode = resolveMode({ quiet });
+  if (fs.existsSync(configPath)) {
+    log('WARN', `${SDD_PATHS.config} already exists; init will not overwrite it`);
+    const config = readConfig(configPath);
+    if (config.ok) process.stdout.write(`\n${renderPolicySummary(config, mode)}\n`);
+    process.stdout.write(
+      '\nChange operating policy with: npx sdd-agentic-flow config policy\n' +
+        'Install skills with: npx sdd-agentic-flow install core\n',
+    );
     applyInitSideEffects(cwd, { localGitExclude });
     return;
   }
@@ -815,7 +834,8 @@ async function initInteractive(
   const rl = pipedAnswers
     ? null
     : readline.createInterface({ input: process.stdin, output: process.stdout });
-  const ask = async (label, fallback, allowed) => {
+  const ask = async (step, total, label, fallback, allowed) => {
+    process.stdout.write(`\n${renderStep(step, total, label, mode).join('\n')}\n`);
     const prompt = `${label} [${fallback}]: `;
     let raw;
     if (pipedAnswers) {
@@ -838,71 +858,175 @@ async function initInteractive(
   };
   try {
     const options = {
-      name: await ask('Project name', 'example-project'),
-      branch: await ask('Default branch', 'main'),
-      agent: await ask('Agent target', 'generic', ['generic', 'codex', 'cursor', 'claude-code']),
-      language: await ask('Human output language', languageDefault, LANGUAGE_PROFILES),
-      source: await ask('Source type', 'local-files', ['local-files', 'github-guidance']),
-      flow: await ask('Default flow', 'single', ['single', 'multi']),
-      featureProfile: await ask('Feature profile', featureProfileDefault, FEATURE_PROFILES),
-      multiWorktree: (await ask('Allow multi-worktree', 'false', ['true', 'false'])) === 'true',
-      stackedPrs: (await ask('Allow stacked PRs', 'false', ['true', 'false'])) === 'true',
-      executionMode: await ask('Execution mode', executionModeDefault, EXECUTION_MODES),
-      autonomyLevel: await ask('Autonomy level', autonomyLevelDefault, AUTONOMY_LEVELS),
+      name: await ask(1, 7, 'Project name', 'example-project'),
+      branch: await ask(2, 7, 'Default branch', 'main'),
+      agent: await ask(3, 7, 'Agent target', 'generic', [
+        'generic',
+        'codex',
+        'cursor',
+        'claude-code',
+        'vscode-copilot',
+      ]),
+      language: await ask(4, 7, 'Human output language', languageDefault, LANGUAGE_PROFILES),
+      featureProfile: await ask(5, 7, 'Feature profile', featureProfileDefault, FEATURE_PROFILES),
+      executionMode: executionModeDefault,
+      autonomyLevel: autonomyLevelDefault,
     };
+    process.stdout.write(`\n${renderStep(6, 7, 'Operating policy', mode).join('\n')}\n`);
+    for (const [name, preset] of Object.entries(OPERATING_PRESETS)) {
+      process.stdout.write(`  ${name}: ${preset.executionMode} + ${preset.autonomyLevel}\n`);
+    }
+    const presetPrompt = 'Operating preset [manual]: ';
+    let presetRaw;
+    if (pipedAnswers) {
+      process.stdout.write(presetPrompt);
+      presetRaw = pipedAnswers[answerIndex++];
+    } else {
+      presetRaw = await rl.question(presetPrompt);
+    }
+    const presetChoice = (presetRaw || 'manual').trim();
+    if (presetChoice === 'advanced') {
+      options.executionMode = await ask(
+        6,
+        7,
+        'Execution mode',
+        executionModeDefault,
+        EXECUTION_MODES,
+      );
+      options.autonomyLevel = await ask(
+        6,
+        7,
+        'Autonomy level',
+        autonomyLevelDefault,
+        AUTONOMY_LEVELS,
+      );
+    } else {
+      const resolved = resolveOperatingPreset(presetChoice || 'manual');
+      if (!resolved) throw new Error(`Unknown operating preset: ${presetChoice}`);
+      options.executionMode = resolved.executionMode;
+      options.autonomyLevel = resolved.autonomyLevel;
+    }
+    process.stdout.write(`\n${renderStep(7, 7, 'Workflow options', mode).join('\n')}\n`);
+    options.source = await ask(7, 7, 'Source type', 'local-files', [
+      'local-files',
+      'github-guidance',
+    ]);
+    options.flow = await ask(7, 7, 'Default flow', 'single', ['single', 'multi']);
+    options.multiWorktree =
+      (await ask(7, 7, 'Allow multi-worktree', 'false', ['true', 'false'])) === 'true';
+    options.stackedPrs =
+      (await ask(7, 7, 'Allow stacked PRs', 'false', ['true', 'false'])) === 'true';
+    process.stdout.write('\nReview\n');
+    process.stdout.write(
+      `  Project: ${options.name}\n` +
+        `  Agent: ${options.agent}\n` +
+        `  Language: ${options.language}\n` +
+        `  Feature profile: ${options.featureProfile}\n` +
+        `  Policy: ${options.executionMode} + ${options.autonomyLevel}\n`,
+    );
     if (!autonomyComboValid(options.executionMode, options.autonomyLevel))
       throw new Error(
         `Execution mode ${options.executionMode} cannot combine with autonomy level ${options.autonomyLevel}`,
       );
-    init(cwd, { ...options, quiet, localGitExclude });
+    init(cwd, { ...options, profile: options.language, quiet, localGitExclude });
   } catch (error) {
-    // Invalid interactive input is a validation failure, exit 1 — same as every other bad-input
-    // case in this CLI — not the generic exit-2 bucket main()'s own top-level catch reserves for
-    // genuinely unexpected/internal errors.
     fail(error.message, 1);
   } finally {
     if (rl) rl.close();
   }
 }
 
-function copyIfMissing(source, destination, summary, options = {}) {
-  if (fs.existsSync(destination)) {
-    summary.preserved += 1;
-    return;
-  }
-  summary.installed += 1;
-  if (options.planned) options.planned.push(destination);
-  if (options.dryRun) return;
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.copyFileSync(source, destination);
+function renderInstallationSummaryBlock(summary, mode) {
+  const lines = [];
+  lines.push(...renderSection('Installation', mode));
+  lines.push(...renderKeyValue('Mode', summary.mode, mode));
+  lines.push(
+    ...renderKeyValue(
+      'Targets',
+      summary.targets.length ? summary.targets.join(', ') : '(none detected)',
+      mode,
+    ),
+  );
+  return lines.join('\n');
 }
 
-function copyTree(source, destination, summary, options = {}) {
-  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
-    const from = path.join(source, entry.name);
-    const to = path.join(destination, entry.name);
-    if (entry.isDirectory()) copyTree(from, to, summary, options);
-    else copyIfMissing(from, to, summary, options);
+function renderPolicySummaryBlock(config, mode) {
+  return renderPolicySummary(config, mode);
+}
+
+function installationSummaryForWelcome(cwd) {
+  const projectScopeRoot = path.join(cwd, '.agents', 'skills');
+  const skillsRoot = resolveSkillsRoot(cwd);
+  const mode =
+    skillsRoot === projectScopeRoot && fs.existsSync(projectScopeRoot)
+      ? 'Project / Team'
+      : 'Local / User';
+  const targets = [];
+  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd))) {
+    if (installationStatus(dir)) targets.push(targetLabelFor(dir));
+  }
+  if (mode === 'Project / Team' && installationStatus(projectScopeRoot)) {
+    targets.push('Project .agents/skills');
+  }
+  return { mode, targets: [...new Set(targets)] };
+}
+
+function printInstallPlanReport(plan, mode, _cwd) {
+  const lines = [];
+  lines.push(...renderSection('Installation plan', mode));
+  lines.push(...renderKeyValue('Mode', plan.modeLabel, mode));
+  lines.push(...renderKeyValue('Scope', plan.scope, mode));
+  lines.push('');
+  lines.push('Targets');
+  for (const target of plan.targets) {
+    const marker = target.summary.COLLISION > 0 ? 'collision' : 'selected';
+    lines.push(...renderKeyValue(target.label, target.targetRoot, mode));
+    if (mode === 'machine') lines.push(`target_status=${marker}`);
+  }
+  lines.push('');
+  lines.push('Repository changes');
+  if (!plan.repositoryChanges.length) lines.push('  none');
+  else for (const entry of plan.repositoryChanges) lines.push(`  ${entry}`);
+  lines.push('');
+  lines.push('Preflight');
+  lines.push(...renderKeyValue('CREATE', String(plan.totals.CREATE), mode));
+  lines.push(...renderKeyValue('PRESERVE', String(plan.totals.PRESERVE), mode));
+  lines.push(...renderKeyValue('COLLISION', String(plan.totals.COLLISION), mode));
+  if (plan.totals.PARTIAL) {
+    lines.push(...renderKeyValue('PARTIAL', String(plan.totals.PARTIAL), mode));
+  }
+  if (plan.scope === 'project') {
+    lines.push('');
+    lines.push('Note: project installs are Git-visible under .agents/skills/');
+  }
+  process.stdout.write(`${lines.join('\n')}\n`);
+  if (plan.totals.MANAGED_MODIFIED) {
+    log(
+      'INFO',
+      'Managed skills differ from package — preserved. Try: sdd-agentic-flow upgrade --skills-only',
+    );
+  }
+  if (plan.totals.PARTIAL) {
+    log(
+      'WARN',
+      'Partial skill tree detected — re-run install core or upgrade --skills-only to repair',
+    );
   }
 }
 
-function installPresetToTarget(preset, target, summary, options = {}) {
-  for (const skill of preset.skills)
-    copyTree(path.join(PACKAGE_ROOT, 'skills', skill), path.join(target, skill), summary, options);
-  if (preset.shared)
-    copyTree(
-      path.join(PACKAGE_ROOT, 'shared'),
-      path.join(target, 'sdd-agentic-flow-shared'),
-      summary,
-      options,
-    );
-  if (preset.adapter)
-    copyIfMissing(
-      path.join(PACKAGE_ROOT, 'docs', 'adapters.md'),
-      path.join(target, 'sdd-agentic-flow-shared', 'docs', 'adapters.md'),
-      summary,
-      options,
-    );
+function learnSdd(_cwd) {
+  const docPath = path.join(PACKAGE_ROOT, 'docs', 'what-is-sdd.md');
+  const relative = fs.existsSync(docPath) ? 'docs/what-is-sdd.md' : null;
+  process.stdout.write(
+    'Spec-Driven Development (SDD) turns a requested outcome into evidence-based specs,\n' +
+      'bounded implementation tasks, independent checks, and human-gated Git work.\n\n' +
+      'The CLI is a control plane: it prepares configuration, installs skills, and validates\n' +
+      'setup. Your coding agent runs the SDD skills — the CLI does not invoke them.\n\n' +
+      (relative
+        ? `Read more: ${relative}\n  ${path.join(PACKAGE_ROOT, relative)}\n`
+        : 'Read more: docs/what-is-sdd.md (after docs ship in this package)\n') +
+      `\nWorkflow guide: ${USAGE_GUIDE_URL}\n`,
+  );
 }
 
 function printInstallNextSteps(cwd, options = {}) {
@@ -915,9 +1039,8 @@ function printInstallNextSteps(cwd, options = {}) {
     return;
   }
   process.stdout.write(
-    '\nThen ask your coding agent to run the `sdd-route` skill whenever the next step is\n' +
-      'unclear — it recommends one skill from the main flow (Plan -> Prompt -> Implement ->\n' +
-      'Check -> PR -> Review -> Fix -> Validate) without changing files.\n\n' +
+    '\nThen use your coding agent with the installed SDD workflow.\n' +
+      'Run `npx sdd-agentic-flow doctor` to validate setup.\n\n' +
       printUsageGuidePointer(cwd),
   );
 }
@@ -948,66 +1071,164 @@ function install(pack, cwd, options = {}) {
       try: hint ? [hint] : [`sdd-agentic-flow install ${pack} --agent ${KNOWN_AGENTS[0]}`],
     });
   }
+  if (options.targets && options.targets.length === 0) {
+    return fail('at least one installation target is required', {
+      reason: 'Select one or more user-scope targets.',
+      try: ['sdd-agentic-flow install core --interactive'],
+    });
+  }
 
+  const homeDir = options.homeDir || os.homedir();
+  let targets = [];
   if (scope === 'project') {
-    const target = path.join(cwd, '.agents', 'skills');
-    if (options.plan) {
-      const planned = [];
-      installPresetToTarget(
-        preset,
-        target,
-        { installed: 0, preserved: 0 },
-        { dryRun: true, planned },
-      );
-      log('PLAN', 'scope: project');
-      if (!planned.length) log('PLAN', 'no new files (already installed)');
-      for (const file of planned) log('PLAN', `create ${path.relative(cwd, file)}`);
-      return;
+    targets = [path.join(cwd, '.agents', 'skills')];
+  } else {
+    const agent = options.agent || resolveConfiguredAgent(cwd);
+    targets = userSkillsDirsFor(agent, homeDir);
+    if (options.targets?.length) {
+      targets = targets.filter((dir) => options.targets.includes(targetLabelFor(dir)));
+      if (!targets.length) {
+        return fail('no matching installation targets', {
+          reason: 'Chosen targets do not map to known user-scope directories.',
+          try: ['sdd-agentic-flow install core --interactive'],
+        });
+      }
     }
-    const summary = { installed: 0, preserved: 0 };
-    installPresetToTarget(preset, target, summary);
-    if (summary.installed > 0) writeInstallProvenance(target, VERSION);
-    logPassLine(`installed ${pack}: ${summary.installed} files`, { mode, quiet: options.quiet });
-    if (summary.preserved) log('WARN', `preserved ${summary.preserved} existing files`);
-    if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
+  }
+
+  const plan = buildInstallPlan({
+    packageRoot: PACKAGE_ROOT,
+    preset,
+    targets,
+    officialSkills: OFFICIAL_SKILLS,
+    scope,
+    modeLabel: scope === 'project' ? 'Project / Team' : 'Local / User',
+  });
+
+  if (options.plan) {
+    printInstallPlanReport(plan, mode, cwd);
     return;
   }
 
-  // scope: user — never touches the consumer project (docs/installation-scope.md).
-  const agent = options.agent || resolveConfiguredAgent(cwd);
-  const targets = userSkillsDirsFor(agent, options.homeDir);
-  if (options.plan) {
-    log('PLAN', 'scope: user');
-    log('PLAN', 'Repository changes: none');
-    for (const target of targets) {
-      const planned = [];
-      installPresetToTarget(
-        preset,
-        target,
-        { installed: 0, preserved: 0 },
-        { dryRun: true, planned },
-      );
-      log('PLAN', `target: ${target}`);
-      if (!planned.length) log('PLAN', '  no new files (already installed)');
-      for (const file of planned) log('PLAN', `  create ${file}`);
-    }
-    return;
+  if (plan.blocked) {
+    return fail('install blocked: foreign skill collision detected', {
+      reason: 'Existing same-name skills are not managed by sdd-agentic-flow.',
+      try: [
+        'sdd-agentic-flow install core --plan',
+        'sdd-agentic-flow upgrade --skills-only',
+        'Remove or rename conflicting directories manually, then retry',
+      ],
+    });
   }
+
   const totals = { installed: 0, preserved: 0 };
-  for (const target of targets) {
-    const summary = { installed: 0, preserved: 0 };
-    installPresetToTarget(preset, target, summary);
-    totals.installed += summary.installed;
-    totals.preserved += summary.preserved;
-    if (summary.installed > 0) writeInstallProvenance(target, VERSION);
+  for (const targetRoot of targets) {
+    const result = applyInstallPlan(PACKAGE_ROOT, preset, targetRoot, {
+      officialSkills: OFFICIAL_SKILLS,
+    });
+    if (result.blocked) {
+      return fail('install blocked: foreign skill collision detected', {
+        reason: `Collision at ${targetRoot}`,
+        try: ['sdd-agentic-flow install core --plan'],
+      });
+    }
+    totals.installed += result.summary.installed;
+    totals.preserved += result.summary.preserved;
+    if (result.summary.installed > 0) writeInstallProvenance(targetRoot, VERSION);
   }
+
+  if (options.projectLocalExclude && scope === 'project') {
+    applyProjectSkillsGitExclude(cwd);
+  }
+
   logPassLine(
-    `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
+    scope === 'project'
+      ? `installed ${pack}: ${totals.installed} files`
+      : `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
     { mode, quiet: options.quiet },
   );
   if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
-  logPassLine('Repository changes: none', { mode, quiet: options.quiet });
+  if (scope === 'user') logPassLine('Repository changes: none', { mode, quiet: options.quiet });
   if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
+}
+
+function applyProjectSkillsGitExclude(cwd) {
+  const gitDir = path.join(cwd, '.git');
+  if (!fs.existsSync(gitDir)) {
+    log('WARN', 'No Git repository — cannot update .git/info/exclude for local project skills');
+    return;
+  }
+  const excludePath = path.join(gitDir, 'info', 'exclude');
+  const entry = '.agents/skills/';
+  const comment = '# sdd-agentic-flow project-local skills install';
+  const content = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
+  if (content.includes(entry)) return;
+  const suffix = content.endsWith('\n') || !content ? '' : '\n';
+  fs.mkdirSync(path.dirname(excludePath), { recursive: true });
+  fs.writeFileSync(excludePath, `${content}${suffix}${comment}\n${entry}\n`, 'utf8');
+}
+
+async function installInteractive(pack, cwd, options = {}) {
+  const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
+  process.stdout.write(`${renderStep(1, 5, 'Installation model', mode).join('\n')}\n`);
+  process.stdout.write('  Local / User (recommended)\n  Project / Team\n\n');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  let scope = 'user';
+  let projectLocalExclude = false;
+  try {
+    const modelRaw = await rl.question('Installation model [Local / User]: ');
+    if (/project/i.test((modelRaw || '').trim())) {
+      scope = 'project';
+      process.stdout.write(`\n${renderStep(2, 5, 'Project sharing', mode).join('\n')}\n`);
+      process.stdout.write(
+        '  Shared with the team (Git-visible)\n  Local to this repository (.git/info/exclude)\n\n',
+      );
+      const shareRaw = await rl.question('Project sharing [Shared]: ');
+      projectLocalExclude = /local/i.test((shareRaw || '').trim());
+    }
+    let selectedTargets = null;
+    if (scope === 'user') {
+      process.stdout.write(`\n${renderStep(3, 5, 'Installation targets', mode).join('\n')}\n`);
+      const allLabels = Object.values(USER_TARGET_LABELS);
+      for (const label of allLabels) process.stdout.write(`  ${label}\n`);
+      const targetsRaw = await rl.question('Targets [all]: ');
+      const answer = (targetsRaw || 'all').trim().toLowerCase();
+      if (answer !== 'all') {
+        selectedTargets = allLabels.filter((label) =>
+          answer.includes(label.toLowerCase().split(' ')[0]),
+        );
+        if (!selectedTargets.length) selectedTargets = allLabels;
+      }
+    }
+    process.stdout.write(`\n${renderStep(4, 5, 'Preflight summary', mode).join('\n')}\n`);
+    rl.close();
+    install(pack, cwd, {
+      ...options,
+      scope,
+      plan: true,
+      targets: selectedTargets,
+      projectLocalExclude,
+    });
+    const confirmRl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const applyRaw = await confirmRl.question('\nApply installation? [Y/n]: ');
+    confirmRl.close();
+    if (/^n(o)?$/i.test((applyRaw || '').trim())) {
+      log('INFO', 'Installation cancelled');
+      return;
+    }
+    install(pack, cwd, {
+      ...options,
+      scope,
+      targets: selectedTargets,
+      projectLocalExclude,
+    });
+  } finally {
+    try {
+      rl.close();
+    } catch {
+      // already closed
+    }
+  }
 }
 
 function installationStatus(target) {
@@ -1932,7 +2153,8 @@ function uninstall(args, cwd) {
 const USAGE = {
   init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--preset manual|supervised|autonomous] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
   install:
-    'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--quiet]',
+    'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--interactive] [--quiet]',
+  config: 'usage: config [show|policy [--plan] [--yes] [--preset manual|supervised|autonomous]]',
   doctor:
     'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
   uninstall:
@@ -1949,11 +2171,13 @@ const KNOWN_COMMANDS = [
   'init',
   'discover',
   'context',
+  'config',
   'install',
   'doctor',
   'upgrade',
   'autonomous-resume',
   'uninstall',
+  'learn-sdd',
   'help',
   'version',
 ];
@@ -2013,6 +2237,28 @@ EXAMPLES
   sdd-agentic-flow init --execution-mode full --autonomy-level supervised
   sdd-agentic-flow init --local-git-exclude
 `,
+  config: `sdd-agentic-flow config
+
+Inspect or change operating policy (workflow.execution_mode and workflow.autonomy_level only).
+
+USAGE
+  sdd-agentic-flow config [show]
+  sdd-agentic-flow config policy [--plan] [--yes] [--preset manual|supervised|autonomous]
+                                   [--execution-mode plan|guided|apply|review|full]
+                                   [--autonomy-level manual|supervised|autonomous]
+
+OPTIONS
+  show                 Read-only policy summary (default when no subcommand).
+  policy               Change operating policy interactively or with flags.
+  --plan               Preview only; never writes.
+  --yes                Required for non-interactive mutation.
+  --preset <p>         manual | supervised | autonomous
+
+EXAMPLES
+  sdd-agentic-flow config show
+  sdd-agentic-flow config policy --plan --preset supervised
+  sdd-agentic-flow config policy --yes --preset manual
+`,
   install: `sdd-agentic-flow install <pack>
 
 Install a skill pack. Defaults to --scope user: writes only to per-agent global
@@ -2022,12 +2268,13 @@ Pass --scope project to install into .agents/skills/ inside the project instead.
 USAGE
   sdd-agentic-flow install <pack> [--scope user|project]
                                    [--agent codex|cursor|claude-code|vscode-copilot]
-                                   [--plan] [--quiet] [--ascii]
+                                   [--plan] [--interactive] [--quiet] [--ascii]
 
 OPTIONS
   --scope user|project  Install target: global per-agent dirs (default) or the project.
   --agent <name>         Restrict a user-scope install to a single agent's directory.
-  --plan                 Print what would be installed without writing any file.
+  --plan                 Print installation plan with preflight summary; no writes.
+  --interactive          Guided installation model, targets, preflight, and confirm.
   --quiet                Suppress the "Suggested next step" line on success.
   --ascii                Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
 
@@ -2240,7 +2487,9 @@ COMMANDS
   init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
   discover [--force] [--quiet]           Refresh auto-discovered project context
   context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
-  install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
+  config [show|policy]                   Inspect or change operating policy
+  install <pack> [--scope user|project] [--agent ...] [--plan] [--interactive] [--quiet]  Install a pack (default: user scope, zero project footprint)
+  learn-sdd                              One-screen SDD summary
   doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
   upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
@@ -2313,6 +2562,16 @@ async function welcome(cwd, options = {}) {
           : 'no skills installed yet',
     );
     if (contextFound) log('PASS', 'project context generated');
+    if (configFound) {
+      const config = readConfig(configPath);
+      if (config.ok) {
+        process.stdout.write(`\n${renderPolicySummaryBlock(config, mode)}\n`);
+      }
+      if (skillsInstalled || skillsPartial) {
+        const installSummary = installationSummaryForWelcome(cwd);
+        process.stdout.write(`\n${renderInstallationSummaryBlock(installSummary, mode)}\n`);
+      }
+    }
   } else {
     log(configFound ? 'PASS' : 'INFO', configLabel);
     log(skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO', skillsLabel);
@@ -2323,7 +2582,7 @@ async function welcome(cwd, options = {}) {
     ? 'npx sdd-agentic-flow init'
     : !skillsInstalled
       ? 'npx sdd-agentic-flow install core'
-      : 'npx sdd-agentic-flow doctor';
+      : 'Use your coding agent with the installed SDD workflow; run npx sdd-agentic-flow doctor';
   if (mode === 'machine') {
     // Compact status screen (CLI-001): contextual next + quick commands; not nextStep().
     process.stdout.write(
@@ -2745,6 +3004,23 @@ async function runCommand(command, rawArgs, cwd) {
       else if (sub === 'refresh') contextRefresh(cwd, { ascii });
       else autonomyStateReport(cwd);
     }
+  } else if (command === 'config') {
+    const configPath = sddJoin(cwd, 'config.yml');
+    if (args.includes('--help')) {
+      process.stdout.write(COMMAND_HELP.config || 'usage: config [show|policy]\n');
+      return;
+    }
+    const result = await runConfigCommand(configPath, args, { ascii });
+    if (!result.ok) {
+      return fail(result.message || 'config command failed', {
+        try: result.try || [
+          'sdd-agentic-flow config show',
+          'sdd-agentic-flow config policy --plan',
+        ],
+      });
+    }
+  } else if (command === 'learn-sdd') {
+    learnSdd(cwd);
   } else if (command === 'install') {
     const usage = USAGE.install;
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.install);
@@ -2753,11 +3029,13 @@ async function runCommand(command, rawArgs, cwd) {
     let agent = null;
     let plan = false;
     let quiet = false;
+    let interactive = false;
     let valid = true;
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
       if (arg === '--plan') plan = true;
       else if (arg === '--quiet') quiet = true;
+      else if (arg === '--interactive') interactive = true;
       else if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
         scope = args[index + 1];
         index += 1;
@@ -2771,7 +3049,8 @@ async function runCommand(command, rawArgs, cwd) {
       else valid = false;
     }
     if (!valid || !pack) return fail(usage);
-    install(pack, cwd, { scope, agent, plan, quiet, ascii });
+    if (interactive) await installInteractive(pack, cwd, { scope, agent, quiet, ascii });
+    else install(pack, cwd, { scope, agent, plan, quiet, ascii });
   } else if (command === 'doctor') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);
     const valid = args.every(

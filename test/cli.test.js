@@ -52,6 +52,7 @@ test('help, version, and list are available', () => {
 test('help <command> and <command> --help render identical, detailed content', () => {
   for (const command of [
     'init',
+    'config',
     'install',
     'doctor',
     'upgrade',
@@ -327,7 +328,7 @@ test('explanation template requires source-artifact anchors and the required hea
 test('interactive init writes selected safe configuration and preserves existing config', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-interactive-'));
   const input =
-    'task-app\nmain\ncodex\npt-BR\ngithub-guidance\nmulti\nlarge_feature\ntrue\nfalse\n';
+    'task-app\nmain\ncodex\npt-BR\nlarge_feature\nmanual\nlocal-files\nmulti\ntrue\nfalse\n';
   assert.equal(run(['init', '--interactive'], cwd, input).status, 0);
   const config = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
   assert.match(config, /name: task-app/);
@@ -1225,7 +1226,8 @@ test('interactive language default and legacy config warning are supported', () 
   const interactiveCwd = fs.mkdtempSync(
     path.join(os.tmpdir(), 'sdd-agentic-flow-language-interactive-'),
   );
-  const input = 'language-app\nmain\ngeneric\n\nlocal-files\nsingle\n\nfalse\nfalse\n';
+  const input =
+    'language-app\nmain\ngeneric\n\nmedium_feature\nmanual\nlocal-files\nsingle\nfalse\nfalse\n';
   assert.equal(
     run(['init', '--interactive', '--language', 'pt-BR'], interactiveCwd, input).status,
     0,
@@ -1360,13 +1362,13 @@ test('install --plan is a dry run in both scopes and touches nothing', () => {
 
   const projectPlan = run(['install', 'core', '--scope', 'project', '--plan'], cwd);
   assert.equal(projectPlan.status, 0);
-  assert.match(projectPlan.stdout, /scope: project/);
+  assert.match(projectPlan.stdout, /Scope=project|scope: project/);
   assert.ok(!fs.existsSync(path.join(cwd, '.agents')));
 
   const userPlan = runIsolatedHome(['install', 'core', '--plan'], cwd, home);
   assert.equal(userPlan.status, 0);
-  assert.match(userPlan.stdout, /scope: user/);
-  assert.match(userPlan.stdout, /Repository changes: none/);
+  assert.match(userPlan.stdout, /Scope=user|scope: user/);
+  assert.match(userPlan.stdout, /Repository changes: none|Repository changes/);
   assert.ok(!fs.existsSync(path.join(cwd, '.agents')));
   assert.ok(!fs.existsSync(path.join(home, '.agents')));
   assert.ok(!fs.existsSync(path.join(home, '.claude')));

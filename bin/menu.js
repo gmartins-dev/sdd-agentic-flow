@@ -19,7 +19,10 @@ function shouldShowInteractiveMenu(streams = {}, env = {}) {
 const MENU_ACTIONS = [
   { label: 'Create local configuration', command: ['init'] },
   { label: 'Install the core skill pack', command: ['install', 'core'] },
+  { label: 'Preview install plan (read-only)', command: ['install', 'core', '--plan'] },
   { label: 'Validate local setup', command: ['doctor'] },
+  { label: 'Change operating policy', command: ['config', 'policy'] },
+  { label: 'Learn about SDD', command: ['learn-sdd'] },
   { label: 'Check for updates / upgrade', command: ['upgrade'] },
   { label: 'Refresh auto-discovered project context', command: ['discover', '--force'] },
   { label: 'Preview what uninstall would remove (read-only)', command: ['uninstall', '--plan'] },
@@ -38,9 +41,24 @@ function menuActionsFor(state = {}) {
   const hasSkills = Boolean(state.hasSkills);
   const pick = (...commands) =>
     commands.map((command) => menuActionByCommand(...command)).filter(Boolean);
-  if (!hasConfig) return pick(['init'], ['help']);
-  if (!hasSkills) return pick(['install', 'core'], ['doctor'], ['upgrade'], ['help']);
-  return pick(['doctor'], ['upgrade'], ['discover', '--force'], ['uninstall', '--plan'], ['help']);
+  if (!hasConfig) return pick(['init'], ['learn-sdd'], ['help']);
+  if (!hasSkills) {
+    return pick(
+      ['install', 'core'],
+      ['install', 'core', '--plan'],
+      ['doctor'],
+      ['upgrade'],
+      ['help'],
+    );
+  }
+  return pick(
+    ['doctor'],
+    ['config', 'policy'],
+    ['upgrade'],
+    ['discover', '--force'],
+    ['uninstall', '--plan'],
+    ['help'],
+  );
 }
 
 // Unifies every "no action" case (empty input, '0', 'q'/'Q', out-of-range, non-numeric) into a

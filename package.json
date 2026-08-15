@@ -42,7 +42,7 @@
     "lint:yaml:fix": "prettier --write \".github/workflows/**/*.{yml,yaml}\"",
     "docs:lint": "markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\"",
     "docs:diagrams": "node scripts/check-mermaid.js",
-    "docs:check": "npm run docs:lint && git ls-files \"*.md\" \":!.specs/**\" | while IFS= read -r file; do [ -f \"$file\" ] && printf '%s\\n' \"$file\"; done | xargs markdown-link-check -c .markdown-link-check.json && npm run docs:diagrams",
+    "docs:check": "npm run docs:lint && node scripts/check-markdown-links.js && npm run docs:diagrams",
     "docs:fix": "git ls-files \"*.md\" \":!.specs/**\" | xargs prettier --write && markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\" --fix",
     "lint:fix:all": "npm run lint:fix && npm run lint:yaml:fix && npm run docs:fix",
     "sanitize": "bash ./scripts/sanitize-private-context.sh",

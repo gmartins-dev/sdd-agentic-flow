@@ -19,7 +19,7 @@ If both directories exist, `doctor` WARNs. Do not merge them automatically.
 ## What did not change
 
 - Two config axes only: `execution_mode` and `autonomy_level`. No third stored axis.
-- 14 skills. No public `auto-sdd` or CLI skill loop.
+- 13 skills. No public `auto-sdd` or CLI skill loop.
 - TLC/TDD `baseline_version` stays `0.7.0` unless a later release says otherwise.
 - Commit, push, tag, and publish stay human on every operating preset.
 - CHANGELOG 1.x headings remain the historical record.

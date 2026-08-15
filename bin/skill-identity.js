@@ -14,7 +14,6 @@ const OFFICIAL_SKILLS = Object.freeze([
   'saf-review-pr',
   'saf-fix-pr',
   'saf-validate',
-  'saf-release',
 ]);
 
 const CORE_SKILLS = Object.freeze([

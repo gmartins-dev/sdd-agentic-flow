@@ -20,7 +20,6 @@ package and CLI command remain `sdd-agentic-flow`.
 | `sdd-pr-review` | `saf-review-pr` |
 | `sdd-pr-fix` | `saf-fix-pr` |
 | `sdd-validation` | `saf-validate` |
-| `sdd-release` | `saf-release` |
 
 There are no legacy alias stubs. Consult `list` for the installed pack roster.
 

@@ -14,6 +14,5 @@ The toolkit is more than a prompt pack: **prompts** tell the agent what to do; *
 | A task is too large for one controlled change | `saf-implement` or `saf-implement-multi` |
 | Output is accepted without evidence | `saf-check-task` and `saf-validate` |
 | A PR loses traceability to the feature | `saf-create-pr`, `saf-review-pr`, and `saf-fix-pr` |
-| A release ships without version or changelog checks | `saf-release` (on demand, after validation) |
 
 Human review stays in charge. The toolkit does not automate Git, deployment, or publishing actions.

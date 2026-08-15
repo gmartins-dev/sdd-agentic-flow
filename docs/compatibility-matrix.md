@@ -33,7 +33,6 @@ scope and auto-discovery have actually been exercised.
 | `saf-review-pr`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
 | `saf-fix-pr`               |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
 | `saf-validate`           |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
-| `saf-release`              |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
 
 `full` installs every skill; every other pack is a scoped subset for a specific workflow slice
 (core SDD loop, planning-only, multi-worktree execution, PR review/fix, or an adapter-flavored

@@ -2,7 +2,7 @@
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
-When the current phase is unclear, invoke `saf-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files. After `saf-validate` passes, invoke `saf-release` on demand when you need a release-readiness check before tagging.
+When the current phase is unclear, invoke `saf-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files. `saf-validate` is the terminal public verification capability.
 
 ## Where to read next
 

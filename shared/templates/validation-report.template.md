@@ -2,6 +2,11 @@
 
 Status: {{status}}
 
+## Validation scope
+
+<!-- Record impact, obligations, selected sensors, and omitted sensors with reasons. -->
+{{validation_scope}}
+
 ## Evidence
 
 <!--

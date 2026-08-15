@@ -1,6 +1,6 @@
 {
   "name": "github",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Core and PR guidance for GitHub-aware agents.",
   "skills": [
     "saf-setup",
@@ -11,8 +11,7 @@
     "saf-validate",
     "saf-create-pr",
     "saf-review-pr",
-    "saf-fix-pr",
-    "saf-release"
+    "saf-fix-pr"
   ],
   "shared": true,
   "adapter": "github",

@@ -6,7 +6,7 @@ refreshes this file without touching `.sdd-agentic-flow/config.yml`.
 
 ## Main chain
 
-Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
 When the next step is unclear, invoke the `saf-route` skill. It recommends one skill from
 that chain. It does not run the workflow for you.

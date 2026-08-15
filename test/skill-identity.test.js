@@ -11,8 +11,8 @@ const {
   isOfficialSkill,
 } = require('../bin/skill-identity');
 
-test('the public SAF namespace contains the locked 14-skill roster', () => {
-  assert.equal(OFFICIAL_SKILLS.length, 14);
+test('the public SAF namespace contains the locked 13-skill roster', () => {
+  assert.equal(OFFICIAL_SKILLS.length, 13);
   assert.ok(OFFICIAL_SKILLS.every((name) => name.startsWith('saf-')));
   assert.deepEqual(CORE_SKILLS, [
     'saf-setup',

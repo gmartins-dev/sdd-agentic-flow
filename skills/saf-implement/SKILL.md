@@ -2,7 +2,7 @@
 name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   pack: core
 extends: saf-create-prompts
 requires: [config, task-identity]

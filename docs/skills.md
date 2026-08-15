@@ -2,7 +2,7 @@
 
 See the [skills catalog](skills-catalog.md) for Purpose, When to
 use/not to use, Inputs/Outputs, Dependencies, Conflicts, Baseline, Pack(s), and flow position
-for each of the 14 public skills.
+for each of the 13 public skills.
 
 See the [invocation model](invocation-model.md) for orchestration guidance. `saf-route` is read-only: it recommends a local next skill but does not invoke it.
 

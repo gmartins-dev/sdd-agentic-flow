@@ -17,6 +17,5 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | Change ready for review               | `saf-review-pr`                    |
 | Accepted review findings              | `saf-fix-pr`, then `saf-review-pr` |
 | Integrated feature                    | `saf-validate`                   |
-| Integrated and validated feature, release readiness unclear | `saf-release` (on demand) |
 
 Routing recommends; it does not install packs, change files, invoke skills, or bypass human decisions.

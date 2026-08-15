@@ -1,6 +1,6 @@
 {
   "name": "local-files",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Core workflow for local source files.",
   "skills": [
     "saf-setup",
@@ -8,8 +8,7 @@
     "saf-create-spec",
     "saf-implement",
     "saf-check-task",
-    "saf-validate",
-    "saf-release"
+    "saf-validate"
   ],
   "shared": true,
   "adapter": "local-files",

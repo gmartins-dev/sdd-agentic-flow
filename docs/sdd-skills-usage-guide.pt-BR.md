@@ -67,7 +67,6 @@ flowchart TD
   Implement --> Check[saf-check-task]
   Check --> Review[saf-review-pr]
   Review --> Validation[saf-validate]
-  Validation -.->|on demand| Release[saf-release]
   Check -->|findings| Fix[saf-fix-pr]
   Fix --> Review
 ```
@@ -87,8 +86,6 @@ Siga o contrato da task e `.sdd-agentic-flow/config.yml`. Altere somente os arqu
 necessários. Execute os checks exigidos. Não faça commit, push, merge, deploy ou
 publish. Relate evidências e limitações.
 ```
-
-Depois que `saf-validate` passar, use `saf-release` sob demanda quando precisar checar prontidão de release antes de criar uma tag. Veja [prompt-recipes](prompt-recipes.md#check-release-readiness) (em inglês).
 
 ## 5. Use o fluxo de várias tarefas quando houver dependências
 
@@ -126,7 +123,6 @@ limites claros e a equipe puder revisar as evidências.
 | `saf-review-pr`          | Conjunto de alterações | Findings de review   | Não               | `review` |
 | `saf-fix-pr`             | Findings aceitos       | Correções locais     | Quando autorizada | `apply`  |
 | `saf-validate`         | Evidências da feature  | Report de validação  | Não               | `review` |
-| `saf-release`            | Versão/changelog       | Report de prontidão de release | Não     | `review` |
 
 ## 7. Uso com agentes
 

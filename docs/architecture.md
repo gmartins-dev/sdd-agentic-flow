@@ -33,6 +33,10 @@ Consumer project (installed via `install <pack>` into a target repository)
 Each layer only depends on the layer below it. Skills never call the CLI. The CLI never
 authors SDD artifacts; it only creates configuration, discovers context, and copies files.
 
+Use [canonical vocabulary](../shared/references/canonical-vocabulary.md) for harness terms.
+It distinguishes the public Skill contract from host runtime mechanics such as Tools, Hooks,
+Agents, and Workers.
+
 ## Capability contracts
 
 Every skill's frontmatter declares:
@@ -101,7 +105,6 @@ That exact-match check only runs at the source, in `scripts/check-skills.sh`.
 | `saf-review-pr`           | saf-create-pr       | config, pr-reference                   | review-findings               | tlc-spec-driven       |
 | `saf-fix-pr`              | saf-review-pr       | config, pr-reference, review-findings  | fix-evidence                   | tlc-spec-driven       |
 | `saf-validate`          | saf-check-task      | config, spec-package, task-evidence    | validation-report              | tlc-spec-driven, tdd |
-| `saf-release`             | —                   | config                                 | release-readiness-report        | —                      |
 
 ## Canonical baselines
 

@@ -30,7 +30,7 @@ operation; it does not run the path.
 
 The canonical workflow path:
 
-Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
+Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
 | Phase | Typical skill | What you get |
 | --- | --- | --- |
@@ -41,7 +41,6 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate �
 | Check | `saf-check-task` | Independent check report |
 | PR | `saf-create-pr` → `saf-review-pr` → `saf-fix-pr` | Traceable review package |
 | Validate | `saf-validate` | Feature validation report |
-| Release | `saf-release` | Release readiness report (read-only) |
 
 When the next step is unclear, invoke `saf-route`. It recommends a skill; it does not run the workflow for you. See [workflow](workflow.md) and the [invocation model](invocation-model.md). Direct → `saf-brainstorm` → `saf-create-spec` is the Plan-mode analogue — not a separate Plan skill.
 
@@ -77,7 +76,7 @@ This toolkit does not measure token savings or speed multipliers. A token econom
 ## With this toolkit
 
 1. **CLI** (`npx sdd-agentic-flow`) creates `.sdd-agentic-flow/config.yml`, installs Markdown skills, and runs `doctor`.
-2. **Skills** (14 public) encode each phase as a capability contract with safety defaults.
+2. **Skills** (13 public) encode each phase as a capability contract with safety defaults.
 3. **Baselines** condense TLC for planning and TDD for implementation; see [baselines](baselines.md).
    Humans decide *what* must be true; agents may choose *how* to produce the code; sensors
    produce evidence; verification evaluates that evidence against the spec; the human decides.

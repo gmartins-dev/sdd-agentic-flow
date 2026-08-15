@@ -40,7 +40,6 @@ Você delega uma tarefa. O agente pula para o código, mistura limites e marca t
 | A tarefa é grande demais para uma mudança controlada | `saf-implement` ou `saf-implement-multi` |
 | Saída aceita sem evidência | `saf-check-task` e `saf-validate` |
 | PR perde rastreabilidade com a feature | `saf-create-pr`, `saf-review-pr` e `saf-fix-pr` |
-| Release sai sem checagem de versão ou changelog | `saf-release` (sob demanda, após validação) |
 
 Veja [por que o toolkit existe](docs/why-this-exists.md). Para o modelo mental das quatro camadas (Prompt → Context → Harness → Loop + SDD), leia [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
 
@@ -111,7 +110,7 @@ canônico para continuar copiáveis e estáveis.
 
 ## Como funciona
 
-**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (sob demanda)
+**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
 ```mermaid
 flowchart TD
@@ -130,7 +129,6 @@ flowchart TD
   review -->|findings accepted| fix[saf-fix-pr]
   fix --> review
   review -->|ready| validate[saf-validate]
-  validate -.->|on demand| release[saf-release]
 ```
 
 Use `saf-route` quando o próximo passo não estiver claro. Ele recomenda uma skill e aponta para o `SKILL.md` selecionado; não invoca skills nem altera arquivos.
@@ -164,7 +162,7 @@ O toolkit usa um baseline TLC para planejamento e um baseline TDD para implement
 | Modelo mental (4 camadas + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
 | Metodologia SDD | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Arquitetura | [docs/architecture.md](docs/architecture.md) |
-| As 14 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
+| As 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Setup por agente | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
 | Política de idioma | [docs/i18n.md](docs/i18n.md) |
 | Contribuir | [CONTRIBUTING.md](CONTRIBUTING.md) |

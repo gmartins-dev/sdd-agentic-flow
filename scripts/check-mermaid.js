@@ -63,7 +63,10 @@ function trackedMarkdownFiles() {
     cwd: root,
     encoding: 'utf8',
   });
-  return output.split('\n').filter(Boolean);
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .filter((file) => fs.existsSync(path.join(root, file)));
 }
 
 function hasMermaidBlock(file) {

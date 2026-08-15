@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Safe baseline workflow.",
   "skills": [
     "saf-setup",
@@ -8,8 +8,7 @@
     "saf-create-spec",
     "saf-implement",
     "saf-check-task",
-    "saf-validate",
-    "saf-release"
+    "saf-validate"
   ],
   "shared": true,
   "status": "stable"

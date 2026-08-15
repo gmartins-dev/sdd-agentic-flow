@@ -115,8 +115,8 @@ history, only adds to it. A human halts an autonomous run by setting `pause: tru
 `stop: true` under Human override — guardrail 7 picks that up on the next check.
 
 The `Skill:` value is not itself the SDD flow phase — `docs/sdd-methodology.md`'s
-`Phase | Typical skill` table is the existing mapping (`saf-brainstorm` through `saf-release`) for
-reading which phase (Plan/Prompt/Implement/Check/PR/Review/Fix/Validate/Release) a given entry
+`Phase | Typical skill` table is the existing mapping (`saf-brainstorm` through `saf-validate`) for
+reading which phase (Plan/Prompt/Implement/Check/PR/Review/Fix/Validate) a given entry
 corresponds to. No new field is needed to make `loop-state.md` phase-inspectable; the data already
 exists, this is just where to read it.
 

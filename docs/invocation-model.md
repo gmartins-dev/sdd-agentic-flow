@@ -5,7 +5,7 @@ The toolkit is agent-client agnostic. This taxonomy guides people and agents. It
 skill loop.
 
 The **canonical workflow path** is Plan → Prompt → Implement → Check → PR → Review → Fix →
-Validate; Release on demand. Invoke `saf-route` when the next step is uncertain. Read the
+Validate. Invoke `saf-route` when the next step is uncertain. Read the
 recommended skill's local `SKILL.md` as the source of truth.
 
 Operating presets (`init --preset`) write `execution_mode` and `autonomy_level` only:
@@ -32,7 +32,6 @@ not invoke skills. Commit, push, merge, tag, and publish stay human on every pre
 - `saf-implement-multi`
 - `saf-create-pr`
 - `saf-validate`
-- `saf-release` (on demand, after validation when tagging or publishing)
 
 ## Agent-assisted review discipline
 
@@ -40,4 +39,4 @@ not invoke skills. Commit, push, merge, tag, and publish stay human on every pre
 - `saf-review-pr`
 - `saf-fix-pr`
 
-Invoke `saf-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 14 public skills.
+Invoke `saf-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 13 public skills.

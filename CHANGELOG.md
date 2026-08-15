@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 3.3.0
+
+Adaptive validation and workflow consolidation.
+
+**Changed:**
+
+- Public workflow now ends at feature validation and ships 13 skills.
+- Task and feature verification derive a minimum adequate sensor set from requirements, diff,
+  contractual seams, repository contracts, and risk; reports record selected and omitted sensors.
+- Canonical vocabulary distinguishes SDD intent, capability, execution, control, and verification.
+
 ## 3.2.0
 
 Continuous guided onboarding release.
@@ -126,7 +137,7 @@ Breaking notes live in `docs/v2-breaking-changes.md`, not onboarding.
 `docs/upgrading.md` is gone from the getting-started path.
 
 Autonomous does not mean unattended. No configuration value overrides safety.
-Commit, push, merge, tag, and publish stay human on every preset. 14 skills; no
+Commit, push, merge, tag, and publish stay human on every preset. 13 skills; no
 public `auto-sdd` / `sdd-run`; the CLI does not run a skill loop. No third stored
 config axis (`workflow.mode`).
 
@@ -452,7 +463,7 @@ new mechanism, same audit-first discipline. All additive, no breaking changes.
 
 **Version-consistency hardening (the headline item):** `bin/sdd-agentic-flow.js`'s own `const
 VERSION` and `OFFICIAL_SKILLS` array drifted from `package.json`/`skills/` during v1.9.0 —
-`VERSION` stayed at `1.8.0` and `OFFICIAL_SKILLS` missed the new `sdd-release` skill, and
+`VERSION` stayed at `1.8.0` and the roster drifted, and
 `npm run check` still passed, because `scripts/check-version-consistency.js` only ever walked
 `skills/*/SKILL.md` and `presets/*.json`, never `bin/`. Only manual testing caught it, after the
 fact. `check-version-consistency.js` now also checks `bin/`'s `VERSION` (consumed by both
@@ -462,19 +473,6 @@ skill dropped from that array would silently stop being removable by `uninstall`
 were proven against the actual v1.9.0 bug shape (temporarily reintroducing it locally) before
 being kept.
 
-**`sdd-release` reachability:** `shared/references/workflow-routing.md` (`sdd-route`'s single
-source of truth) had no row pointing from a validated feature to `sdd-release`, even though
-`README.md`'s own flow diagram already treats it as a legitimate on-demand next step —
-`sdd-route` could not mechanically recommend it. Added, same "on demand" framing as the README.
-`docs/workflow.md`'s one-line canonical summary gains a matching mention.
-
-**`sdd-release`'s config promise, aligned with reality:** its `SKILL.md` described reading
-"declared release conventions" from `.sdd/config.yml`, but no such section exists in the
-generated schema or in `docs/configuration.md` — not a functional bug (the skill already falls
-back defensively), but an undocumented promise unlike every other config field a skill reads.
-Both now say explicitly: no dedicated `release` section exists yet; the skill reads whatever
-convention the project already expresses.
-
 ## 1.9.0
 
 Deepens what v1.8.0 shipped instead of adding a new autonomy mechanism — closes real,
@@ -482,23 +480,13 @@ individually audited gaps in the existing skill contracts, evidence model, and c
 story. No orchestration engine, retry/repair loop, or new mandatory skill sections; every
 change stays additive under the v1.0 stability commitment.
 
-**New `sdd-release` skill** (14th public skill, packs `core`/`full`/`local-files`/`github`,
-matching `sdd-validation`'s membership): checks whether a project or feature is ready to tag
-and publish a release — version consistency across declared version-bearing files, changelog
-section presence/content, and configured checks reused from `sdd-task-check`/`sdd-validation`
-evidence. Config-driven and portable like every other skill: it does not shell out to this
-repository's own `scripts/release-checklist.sh`, since skills install into arbitrary consumer
-repositories that have no such script. Read-only — it never creates a tag, runs a publish
-command, or edits the changelog itself; it reports the exact commands for a human to run.
-
 **Handoff standard**: `shared/templates/handoff.template.md` existed since an earlier release
 but nothing required a skill to populate it. New `shared/references/handoff-standard.md`
 defines exactly when a skill writes or updates `handoff.md` (session end with open work, an
 agent swap, or a blocker needing a human decision — never on a terminal `Status:`) and how it
 cross-references `.sdd/autonomy/loop-state.md` instead of duplicating it. Wired into the 7
 skills whose work can span a session or agent boundary: `sdd-implement-task`,
-`sdd-implement-multi`, `sdd-task-check`, `sdd-validation`, `sdd-pr-fix`, `sdd-create-pr`, and
-the new `sdd-release`.
+`sdd-implement-multi`, `sdd-task-check`, `sdd-validation`, `sdd-pr-fix`, and `sdd-create-pr`.
 
 **`Status:` field on report artifacts**: `check-report` and `validation-report` (both
 templates and `shared/references/artifact-contracts.md`) gain a top-line `Status:` field, so

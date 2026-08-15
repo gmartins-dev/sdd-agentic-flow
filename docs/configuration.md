@@ -18,12 +18,6 @@ evidence. It does **not** mean the RED → GREEN → REFACTOR ritual is mandator
 rename or deprecate the key. See [TDD baseline](tdd-baseline.md) and
 [shared/references/evidence-standard.md](../shared/references/evidence-standard.md).
 
-There is no dedicated `release` section yet — `saf-release` (see the
-[skills catalog](skills-catalog.md)) reads whatever version-bearing files and changelog
-conventions the project already uses, falling back to the most common pattern (a single
-manifest plus a root-level changelog) and saying so explicitly when nothing is declared,
-rather than assuming an undeclared convention silently.
-
 ## Installation intent
 
 `configure` is separate from `config`: it edits the user-local installation intent at

@@ -63,6 +63,10 @@ A skill keeps its own status vocabulary (`saf-check-task` uses `pass`/`needs cha
 itself uses a route recommendation instead of a pass/fail state). Only the three labels
 (`Status`, `Next recommended skill`, `Reason`) are shared.
 
+Use [canonical vocabulary](canonical-vocabulary.md): Skill is the public capability contract;
+Instruction is durable guidance; Prompt is a concrete request. Do not call a Skill a Tool,
+Hook, Agent, or Action.
+
 ## Evidence and classification
 
 Any skill whose `## Output` includes a pass/fail/ready-style classification must ground it in

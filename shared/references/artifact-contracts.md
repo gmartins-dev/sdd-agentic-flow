@@ -30,22 +30,18 @@ format. This is a presence check, not full-schema validation. It does not verify
 - task-prompt: required `# Task prompt — {task_id}`, `## Task slice` (same six fields as a
   `tasks.md` entry), `## TDD baseline` (same seven fields as above). Produced by
   `saf-create-prompts`.
-- check-report: required `# Task check — {task_id}`, a top-line `Status:` field (see
+- check-report: required `# Task check — {task_id}`, a top-line `Status:` field, `## Validation scope` (impact, obligations, selected and omitted sensors; see
   [evidence-standard.md](evidence-standard.md)'s `Status:` field/guardrail 1 mapping),
   `## Evidence`, `## TDD evidence` (Behavior tested, Seam, RED, GREEN, REFACTOR, Broader checks,
   Limitations). Produced by `saf-check-task`. `Seam` is the contractual seam. Distinguish
   current vs historical vs not-run in Evidence / Limitations prose. Missing RED is not an
   automatic fail. A passing sensor is evidence, not a correctness verdict.
-- validation-report: required `# Feature validation — {feature_slug}`, a top-line `Status:`
+- validation-report: required `# Feature validation — {feature_slug}`, a top-line `Status:`, `## Validation scope` (impact, obligations, selected and omitted sensors),
   field (same convention as check-report), `## Evidence`, `## TDD evidence` (same seven fields as
   above). Produced by `saf-validate`. Same freshness and gap rules as check-report: current
   evidence only; never silent PASS.
 - pr-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`. Produced by
   `saf-create-pr`.
-- release-readiness-report: required `# Release readiness — {release_identity}`, a top-line
-  `Status:` field (same convention as check-report/validation-report), `## Evidence`,
-  `## Version consistency`, `## Changelog check`, `## Gaps`, `## Tag / publish commands`.
-  Produced by `saf-release`.
 
 ## Optional traceability convention
 

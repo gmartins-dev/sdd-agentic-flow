@@ -47,7 +47,6 @@ You delegate a task. The agent jumps to code, blurs boundaries, and marks work d
 | A task is too large for one controlled change | `saf-implement` or `saf-implement-multi` |
 | Output is accepted without evidence | `saf-check-task` and `saf-validate` |
 | A PR loses traceability to the feature | `saf-create-pr`, `saf-review-pr`, and `saf-fix-pr` |
-| A release ships without version or changelog checks | `saf-release` (on demand, after validation) |
 
 See [why this exists](docs/why-this-exists.md) for the short form. For the four-layer mental model (Prompt → Context → Harness → Loop + SDD), see [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
 
@@ -116,7 +115,7 @@ stay deterministic with `init --non-interactive`. See [getting started](docs/get
 
 ## How it works
 
-**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
+**Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
 ```mermaid
 flowchart TD
@@ -135,7 +134,6 @@ flowchart TD
   review -->|findings accepted| fix[saf-fix-pr]
   fix --> review
   review -->|ready| validate[saf-validate]
-  validate -.->|on demand| release[saf-release]
 ```
 
 Invoke `saf-route` when the next step is unclear. It recommends a skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
@@ -165,7 +163,7 @@ The generic [task-management example](examples/golden/task-management/) shows on
 | Mental model (4 layers + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
 | SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
-| All 14 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
+| All 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Agent setup | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
 | Language policy | [docs/i18n.md](docs/i18n.md) · [README em português](README.pt-BR.md) |
 | Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
@@ -289,7 +287,6 @@ For the long-form version of this table, see the [skills catalog](docs/skills-ca
 | `saf-review-pr` | Review PR | PR/change set | Findings | No | review | Reviewing a change |
 | `saf-fix-pr` | Fix PR findings | Findings | Corrected local change | Yes, when authorized | apply | Findings are accepted |
 | `saf-validate` | Validate feature | Feature evidence | Validation report | No | review | Before completion |
-| `saf-release` | Check release readiness | Version/changelog | Release readiness report | No | review | Before tagging a release |
 
 ## Agent workflows
 

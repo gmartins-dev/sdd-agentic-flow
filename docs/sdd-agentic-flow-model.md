@@ -55,6 +55,10 @@ Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agen
 
 ## Glossary (12 terms)
 
+The [canonical vocabulary](../shared/references/canonical-vocabulary.md) defines the broader
+Intent → Capability → Execution → Control → Verification taxonomy. The glossary below keeps the
+terms most useful when operating this toolkit.
+
 | Term | Meaning |
 | --- | --- |
 | **Skill** | Markdown contract (`SKILL.md`) the agent reads and follows |

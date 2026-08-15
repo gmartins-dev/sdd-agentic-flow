@@ -1,6 +1,6 @@
 # Skills catalog
 
-A product-level view of the 14 public skills, one section each, ordered like the
+A product-level view of the 13 public skills, one section each, ordered like the
 [main SDD flow](../README.md#main-sdd-flow) rather than alphabetically. Each entry restates
 its skill's capability contract (`extends`/`requires`/`consumes`/`produces`/`baseline`/
 `compatible_with`/`depends_on`/`conflicts`/`requires_cli`) in prose. See
@@ -384,32 +384,3 @@ permitted local report or disposable test artifacts.
 **Pack(s):** `core`, `full`, `local-files`, `github`.
 
 **Typical flow position:** after `saf-review-pr` confirms the PR is ready.
-
-## `saf-release`
-
-**Purpose:** Check whether a project or feature is ready to tag and publish a release —
-version consistency, changelog presence, and configured release checks.
-
-**When to use:** Use when the user asks whether the project (or one feature) is ready to tag
-and publish a release.
-
-**When not to use:** Do not use to implement code, write a changelog entry from scratch, create
-a git tag, or run a publish command — this skill only checks readiness and reports gaps.
-
-**Inputs:** `.sdd-agentic-flow/config.yml`, including any declared release conventions; the repository's
-current version marker and changelog file; accumulated `check-report`/`validation-report`
-evidence for the work being released. Required input kind: `config`.
-
-**Outputs:** `release-readiness-report`.
-
-**Dependencies:** `extends: null` (chain entry point, invoked on demand); `depends_on: []`.
-Read-only.
-
-**Conflicts:** none.
-
-**Baseline:** none (`baseline: []`) — release readiness is process work, not methodology work.
-
-**Pack(s):** `core`, `full`, `local-files`, `github`.
-
-**Typical flow position:** last — after `saf-validate` and, when a PR was used,
-`saf-review-pr` confirm the work is ready; never tags or publishes itself.

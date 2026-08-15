@@ -31,9 +31,3 @@ Use the installed saf-implement skill for this approved task. Follow .sdd-agenti
 ```text
 Use the installed saf-implement skill and TDD baseline for this approved code task. Name the required behavior from the spec, confirm the contractual seam (Public seam field), place a sensor that can fail if that behavior is wrong, implement the smallest change, and record current evidence. Test-first is welcome when it sharpens the spec. Full RED → GREEN → REFACTOR is optional; do not fabricate RED. A passing sensor is evidence, not a correctness verdict. Do not commit, push, merge, deploy, or publish.
 ```
-
-## Check release readiness
-
-```text
-Use the installed saf-release skill after validation passes. Follow .sdd-agentic-flow/config.yml and the repository's version and changelog conventions. Do not create a git tag or run a publish command. Report gaps and the commands a human should run.
-```

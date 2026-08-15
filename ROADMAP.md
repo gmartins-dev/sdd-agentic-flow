@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v3.3.0 (2026-08-15):** Adaptive validation and workflow consolidation. Public workflow
+  ends at feature validation with 13 skills. Verification selects the minimum adequate sensors
+  from requirements, changed seams, repository contracts, and risk; no CLI validation engine,
+  new config axis, or new Status enum. Canonical terminology documents harness boundaries.
+
 - **v3.2.0 (2026-08-15):** Continuous guided onboarding: `init` is a TTY-first
   0 → Ready path with review-before-write, default `full` installation, context,
   and doctor verification. Automation remains explicit through `--non-interactive`;
@@ -24,7 +29,7 @@
   (`init --preset`), one router. `migrate` removed; leftover `.sdd/` is a
   `doctor` WARN and a manual rename. Breaking notes in
   `docs/v2-breaking-changes.md`. Autonomous does not mean unattended; no
-  config value overrides safety. 14 skills; no public `auto-sdd` / `sdd-run`;
+  config value overrides safety. 13 skills; no public `auto-sdd` / `sdd-run`;
   no third stored axis. `baseline_version` stays `0.7.0`.
 - **v1.19.0 (2026-08-13):** Spec package lifecycle and scoped context. Path
   `.specs/features/<slug>/` unchanged. Skills resolve one package, then load
@@ -112,28 +117,19 @@
 - **v1.9.1 (2026-08-10):** Release Consistency Hardening. Closes 4 small, real gaps found by
   directly auditing the repository after v1.9.0 shipped — no new mechanism, same discipline.
   `bin/sdd-agentic-flow.js`'s own `const VERSION` and `OFFICIAL_SKILLS` array had drifted from
-  `package.json`/`skills/` during v1.9.0 (`VERSION` stuck at `1.8.0`, `OFFICIAL_SKILLS` missing
-  the new `sdd-release` skill) with `npm run check` still reporting green, because
+  `package.json`/`skills/` during v1.9.0 (`VERSION` stuck at `1.8.0`, `OFFICIAL_SKILLS` drifting)
+  with `npm run check` still reporting green, because
   `scripts/check-version-consistency.js` only ever walked `skills/*/SKILL.md` and
   `presets/*.json`, never `bin/` — caught only by manual testing after the fact. Both scripts
   that consume it (`check-skills.sh`, `release-checklist.sh`) now also check `bin/`'s `VERSION`;
   a new `OFFICIAL_SKILLS`-vs-`skills/` parity check was added directly to `check-skills.sh`. Both
   fixes were proven against the actual v1.9.0 bug shape (temporarily reintroducing it locally)
   before being kept — see `.local/gmm/sdd-agentic-flow/v1.9.1-implementation-report.md`.
-  `shared/references/workflow-routing.md` (`sdd-route`'s single source of truth) gains a row for
-  `sdd-release`, which it could not previously recommend even though `README.md`'s own flow
-  diagram already treats it as a legitimate on-demand step; `docs/workflow.md` gets a matching
-  mention. `sdd-release/SKILL.md` and `docs/configuration.md` now agree that no dedicated
-  `release` config section exists yet — the skill reads whatever convention the project already
-  expresses, not a declared field. Zero breaking changes.
+  Zero breaking changes.
 
 - **v1.9.0 (2026-08-10):** Method & Reliability. Deepens v1.8.0's autonomy foundation instead of
   adding a new mechanism. This release closes individually audited gaps rather than the originally drafted
-  candidate wholesale (see "Corrections vs. the v1.9 candidate draft" below). New `sdd-release`
-  skill (14th public skill; packs `core`/`full`/`local-files`/`github`, matching
-  `sdd-validation`): checks release readiness (version consistency, changelog presence,
-  configured checks) and reports tag/publish commands for a human to run — config-driven and
-  portable, it does not shell out to this repository's own `scripts/release-checklist.sh`. New
+  candidate wholesale (see "Corrections vs. the v1.9 candidate draft" below). New
   `shared/references/handoff-standard.md` defines when a skill populates the
   previously-unused `shared/templates/handoff.template.md` and how it cross-references
   `.sdd-agentic-flow/autonomy/loop-state.md` without duplicating it; wired into the 7 skills whose work can

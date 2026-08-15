@@ -185,6 +185,10 @@ Sensors are complementary. Multiple passing sensors may increase confidence when
 **materially different** properties or boundaries. Duplicated sensors do not automatically
 provide independent evidence.
 
+Use [change-impact validation](change-impact-validation.md) to derive the minimum adequate
+sensor set from requirements, diff, seams, repository contracts, and risk. Record omitted
+higher-level sensors and why they are unnecessary.
+
 ## Gaps
 
 No adequate sensor for a required behavior → record an evidence gap; identify the requirement;

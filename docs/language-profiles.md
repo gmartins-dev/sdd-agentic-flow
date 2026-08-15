@@ -53,7 +53,8 @@ compatibility `WARN` and does not rewrite the file.
 
 ## Language policy
 
-Human-facing output follows the selected profile. Technical tokens stay
+Human-facing CLI output follows the selected profile, including interactive prompts, plans,
+doctor reports, menus, and learning output. Technical tokens stay
 canonical so prompts, paths, statuses, and skill references remain usable
 across agent clients. See [the language policy](../shared/references/language-policy.md)
 and the [Portuguese profile guide](language-profiles.pt-BR.md).

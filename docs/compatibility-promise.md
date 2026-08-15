@@ -119,7 +119,7 @@ internal convention.
   [--check|--plan|--skills-only]`, `context
   [status|refresh|autonomy-state]`, `autonomous-resume [--force] [--override-guard=<1-7>
   --reason="..."]`, `uninstall --plan | --apply [--include-config] [--full] [--scope
-  user|project] [--agent ...] [--quiet]`, `discover [--force] [--quiet]`. These now follow the same
+  user|project] [--agent ...] [--verbose] [--quiet]`, `discover [--force] [--quiet]`. These now follow the same
   rule as a skill's capability contract: they only change in a **minor** or **major** release,
   never a patch. Removing a command or flag, or changing what it defaults to, is a breaking
   change and requires a major release (or a documented, opt-in migration path). Adding a new
@@ -153,6 +153,10 @@ internal convention.
   output. The literal prose of human-facing text is not frozen. This is the same distinction
   `doctor --json`/`doctor --contracts --json` already draw between mechanical output (covered)
   and the plain-text report (not covered).
+
+- **Stable doctor check identifiers.** User-installation checks use semantic names such as
+  `installation_user_agents` rather than host-specific absolute paths. Their `{ name, status,
+  message }` object shape is unchanged; the exact path remains in `message`.
 
 This section replaces the pre-1.0 stance that the CLI argument surface carried no
 semantic-versioning guarantee. Before v1.0.0, that was true by design, to keep the beta free to

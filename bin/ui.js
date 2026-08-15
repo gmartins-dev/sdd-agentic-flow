@@ -43,10 +43,11 @@ function styleStatus(status, stream, env = process.env) {
 }
 
 function outputMode(streams = {}, env = {}, flags = {}) {
-  const stdoutTty = Boolean(streams.stdout?.isTTY);
   const stdinTty = Boolean(streams.stdin?.isTTY);
-  if (flags.json || env.CI || !stdoutTty) return 'machine';
-  if (flags.quiet) return 'human-plain';
+  // A pipe changes presentation, not the semantic contract. JSON is the only
+  // public machine protocol; ordinary CI and redirected output stay readable.
+  if (flags.json || flags.machine) return 'machine';
+  if (flags.quiet || env.CI) return 'human-plain';
   const asciiForced = Boolean(flags.ascii) || env.SDD_ASCII === '1';
   const colored = colorEnabled(streams.stdout, env);
   if (asciiForced || !colored || !stdinTty) return 'human-plain';
@@ -107,19 +108,19 @@ function terminalColumns(stream = process.stdout, fallback = 80) {
 }
 
 function renderSection(title, mode = 'human-rich') {
-  if (mode === 'machine') return [`section=${title}`];
+  if (mode === 'machine') return [];
   return [`\n${title}`, `${'-'.repeat(Math.min(title.length, terminalColumns()))}`];
 }
 
 function renderKeyValue(key, value, mode = 'human-rich') {
-  if (mode === 'machine') return [`${key}=${value}`];
+  if (mode === 'machine') return [];
   const padding = Math.max(1, 14 - key.length);
   return [`${key}${' '.repeat(padding)}${value}`];
 }
 
-function renderStep(current, total, label, mode = 'human-rich') {
+function renderStep(current, total, label, mode = 'human-rich', stepLabel = 'Step') {
   if (mode === 'machine') return [`step=${current}/${total} label=${label}`];
-  return [`Step ${current}/${total}  ${label}`];
+  return [`${stepLabel} ${current}/${total}  ${label}`];
 }
 
 function renderWarning(message, mode = 'human-rich') {
@@ -130,6 +131,21 @@ function renderWarning(message, mode = 'human-rich') {
 function renderSuccess(message, mode = 'human-rich') {
   if (mode === 'machine') return `PASS ${message}`;
   return `${symbol('success', mode)} ${message}`;
+}
+
+function shortenPath(value, { homeDir, cwd } = {}) {
+  if (!value) return value;
+  if (
+    homeDir &&
+    (value === homeDir || value.startsWith(`${homeDir}/`) || value.startsWith(`${homeDir}\\`))
+  )
+    return `~${value.slice(homeDir.length)}`;
+  if (cwd) {
+    const path = require('node:path');
+    const relative = path.relative(cwd, value);
+    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) return relative;
+  }
+  return value;
 }
 
 function levenshtein(a, b) {
@@ -183,4 +199,5 @@ module.exports = {
   renderStep,
   renderWarning,
   renderSuccess,
+  shortenPath,
 };

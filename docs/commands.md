@@ -8,6 +8,7 @@ for full usage text.
 | Command | Summary |
 | --- | --- |
 | `(no command)` | Welcome screen with status, policy, installation summary when configured |
+| `configure` | Save installation intent; does not install skills |
 | `help [command]` | Command reference |
 | `version` | Package version |
 | `list` | Available skill packs |

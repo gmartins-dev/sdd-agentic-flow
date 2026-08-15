@@ -64,7 +64,7 @@ test('menuActionsFor filters by config/skills state', () => {
   );
   assert.deepEqual(
     menuActionsFor({ hasConfig: true, hasSkills: false }).map((a) => a.command),
-    [['install', 'core'], ['install', 'core', '--plan'], ['doctor'], ['upgrade'], ['help']],
+    [['install', 'core'], ['install', 'core', '--plan'], ['doctor'], ['configure'], ['help']],
   );
   assert.deepEqual(
     menuActionsFor({ hasConfig: true, hasSkills: true }).map((a) => a.command),

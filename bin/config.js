@@ -8,8 +8,14 @@ const {
   OPERATING_PRESETS,
 } = require('./config-domain');
 const { outputMode, renderKeyValue, renderSection, renderWarning } = require('./ui');
+const { resolveLocale, t } = require('./messages');
 
-function renderPolicySummary(config, mode) {
+function localeForConfig(configPath) {
+  const config = readConfig(configPath);
+  return resolveLocale({ configured: config.ok ? config.languageProfile : null });
+}
+
+function renderPolicySummary(config, mode, locale = 'en-US') {
   const lines = [];
   if (mode === 'machine') {
     lines.push(`execution_mode=${config.policy.executionMode}`);
@@ -19,7 +25,7 @@ function renderPolicySummary(config, mode) {
     if (config.languageProfile) lines.push(`language=${config.languageProfile}`);
     return lines.join('\n');
   }
-  lines.push(...renderSection('Operating policy', mode));
+  lines.push(...renderSection(t(locale, 'config.operatingPolicy'), mode));
   if (config.presetEquivalent) {
     lines.push(...renderKeyValue('Preset', config.presetEquivalent, mode));
   }
@@ -34,21 +40,21 @@ function renderPolicySummary(config, mode) {
   return lines.join('\n');
 }
 
-function renderPolicyPreview(preview, mode) {
+function renderPolicyPreview(preview, mode, locale = 'en-US') {
   const lines = [];
-  lines.push(...renderSection('Policy change preview', mode));
+  lines.push(...renderSection(t(locale, 'config.policyPreview'), mode));
   const before = preview.beforePreset
     ? preview.beforePreset
     : `${preview.before.executionMode} + ${preview.before.autonomyLevel}`;
   const after = preview.afterPreset
     ? preview.afterPreset
     : `${preview.after.executionMode} + ${preview.after.autonomyLevel}`;
-  lines.push(...renderKeyValue('Before', before, mode));
-  lines.push(...renderKeyValue('After', after, mode));
+  lines.push(...renderKeyValue(t(locale, 'config.before'), before, mode));
+  lines.push(...renderKeyValue(t(locale, 'config.after'), after, mode));
   return lines.join('\n');
 }
 
-async function resolveNextPolicy(args) {
+async function resolveNextPolicy(args, current = null, locale = 'en-US') {
   let preset = null;
   let executionMode = null;
   let autonomyLevel = null;
@@ -75,14 +81,15 @@ async function resolveNextPolicy(args) {
     return { ok: true, policy: { executionMode, autonomyLevel } };
   }
   if (process.stdin.isTTY) {
-    process.stdout.write('Operating presets:\n');
+    process.stdout.write(`${t(locale, 'config.operatingPolicy')}:\n`);
     for (const [name, value] of Object.entries(OPERATING_PRESETS)) {
       process.stdout.write(`  ${name}: ${value.executionMode} + ${value.autonomyLevel}\n`);
     }
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     try {
-      const raw = await rl.question('\nPreset [manual]: ');
-      const chosen = (raw || 'manual').trim();
+      const fallback = current?.presetEquivalent || 'manual';
+      const raw = await rl.question(`\nPreset [${fallback}]: `);
+      const chosen = (raw || fallback).trim();
       const resolved = resolvePolicyFromPreset(chosen);
       if (!resolved) return { ok: false, message: `unknown preset: ${chosen}` };
       return { ok: true, policy: resolved };
@@ -109,7 +116,7 @@ async function runConfigShow(configPath, options = {}) {
   if (!config.ok) {
     return { ok: false, exitCode: 1, message: config.errors.join('; ') };
   }
-  process.stdout.write(`${renderPolicySummary(config, mode)}\n`);
+  process.stdout.write(`${renderPolicySummary(config, mode, localeForConfig(configPath))}\n`);
   return { ok: true, exitCode: 0 };
 }
 
@@ -123,10 +130,11 @@ async function runConfigPolicy(configPath, args, options = {}) {
   if (!current.ok) {
     return { ok: false, exitCode: 1, message: current.errors.join('; ') };
   }
+  const locale = localeForConfig(configPath);
   if (!planOnly && process.stdin.isTTY) {
-    process.stdout.write(`${renderPolicySummary(current, mode)}\n\n`);
+    process.stdout.write(`${renderPolicySummary(current, mode, locale)}\n\n`);
   }
-  const resolved = await resolveNextPolicy(args);
+  const resolved = await resolveNextPolicy(args, current, locale);
   if (!resolved.ok) {
     return { ok: false, exitCode: 1, message: resolved.message, try: resolved.try };
   }
@@ -134,39 +142,48 @@ async function runConfigPolicy(configPath, args, options = {}) {
   if (!previewResult.ok) {
     return { ok: false, exitCode: 1, message: previewResult.errors.join('; ') };
   }
-  process.stdout.write(`${renderPolicyPreview(previewResult.preview, mode)}\n`);
+  if (
+    previewResult.preview.before.executionMode === previewResult.preview.after.executionMode &&
+    previewResult.preview.before.autonomyLevel === previewResult.preview.after.autonomyLevel
+  ) {
+    process.stdout.write(
+      `${t(locale, 'config.alreadyUsing')} ${current.presetEquivalent || t(locale, 'config.keepCurrent')}.\n`,
+    );
+    return { ok: true, exitCode: 0, unchanged: true };
+  }
+  process.stdout.write(`${renderPolicyPreview(previewResult.preview, mode, locale)}\n`);
   if (planOnly) return { ok: true, exitCode: 0 };
   if (!process.stdin.isTTY) {
     if (!yes) {
       return {
         ok: false,
         exitCode: 1,
-        message: 'Non-interactive mutation requires --yes',
+        message: t(locale, 'config.nonInteractive'),
         try: ['sdd-agentic-flow config policy --yes --preset supervised'],
       };
     }
     const applied = applyPolicyMutation(configPath, resolved.policy, { dryRun: false });
     if (!applied.ok) return { ok: false, exitCode: 1, message: applied.errors.join('; ') };
-    process.stdout.write('PASS policy updated\n');
+    process.stdout.write(`PASS ${t(locale, 'config.updated')}\n`);
     return { ok: true, exitCode: 0 };
   }
   if (!yes) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     let confirmed = false;
     try {
-      const raw = await rl.question('Apply this policy change? [y/N] ');
-      confirmed = /^y(es)?$/i.test((raw || '').trim());
+      const raw = await rl.question(t(locale, 'config.applyChange'));
+      confirmed = /^(y|yes|s|sim)$/i.test((raw || '').trim());
     } finally {
       rl.close();
     }
     if (!confirmed) {
-      process.stdout.write(`${renderWarning('Policy change cancelled.', mode)}\n`);
+      process.stdout.write(`${renderWarning(t(locale, 'config.cancelled'), mode)}\n`);
       return { ok: true, exitCode: 0, cancelled: true };
     }
   }
   const applied = applyPolicyMutation(configPath, resolved.policy, { dryRun: false });
   if (!applied.ok) return { ok: false, exitCode: 1, message: applied.errors.join('; ') };
-  process.stdout.write('PASS policy updated\n');
+  process.stdout.write(`PASS ${t(locale, 'config.updated')}\n`);
   return { ok: true, exitCode: 0 };
 }
 

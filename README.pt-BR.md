@@ -103,6 +103,10 @@ Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/sdd-skills-u
 
 Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md).
 
+Ao escolher `pt-BR`, a saída humana da CLI — prompts, planos, doctor, menu e `learn-sdd` —
+passa a usar português brasileiro. Commands, paths, statuses, IDs e JSON permanecem em inglês
+canônico para continuar copiáveis e estáveis.
+
 ## Como funciona
 
 **Canonical workflow path:** Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (sob demanda)

@@ -199,6 +199,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 
 ```text
 init [--interactive] [--language ...|--en|--br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Create local configuration
+configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
 discover [--force] [--quiet]          Refresh auto-discovered project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
@@ -206,7 +207,7 @@ doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-update
 upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
 autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
-uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
+uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--verbose] [--quiet]  Remove installed toolkit assets
 list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
@@ -219,7 +220,7 @@ If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting]
 
 Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already set up, and one suggested next command) instead of the full reference. It never runs anything on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also offers a numbered menu below the status screen; selecting an entry runs the exact same command the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`), never applies. Piped output, scripts, CI, and agent invocations always see just the status screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` / `<command> --help` for one command's usage and examples.
 
-Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
+Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. A pipe or CI run remains deterministic human-readable text; `doctor --json` is the explicit machine contract. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
 
 Choose a language profile explicitly when creating a project:
 

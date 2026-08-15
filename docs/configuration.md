@@ -33,6 +33,11 @@ not install skills; run `install <pack>` to reconcile. For project-local sharing
 its exact `.git/info/exclude` block for `.agents/skills/` and removes only that block when sharing
 changes back to shared.
 
+Use `configure --plan` to preview both the saved intent and its later reconciliation. Its
+`Save intent:` command reproduces the selected packs, targets, or sharing; run it before the
+shown `Reconcile:` command. `install --plan` is human-readable when piped or run in CI; only
+explicit `--json` output is machine structured.
+
 `init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub that points at the
 canonical skills usage guide on GitHub. Re-running `init` refreshes that file and never
 overwrites `config.yml`. Teams that want toolkit state hidden from `git status` without

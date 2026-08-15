@@ -2,7 +2,7 @@
 name: saf-release
 description: Check whether a project or feature is ready to tag and publish a release — version consistency, changelog presence, and configured release checks. Use when the user asks if a release is ready; never tags, publishes, or pushes.
 metadata:
-  version: 3.0.0
+  version: 3.1.0
   pack: core
 extends: null
 requires: [config]

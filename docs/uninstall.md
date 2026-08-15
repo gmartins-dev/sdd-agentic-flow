@@ -4,6 +4,7 @@ Start with a read-only plan:
 
 ```bash
 sdd-agentic-flow uninstall --plan
+sdd-agentic-flow uninstall --plan --verbose
 ```
 
 Apply removal only after review:
@@ -32,6 +33,9 @@ Add `--quiet` to any of the above to suppress the trailing "preserves ..." expla
 The per-target `PLAN`/`PASS`/`WARN` action lines are unaffected.
 
 Run `doctor` after removal to verify the remaining project state.
+
+The default plan groups managed assets by installation target and reports totals, preserved
+content, and the exact apply command. Add `--verbose` when exact removal paths are needed.
 
 See [v2 breaking changes](v2-breaking-changes.md) for the 2.0 cut, and
 [CHANGELOG.md](../CHANGELOG.md) for 1.x history.

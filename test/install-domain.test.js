@@ -10,6 +10,7 @@ const {
   desiredSkillsForPacks,
   readInstallConfig,
   repositoryKey,
+  parseTargetSelection,
   shouldUseInteractiveInstall,
   writeInstallConfig,
 } = require('../bin/install-domain');
@@ -42,6 +43,13 @@ test('repository keys and interactive eligibility are deterministic', () => {
     shouldUseInteractiveInstall({ stdinIsTTY: true, stdoutIsTTY: true, ci: true }),
     false,
   );
+});
+
+test('target selection is strict, defaults accurately, and all includes Cursor', () => {
+  assert.deepEqual(parseTargetSelection('').targets, DEFAULT_USER_TARGETS);
+  assert.deepEqual(parseTargetSelection('all').targets, ['agents', 'cursor', 'claude', 'copilot']);
+  assert.deepEqual(parseTargetSelection('agents, Claude Code').targets, ['agents', 'claude']);
+  assert.equal(parseTargetSelection('agents, unknown').ok, false);
 });
 
 test('project configure persists intent and only manages its owned exclude block', () => {

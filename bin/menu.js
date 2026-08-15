@@ -20,6 +20,7 @@ const MENU_ACTIONS = [
   { label: 'Create local configuration', command: ['init'] },
   { label: 'Install the core skill pack', command: ['install', 'core'] },
   { label: 'Preview install plan (read-only)', command: ['install', 'core', '--plan'] },
+  { label: 'Configure installation intent', command: ['configure'] },
   { label: 'Validate local setup', command: ['doctor'] },
   { label: 'Change operating policy', command: ['config', 'policy'] },
   { label: 'Learn about SDD', command: ['learn-sdd'] },
@@ -47,7 +48,7 @@ function menuActionsFor(state = {}) {
       ['install', 'core'],
       ['install', 'core', '--plan'],
       ['doctor'],
-      ['upgrade'],
+      ['configure'],
       ['help'],
     );
   }

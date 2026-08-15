@@ -53,7 +53,8 @@ doctor mostra `WARN` de compatibilidade e não reescreve o arquivo.
 
 ## Política de idioma
 
-A saída humana segue o perfil selecionado. Tokens técnicos permanecem canônicos
+A saída humana da CLI segue o perfil selecionado, incluindo prompts interativos, planos,
+relatórios do doctor, menus e a saída de aprendizado. Tokens técnicos permanecem canônicos
 para manter prompts, paths, statuses e referências de skills compatíveis entre
 agentes. Veja a [política de idioma](../shared/references/language-policy.md)
 e o [guia de perfis em inglês](language-profiles.md).

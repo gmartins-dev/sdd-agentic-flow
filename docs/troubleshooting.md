@@ -114,9 +114,11 @@ file isn't installed yet. `FAIL` — `language.profile`/`human_outputs`/`technic
 **Diagnose:** `sdd-agentic-flow doctor --json` — `.language` in the JSON output shows the
 parsed fields and the exact message.
 
-**Fix:** re-run `init --language en-US` or `init --language pt-BR` (or the `--en`/`--br`
-shorthands) against a fresh config, or correct the four `language.*` fields by hand to match one
-of `docs/language-profiles.md`'s supported profiles.
+**Fix:** when the configured profile asset is absent because skills are not installed or are
+partial, run `sdd-agentic-flow install core`. Re-run `init --language en-US` or
+`init --language pt-BR` (or the `--en`/`--br` shorthands) only for a missing or invalid project
+language configuration; otherwise correct the four `language.*` fields by hand to match one of
+`docs/language-profiles.md`'s supported profiles.
 
 ### `safety`: "required safety defaults are missing"
 

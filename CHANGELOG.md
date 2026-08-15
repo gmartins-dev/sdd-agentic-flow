@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## 3.1.0
+
+CLI UX, localization, diagnostic, and interaction-coherence release.
+
+**Changed:**
+
+- Normal CLI reports are human-readable in pipes and CI; `doctor --json` remains the explicit
+  structured output contract.
+- Interactive init and install now have truthful grouped progress, complete reviews, strict
+  target selection, and confirmation before mutation.
+- `configure` is discoverable in top-level help and distinguishes saved installation intent from
+  a subsequent reconcile.
+- Doctor leads with a verdict, counts, root-cause-oriented primary remediation, and concise
+  default detail; `--verbose` retains the full check list.
+- User-install doctor check IDs are stable target-based identifiers (`installation_user_agents`,
+  `installation_user_cursor`, `installation_user_claude`, `installation_user_copilot`) while
+  messages retain the diagnostic path.
+- Plans identify intent, target labels, physical units, repository impact, no-mutation status,
+  and the exact follow-up command. Uninstall previews are grouped; `uninstall --verbose` adds
+  exact paths.
+
+**Added:**
+
+- Dependency-free EN/pt-BR CLI message catalog and locale resolver.
+- State-aware quick actions, complete `help configure`, and plain-language SDD learning output.
+
+Safety defaults, exit codes, installed skill contracts, and the `doctor --json` object shape are
+unchanged.
+
 ## 3.0.0
 
 Major skill-identity and installation-model release.

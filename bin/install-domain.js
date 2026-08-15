@@ -19,6 +19,33 @@ const AGENT_TO_TARGETS = Object.freeze({
   'vscode-copilot': ['copilot'],
 });
 
+const USER_TARGET_ALIASES = Object.freeze({
+  agents: 'agents',
+  'shared agent skills': 'agents',
+  cursor: 'cursor',
+  claude: 'claude',
+  'claude code': 'claude',
+  copilot: 'copilot',
+  'github copilot': 'copilot',
+});
+
+function parseTargetSelection(input, defaults = DEFAULT_USER_TARGETS) {
+  const raw = String(input ?? '').trim();
+  if (!raw) return { ok: true, targets: [...defaults] };
+  if (raw.toLowerCase() === 'all') return { ok: true, targets: Object.keys(USER_TARGETS) };
+  const targets = raw
+    .split(',')
+    .map((value) => USER_TARGET_ALIASES[value.trim().toLowerCase()])
+    .filter(Boolean);
+  const supplied = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!targets.length || targets.length !== supplied.length)
+    return { ok: false, message: `Unknown installation target: ${raw}` };
+  return { ok: true, targets: [...new Set(targets)] };
+}
+
 function installConfigPath(homeDir = os.homedir()) {
   return path.join(homeDir, '.sdd-agentic-flow', 'install.yml');
 }
@@ -123,6 +150,7 @@ module.exports = {
   AGENT_TO_TARGETS,
   DEFAULT_USER_TARGETS,
   USER_TARGETS,
+  parseTargetSelection,
   defaultInstallConfig,
   desiredSkillsForPacks,
   installConfigPath,

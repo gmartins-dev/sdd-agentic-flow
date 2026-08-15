@@ -13,17 +13,18 @@ const {
   didYouMean,
   outputMode,
   isRich,
-  symbol,
   writeBrand,
-  doctorFooterLines,
   renderSection,
   renderKeyValue,
   renderStep,
+  shortenPath,
 } = require('./ui');
 const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = require('./menu');
 const { checkForUpdate } = require('./update-check');
 const { runConfigCommand, renderPolicySummary } = require('./config');
 const { readConfig } = require('./config-domain');
+const { resolveLocale, t, translateText } = require('./messages');
+const { buildDoctorView } = require('./doctor-view');
 const { applyProjectSharing, configureIntent } = require('./configure');
 const {
   AGENT_TO_TARGETS,
@@ -32,6 +33,7 @@ const {
   defaultInstallConfig,
   readInstallConfig,
   repositoryKey,
+  parseTargetSelection,
   shouldUseInteractiveInstall,
   writeInstallConfig,
 } = require('./install-domain');
@@ -370,8 +372,15 @@ function languageReport(cwd) {
   };
 }
 
-function log(status, message) {
-  process.stdout.write(`${styleStatus(status, process.stdout)} ${message}\n`);
+function localeFor(cwd, explicit) {
+  return resolveLocale({ explicit, configured: languageReport(cwd).profile });
+}
+
+function log(status, message, explicitLocale) {
+  const locale = explicitLocale || localeFor(process.cwd());
+  process.stdout.write(
+    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
+  );
 }
 
 function resolveMode(flags = {}) {
@@ -440,7 +449,10 @@ function nextStep(lines, options = {}) {
   if (mode === 'machine') return;
   const list = (Array.isArray(lines) ? lines : [lines]).filter(Boolean);
   if (!list.length) return;
-  process.stdout.write(`\nSuggested next step\n${list.map((line) => `  ${line}`).join('\n')}\n`);
+  const locale = localeFor(process.cwd());
+  process.stdout.write(
+    `\n${t(locale, 'init.next')}\n${list.map((line) => `  ${line}`).join('\n')}\n`,
+  );
 }
 
 function logPassLine(message, options = {}) {
@@ -481,18 +493,18 @@ function list() {
   }
 }
 
-function writeUsageGuide(cwd) {
+function writeUsageGuide(cwd, locale) {
   const source = path.join(PACKAGE_ROOT, 'shared', 'templates', 'usage.template.md');
   const destination = sddJoin(cwd, 'usage.md');
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.copyFileSync(source, destination);
-  log('PASS', `wrote ${SDD_PATHS.usage}`);
+  log('PASS', `wrote ${SDD_PATHS.usage}`, locale);
 }
 
-function applyLocalGitExclude(cwd) {
+function applyLocalGitExclude(cwd, locale) {
   const gitDir = path.join(cwd, '.git');
   if (!fs.existsSync(gitDir) || !fs.statSync(gitDir).isDirectory()) {
-    log('WARN', 'init --local-git-exclude: no .git directory; skipped (Git is optional)');
+    log('WARN', 'init --local-git-exclude: no .git directory; skipped (Git is optional)', locale);
     return;
   }
   const infoDir = path.join(gitDir, 'info');
@@ -504,7 +516,7 @@ function applyLocalGitExclude(cwd) {
     return trimmed === LOCAL_GIT_EXCLUDE_ENTRY || trimmed === SDD_ROOT;
   });
   if (alreadyListed) {
-    log('PASS', `local git exclude already lists ${LOCAL_GIT_EXCLUDE_ENTRY}`);
+    log('PASS', `local git exclude already lists ${LOCAL_GIT_EXCLUDE_ENTRY}`, locale);
     return;
   }
   const prefix = existing === '' || existing.endsWith('\n') ? '' : '\n';
@@ -512,12 +524,12 @@ function applyLocalGitExclude(cwd) {
     excludePath,
     `${prefix}${LOCAL_GIT_EXCLUDE_COMMENT}\n${LOCAL_GIT_EXCLUDE_ENTRY}\n`,
   );
-  log('PASS', `appended ${LOCAL_GIT_EXCLUDE_ENTRY} to .git/info/exclude`);
+  log('PASS', `appended ${LOCAL_GIT_EXCLUDE_ENTRY} to .git/info/exclude`, locale);
 }
 
 function applyInitSideEffects(cwd, options = {}) {
-  writeUsageGuide(cwd);
-  if (options.localGitExclude) applyLocalGitExclude(cwd);
+  writeUsageGuide(cwd, options.locale);
+  if (options.localGitExclude) applyLocalGitExclude(cwd, options.locale);
 }
 
 function printUsageGuidePointer(cwd) {
@@ -532,7 +544,8 @@ function printUsageGuidePointer(cwd) {
 
 function init(cwd, options = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
-  applyInitSideEffects(cwd, options);
+  const locale = localeFor(cwd, options.profile || options.language);
+  applyInitSideEffects(cwd, { ...options, locale });
   const configPath = sddJoin(cwd, 'config.yml');
   if (fs.existsSync(configPath)) {
     log('WARN', `preserved existing ${SDD_PATHS.config}`);
@@ -542,8 +555,11 @@ function init(cwd, options = {}) {
     fs.mkdirSync(path.join(cwd, relative), { recursive: true });
   }
   fs.writeFileSync(configPath, configFor(options), 'utf8');
-  logPassLine(`created ${SDD_PATHS.config}`, { mode, quiet: options.quiet });
-  logPassLine('initialized local SDD directories', { mode, quiet: options.quiet });
+  logPassLine(t(locale, 'init.createdConfig', { path: SDD_PATHS.config }), {
+    mode,
+    quiet: options.quiet,
+  });
+  logPassLine(t(locale, 'init.createdDirectories'), { mode, quiet: options.quiet });
   if (options.presetName) {
     const aliasNote = options.presetAlias ? ` (alias: ${options.presetAlias})` : '';
     log('INFO', `preset ${options.presetName}${aliasNote}`);
@@ -835,8 +851,8 @@ async function initInteractive(
   const rl = pipedAnswers
     ? null
     : readline.createInterface({ input: process.stdin, output: process.stdout });
-  const ask = async (step, total, label, fallback, allowed) => {
-    process.stdout.write(`\n${renderStep(step, total, label, mode).join('\n')}\n`);
+  let locale = resolveLocale({ explicit: languageDefault });
+  const ask = async (label, fallback, allowed, kind = 'text') => {
     const prompt = `${label} [${fallback}]: `;
     let raw;
     if (pipedAnswers) {
@@ -850,34 +866,65 @@ async function initInteractive(
       throw new Error(`${label} must be one of: ${allowed.join(', ')}`);
     if (!allowed) {
       const valid =
-        label === 'Default branch'
-          ? /^[A-Za-z0-9][A-Za-z0-9._/-]*$/
-          : /^[A-Za-z0-9][A-Za-z0-9 ._-]*$/;
+        kind === 'branch' ? /^[A-Za-z0-9][A-Za-z0-9._/-]*$/ : /^[A-Za-z0-9][A-Za-z0-9 ._-]*$/;
       if (!valid.test(answer)) throw new Error(`${label} contains unsupported characters`);
     }
     return answer;
   };
   try {
+    process.stdout.write(
+      `\n${renderStep(1, 7, t(locale, 'init.language'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    process.stdout.write(
+      '  en-US — English human output\n  pt-BR — Saída humana em português do Brasil\n',
+    );
+    const language = await ask(
+      t(locale, 'init.languagePrompt'),
+      languageDefault,
+      LANGUAGE_PROFILES,
+    );
+    locale = resolveLocale({ explicit: language });
     const options = {
-      name: await ask(1, 7, 'Project name', 'example-project'),
-      branch: await ask(2, 7, 'Default branch', 'main'),
-      agent: await ask(3, 7, 'Agent target', 'generic', [
-        'generic',
-        'codex',
-        'cursor',
-        'claude-code',
-        'vscode-copilot',
-      ]),
-      language: await ask(4, 7, 'Human output language', languageDefault, LANGUAGE_PROFILES),
-      featureProfile: await ask(5, 7, 'Feature profile', featureProfileDefault, FEATURE_PROFILES),
+      language,
       executionMode: executionModeDefault,
       autonomyLevel: autonomyLevelDefault,
     };
-    process.stdout.write(`\n${renderStep(6, 7, 'Operating policy', mode).join('\n')}\n`);
+
+    process.stdout.write(
+      `\n${renderStep(2, 7, t(locale, 'init.identity'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    options.name = await ask(t(locale, 'init.projectName'), 'example-project');
+    options.branch = await ask(t(locale, 'init.defaultBranch'), 'main', null, 'branch');
+
+    process.stdout.write(
+      `\n${renderStep(3, 7, t(locale, 'init.agent'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    process.stdout.write(`  ${t(locale, 'init.agentHint')}\n`);
+    options.agent = await ask(t(locale, 'init.agentPrompt'), 'generic', [
+      'generic',
+      'codex',
+      'cursor',
+      'claude-code',
+      'vscode-copilot',
+    ]);
+
+    process.stdout.write(
+      `\n${renderStep(4, 7, t(locale, 'init.profile'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    process.stdout.write(`  ${FEATURE_PROFILES.join(', ')}\n`);
+    options.featureProfile = await ask(
+      t(locale, 'init.featurePrompt'),
+      featureProfileDefault,
+      FEATURE_PROFILES,
+    );
+
+    process.stdout.write(
+      `\n${renderStep(5, 7, t(locale, 'init.policy'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
     for (const [name, preset] of Object.entries(OPERATING_PRESETS)) {
       process.stdout.write(`  ${name}: ${preset.executionMode} + ${preset.autonomyLevel}\n`);
     }
-    const presetPrompt = 'Operating preset [manual]: ';
+    const presetPrompt = `${t(locale, 'init.presetPrompt')} [manual]: `;
     let presetRaw;
     if (pipedAnswers) {
       process.stdout.write(presetPrompt);
@@ -887,48 +934,57 @@ async function initInteractive(
     }
     const presetChoice = (presetRaw || 'manual').trim();
     if (presetChoice === 'advanced') {
-      options.executionMode = await ask(
-        6,
-        7,
-        'Execution mode',
-        executionModeDefault,
-        EXECUTION_MODES,
-      );
-      options.autonomyLevel = await ask(
-        6,
-        7,
-        'Autonomy level',
-        autonomyLevelDefault,
-        AUTONOMY_LEVELS,
-      );
+      options.executionMode = await ask('Execution mode', executionModeDefault, EXECUTION_MODES);
+      options.autonomyLevel = await ask('Autonomy level', autonomyLevelDefault, AUTONOMY_LEVELS);
     } else {
       const resolved = resolveOperatingPreset(presetChoice || 'manual');
       if (!resolved) throw new Error(`Unknown operating preset: ${presetChoice}`);
       options.executionMode = resolved.executionMode;
       options.autonomyLevel = resolved.autonomyLevel;
     }
-    process.stdout.write(`\n${renderStep(7, 7, 'Workflow options', mode).join('\n')}\n`);
-    options.source = await ask(7, 7, 'Source type', 'local-files', [
+    process.stdout.write(
+      `\n${renderStep(6, 7, t(locale, 'init.workflow'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    options.source = await ask(t(locale, 'init.sourcePrompt'), 'local-files', [
       'local-files',
       'github-guidance',
     ]);
-    options.flow = await ask(7, 7, 'Default flow', 'single', ['single', 'multi']);
+    options.flow = await ask(t(locale, 'init.flowPrompt'), 'single', ['single', 'multi']);
     options.multiWorktree =
-      (await ask(7, 7, 'Allow multi-worktree', 'false', ['true', 'false'])) === 'true';
+      (await ask(t(locale, 'init.worktreePrompt'), 'false', ['true', 'false'])) === 'true';
     options.stackedPrs =
-      (await ask(7, 7, 'Allow stacked PRs', 'false', ['true', 'false'])) === 'true';
-    process.stdout.write('\nReview\n');
+      (await ask(t(locale, 'init.stackedPrompt'), 'false', ['true', 'false'])) === 'true';
     process.stdout.write(
-      `  Project: ${options.name}\n` +
-        `  Agent: ${options.agent}\n` +
-        `  Language: ${options.language}\n` +
-        `  Feature profile: ${options.featureProfile}\n` +
-        `  Policy: ${options.executionMode} + ${options.autonomyLevel}\n`,
+      `\n${renderStep(7, 7, t(locale, 'init.review'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    process.stdout.write(
+      `  ${t(locale, 'init.reviewProject')}: ${options.name}\n` +
+        `  ${t(locale, 'init.reviewBranch')}: ${options.branch}\n` +
+        `  ${t(locale, 'init.reviewAgent')}: ${options.agent}\n` +
+        `  ${t(locale, 'init.reviewLanguage')}: ${options.language}\n` +
+        `  ${t(locale, 'init.reviewProfile')}: ${options.featureProfile}\n` +
+        `  ${t(locale, 'init.reviewPolicy')}: ${options.executionMode} + ${options.autonomyLevel}\n` +
+        `  ${t(locale, 'init.reviewSource')}: ${options.source}\n` +
+        `  ${t(locale, 'init.reviewFlow')}: ${options.flow}\n` +
+        `  ${t(locale, 'init.reviewWorktree')}: ${options.multiWorktree}\n` +
+        `  ${t(locale, 'init.reviewStacked')}: ${options.stackedPrs}\n`,
     );
     if (!autonomyComboValid(options.executionMode, options.autonomyLevel))
       throw new Error(
         `Execution mode ${options.executionMode} cannot combine with autonomy level ${options.autonomyLevel}`,
       );
+    const confirmPrompt = t(locale, 'init.confirm');
+    let confirmRaw;
+    if (pipedAnswers) {
+      process.stdout.write(confirmPrompt);
+      confirmRaw = pipedAnswers[answerIndex++];
+    } else {
+      confirmRaw = await rl.question(confirmPrompt);
+    }
+    if (/^(no|n)$/i.test(String(confirmRaw || '').trim())) {
+      log('INFO', t(locale, 'init.cancelled'));
+      return;
+    }
     init(cwd, { ...options, profile: options.language, quiet, localGitExclude });
   } catch (error) {
     fail(error.message, 1);
@@ -937,13 +993,13 @@ async function initInteractive(
   }
 }
 
-function renderInstallationSummaryBlock(summary, mode) {
+function renderInstallationSummaryBlock(summary, mode, locale = 'en-US') {
   const lines = [];
-  lines.push(...renderSection('Installation', mode));
-  lines.push(...renderKeyValue('Mode', summary.mode, mode));
+  lines.push(...renderSection(locale === 'pt-BR' ? 'Instalação' : 'Installation', mode));
+  lines.push(...renderKeyValue(locale === 'pt-BR' ? 'Modelo' : 'Mode', summary.mode, mode));
   lines.push(
     ...renderKeyValue(
-      'Targets',
+      locale === 'pt-BR' ? 'Destinos' : 'Targets',
       summary.targets.length ? summary.targets.join(', ') : '(none detected)',
       mode,
     ),
@@ -951,8 +1007,8 @@ function renderInstallationSummaryBlock(summary, mode) {
   return lines.join('\n');
 }
 
-function renderPolicySummaryBlock(config, mode) {
-  return renderPolicySummary(config, mode);
+function renderPolicySummaryBlock(config, mode, locale = 'en-US') {
+  return renderPolicySummary(config, mode, locale);
 }
 
 function installationSummaryForWelcome(cwd) {
@@ -998,38 +1054,74 @@ function planForInstallProfile({ cwd, homeDir, scope, profile }) {
   });
 }
 
-function printInstallPlanReport(plan, mode, _cwd) {
+function installApplyCommand(plan) {
+  return `sdd-agentic-flow install ${plan.desiredPacks[0] || 'core'} --scope ${plan.scope}`;
+}
+
+function configureCommand(scope, profile) {
+  const parts = ['sdd-agentic-flow configure', '--scope', scope];
+  for (const pack of profile.packs || []) parts.push('--pack', pack);
+  if (scope === 'user') {
+    for (const target of profile.targets || DEFAULT_USER_TARGETS) parts.push('--target', target);
+  } else parts.push('--sharing', profile.sharing || 'shared');
+  return parts.join(' ');
+}
+
+function printInstallPlanReport(plan, _mode, cwd, { applyCommand } = {}) {
+  const locale = localeFor(cwd);
   const lines = [];
-  lines.push(...renderSection('Installation plan', mode));
-  lines.push(...renderKeyValue('Mode', plan.modeLabel, mode));
-  lines.push(...renderKeyValue('Scope', plan.scope, mode));
-  lines.push(...renderKeyValue('Packs', plan.desiredPacks.join(', ') || '(none)', mode));
-  lines.push(...renderKeyValue('Target IDs', plan.targetIds.join(', ') || '(none)', mode));
-  lines.push('');
-  lines.push('Targets');
-  for (const target of plan.targets) {
-    const marker = target.summary.COLLISION > 0 ? 'collision' : 'selected';
-    lines.push(...renderKeyValue(target.label, target.targetRoot, mode));
-    if (mode === 'machine') lines.push(`target_status=${marker}`);
+  lines.push(`${t(locale, 'plan.title')}\n`);
+  lines.push(t(locale, 'plan.intent'));
+  lines.push(`  ${t(locale, 'plan.scope')}       ${plan.scope} (${plan.modeLabel})`);
+  lines.push(`  ${t(locale, 'plan.packs')}       ${plan.desiredPacks.join(', ') || '(none)'}`);
+  lines.push(`  ${t(locale, 'plan.targets')}     ${plan.targetIds.join(', ') || '(none)'}`);
+  lines.push(`\n${t(locale, 'plan.selectedTargets')}`);
+  for (const [index, target] of plan.targets.entries()) {
+    lines.push(`  ${target.label} (${plan.targetIds[index] || 'project-agents'})`);
+    lines.push(`    ${shortenPath(target.targetRoot, { homeDir: os.homedir(), cwd })}`);
+    if (target.summary.COLLISION || target.legacy) {
+      lines.push(
+        `    ${t(locale, 'plan.blocked', {
+          details: target.foreignSkills.length
+            ? target.foreignSkills.join(', ')
+            : locale === 'pt-BR'
+              ? 'instalação legada'
+              : 'legacy installation',
+          path: target.targetRoot,
+        })}`,
+      );
+    }
   }
-  lines.push('');
-  lines.push('Repository changes');
-  if (!plan.repositoryChanges.length) lines.push('  none');
-  else for (const entry of plan.repositoryChanges) lines.push(`  ${entry}`);
-  lines.push('');
-  lines.push('Preflight');
-  lines.push(...renderKeyValue('CREATE', String(plan.totals.CREATE), mode));
-  lines.push(...renderKeyValue('UPDATE', String(plan.totals.UPDATE), mode));
-  lines.push(...renderKeyValue('REMOVE', String(plan.totals.REMOVE), mode));
-  lines.push(...renderKeyValue('PRESERVE', String(plan.totals.PRESERVE), mode));
-  lines.push(...renderKeyValue('COLLISION', String(plan.totals.COLLISION), mode));
+  lines.push(`\n${t(locale, 'plan.managedContent')}`);
+  lines.push(
+    `  ${t(locale, 'plan.skillsSupport', {
+      skills: [...new Set(plan.desiredPacks.flatMap((name) => readPreset(name)?.skills || []))]
+        .length,
+    })}`,
+  );
+  lines.push(
+    `  ${t(locale, 'plan.filesTargets', {
+      files: plan.totals.CREATE + plan.totals.UPDATE + plan.totals.PRESERVE,
+      targets: plan.targets.length,
+    })}`,
+  );
+  lines.push(`\n${t(locale, 'plan.fileOperations')}`);
+  lines.push(`  ${t(locale, 'plan.createFiles')}     ${plan.totals.CREATE}`);
+  lines.push(`  ${t(locale, 'plan.updateFiles')}     ${plan.totals.UPDATE}`);
+  lines.push(`  ${t(locale, 'plan.removeFiles')}     ${plan.totals.REMOVE}`);
+  lines.push(`  ${t(locale, 'plan.preserveFiles')}   ${plan.totals.PRESERVE}`);
+  lines.push(`  ${t(locale, 'plan.collisions')}       ${plan.totals.COLLISION}`);
   if (plan.totals.PARTIAL) {
-    lines.push(...renderKeyValue('PARTIAL', String(plan.totals.PARTIAL), mode));
+    lines.push(`  ${t(locale, 'plan.partialTrees')}    ${plan.totals.PARTIAL}`);
   }
-  if (plan.scope === 'project') {
-    lines.push('');
-    lines.push('Note: project installs are Git-visible under .agents/skills/');
-  }
+  lines.push(`\n${t(locale, 'plan.repositoryFootprint')}`);
+  lines.push(
+    plan.scope === 'project'
+      ? `  ${t(locale, 'plan.projectFootprint')}`
+      : `  ${t(locale, 'plan.userFootprint')}`,
+  );
+  lines.push(`\n${t(locale, 'plan.noChanges')}`);
+  lines.push(`${t(locale, 'plan.apply')}: ${applyCommand || installApplyCommand(plan)}`);
   process.stdout.write(`${lines.join('\n')}\n`);
   if (plan.totals.MANAGED_MODIFIED)
     log('INFO', 'Managed skills differ from package and will be updated after confirmation.');
@@ -1045,18 +1137,17 @@ function printInstallPlanReport(plan, mode, _cwd) {
   if (isPlanEmpty(plan)) log('PASS', 'Already up to date.');
 }
 
-function learnSdd(_cwd) {
+function learnSdd(cwd) {
   const docPath = path.join(PACKAGE_ROOT, 'docs', 'what-is-sdd.md');
   const relative = fs.existsSync(docPath) ? 'docs/what-is-sdd.md' : null;
+  const locale = localeFor(cwd);
   process.stdout.write(
-    'Spec-Driven Development (SDD) turns a requested outcome into evidence-based specs,\n' +
-      'bounded implementation tasks, independent checks, and human-gated Git work.\n\n' +
-      'The CLI is a control plane: it prepares configuration, installs skills, and validates\n' +
-      'setup. Your coding agent runs the SDD skills — the CLI does not invoke them.\n\n' +
+    `${t(locale, 'learn.body')}\n\n` +
+      `${t(locale, 'learn.controlPlane')}\n\n` +
       (relative
-        ? `Read more: ${relative}\n  ${path.join(PACKAGE_ROOT, relative)}\n`
-        : 'Read more: docs/what-is-sdd.md (after docs ship in this package)\n') +
-      `\nWorkflow guide: ${USAGE_GUIDE_URL}\n`,
+        ? `${t(locale, 'learn.readMore')}: ${relative}\n`
+        : `${t(locale, 'learn.readMore')}: docs/what-is-sdd.md\n`) +
+      `\n${t(locale, 'learn.workflowGuide')}: ${USAGE_GUIDE_URL}\n`,
   );
 }
 
@@ -1070,8 +1161,8 @@ function printInstallNextSteps(cwd, options = {}) {
     return;
   }
   process.stdout.write(
-    '\nThen use your coding agent with the installed SDD workflow.\n' +
-      'Run `npx sdd-agentic-flow doctor` to validate setup.\n\n' +
+    `\n${t(localeFor(cwd), 'next.then')}\n` +
+      `${t(localeFor(cwd), 'next.validate')}\n\n` +
       printUsageGuidePointer(cwd),
   );
 }
@@ -1120,6 +1211,7 @@ function install(pack, cwd, options = {}) {
   ];
   const effectivePreset = { ...preset, skills: desiredSkills };
   let targets = [];
+  let selectedTargetIds = null;
   if (scope === 'project') {
     targets = [path.join(cwd, '.agents', 'skills')];
   } else {
@@ -1129,6 +1221,7 @@ function install(pack, cwd, options = {}) {
       : options.targets?.length
         ? options.targets
         : configuredTargets;
+    selectedTargetIds = selectedTargets;
     targets = userSkillsDirsForTargets(selectedTargets, homeDir);
   }
 
@@ -1145,9 +1238,7 @@ function install(pack, cwd, options = {}) {
         ? ['project-agents']
         : options.agent
           ? AGENT_TO_TARGETS[options.agent]
-          : profile?.targets?.length
-            ? profile.targets
-            : DEFAULT_USER_TARGETS,
+          : selectedTargetIds || DEFAULT_USER_TARGETS,
   });
 
   if (options.plan) {
@@ -1185,7 +1276,7 @@ function install(pack, cwd, options = {}) {
       installConfig.user = {
         ...installConfig.user,
         packs: desiredPacks,
-        targets: profile?.targets?.length ? profile.targets : DEFAULT_USER_TARGETS,
+        targets: selectedTargetIds || DEFAULT_USER_TARGETS,
       };
     }
     try {
@@ -1242,7 +1333,7 @@ function install(pack, cwd, options = {}) {
       installConfig.user = {
         ...installConfig.user,
         packs: desiredPacks,
-        targets: profile?.targets?.length ? profile.targets : DEFAULT_USER_TARGETS,
+        targets: selectedTargetIds || DEFAULT_USER_TARGETS,
       };
     }
     try {
@@ -1253,50 +1344,73 @@ function install(pack, cwd, options = {}) {
     }
   }
 
-  logPassLine(
+  const locale = localeFor(cwd);
+  let installationMessage =
     scope === 'project'
-      ? `installed ${pack}: ${totals.installed} files${totals.updated ? `, updated ${totals.updated}` : ''}${totals.removed ? `, removed ${totals.removed}` : ''}`
-      : `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files${totals.updated ? `, updated ${totals.updated}` : ''}${totals.removed ? `, removed ${totals.removed}` : ''}`,
-    { mode, quiet: options.quiet },
-  );
-  if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
-  if (scope === 'user') logPassLine('Repository changes: none', { mode, quiet: options.quiet });
+      ? t(locale, 'install.installed', { pack, files: totals.installed })
+      : t(locale, 'install.installedUser', {
+          pack,
+          targets: targets.length,
+          files: totals.installed,
+        });
+  if (totals.updated) installationMessage += `, ${t(locale, 'install.updated')} ${totals.updated}`;
+  if (totals.removed) installationMessage += `, ${t(locale, 'install.removed')} ${totals.removed}`;
+  logPassLine(installationMessage, { mode, quiet: options.quiet });
+  if (totals.preserved) log('WARN', t(locale, 'install.preserved', { files: totals.preserved }));
+  if (scope === 'user')
+    logPassLine(t(locale, 'install.repositoryNone'), { mode, quiet: options.quiet });
   if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
 }
 
 async function installInteractive(pack, cwd, options = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: options.ascii });
-  process.stdout.write(`${renderStep(1, 5, 'Installation model', mode).join('\n')}\n`);
-  process.stdout.write('  Local / User (recommended)\n  Project / Team\n\n');
+  const locale = localeFor(cwd);
+  process.stdout.write(
+    `${renderStep(1, 4, t(locale, 'install.scope'), mode, t(locale, 'step')).join('\n')}\n`,
+  );
+  process.stdout.write(
+    `  ${t(locale, 'install.localUser')}\n  ${t(locale, 'install.projectRepository')}\n\n`,
+  );
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   let scope = 'user';
   let projectLocalExclude = false;
   try {
-    const modelRaw = await rl.question('Installation model [Local / User]: ');
+    const modelRaw = await rl.question(
+      `${t(locale, 'install.model')} [${t(locale, 'install.localUser')}]: `,
+    );
     if (/project/i.test((modelRaw || '').trim())) {
       scope = 'project';
-      process.stdout.write(`\n${renderStep(2, 5, 'Project sharing', mode).join('\n')}\n`);
+    }
+    process.stdout.write(
+      `\n${renderStep(2, 4, t(locale, 'install.details'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    if (scope === 'project') {
       process.stdout.write(
-        '  Shared with the team (Git-visible)\n  Local to this repository (.git/info/exclude)\n\n',
+        `  ${t(locale, 'install.sharedTeam')}\n  ${t(locale, 'install.localRepository')}\n\n`,
       );
-      const shareRaw = await rl.question('Project sharing [Shared]: ');
+      const shareRaw = await rl.question(`${t(locale, 'install.projectSharing')} [Shared]: `);
       projectLocalExclude = /local/i.test((shareRaw || '').trim());
     }
     let selectedTargets = null;
     if (scope === 'user') {
-      process.stdout.write(`\n${renderStep(3, 5, 'Installation targets', mode).join('\n')}\n`);
-      const allLabels = Object.values(USER_TARGET_LABELS);
-      for (const label of allLabels) process.stdout.write(`  ${label}\n`);
-      const targetsRaw = await rl.question('Targets [all]: ');
-      const answer = (targetsRaw || 'all').trim().toLowerCase();
-      if (answer !== 'all') {
-        selectedTargets = allLabels.filter((label) =>
-          answer.includes(label.toLowerCase().split(' ')[0]),
-        );
-        if (!selectedTargets.length) selectedTargets = allLabels;
+      for (const [id, label] of Object.entries(USER_TARGET_LABELS))
+        process.stdout.write(`  ${id} — ${label}\n`);
+      const targetsRaw = await rl.question(
+        `${t(locale, 'install.targets')} [${DEFAULT_USER_TARGETS.join(', ')}]: `,
+      );
+      const parsed = parseTargetSelection(targetsRaw, DEFAULT_USER_TARGETS);
+      if (!parsed.ok) {
+        fail(parsed.message, {
+          reason: 'Use target IDs separated by commas, or all.',
+          try: ['sdd-agentic-flow install core --interactive'],
+        });
+        return;
       }
+      selectedTargets = parsed.targets;
     }
-    process.stdout.write(`\n${renderStep(4, 5, 'Preflight summary', mode).join('\n')}\n`);
+    process.stdout.write(
+      `\n${renderStep(3, 4, t(locale, 'install.preflight'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
     rl.close();
     install(pack, cwd, {
       ...options,
@@ -1306,10 +1420,13 @@ async function installInteractive(pack, cwd, options = {}) {
       projectLocalExclude,
     });
     const confirmRl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const applyRaw = await confirmRl.question('\nApply installation? [Y/n]: ');
+    process.stdout.write(
+      `\n${renderStep(4, 4, t(locale, 'install.confirm'), mode, t(locale, 'step')).join('\n')}\n`,
+    );
+    const applyRaw = await confirmRl.question(t(locale, 'install.apply'));
     confirmRl.close();
     if (/^n(o)?$/i.test((applyRaw || '').trim())) {
-      log('INFO', 'Installation cancelled');
+      log('INFO', t(locale, 'install.cancelled'));
       return;
     }
     install(pack, cwd, {
@@ -1328,6 +1445,7 @@ async function installInteractive(pack, cwd, options = {}) {
 }
 
 async function configureInteractive(cwd, homeDir) {
+  const locale = localeFor(cwd);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
     const scopeAnswer = await rl.question('Installation model [Local / User]: ');
@@ -1347,18 +1465,25 @@ async function configureInteractive(cwd, homeDir) {
     let targets = [];
     let sharing = null;
     if (scope === 'user') {
+      for (const [id, label] of Object.entries(USER_TARGET_LABELS))
+        process.stdout.write(`  ${id} — ${label}\n`);
       const targetsAnswer = await rl.question(
         `Targets [${(profile.targets || DEFAULT_USER_TARGETS).join(', ')}]: `,
       );
-      targets = (targetsAnswer || (profile.targets || DEFAULT_USER_TARGETS).join(','))
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const parsed = parseTargetSelection(targetsAnswer, profile.targets || DEFAULT_USER_TARGETS);
+      if (!parsed.ok) return { error: parsed.message };
+      targets = parsed.targets;
     } else {
       const sharingAnswer = await rl.question(`Project sharing [${profile.sharing || 'shared'}]: `);
       sharing = /local/i.test(sharingAnswer) ? 'local' : profile.sharing || 'shared';
     }
-    const save = await rl.question('Save configuration? [Y/n]: ');
+    process.stdout.write(`\n${t(locale, 'configure.review')}\n`);
+    process.stdout.write(`  Scope: ${scope}\n  Packs: ${packs.join(', ')}\n`);
+    process.stdout.write(
+      scope === 'user' ? `  Targets: ${targets.join(', ')}\n` : `  Sharing: ${sharing}\n`,
+    );
+    process.stdout.write(`  ${t(locale, 'configure.savesIntent')}\n`);
+    const save = await rl.question(t(locale, 'configure.save'));
     if (/^n(o)?$/i.test(save.trim())) return { cancelled: true };
     return configureIntent({ homeDir, cwd, scope, packs, targets, sharing });
   } finally {
@@ -1723,10 +1848,11 @@ function doctorChecks(cwd) {
         : 'no project-scope installation found (opt in with `install <pack> --scope project`)',
       'Installation',
     );
-    for (const target of userSkillsDirsFor(null)) {
+    for (const [targetId, segments] of Object.entries(USER_TARGETS)) {
+      const target = path.join(os.homedir(), ...segments);
       const installed = installationStatus(target);
       add(
-        `installation_user_${target}`,
+        `installation_user_${targetId}`,
         installed ? 'PASS' : 'INFO',
         installed
           ? `user-scope installation found at ${target}`
@@ -2136,41 +2262,23 @@ function autonomyCheck(cwd, options = {}) {
   return checks;
 }
 
-// Only checks whose fix is a single, unambiguous command get a hint — checks that already
-// embed their fix instruction directly in the message text (project_context, the
-// installation_* rows, baseline-compliance) are left untouched to avoid duplication.
-const FIX_HINTS = {
-  config: 'sdd-agentic-flow init',
-  skills: 'sdd-agentic-flow install core',
-  shared_layer: 'sdd-agentic-flow install core',
-  language_profile: 'sdd-agentic-flow init --language <profile>',
-};
-
-function renderDoctorFooter(checks, mode) {
-  // Plan: doctor Fix/Next footer is human-rich presentation only — not machine/plain/json.
-  if (mode !== 'human-rich') return;
-  const lines = doctorFooterLines(checks);
-  if (!lines.length) return;
-  process.stdout.write(`\n${lines.join('\n')}\n`);
-}
-
 function renderDoctor(checks, options = {}) {
-  const mode = options.mode ?? resolveMode({ json: options.json, ascii: options.ascii });
-  let section = null;
-  for (const check of checks) {
-    if (check.section !== section) {
-      section = check.section;
-      process.stdout.write(`\n${section}\n`);
-    }
-    const message =
-      check.name === 'installation_no_project_footprint'
-        ? `${symbol('success', mode)} ${check.message}`
-        : check.message;
-    log(check.status, message);
-    if ((check.status === 'WARN' || check.status === 'FAIL') && FIX_HINTS[check.name])
-      process.stdout.write(`  fix: ${FIX_HINTS[check.name]}\n`);
+  const view = buildDoctorView(checks, { verbose: options.verbose, locale: options.locale });
+  process.stdout.write(
+    `\n${view.title}${view.hasProblems ? '' : ' — configuration, installation and safety checks passed'}\n`,
+  );
+  process.stdout.write(
+    `Checks: ${view.counts.PASS} PASS, ${view.counts.INFO} INFO, ${view.counts.WARN} WARN, ${view.counts.FAIL} FAIL\n`,
+  );
+  if (view.primaryFix)
+    process.stdout.write(`\n${t(options.locale, 'doctor.primaryFix')}\n  ${view.primaryFix}\n`);
+  if (view.shown.length) {
+    process.stdout.write(
+      `\n${view.hasProblems ? t(options.locale, 'doctor.related') : 'Checks'}\n`,
+    );
+    for (const check of view.shown) log(check.status, check.message);
   }
-  renderDoctorFooter(checks, mode);
+  if (!view.hasProblems) process.stdout.write(`\nNext\n  ${t(options.locale, 'ready.next')}\n`);
 }
 
 function smokeCheck() {
@@ -2225,7 +2333,12 @@ async function doctor(cwd, options = {}) {
     language: languageReport(cwd),
   };
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
-  else renderDoctor(checks, { mode: resolveMode({ json: options.json, ascii: options.ascii }) });
+  else
+    renderDoctor(checks, {
+      mode: resolveMode({ json: options.json, ascii: options.ascii }),
+      verbose: options.verbose,
+      locale: resolveLocale({ configured: languageReport(cwd).profile }),
+    });
   if (result.status === 'FAIL') process.exitCode = 1;
 }
 
@@ -2241,12 +2354,14 @@ function uninstall(args, cwd) {
   const full = args.includes('--full');
   const includeConfig = args.includes('--include-config') || full;
   const quiet = args.includes('--quiet');
+  const verbose = args.includes('--verbose');
   let scope = null;
   let agent = null;
   const rest = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (['--plan', '--apply', '--include-config', '--full', '--quiet'].includes(arg)) continue;
+    if (['--plan', '--apply', '--include-config', '--full', '--verbose', '--quiet'].includes(arg))
+      continue;
     if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
       scope = args[index + 1];
       index += 1;
@@ -2289,16 +2404,36 @@ function uninstall(args, cwd) {
     );
   }
   const existing = targets.filter((target) => fs.existsSync(target));
+  const locale = localeFor(cwd);
   if (plan) {
-    for (const target of existing) log('PLAN', `remove ${describePath(cwd, target)}`);
-    if (!existing.length) log('PLAN', 'nothing installed by sdd-agentic-flow was found');
-    if (!quiet)
-      log(
-        'PLAN',
-        full
-          ? 'preserves .specs/features, source code, and unknown paths'
-          : `preserves .specs/features, ${SDD_PATHS.reports}, ${SDD_PATHS.snapshots}, source code, and unknown paths`,
+    const grouped = new Map();
+    for (const target of existing) {
+      const root =
+        roots.find(
+          (candidate) => target === candidate || target.startsWith(`${candidate}${path.sep}`),
+        ) || path.dirname(target);
+      if (!grouped.has(root)) grouped.set(root, []);
+      grouped.get(root).push(target);
+    }
+    process.stdout.write(`${t(locale, 'uninstall.plan')}\n\n`);
+    for (const [root, paths] of grouped) {
+      process.stdout.write(
+        `${targetLabelFor(root)} (${shortenPath(root, { homeDir: os.homedir(), cwd })})\n`,
       );
+      const skills = paths.filter((entry) => path.basename(entry).startsWith('saf-')).length;
+      const shared = paths.some((entry) => path.basename(entry) === 'sdd-agentic-flow-shared');
+      process.stdout.write(`  ${skills} managed skills${shared ? ' + shared support' : ''}\n`);
+      if (verbose)
+        for (const target of paths) process.stdout.write(`  ${describePath(cwd, target)}\n`);
+      process.stdout.write('\n');
+    }
+    process.stdout.write(
+      `${t(locale, 'uninstall.summary')}\n  ${existing.length} managed paths\n\n`,
+    );
+    if (!existing.length) process.stdout.write(`  ${t(locale, 'uninstall.nothing')}\n\n`);
+    process.stdout.write(
+      `${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, unknown/unmanaged paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --apply\n`,
+    );
     return;
   }
   for (const target of existing) {
@@ -2329,7 +2464,7 @@ const USAGE = {
   doctor:
     'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
   uninstall:
-    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--quiet]',
+    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--verbose] [--quiet]',
   discover: 'usage: discover [--force] [--quiet]',
   context: 'usage: context [status|refresh|autonomy-state]',
   'autonomous-resume':
@@ -2430,6 +2565,33 @@ EXAMPLES
   sdd-agentic-flow config show
   sdd-agentic-flow config policy --plan --preset supervised
   sdd-agentic-flow config policy --yes --preset manual
+`,
+  configure: `sdd-agentic-flow configure
+
+Save installation intent. Unlike \`config\`, which changes only workflow operating
+policy, \`configure\` changes the packs, user targets, or project sharing that a later
+\`install\` will reconcile. It never installs skills by itself.
+
+USAGE
+  sdd-agentic-flow configure [--scope user|project] [--pack <pack>]
+                                  [--target agents|cursor|claude|copilot]
+                                  [--sharing shared|local] [--plan] [--interactive]
+
+OPTIONS
+  --scope user|project  Save user-wide targets or this repository's sharing intent.
+  --pack <pack>         Desired pack; repeat for more packs.
+  --target <id>         User target: agents, cursor, claude, or copilot; repeatable.
+  --sharing shared|local  Project skills are Git-visible or locally excluded.
+  --plan                Preview intent and reconciliation; never writes.
+  --interactive         Review and edit the saved installation intent.
+
+Useful when:
+  You need to change where or how SAF skills are installed before reconciling them.
+
+EXAMPLES
+  sdd-agentic-flow configure --pack core --target agents
+  sdd-agentic-flow configure --scope project --sharing local
+  sdd-agentic-flow configure --plan --pack core
 `,
   install: `sdd-agentic-flow install <pack>
 
@@ -2539,7 +2701,7 @@ USAGE
   sdd-agentic-flow uninstall --apply [--include-config] [--full]
                                       [--scope user|project]
                                       [--agent codex|cursor|claude-code|vscode-copilot]
-                                      [--quiet]
+                                      [--verbose] [--quiet]
 
 OPTIONS
   --plan                Show only what would be removed; makes no changes.
@@ -2551,6 +2713,7 @@ OPTIONS
                          Never removes .specs/features.
   --scope user|project  Limit to one scope (default: both).
   --agent <name>         Limit user-scope removal to a single agent's directory.
+  --verbose               List every exact removal path after the grouped summary.
   --quiet                Suppress the trailing "preserves ..." explanatory line.
 
 EXAMPLES
@@ -2655,20 +2818,28 @@ QUICK START
   npx sdd-agentic-flow install core
   npx sdd-agentic-flow doctor
 
-COMMANDS
-  list                                   List packs
+START
   init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
+  configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
   discover [--force] [--quiet]           Refresh auto-discovered project context
-  context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
-  config [show|policy]                   Inspect or change operating policy
   install <pack> [--scope user|project] [--agent ...] [--plan] [--interactive] [--quiet]  Install a pack (default: user scope, zero project footprint)
-  learn-sdd                              One-screen SDD summary
   doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+
+OPERATE
+  config [show|policy]                   Inspect or change operating policy
+  context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
+  discover [--force] [--quiet]           Refresh auto-discovered project context
   upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
-  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
+
+INSPECT / LEARN
+  list                                   List packs
+  learn-sdd                              One-screen SDD summary
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
+
+REMOVE
+  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
 
 MORE HELP
   npx sdd-agentic-flow help <command>
@@ -2689,6 +2860,7 @@ MORE HELP
 // unchanged from before v1.4.0: this screen only, no prompt, no implicit action, exit 0.
 async function welcome(cwd, options = {}) {
   const mode = options.mode ?? resolveMode(options);
+  const locale = localeFor(cwd);
   const configPath = sddJoin(cwd, 'config.yml');
   const configFound = fs.existsSync(configPath);
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
@@ -2698,51 +2870,55 @@ async function welcome(cwd, options = {}) {
   const skillsPartial = !skillsInstalled && presence.present.length > 0;
   const contextFound = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'));
 
-  if (mode === 'human-rich' || mode === 'human-plain') {
+  if (mode === 'human-rich') {
     // Full embedded chevron art — human TTY only; never machine/pipe/CI.
     // human-rich: left→right band reveal (~160ms); plain / SDD_BRAND_ANIMATE=0: instant.
     await writeBrand(mode, process.stdout, process.env, { quiet: options.quiet });
     process.stdout.write(
       `sdd-agentic-flow ${VERSION}\n\n` +
-        '  Spec-driven agent harness for human-guided workflows.\n\n',
+        `  ${locale === 'pt-BR' ? 'Harness orientado a especificações para fluxos guiados por humanos.' : 'Spec-driven agent harness for human-guided workflows.'}\n\n`,
     );
   } else {
     process.stdout.write(
       `sdd-agentic-flow ${VERSION}\n` +
-        'A local-first, zero-dependency Spec Driven Development toolkit for coding-agent workflows.\n\n' +
-        'Status\n',
+        `${t(locale, 'welcome.description')}\n\n${t(locale, 'welcome.status')}\n`,
     );
   }
 
-  const configLabel = configFound ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`;
+  const configLabel = configFound
+    ? `${SDD_PATHS.config} ${t(locale, 'welcome.configFound')}`
+    : `${SDD_PATHS.config} ${t(locale, 'welcome.configMissing')}`;
   const skillsLabel = skillsInstalled
-    ? `core skills installed (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
+    ? `${t(locale, 'welcome.skillsInstalled')} (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
     : skillsPartial
       ? `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present) — re-run \`sdd-agentic-flow install core\` to repair`
-      : 'no skills installed yet (project or user scope)';
+      : `${t(locale, 'welcome.noSkills')} (project or user scope)`;
   const contextLabel = contextFound
-    ? 'project context generated'
-    : 'project context not generated yet';
+    ? t(locale, 'welcome.contextGenerated')
+    : t(locale, 'welcome.contextMissing');
 
-  if (mode === 'human-rich' || mode === 'human-plain') {
-    log(configFound ? 'PASS' : 'INFO', configFound ? 'config found' : 'config not found');
+  if (mode === 'human-rich') {
+    log(
+      configFound ? 'PASS' : 'INFO',
+      configFound ? t(locale, 'welcome.configFound') : t(locale, 'welcome.configMissing'),
+    );
     log(
       skillsInstalled ? 'PASS' : skillsPartial ? 'WARN' : 'INFO',
       skillsInstalled
-        ? 'core skills installed'
+        ? t(locale, 'welcome.skillsInstalled')
         : skillsPartial
           ? skillsLabel
-          : 'no skills installed yet',
+          : t(locale, 'welcome.noSkills'),
     );
-    if (contextFound) log('PASS', 'project context generated');
+    if (contextFound) log('PASS', t(locale, 'welcome.contextGenerated'));
     if (configFound) {
       const config = readConfig(configPath);
       if (config.ok) {
-        process.stdout.write(`\n${renderPolicySummaryBlock(config, mode)}\n`);
+        process.stdout.write(`\n${renderPolicySummaryBlock(config, mode, locale)}\n`);
       }
       if (skillsInstalled || skillsPartial) {
         const installSummary = installationSummaryForWelcome(cwd);
-        process.stdout.write(`\n${renderInstallationSummaryBlock(installSummary, mode)}\n`);
+        process.stdout.write(`\n${renderInstallationSummaryBlock(installSummary, mode, locale)}\n`);
       }
     }
   } else {
@@ -2755,26 +2931,35 @@ async function welcome(cwd, options = {}) {
     ? 'npx sdd-agentic-flow init'
     : !skillsInstalled
       ? 'npx sdd-agentic-flow install core'
-      : 'Use your coding agent with the installed SDD workflow; run npx sdd-agentic-flow doctor';
+      : 'Use your coding agent with the installed SAF workflow.';
   if (mode === 'machine') {
     // Compact status screen (CLI-001): contextual next + quick commands; not nextStep().
     process.stdout.write(
-      '\nSuggested next step\n' +
+      `\n${t(locale, 'init.next')}\n` +
         `  ${suggested}\n\n` +
-        'Quick commands\n' +
-        '  npx sdd-agentic-flow init              Create local configuration\n' +
-        '  npx sdd-agentic-flow install core       Install the core skill pack\n' +
-        '  npx sdd-agentic-flow doctor             Validate local setup\n' +
-        '  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n\n' +
-        'Run `npx sdd-agentic-flow help` for the full command reference.\n\n' +
-        'To check for a newer version (opt-in):\n' +
+        `${t(locale, 'welcome.quickCommands')}\n` +
+        (!configFound
+          ? '  npx sdd-agentic-flow init              Create local configuration\n  npx sdd-agentic-flow learn-sdd         Learn the workflow\n'
+          : !skillsInstalled
+            ? '  npx sdd-agentic-flow install core       Install the core skill pack\n  npx sdd-agentic-flow configure          Change installation intent\n  npx sdd-agentic-flow doctor             Validate local setup\n'
+            : '  npx sdd-agentic-flow doctor             Validate local setup\n  npx sdd-agentic-flow config policy      Change operating policy\n  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n') +
+        '\n' +
+        `${t(locale, 'welcome.help')}\n\n` +
+        `${t(locale, 'welcome.update')}\n` +
         '  npx sdd-agentic-flow upgrade\n' +
         '  (read-only: doctor --check-updates / upgrade --check)\n',
     );
   } else {
     nextStep(suggested, { quiet: options.quiet, mode });
     process.stdout.write(
-      '\nTo check for a newer version (opt-in):\n' +
+      !configFound
+        ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow learn-sdd\n  npx sdd-agentic-flow help\n`
+        : !skillsInstalled
+          ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install core --plan\n  npx sdd-agentic-flow configure\n  npx sdd-agentic-flow doctor\n`
+          : `\n${t(locale, 'welcome.optionalMaintenance')}\n  npx sdd-agentic-flow doctor\n  npx sdd-agentic-flow config policy\n  npx sdd-agentic-flow discover --force\n  npx sdd-agentic-flow upgrade\n  npx sdd-agentic-flow uninstall --plan\n`,
+    );
+    process.stdout.write(
+      `\n${t(locale, 'welcome.update')}\n` +
         '  npx sdd-agentic-flow upgrade\n' +
         '  (read-only: doctor --check-updates / upgrade --check)\n',
     );
@@ -3193,7 +3378,7 @@ async function runCommand(command, rawArgs, cwd) {
       });
     }
   } else if (command === 'configure') {
-    if (args.includes('--help')) return process.stdout.write(`${USAGE.configure}\n`);
+    if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.configure);
     let scope = 'user';
     let sharing = null;
     let plan = false;
@@ -3226,8 +3411,17 @@ async function runCommand(command, rawArgs, cwd) {
     });
     if (interactive || (args.length === 0 && canInteract)) {
       const result = await configureInteractive(cwd, os.homedir());
-      if (result.cancelled) return log('INFO', 'Configuration cancelled');
+      if (result.cancelled) return log('INFO', t(localeFor(cwd), 'configure.cancelled'));
+      if (result.error)
+        return fail(result.error, {
+          reason: 'Use valid pack and target IDs.',
+          try: ['sdd-agentic-flow configure --interactive'],
+        });
       log('PASS', 'saved installation intent');
+      log(
+        'INFO',
+        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`sdd-agentic-flow install core\`.`,
+      );
       return;
     }
     const result = configureIntent({
@@ -3239,19 +3433,32 @@ async function runCommand(command, rawArgs, cwd) {
       sharing,
       plan,
     });
-    log(plan ? 'PLAN' : 'PASS', `${plan ? 'would save' : 'saved'} ${scope} installation intent`);
-    log('INFO', `packs: ${(result.after.packs || []).join(', ') || '(none)'}`);
+    if (plan) {
+      process.stdout.write(
+        `${t(localeFor(cwd), 'configure.intentPreview')}\n  Scope       ${scope}\n  Packs       ${(result.after.packs || []).join(', ') || '(none)'}\n` +
+          (scope === 'user'
+            ? `  Targets     ${(result.after.targets || DEFAULT_USER_TARGETS).join(', ')}\n`
+            : `  Sharing     ${result.after.sharing || 'shared'}\n`) +
+          `\n${t(localeFor(cwd), 'configure.reconciliationPreview')}\n`,
+      );
+    } else log('PASS', `saved ${scope} installation intent`);
     const reconcilePlan = planForInstallProfile({
       cwd,
       homeDir: os.homedir(),
       scope,
       profile: result.after,
     });
-    printInstallPlanReport(reconcilePlan, resolveMode({}), cwd);
-    if (!plan)
+    printInstallPlanReport(reconcilePlan, resolveMode({}), cwd, {
+      applyCommand: installApplyCommand(reconcilePlan),
+    });
+    if (plan)
+      process.stdout.write(
+        `${t(localeFor(cwd), 'configure.saveIntent')}: ${configureCommand(scope, result.after)}\n${t(localeFor(cwd), 'configure.reconcile')}:   ${installApplyCommand(reconcilePlan)}\n`,
+      );
+    else
       log(
         'INFO',
-        'Configuration saved only. Run `sdd-agentic-flow install core` to reconcile changes.',
+        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`sdd-agentic-flow install core\`.`,
       );
   } else if (command === 'learn-sdd') {
     learnSdd(cwd);
@@ -3411,7 +3618,7 @@ async function runInteractiveMenu(cwd) {
   const actions = menuActionsFor({ hasConfig: configFound, hasSkills: skillsInstalled });
   process.stdout.write('\nWhat would you like to do?\n');
   actions.forEach((action, index) => {
-    log('INFO', `${index + 1}. ${action.label}`);
+    process.stdout.write(`  ${index + 1}. ${action.label}\n`);
   });
   process.stdout.write('  0. Exit (press Enter, 0, or q)\n\n');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

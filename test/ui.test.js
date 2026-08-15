@@ -51,8 +51,9 @@ test('CLI-015: outputMode covers human-rich / human-plain / machine cells', () =
   assert.equal(outputMode(ttyPair, { SDD_ASCII: '1' }, {}), 'human-plain');
   assert.equal(outputMode(ttyPair, { NO_COLOR: '1' }, {}), 'human-plain');
   assert.equal(outputMode(ttyPair, {}, { json: true }), 'machine');
-  assert.equal(outputMode(ttyPair, { CI: '1' }, {}), 'machine');
-  assert.equal(outputMode(pipePair, {}, {}), 'machine');
+  assert.equal(outputMode(ttyPair, { CI: '1' }, {}), 'human-plain');
+  assert.equal(outputMode(pipePair, {}, {}), 'human-plain');
+  assert.equal(outputMode(pipePair, { CI: '1' }, {}), 'human-plain');
   assert.equal(
     outputMode({ stdout: { isTTY: true }, stdin: { isTTY: false } }, {}, {}),
     'human-plain',

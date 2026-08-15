@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v3.1.0 (2026-08-15):** CLI UX coherence: truthful guided flows, EN/pt-BR human-facing
+  messages, human-plain output for pipes/CI, explicit JSON diagnostics, progressive doctor
+  summaries, target-stable diagnostic IDs, state-aware navigation, and grouped uninstall plans.
+  No new skills, workflow layer, telemetry, or automation authority; default install targets and
+  safety gates remain unchanged.
+
 - **v3.0.0 (2026-08-15):** Public skill identity changes to `saf-*`; intent-aware install
   profiles, safe reconciliation, and multi-task wave execution contracts.
 

@@ -19,7 +19,9 @@ One command, three modes — decided by `outputMode(streams, env, flags)` in `bi
 
 Rules:
 
-- TTY matters more than “not CI”. `doctor | less` does not receive art.
+- TTY controls decoration, not protocol. `doctor | less` is human-plain; only an explicit
+  structured flag such as `doctor --json` is machine output.
+- CI is deterministic human-plain output unless an explicit structured flag is supplied.
 - `--quiet` suppresses decorative next-step blocks and rich connectors; it does **not**
   suppress `FAIL` lines on stderr.
 - `--json` never carries art and never changes the existing check object shape (additive

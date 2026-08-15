@@ -96,7 +96,7 @@ function runJourneys() {
   });
   record('J02', 'new user', 'init', () => {
     const result = run(['init', '--preset', 'supervised', '--br'], fresh);
-    expect(result, 0, /initialized/);
+    expect(result, 0, /initialized|inicializados/);
     assert.match(
       fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
       /pt-BR/,
@@ -104,7 +104,7 @@ function runJourneys() {
   });
   record('J03', 'new user', 'init again', () => {
     const result = run(['init'], fresh);
-    expect(result, 0, /preserved existing|initialized/);
+    expect(result, 0, /preserved existing|preservada|preservado|initialized|inicializado/);
   });
   record('J04', 'new user', 'doctor --json --contracts --autonomy', () => {
     const result = run(['doctor', '--json', '--contracts', '--autonomy'], fresh);
@@ -137,7 +137,7 @@ function runJourneys() {
   const policy = project('03-policy');
   expect(run(['init'], policy), 0);
   record('J10', 'policy configuration', 'config show', () =>
-    expect(run(['config', 'show'], policy), 0, /execution_mode/),
+    expect(run(['config', 'show'], policy), 0, /Execution mode/),
   );
   record('J11', 'policy configuration', 'config policy --plan --preset autonomous', () => {
     const before = fs.readFileSync(path.join(policy.cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
@@ -158,7 +158,7 @@ function runJourneys() {
         policy,
       ),
       0,
-      /PLAN|would save/,
+      /Intent preview|would save/,
     );
   });
   record('J14', 'policy configuration', 'configure --scope project --pack core', () => {
@@ -169,7 +169,7 @@ function runJourneys() {
   record('J15', 'global installation', 'install core --plan', () => {
     const before = entries(userInstall.cwd).sort();
     const result = run(['install', 'core', '--plan'], userInstall);
-    expect(result, 0, /PLAN|Scope=user|Repository changes/);
+    expect(result, 0, /Installation plan|Scope +user|Repository footprint/);
     assert.deepEqual(entries(userInstall.cwd).sort(), before);
     assert.deepEqual(entries(userInstall.home), []);
   });
@@ -197,7 +197,7 @@ function runJourneys() {
     fs.mkdirSync(foreign, { recursive: true });
     fs.writeFileSync(path.join(foreign, 'SKILL.md'), '# foreign\n');
     const result = run(['install', 'core', '--plan'], safety);
-    expect(result, 0, /collision|COLLISION|BLOCKED|foreign/);
+    expect(result, 0, /Collisions|COLLISION|BLOCKED|foreign/);
   });
   record('J19', 'safe reconciliation', 'invalid legacy install is blocked', () => {
     const legacy = path.join(safety.cwd, '.agents/skills/sdd-route');
@@ -238,7 +238,7 @@ function runJourneys() {
   fs.writeFileSync(path.join(removal.cwd, '.specs/features/keep.md'), 'keep\n');
   fs.writeFileSync(path.join(removal.cwd, 'user-file.txt'), 'keep\n');
   record('J24', 'uninstall workflow', 'uninstall --plan', () => {
-    expect(run(['uninstall', '--plan'], removal), 0, /PLAN remove/);
+    expect(run(['uninstall', '--plan'], removal), 0, /Uninstall plan|No changes made/);
     assert.ok(fs.existsSync(path.join(removal.cwd, '.agents/skills/saf-create-spec/SKILL.md')));
   });
   record('J25', 'uninstall workflow', 'uninstall --apply', () => {

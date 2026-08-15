@@ -122,8 +122,8 @@ test('CLI-010: non-TTY output has no brand/connector art and did-you-mean never 
   assert.equal(init.status, 0);
   assert.doesNotMatch(init.stdout, /[◇│›▓▒]/);
   assert.doesNotMatch(init.stdout, /#{3,}/);
-  // nextStep() is suppressed in machine; usage pointer remains.
-  assert.doesNotMatch(init.stdout, /Suggested next step/);
+  // Human-plain keeps deterministic next-step guidance; usage pointer remains.
+  assert.match(init.stdout, /Suggested next step/);
   assert.match(init.stdout, /\.sdd-agentic-flow\/usage\.md/);
   const afterInit = listAllEntries(cwd).sort();
 
@@ -205,8 +205,8 @@ test('--quiet suppresses decorative output on init, install, and uninstall', () 
 
   const quietPlan = run(['uninstall', '--plan', '--quiet'], cwd);
   assert.equal(quietPlan.status, 0);
-  assert.match(quietPlan.stdout, /PLAN remove/);
-  assert.doesNotMatch(quietPlan.stdout, /preserves/);
+  assert.match(quietPlan.stdout, /Uninstall plan/);
+  assert.match(quietPlan.stdout, /No changes made/);
 
   const quietApply = run(['uninstall', '--apply', '--quiet'], cwd);
   assert.equal(quietApply.status, 0);
@@ -328,7 +328,7 @@ test('explanation template requires source-artifact anchors and the required hea
 test('interactive init writes selected safe configuration and preserves existing config', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-interactive-'));
   const input =
-    'task-app\nmain\ncodex\npt-BR\nlarge_feature\nmanual\nlocal-files\nmulti\ntrue\nfalse\n';
+    'pt-BR\ntask-app\nmain\ncodex\nlarge_feature\nmanual\nlocal-files\nmulti\ntrue\nfalse\nyes\n';
   assert.equal(run(['init', '--interactive'], cwd, input).status, 0);
   const config = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
   assert.match(config, /name: task-app/);
@@ -345,7 +345,7 @@ test('interactive init with invalid input exits 1, not the generic unexpected-er
   // exit code 2 for genuinely unexpected/internal errors — indistinguishable from a real crash,
   // instead of exit 1 like every other input-validation failure in this CLI.
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-interactive-invalid-'));
-  const result = run(['init', '--interactive'], cwd, 'task-app\nmain\nbogus-agent\n');
+  const result = run(['init', '--interactive'], cwd, 'en-US\ntask-app\nmain\nbogus-agent\n');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Agent target must be one of/);
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -1227,7 +1227,7 @@ test('interactive language default and legacy config warning are supported', () 
     path.join(os.tmpdir(), 'sdd-agentic-flow-language-interactive-'),
   );
   const input =
-    'language-app\nmain\ngeneric\n\nmedium_feature\nmanual\nlocal-files\nsingle\nfalse\nfalse\n';
+    '\nlanguage-app\nmain\ngeneric\nmedium_feature\nmanual\nlocal-files\nsingle\nfalse\nfalse\nyes\n';
   assert.equal(
     run(['init', '--interactive', '--language', 'pt-BR'], interactiveCwd, input).status,
     0,
@@ -1252,8 +1252,47 @@ test('interactive language default and legacy config warning are supported', () 
   fs.rmSync(legacyCwd, { recursive: true, force: true });
 });
 
+test('pt-BR localizes guided prompts and plans while exact plan commands preserve intent', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-v310-locale-'));
+  const init = run(
+    ['init', '--interactive', '--language', 'pt-BR'],
+    cwd,
+    '\napp\nmain\ngeneric\nsmall_fix\nmanual\nlocal-files\nsingle\nfalse\nfalse\nyes\n',
+  );
+  assert.equal(init.status, 0);
+  assert.match(init.stdout, /Etapa 2\/7/);
+  assert.match(init.stdout, /Nome do projeto/);
+  assert.match(init.stdout, /Criar configuração\? \[S\/n\]/);
+
+  const plan = run(
+    ['configure', '--plan', '--scope', 'project', '--pack', 'core', '--sharing', 'local'],
+    cwd,
+  );
+  assert.equal(plan.status, 0);
+  assert.match(
+    plan.stdout,
+    /Salvar intenção: sdd-agentic-flow configure --scope project --pack core --sharing local/,
+  );
+  assert.match(plan.stdout, /Reconciliar: {3}sdd-agentic-flow install core --scope project/);
+  assert.match(plan.stdout, /Plano de instalação/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('persisted pt-BR localizes welcome, config, install, and uninstall human surfaces', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-v310-surfaces-'));
+  assert.equal(run(['init', '--br'], cwd).status, 0);
+  assert.match(run([], cwd).stdout, /configuração encontrada|Próxima etapa sugerida/);
+  assert.match(run(['config', 'show'], cwd).stdout, /Política operacional/);
+  assert.match(run(['install', 'core', '--scope', 'project'], cwd).stdout, /instalado|preservado/);
+  assert.match(
+    run(['uninstall', '--plan', '--scope', 'project'], cwd).stdout,
+    /Plano de desinstalação/,
+  );
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
 test('uninstall plans and removes only toolkit assets', () => {
-  assert.match(run(['uninstall', '--plan']).stdout, /sdd-agentic-flow-shared/);
+  assert.match(run(['uninstall', '--plan']).stdout, /shared support/);
   assert.equal(run(['uninstall', '--apply']).status, 0);
   assert.ok(fs.existsSync(path.join(temporary, '.sdd-agentic-flow/config.yml')));
   assert.ok(fs.existsSync(path.join(temporary, '.specs/features')));
@@ -1362,13 +1401,13 @@ test('install --plan is a dry run in both scopes and touches nothing', () => {
 
   const projectPlan = run(['install', 'core', '--scope', 'project', '--plan'], cwd);
   assert.equal(projectPlan.status, 0);
-  assert.match(projectPlan.stdout, /Scope=project|scope: project/);
+  assert.match(projectPlan.stdout, /Scope +project/);
   assert.ok(!fs.existsSync(path.join(cwd, '.agents')));
 
   const userPlan = runIsolatedHome(['install', 'core', '--plan'], cwd, home);
   assert.equal(userPlan.status, 0);
-  assert.match(userPlan.stdout, /Scope=user|scope: user/);
-  assert.match(userPlan.stdout, /Repository changes: none|Repository changes/);
+  assert.match(userPlan.stdout, /Scope +user/);
+  assert.match(userPlan.stdout, /Repository footprint/);
   assert.ok(!fs.existsSync(path.join(cwd, '.agents')));
   assert.ok(!fs.existsSync(path.join(home, '.agents')));
   assert.ok(!fs.existsSync(path.join(home, '.claude')));
@@ -1452,7 +1491,7 @@ test('doctor and the bare-invocation screen both detect a partial core skill ins
 
   const bareResult = run([], cwd);
   assert.match(bareResult.stdout, /partial core skill install detected \(2\/5 present\)/);
-  assert.match(bareResult.stdout, /npx sdd-agentic-flow install core/);
+  assert.match(bareResult.stdout, /npx sdd-agentic-flow init/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -1470,7 +1509,7 @@ test('doctor Installation checks ignore unrelated skills already present in a sh
   assert.equal(run(['init'], cwd).status, 0);
   const report = JSON.parse(runIsolatedHome(['doctor', '--json'], cwd, home).stdout);
   const agentsSkillsCheck = report.checks.find(
-    (check) => check.name === `installation_user_${path.join(home, '.agents', 'skills')}`,
+    (check) => check.name === 'installation_user_agents',
   );
   assert.equal(agentsSkillsCheck.status, 'INFO');
   assert.match(agentsSkillsCheck.message, /no user-scope installation found/);

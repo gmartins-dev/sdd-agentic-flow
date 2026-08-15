@@ -45,8 +45,8 @@ change needed") under a "Baseline changes" note in [CHANGELOG.md](../CHANGELOG.m
 
 ## Internal implementation mapping
 
-`sdd-create-specs` owns Specify through Tasks. `sdd-implement-task` and `sdd-implement-multi`
-implement the Execute intent. `sdd-task-check` and `sdd-validation` implement Verify. Direct TLC
+`saf-create-spec` owns Specify through Tasks. `saf-implement` and `saf-implement-multi`
+implement the Execute intent. `saf-check-task` and `saf-validate` implement Verify. Direct TLC
 Execute is not invoked. See the full mapping in
 [architecture.md](architecture.md#capability-contracts).
 

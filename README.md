@@ -43,11 +43,11 @@ You delegate a task. The agent jumps to code, blurs boundaries, and marks work d
 
 | Common failure | Local response |
 | --- | --- |
-| Implementation starts before requirements are understood | `sdd-create-specs` and `sdd-create-prompts` |
-| A task is too large for one controlled change | `sdd-implement-task` or `sdd-implement-multi` |
-| Output is accepted without evidence | `sdd-task-check` and `sdd-validation` |
-| A PR loses traceability to the feature | `sdd-create-pr`, `sdd-pr-review`, and `sdd-pr-fix` |
-| A release ships without version or changelog checks | `sdd-release` (on demand, after validation) |
+| Implementation starts before requirements are understood | `saf-create-spec` and `saf-create-prompts` |
+| A task is too large for one controlled change | `saf-implement` or `saf-implement-multi` |
+| Output is accepted without evidence | `saf-check-task` and `saf-validate` |
+| A PR loses traceability to the feature | `saf-create-pr`, `saf-review-pr`, and `saf-fix-pr` |
+| A release ships without version or changelog checks | `saf-release` (on demand, after validation) |
 
 See [why this exists](docs/why-this-exists.md) for the short form. For the four-layer mental model (Prompt → Context → Harness → Loop + SDD), see [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
 
@@ -74,7 +74,7 @@ You stay the decision-maker; the toolkit holds the gates. It gives you a linear 
 
 | Outcome | How this toolkit delivers it |
 | --- | --- |
-| Task boundaries | Specs, task prompts, and `sdd-task-check` per slice |
+| Task boundaries | Specs, task prompts, and `saf-check-task` per slice |
 | Traceability | Spec → prompt → code → PR package in one chain |
 | Evidence before done | TDD baseline, check reports, validation reports |
 | Clearer agent input | Written specs and `.sdd-agentic-flow/config.yml` replace repeated chat context |
@@ -108,7 +108,7 @@ Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users 
 
 **Autonomous does not mean unattended.** Commit, push, merge, tag, and publish stay human on every preset. The CLI does not run skills.
 
-Next: invoke `sdd-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
+Next: invoke `saf-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
 Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md).
 
@@ -118,25 +118,25 @@ Use `init --interactive` to pick agent target, language profile, and feature pro
 
 ```mermaid
 flowchart TD
-  setup[setup-sdd-agentic-flow] --> route[sdd-route]
-  route --> brainstorm[sdd-brainstorm]
-  brainstorm -->|converged| specs[sdd-create-specs]
+  setup[saf-setup] --> route[saf-route]
+  route --> brainstorm[saf-brainstorm]
+  brainstorm -->|converged| specs[saf-create-spec]
   route --> specs
-  specs -.->|on demand| explain[sdd-explain-me]
-  specs --> prompts[sdd-create-prompts]
-  prompts --> implement[sdd-implement-task]
-  prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
+  specs -.->|on demand| explain[saf-explain]
+  specs --> prompts[saf-create-prompts]
+  prompts --> implement[saf-implement]
+  prompts -->|dependent tasks| implementmulti[saf-implement-multi]
   implementmulti -->|delegates per task| implement
-  implement --> check[sdd-task-check]
-  check --> pr[sdd-create-pr]
-  pr --> review[sdd-pr-review]
-  review -->|findings accepted| fix[sdd-pr-fix]
+  implement --> check[saf-check-task]
+  check --> pr[saf-create-pr]
+  pr --> review[saf-review-pr]
+  review -->|findings accepted| fix[saf-fix-pr]
   fix --> review
-  review -->|ready| validate[sdd-validation]
-  validate -.->|on demand| release[sdd-release]
+  review -->|ready| validate[saf-validate]
+  validate -.->|on demand| release[saf-release]
 ```
 
-Invoke `sdd-route` when the next step is unclear. It recommends a skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
+Invoke `saf-route` when the next step is unclear. It recommends a skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
 
 ## Proved in this repository
 
@@ -273,20 +273,20 @@ For the long-form version of this table, see the [skills catalog](docs/skills-ca
 
 | Skill | Purpose | Input | Output | Mutates files? | Default mode | Recommended when |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | Setup project configuration | Project context | Local setup guidance | Yes, when authorized | guided | Starting a project |
-| `sdd-route` | Recommend next local skill | Request/artifacts | Route recommendation | No | plan | The next step is unclear |
-| `sdd-brainstorm` | Shape a vague idea | Rough idea | Spec-ready brief | Yes, when converged | guided | The idea isn't spec-ready yet |
-| `sdd-create-specs` | Plan feature specs | Source item OR existing codebase | Feature spec set | Yes, when authorized | plan | Requirements need structure, or undocumented code needs specs |
-| `sdd-explain-me` | Explain a specified feature | Spec package | Plain-language explanation | Yes, when authorized | guided | Someone needs context without reading every artifact |
-| `sdd-create-prompts` | Generate task prompts | Specs/tasks | Agent-ready prompts | Yes, when authorized | plan | Work must be delegated |
-| `sdd-implement-task` | Implement one task | Approved task | Code and evidence | Yes, when authorized | apply | One bounded task is ready |
-| `sdd-implement-multi` | Plan multi-task execution | Task set | Execution plan | Yes, when authorized | guided | Tasks have dependencies |
-| `sdd-task-check` | Independent task check | Task evidence | Check report | No | review | Before accepting a task |
-| `sdd-create-pr` | Prepare PR | Completed change | PR package | Yes, when authorized | guided | Review package is needed |
-| `sdd-pr-review` | Review PR | PR/change set | Findings | No | review | Reviewing a change |
-| `sdd-pr-fix` | Fix PR findings | Findings | Corrected local change | Yes, when authorized | apply | Findings are accepted |
-| `sdd-validation` | Validate feature | Feature evidence | Validation report | No | review | Before completion |
-| `sdd-release` | Check release readiness | Version/changelog | Release readiness report | No | review | Before tagging a release |
+| `saf-setup` | Setup project configuration | Project context | Local setup guidance | Yes, when authorized | guided | Starting a project |
+| `saf-route` | Recommend next local skill | Request/artifacts | Route recommendation | No | plan | The next step is unclear |
+| `saf-brainstorm` | Shape a vague idea | Rough idea | Spec-ready brief | Yes, when converged | guided | The idea isn't spec-ready yet |
+| `saf-create-spec` | Plan feature specs | Source item OR existing codebase | Feature spec set | Yes, when authorized | plan | Requirements need structure, or undocumented code needs specs |
+| `saf-explain` | Explain a specified feature | Spec package | Plain-language explanation | Yes, when authorized | guided | Someone needs context without reading every artifact |
+| `saf-create-prompts` | Generate task prompts | Specs/tasks | Agent-ready prompts | Yes, when authorized | plan | Work must be delegated |
+| `saf-implement` | Implement one task | Approved task | Code and evidence | Yes, when authorized | apply | One bounded task is ready |
+| `saf-implement-multi` | Plan multi-task execution | Task set | Execution plan | Yes, when authorized | guided | Tasks have dependencies |
+| `saf-check-task` | Independent task check | Task evidence | Check report | No | review | Before accepting a task |
+| `saf-create-pr` | Prepare PR | Completed change | PR package | Yes, when authorized | guided | Review package is needed |
+| `saf-review-pr` | Review PR | PR/change set | Findings | No | review | Reviewing a change |
+| `saf-fix-pr` | Fix PR findings | Findings | Corrected local change | Yes, when authorized | apply | Findings are accepted |
+| `saf-validate` | Validate feature | Feature evidence | Validation report | No | review | Before completion |
+| `saf-release` | Check release readiness | Version/changelog | Release readiness report | No | review | Before tagging a release |
 
 ## Agent workflows
 

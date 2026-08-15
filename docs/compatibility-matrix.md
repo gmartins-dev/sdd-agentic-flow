@@ -20,20 +20,20 @@ scope and auto-discovery have actually been exercised.
 
 | Skill | core | planning | execution | pr | multi-worktree | full | local-files | github |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow`   |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-route`                |  ✓   |    ✓     |     ✓     |  ✓  |        ✓         |  ✓   |     ✓       |   ✓    |
-| `sdd-brainstorm`           |      |    ✓     |           |     |                  |  ✓   |             |        |
-| `sdd-create-specs`         |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-explain-me`           |      |    ✓     |           |     |                  |  ✓   |             |        |
-| `sdd-create-prompts`       |      |    ✓     |           |     |                  |  ✓   |             |        |
-| `sdd-implement-task`       |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-implement-multi`      |      |          |     ✓     |     |        ✓         |  ✓   |             |        |
-| `sdd-task-check`           |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-create-pr`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
-| `sdd-pr-review`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
-| `sdd-pr-fix`               |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
-| `sdd-validation`           |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
-| `sdd-release`              |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-setup`   |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-route`                |  ✓   |    ✓     |     ✓     |  ✓  |        ✓         |  ✓   |     ✓       |   ✓    |
+| `saf-brainstorm`           |      |    ✓     |           |     |                  |  ✓   |             |        |
+| `saf-create-spec`         |  ✓   |    ✓     |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-explain`           |      |    ✓     |           |     |                  |  ✓   |             |        |
+| `saf-create-prompts`       |      |    ✓     |           |     |                  |  ✓   |             |        |
+| `saf-implement`       |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-implement-multi`      |      |          |     ✓     |     |        ✓         |  ✓   |             |        |
+| `saf-check-task`           |  ✓   |          |     ✓     |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-create-pr`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
+| `saf-review-pr`            |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
+| `saf-fix-pr`               |      |          |           |  ✓  |                  |  ✓   |             |   ✓    |
+| `saf-validate`           |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
+| `saf-release`              |  ✓   |          |           |     |                  |  ✓   |     ✓       |   ✓    |
 
 `full` installs every skill; every other pack is a scoped subset for a specific workflow slice
 (core SDD loop, planning-only, multi-worktree execution, PR review/fix, or an adapter-flavored

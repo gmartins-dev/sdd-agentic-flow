@@ -25,7 +25,7 @@ step).
   - Intent: hand a bounded sub-task to another skill or a human without doing the work directly.
   - Authority: names the receiving skill or human decision-maker; never performs the delegated
     work itself.
-  - Output: a clear handoff (for example, delegating the PR write-up to `sdd-create-pr` once
+  - Output: a clear handoff (for example, delegating the PR write-up to `saf-create-pr` once
     evidence is captured).
 - **Inspect**
   - Intent: examine code, tests, or evidence to understand current behavior.

@@ -36,11 +36,11 @@ Você delega uma tarefa. O agente pula para o código, mistura limites e marca t
 
 | Falha comum | Resposta local |
 | --- | --- |
-| Implementação começa antes de entender os requisitos | `sdd-create-specs` e `sdd-create-prompts` |
-| A tarefa é grande demais para uma mudança controlada | `sdd-implement-task` ou `sdd-implement-multi` |
-| Saída aceita sem evidência | `sdd-task-check` e `sdd-validation` |
-| PR perde rastreabilidade com a feature | `sdd-create-pr`, `sdd-pr-review` e `sdd-pr-fix` |
-| Release sai sem checagem de versão ou changelog | `sdd-release` (sob demanda, após validação) |
+| Implementação começa antes de entender os requisitos | `saf-create-spec` e `saf-create-prompts` |
+| A tarefa é grande demais para uma mudança controlada | `saf-implement` ou `saf-implement-multi` |
+| Saída aceita sem evidência | `saf-check-task` e `saf-validate` |
+| PR perde rastreabilidade com a feature | `saf-create-pr`, `saf-review-pr` e `saf-fix-pr` |
+| Release sai sem checagem de versão ou changelog | `saf-release` (sob demanda, após validação) |
 
 Veja [por que o toolkit existe](docs/why-this-exists.md). Para o modelo mental das quatro camadas (Prompt → Context → Harness → Loop + SDD), leia [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
 
@@ -67,7 +67,7 @@ Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linea
 
 | Resultado | Como o toolkit entrega |
 | --- | --- |
-| Limites de tarefa | Specs, prompts de tarefa e `sdd-task-check` por fatia |
+| Limites de tarefa | Specs, prompts de tarefa e `saf-check-task` por fatia |
 | Rastreabilidade | Spec → prompt → código → pacote de PR em uma cadeia |
 | Evidência antes de concluir | TDD baseline, check reports, validation reports |
 | Entrada mais clara para o agente | Specs escritas e `.sdd-agentic-flow/config.yml` em vez de repetir contexto no chat |
@@ -99,7 +99,7 @@ Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. A CLI
 
 Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous does not mean unattended.** Commit, push, merge, tag e publish continuam humanos em todo preset. A CLI não executa skills.
 
-Depois: invoque `sdd-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
 Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md).
 
@@ -109,25 +109,25 @@ Use `init --interactive` para escolher agente, perfil de idioma e perfil de feat
 
 ```mermaid
 flowchart TD
-  setup[setup-sdd-agentic-flow] --> route[sdd-route]
-  route --> brainstorm[sdd-brainstorm]
-  brainstorm -->|converged| specs[sdd-create-specs]
+  setup[saf-setup] --> route[saf-route]
+  route --> brainstorm[saf-brainstorm]
+  brainstorm -->|converged| specs[saf-create-spec]
   route --> specs
-  specs -.->|on demand| explain[sdd-explain-me]
-  specs --> prompts[sdd-create-prompts]
-  prompts --> implement[sdd-implement-task]
-  prompts -->|dependent tasks| implementmulti[sdd-implement-multi]
+  specs -.->|on demand| explain[saf-explain]
+  specs --> prompts[saf-create-prompts]
+  prompts --> implement[saf-implement]
+  prompts -->|dependent tasks| implementmulti[saf-implement-multi]
   implementmulti -->|delegates per task| implement
-  implement --> check[sdd-task-check]
-  check --> pr[sdd-create-pr]
-  pr --> review[sdd-pr-review]
-  review -->|findings accepted| fix[sdd-pr-fix]
+  implement --> check[saf-check-task]
+  check --> pr[saf-create-pr]
+  pr --> review[saf-review-pr]
+  review -->|findings accepted| fix[saf-fix-pr]
   fix --> review
-  review -->|ready| validate[sdd-validation]
-  validate -.->|on demand| release[sdd-release]
+  review -->|ready| validate[saf-validate]
+  validate -.->|on demand| release[saf-release]
 ```
 
-Use `sdd-route` quando o próximo passo não estiver claro. Ele recomenda uma skill e aponta para o `SKILL.md` selecionado; não invoca skills nem altera arquivos.
+Use `saf-route` quando o próximo passo não estiver claro. Ele recomenda uma skill e aponta para o `SKILL.md` selecionado; não invoca skills nem altera arquivos.
 
 ## Comprovado neste repositório
 

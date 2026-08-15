@@ -1,10 +1,10 @@
 ---
-name: sdd-explain-me
+name: saf-explain
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: planning
-extends: sdd-create-specs
+extends: saf-create-spec
 requires: [config, spec-package]
 consumes: [domain-glossary, project-context]
 produces: [explanation]
@@ -28,7 +28,7 @@ Use on demand, when a user — the feature's own author or someone else joining 
 
 ## When not to use
 
-Do not use to author or replace `spec.md` (normative), `design.md` (technical), or `tasks.md` (operational) — this skill only explains an existing package, it never creates or edits them. Do not use for a feature with no spec package yet; use `sdd-create-specs` first. Do not use for an idea still being shaped; use `sdd-brainstorm` first.
+Do not use to author or replace `spec.md` (normative), `design.md` (technical), or `tasks.md` (operational) — this skill only explains an existing package, it never creates or edits them. Do not use for a feature with no spec package yet; use `saf-create-spec` first. Do not use for an idea still being shaped; use `saf-brainstorm` first.
 
 ## Inputs
 

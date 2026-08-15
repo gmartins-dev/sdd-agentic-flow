@@ -12,7 +12,7 @@ sdd-agentic-flow init
 sdd-agentic-flow install core --scope project
 ```
 
-Then the artifacts a real `sdd-create-specs` run in **source-item mode** would produce for
+Then the artifacts a real `saf-create-spec` run in **source-item mode** would produce for
 this feature are placed at `.specs/features/task-management/`:
 
 - `context.md`

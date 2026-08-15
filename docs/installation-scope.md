@@ -87,14 +87,14 @@ it reports `Repository changes: none`; in `project` scope it lists Git-visible p
 Use `install <pack> --interactive` for a guided wizard (model, targets, preflight summary,
 confirm). Non-interactive `install core` remains the default backward-compatible path.
 
-## UX labels (v2.1.0)
+## UX labels (v3.0.0)
 
 | UX label | CLI | Footprint |
 | --- | --- | --- |
 | **Local / User** | `--scope user` (default) | No files in the project |
 | **Project / Team — Shared** | `--scope project` | `.agents/skills/` (Git-visible) |
 
-Project scope still writes **only** `.agents/skills/` in v2.1.0 — not multi-path selection.
+Project scope still writes **only** `.agents/skills/` in v3.0.0 — not multi-path selection.
 
 ## `doctor`
 

@@ -234,8 +234,8 @@ lower `autonomy_level` to `manual`/`supervised`.
 
 **Cause:** the configured `autonomy_level` is `supervised` or `autonomous`, but one or more
 installed skills' `autonomy_profile.supported_levels` doesn't include it — by design for skills
-that always end in a human decision (`sdd-brainstorm`, `sdd-explain-me`, `sdd-route`,
-`setup-sdd-agentic-flow`).
+that always end in a human decision (`saf-brainstorm`, `saf-explain`, `saf-route`,
+`saf-setup`).
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 

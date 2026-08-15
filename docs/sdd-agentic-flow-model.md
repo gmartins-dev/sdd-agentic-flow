@@ -12,7 +12,7 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 | Layer | Question it answers | Where it lives |
 | --- | --- | --- |
-| **Prompt** | What should the agent do next? | Skill `SKILL.md` bodies, task prompts from `sdd-create-prompts` |
+| **Prompt** | What should the agent do next? | Skill `SKILL.md` bodies, task prompts from `saf-create-prompts` |
 | **Context** | What does the project already know? | Packages under `.specs/features/` (resolve one, then load narrowly), `.sdd-agentic-flow/context/`, `.sdd-agentic-flow/config.yml` |
 | **Harness** | How may the agent operate safely? | `execution_mode`, safety defaults, capability contracts, evidence standard |
 | **Loop** | How does work continue across steps/sessions? | `autonomy_level`, 7 guardrails, `.sdd-agentic-flow/autonomy/loop-state.md`, handoffs |
@@ -34,7 +34,7 @@ When texts conflict, this order wins (no extra doc):
 `config.yml` parametrizes execution and autonomy **inside** (1). No configuration value
 overrides safety. Skill Workflow does not outrank the methodology.
 
-**Graph** is not a fifth runtime layer. Workflow rails already live in `sdd-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
+**Graph** is not a fifth runtime layer. Workflow rails already live in `saf-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
 
 ## What controls what
 
@@ -48,7 +48,7 @@ overrides safety. Skill Workflow does not outrank the methodology.
 | Guardrails 1–7 | `shared/references/autonomy-guardrails.md` | When `autonomous` may auto-advance |
 | Loop state | `.sdd-agentic-flow/autonomy/loop-state.md` | Resume point, overrides, last skill status |
 | Evidence | check/validation reports, `Status:` field | Whether "done" is believable |
-| Routing | `sdd-route` + `workflow-routing.md` | Which skill is on-path |
+| Routing | `saf-route` + `workflow-routing.md` | Which skill is on-path |
 | Doctor | `sdd-agentic-flow doctor` | Static validation of config, skills, autonomy setup |
 
 Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agentic-flow/`) belongs to **this installation** and is regenerable except hand-edited config.

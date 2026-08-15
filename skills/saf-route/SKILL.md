@@ -1,8 +1,8 @@
 ---
-name: sdd-route
+name: saf-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: core
 extends: null
 requires: [config]
@@ -25,7 +25,7 @@ autonomy_profile:
 
 ## When to use
 
-Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Recommend the **canonical workflow path** (Plan → Prompt → Implement → Check → PR → Review → Fix → Validate; Release on demand). Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue; this skill recommends that path — it is not a new Plan skill. If `autonomy_level` is `autonomous` and the seven guardrails would pass, state that the **invoking agent** may read the next on-path `SKILL.md`. This skill still does not invoke another skill. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): listing slugs ≠ loading bodies; 0 ask / 1 select / >1 human gate.
+Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Recommend the **canonical workflow path** (Plan → Prompt → Implement → Check → PR → Review → Fix → Validate; Release on demand). Direct → `saf-brainstorm` → `saf-create-spec` is the Plan-mode analogue; this skill recommends that path — it is not a new Plan skill. If `autonomy_level` is `autonomous` and the seven guardrails would pass, state that the **invoking agent** may read the next on-path `SKILL.md`. This skill still does not invoke another skill. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): listing slugs ≠ loading bodies; 0 ask / 1 select / >1 human gate.
 
 ## When not to use
 
@@ -39,7 +39,7 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when it exists. If it is missing, recommend `setup-sdd-agentic-flow`.
+1. Read `.sdd-agentic-flow/config.yml` when it exists. If it is missing, recommend `saf-setup`.
 2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/spec-lifecycle.md`.
 3. Inspect the candidate local `SKILL.md` before stating what it does. Its instructions are the source of truth.
 4. Match the request against the routing table in `../sdd-agentic-flow-shared/references/workflow-routing.md` — it is the single source of truth for routing situations and recommended skills; do not reproduce or re-derive the table here, and never let this step's wording diverge from it.

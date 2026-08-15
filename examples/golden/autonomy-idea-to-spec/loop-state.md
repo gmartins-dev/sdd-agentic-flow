@@ -5,8 +5,8 @@ Autonomy level: autonomous
 
 ## Current State
 
-- Skill: sdd-brainstorm (completed)
+- Skill: saf-brainstorm (completed)
 - Status: PASS
-- Next: sdd-create-specs
+- Next: saf-create-spec
 - Guardrails: PASS
 - Human override: pause=false, stop=false

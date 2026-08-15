@@ -1,10 +1,10 @@
 ---
-name: sdd-create-pr
+name: saf-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: pr
-extends: sdd-task-check
+extends: saf-check-task
 requires: [config, task-evidence]
 consumes: []
 produces: [pr-package]
@@ -38,7 +38,7 @@ Do not use before task validation, for feature-wide PRs without explicit scope, 
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`.
 2. Verify scope, clean attribution of changed files, validation evidence, and known gaps. Stop on sibling work, missing evidence, or unsafe branch state.
 3. Draft a Markdown PR title and body anchored to SDD criteria, changes, validation, risks, and rollback notes.
 4. Present the package. Create a remote draft PR only with explicit user authorization and configured credentials; otherwise make no external call.
@@ -53,4 +53,4 @@ Return the PR package, task scope, validation summary, blockers, and whether a r
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-pr-review` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-review-pr` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

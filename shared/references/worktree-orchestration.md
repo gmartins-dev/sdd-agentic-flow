@@ -5,7 +5,12 @@ planning until the user confirms a worktree strategy. Split only genuinely indep
 tasks, record dependencies and path ownership, and do not switch branches or create
 worktrees implicitly.
 
-Document, do not schedule. There is no runtime orchestrator in this package.
+This package has no CLI runtime scheduler. A skill may execute authorized worktrees while
+following this lifecycle:
+
+```text
+PLAN → CREATE → ASSIGN → EXECUTE → COLLECT → HANDOFF → CLEANUP
+```
 
 ```text
 tasks
@@ -15,6 +20,9 @@ tasks
   → parallel worktrees only with explicit user authorization
 ```
 
-`sdd-implement-multi` already requires an acyclic graph and isolation. Waves group
+`saf-implement-multi` already requires an acyclic graph and isolation. Waves group
 independent tasks. Parallel worktrees are allowed only with explicit user authorization.
-Do not create worktrees, switch branches, or run a “all tasks” scheduler by default.
+Do not create worktrees, switch branches, or run a multi-task execution without explicit
+authorization. Only clean up worktrees created by this execution, and stop rather than delete
+when they contain uncommitted or unknown state. Commit, merge, cherry-pick, and push remain
+separately authorized.

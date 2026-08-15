@@ -18,5 +18,5 @@ sdd-agentic-flow doctor --json --autonomy
 ## Expected result
 
 - Config has `execution_mode: full` and `autonomy_level: autonomous`.
-- `loop-state.md` records `sdd-brainstorm` complete with `Next: sdd-create-specs`.
+- `loop-state.md` records `saf-brainstorm` complete with `Next: saf-create-spec`.
 - `doctor --autonomy` reports `autonomy_config`, `autonomy_combo`, and `autonomy_loop_state` without `FAIL`.

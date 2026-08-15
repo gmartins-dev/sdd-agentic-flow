@@ -13,7 +13,7 @@ skill directory, which it discovers by searching parent directories). Add
 [installation scope](installation-scope.md).
 
 ```text
-Use the installed sdd-create-specs skill to turn this source item into an SDD feature spec.
+Use the installed saf-create-spec skill to turn this source item into an SDD feature spec.
 Follow .sdd-agentic-flow/config.yml. Do not implement code or create commits. Stop if requirements are ambiguous. Report evidence and limitations.
 ```
 

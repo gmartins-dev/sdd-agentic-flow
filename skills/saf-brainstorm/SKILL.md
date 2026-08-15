@@ -1,8 +1,8 @@
 ---
-name: sdd-brainstorm
-description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for sdd-create-specs — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
+name: saf-brainstorm
+description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for saf-create-spec — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: planning
 extends: null
 requires: [config]
@@ -24,11 +24,11 @@ autonomy_profile:
 
 ## When to use
 
-Use when a user has an idea that is not yet ready for `sdd-create-specs` — either the problem itself is still vague ("improve X" with no defined problem), or the problem is clear but the solution approach is not decided. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting. Direct → brainstorm → specs is the Plan-mode analogue. This skill is not a new Plan skill.
+Use when a user has an idea that is not yet ready for `saf-create-spec` — either the problem itself is still vague ("improve X" with no defined problem), or the problem is clear but the solution approach is not decided. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting. Direct → brainstorm → specs is the Plan-mode analogue. This skill is not a new Plan skill.
 
 ## When not to use
 
-Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always `sdd-create-specs`'s job, and this skill only ever hands off to it. Do not use once the problem and approach are already decided; go straight to `sdd-create-specs`. Do not use for a single ready task (`sdd-implement-task`) or an already-specified feature that just needs explaining (`sdd-explain-me`). Do not become a new Plan skill.
+Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always `saf-create-spec`'s job, and this skill only ever hands off to it. Do not use once the problem and approach are already decided; go straight to `saf-create-spec`. Do not use for a single ready task (`saf-implement`) or an already-specified feature that just needs explaining (`saf-explain`). Do not become a new Plan skill.
 
 ## Inputs
 
@@ -45,9 +45,9 @@ Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is a
    - **Exploratory mode** — the problem itself is not yet defined. Ask one systematic question at a time, only for what inspection could not already answer. Do not advance to solution design until the problem, its constraints, and why it matters are clear.
    - **Design mode** — the problem is clear but the approach is not. Explore alternatives, challenge implicit assumptions, and propose a small throwaway prototype only when the uncertainty is about implementation feasibility, never about requirements.
 4. Track state as `exploring` while the problem (and, in design mode, the approach) has not yet converged, `converged` once it has, or `abandoned` if the user drops the idea during the conversation.
-5. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path convention `.sdd-agentic-flow/config.yml` declares), capturing the problem, why it matters, constraints, the decided approach at a level a specification can start from, and open questions worth flagging to `sdd-create-specs`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always delegated.
-6. Before handing off, split the brief's content explicitly into **Known** (confirmed by inspection or an explicit user statement — the brainstorm-stage counterpart to `sdd-create-specs`' existing-code-mode **Observed**), **Assumed** (a reasonable default neither inspection nor the user has confirmed — the counterpart to **Inferred**), **Unknown** (a real gap the conversation never closed), and **Needs research** (a specific, actionable question `sdd-create-specs` should investigate rather than guess). Never present an Assumed or Unknown item as Known.
-7. Report the brief's path and recommend `sdd-create-specs` as the next step.
+5. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path convention `.sdd-agentic-flow/config.yml` declares), capturing the problem, why it matters, constraints, the decided approach at a level a specification can start from, and open questions worth flagging to `saf-create-spec`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always delegated.
+6. Before handing off, split the brief's content explicitly into **Known** (confirmed by inspection or an explicit user statement — the brainstorm-stage counterpart to `saf-create-spec`' existing-code-mode **Observed**), **Assumed** (a reasonable default neither inspection nor the user has confirmed — the counterpart to **Inferred**), **Unknown** (a real gap the conversation never closed), and **Needs research** (a specific, actionable question `saf-create-spec` should investigate rather than guess). Never present an Assumed or Unknown item as Known.
+7. Report the brief's path and recommend `saf-create-spec` as the next step.
 
 ## Safety
 
@@ -61,10 +61,10 @@ Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is a
 Return the current mode, a short summary of the problem/approach discussed so far, and:
 
 - Status: `exploring` / `converged` / `abandoned`
-- Next recommended skill: `sdd-create-specs` when `converged`; `none` otherwise
+- Next recommended skill: `saf-create-spec` when `converged`; `none` otherwise
 - Reason: one line tying the status to the recommendation
 
-When `converged`, also return the brief's file path, the Known/Assumed/Unknown/Needs research split, and the open questions left for `sdd-create-specs` to resolve.
+When `converged`, also return the brief's file path, the Known/Assumed/Unknown/Needs research split, and the open questions left for `saf-create-spec` to resolve.
 
 ## Autonomy
 

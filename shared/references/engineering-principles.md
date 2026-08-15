@@ -4,7 +4,7 @@ This file is **not a skill** and **not a baseline**. It is a shared contract for
 *how to change code*. Existing SDD skills still decide which workflow step to run.
 [evidence-standard.md](evidence-standard.md) still decides whether a result can be
 trusted. Do not invoke this file as a fifteenth skill or as a substitute for
-`sdd-route`.
+`saf-route`.
 
 ## Purpose
 
@@ -152,7 +152,7 @@ rule, not a replacement for it.
 
 | Skill | How it uses this file |
 | --- | --- |
-| `sdd-create-specs` | `design.md` follows existing architecture; do not propose a competing architecture casually. If the existing architecture is flawed, record the tension; do not silently replace it. |
-| `sdd-create-prompts` | Prompts tell the implementer to search, reuse, prefer existing files, and keep the complexity budget. Do not dump this whole file into every prompt. |
-| `sdd-implement-task` / `sdd-implement-multi` / `sdd-pr-fix` | Apply this file before editing. Smallest change. No opportunistic cleanup. No new orchestrator. |
-| `sdd-task-check` / `sdd-pr-review` | Two independent judgments: spec/correctness vs engineering fit. Fit findings do not flip PASS by themselves. |
+| `saf-create-spec` | `design.md` follows existing architecture; do not propose a competing architecture casually. If the existing architecture is flawed, record the tension; do not silently replace it. |
+| `saf-create-prompts` | Prompts tell the implementer to search, reuse, prefer existing files, and keep the complexity budget. Do not dump this whole file into every prompt. |
+| `saf-implement` / `saf-implement-multi` / `saf-fix-pr` | Apply this file before editing. Smallest change. No opportunistic cleanup. No new orchestrator. |
+| `saf-check-task` / `saf-review-pr` | Two independent judgments: spec/correctness vs engineering fit. Fit findings do not flip PASS by themselves. |

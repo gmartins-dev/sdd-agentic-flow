@@ -25,7 +25,7 @@ TLC condensed stages (Specify → Discuss → Design → Tasks → Execute → V
 methodology. They are not two products. After this paragraph, this toolkit calls that
 skill sequence the **canonical workflow path** (not a “linear chain” — review, fix, and
 multi-worktree are controlled branches). Operating **presets** (`init --preset`) only
-choose how much human interaction that path asks for. `sdd-route` discovers the next
+choose how much human interaction that path asks for. `saf-route` discovers the next
 operation; it does not run the path.
 
 The canonical workflow path:
@@ -34,16 +34,16 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate �
 
 | Phase | Typical skill | What you get |
 | --- | --- | --- |
-| Shape the idea | `sdd-brainstorm` | Spec-ready brief |
-| Plan | `sdd-create-specs` | Feature spec set |
-| Prompt | `sdd-create-prompts` | Agent-ready task prompts |
-| Implement | `sdd-implement-task` / `sdd-implement-multi` | Code and evidence |
-| Check | `sdd-task-check` | Independent check report |
-| PR | `sdd-create-pr` → `sdd-pr-review` → `sdd-pr-fix` | Traceable review package |
-| Validate | `sdd-validation` | Feature validation report |
-| Release | `sdd-release` | Release readiness report (read-only) |
+| Shape the idea | `saf-brainstorm` | Spec-ready brief |
+| Plan | `saf-create-spec` | Feature spec set |
+| Prompt | `saf-create-prompts` | Agent-ready task prompts |
+| Implement | `saf-implement` / `saf-implement-multi` | Code and evidence |
+| Check | `saf-check-task` | Independent check report |
+| PR | `saf-create-pr` → `saf-review-pr` → `saf-fix-pr` | Traceable review package |
+| Validate | `saf-validate` | Feature validation report |
+| Release | `saf-release` | Release readiness report (read-only) |
 
-When the next step is unclear, invoke `sdd-route`. It recommends a skill; it does not run the workflow for you. See [workflow](workflow.md) and the [invocation model](invocation-model.md). Direct → `sdd-brainstorm` → `sdd-create-specs` is the Plan-mode analogue — not a separate Plan skill.
+When the next step is unclear, invoke `saf-route`. It recommends a skill; it does not run the workflow for you. See [workflow](workflow.md) and the [invocation model](invocation-model.md). Direct → `saf-brainstorm` → `saf-create-spec` is the Plan-mode analogue — not a separate Plan skill.
 
 Work **intent** (`feature` / `bugfix` / `refactor` / `investigation` / `maintenance`) is inferred and stated in the spec package. It is not a config key. Combine it with `feature_profile`. See [work types](../shared/references/work-types.md). Specifications are **living** control artifacts: on drift, stop and reconcile; do not silently implement a better requirement. Resolve one feature package, then load only the artifacts the active operation already requires; see [spec lifecycle](spec-lifecycle.md).
 
@@ -52,7 +52,7 @@ Work **intent** (`feature` / `bugfix` / `refactor` / `investigation` / `maintena
 ```text
 IMPLEMENT
     ↓
-CHECK  (sdd-task-check)
+CHECK  (saf-check-task)
     ↓
 NEEDS_CHANGES ──► IMPLEMENT   (bounded; human-gated)
     ↓
@@ -61,7 +61,7 @@ VALIDATION
 HUMAN GATE
 ```
 
-PR path remains `sdd-create-pr` → `sdd-pr-review` → `sdd-pr-fix`. Suggest a bound (for example three check→implement cycles, then escalate) as **guidance**, not a CLI `max_iterations`. This package does not auto-run the loop.
+PR path remains `saf-create-pr` → `saf-review-pr` → `saf-fix-pr`. Suggest a bound (for example three check→implement cycles, then escalate) as **guidance**, not a CLI `max_iterations`. This package does not auto-run the loop.
 
 ## Why specs help agents
 
@@ -69,7 +69,7 @@ Agents work best with a narrow, verifiable target—the five-second moment you w
 
 - **Scope:** a spec names what is in and out of the task, so the agent does not expand silently.
 - **Context:** artifacts in `.specs/features/` give the agent stable input across sessions instead of re-explaining in chat.
-- **Review gates:** `sdd-task-check` and `sdd-validation` separate "the agent said it done" from "evidence says it passes." They re-derive expected from the spec, re-run current sensors, and apply the false-positive catalog. Self-report is not evidence. They must not inherit author narrative.
+- **Review gates:** `saf-check-task` and `saf-validate` separate "the agent said it done" from "evidence says it passes." They re-derive expected from the spec, re-run current sensors, and apply the false-positive catalog. Self-report is not evidence. They must not inherit author narrative.
 - **Model choice:** a clear spec and task prompt reduce ambiguity; that makes smaller or cheaper models usable for bounded slices (quality still depends on the task and your review).
 
 This toolkit does not measure token savings or speed multipliers. A token economics benchmark is planned for a future release; see [ROADMAP.md](../ROADMAP.md).
@@ -92,4 +92,4 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Pick a [feature profile](guides/choosing-a-feature-profile.md), read [prompt recipes](prompt-recipes.md), and invoke `sdd-route` when you need a recommendation for the next skill.
+Pick a [feature profile](guides/choosing-a-feature-profile.md), read [prompt recipes](prompt-recipes.md), and invoke `saf-route` when you need a recommendation for the next skill.

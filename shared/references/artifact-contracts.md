@@ -7,7 +7,7 @@ format. This is a presence check, not full-schema validation. It does not verify
 *content*, only that the required headers exist.
 
 - `spec.md`: required `# Specification — {feature_slug}`, one `## Requirement {id}` per
-  requirement, `## Acceptance criteria`. Produced by `sdd-create-specs`. Optional invariant
+  requirement, `## Acceptance criteria`. Produced by `saf-create-spec`. Optional invariant
   sentences may live **inside** those existing headers (`INV-…` is an allowed ID, like
   optional `REQ-{id}`). There is no required `## Invariants` header. Work-type content
   (feature / bugfix / refactor / investigation / maintenance — see
@@ -16,36 +16,36 @@ format. This is a presence check, not full-schema validation. It does not verify
   intent is bugfix, not a required `## Unchanged behavior` H2 and not a `bugfix.md` file.
 - `design.md`: required when the artifact exists (optional for `small_fix`; see
   `feature-profiles.md`): `# Design — {feature_slug}`, `## Decision`, `## Path ownership`.
-  Produced by `sdd-create-specs`.
+  Produced by `saf-create-spec`.
 - `tasks.md`: required `# Tasks — {feature_slug}`, one `## {task_id}` per task (each with
   Acceptance criteria, Review boundary, Slice type, Independently verifiable, Public seam,
   Dependencies, Horizontal-slice justification, and Expand-contract strategy), plus a nested
   `## TDD baseline` subsection (Behavior under test, Public seam, Test strategy, Expected RED
   command, Expected GREEN command, Refactor scope, TDD limitations) for code tasks. Produced by
-  `sdd-create-specs`. Field **labels** are frozen. `Public seam` means the contractual seam
+  `saf-create-spec`. Field **labels** are frozen. `Public seam` means the contractual seam
   (prefer public/observable when practical). `Expected RED command` is historical/diagnostic;
   `n/a` is valid and must not be fabricated. `Expected GREEN command` is the passing-sensor
   command(s) for the slice. Optional extra bullets when useful: Spec anchor, Anti-tautology,
   Independent of authoring assumptions.
 - task-prompt: required `# Task prompt — {task_id}`, `## Task slice` (same six fields as a
   `tasks.md` entry), `## TDD baseline` (same seven fields as above). Produced by
-  `sdd-create-prompts`.
+  `saf-create-prompts`.
 - check-report: required `# Task check — {task_id}`, a top-line `Status:` field (see
   [evidence-standard.md](evidence-standard.md)'s `Status:` field/guardrail 1 mapping),
   `## Evidence`, `## TDD evidence` (Behavior tested, Seam, RED, GREEN, REFACTOR, Broader checks,
-  Limitations). Produced by `sdd-task-check`. `Seam` is the contractual seam. Distinguish
+  Limitations). Produced by `saf-check-task`. `Seam` is the contractual seam. Distinguish
   current vs historical vs not-run in Evidence / Limitations prose. Missing RED is not an
   automatic fail. A passing sensor is evidence, not a correctness verdict.
 - validation-report: required `# Feature validation — {feature_slug}`, a top-line `Status:`
   field (same convention as check-report), `## Evidence`, `## TDD evidence` (same seven fields as
-  above). Produced by `sdd-validation`. Same freshness and gap rules as check-report: current
+  above). Produced by `saf-validate`. Same freshness and gap rules as check-report: current
   evidence only; never silent PASS.
 - pr-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`. Produced by
-  `sdd-create-pr`.
+  `saf-create-pr`.
 - release-readiness-report: required `# Release readiness — {release_identity}`, a top-line
   `Status:` field (same convention as check-report/validation-report), `## Evidence`,
   `## Version consistency`, `## Changelog check`, `## Gaps`, `## Tag / publish commands`.
-  Produced by `sdd-release`.
+  Produced by `saf-release`.
 
 ## Optional traceability convention
 

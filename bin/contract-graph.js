@@ -2,7 +2,7 @@
 
 // Extracts a flow-style YAML array field from frontmatter text. Handles both
 // `field: [a, b, c]` and the multi-line style `field:\n  [a, b, c]` (used by
-// skills/sdd-route/SKILL.md) — `[^\]]` already matches across the line break,
+// skills/saf-route/SKILL.md) — `[^\]]` already matches across the line break,
 // so no `s` flag is needed.
 function parseContractArray(frontmatter, field) {
   const match = frontmatter.match(new RegExp(`${field}:\\s*\\[([^\\]]*)\\]`));

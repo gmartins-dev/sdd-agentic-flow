@@ -1,15 +1,15 @@
 {
   "name": "core",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Safe baseline workflow.",
   "skills": [
-    "setup-sdd-agentic-flow",
-    "sdd-route",
-    "sdd-create-specs",
-    "sdd-implement-task",
-    "sdd-task-check",
-    "sdd-validation",
-    "sdd-release"
+    "saf-setup",
+    "saf-route",
+    "saf-create-spec",
+    "saf-implement",
+    "saf-check-task",
+    "saf-validate",
+    "saf-release"
   ],
   "shared": true,
   "status": "stable"

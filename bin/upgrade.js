@@ -37,10 +37,26 @@ function provenancePath(skillsRoot) {
   return path.join(skillsRoot, PROVENANCE_REL);
 }
 
-function writeInstallProvenance(skillsRoot, packageVersion) {
+function writeInstallProvenance(skillsRoot, provenance) {
   const dest = provenancePath(skillsRoot);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.writeFileSync(dest, `package: sdd-agentic-flow\npackage_version: ${packageVersion}\n`, 'utf8');
+  const value = typeof provenance === 'string' ? { packageVersion: provenance } : provenance;
+  const lines = [
+    'package: sdd-agentic-flow',
+    `package_version: ${value.packageVersion}`,
+    'schema: 2',
+    `scope: ${value.scope || 'user'}`,
+    `target: ${value.target || 'unknown'}`,
+    `skill_identity: ${value.skillIdentity || 'saf'}`,
+    'packs:',
+    ...(value.packs || []).map((pack) => `  - ${pack}`),
+    'managed_skills:',
+    ...(value.managedSkills || []).map((skill) => `  - ${skill}`),
+    '',
+  ];
+  const temporary = `${dest}.tmp`;
+  fs.writeFileSync(temporary, lines.join('\n'), 'utf8');
+  fs.renameSync(temporary, dest);
 }
 
 function readInstallProvenance(skillsRoot) {
@@ -50,10 +66,23 @@ function readInstallProvenance(skillsRoot) {
     const text = fs.readFileSync(dest, 'utf8');
     const versionMatch = text.match(/package_version:\s*(\S+)/);
     const packageMatch = text.match(/^package:\s*(\S+)/m);
-    return {
+    const schemaMatch = text.match(/^schema:\s*(\d+)/m);
+    const skillIdentityMatch = text.match(/^skill_identity:\s*(\S+)/m);
+    const list = (name) => {
+      const match = text.match(new RegExp(`^${name}:\\s*\\n((?:\\s+-\\s+[^\\n]+\\n?)*)`, 'm'));
+      return match ? [...match[1].matchAll(/^\s+-\s+(.+)$/gm)].map((item) => item[1].trim()) : [];
+    };
+    const provenance = {
       package: packageMatch ? packageMatch[1] : null,
       packageVersion: versionMatch ? versionMatch[1] : null,
+      schema: schemaMatch ? Number(schemaMatch[1]) : 1,
+      skillIdentity: skillIdentityMatch ? skillIdentityMatch[1] : null,
     };
+    const packs = list('packs');
+    const managedSkills = list('managed_skills');
+    if (packs.length) provenance.packs = packs;
+    if (managedSkills.length) provenance.managedSkills = managedSkills;
+    return provenance;
   } catch {
     return null;
   }

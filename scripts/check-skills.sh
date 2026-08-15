@@ -7,30 +7,30 @@ cd "$root"
 node -e 'JSON.parse(require("fs").readFileSync("package.json"));'
 test -x bin/sdd-agentic-flow.js
 
-skills=(setup-sdd-agentic-flow sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation)
+skills=(saf-setup saf-create-spec saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-create-pr saf-review-pr saf-fix-pr saf-validate)
 for skill in "${skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
   for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd-agentic-flow/config.yml' 'tlc-baseline.md' 'workflow-safety.md'; do
     grep -F -q -- "$marker" "$file"
   done
-  if [[ "$skill" != "setup-sdd-agentic-flow" ]]; then
+  if [[ "$skill" != "saf-setup" ]]; then
     grep -F -q 'npx sdd-agentic-flow init' "$file"
   fi
 done
 
-route_file="skills/sdd-route/SKILL.md"
+route_file="skills/saf-route/SKILL.md"
 test -f "$route_file"
 for marker in '## When to use' '## When not to use' '## Inputs' '## Workflow' '## Safety' '## Output' '.sdd-agentic-flow/config.yml' 'workflow-routing.md' 'workflow-safety.md' 'source of truth'; do
   grep -F -q -- "$marker" "$route_file"
 done
 
-# Milestone 6/7 (v1.5.0): sdd-brainstorm and sdd-explain-me are baseline:[] root/branch skills
-# like sdd-route — they follow the 6-section skeleton and the config/init/safety markers, but
-# (like sdd-route) never reference tlc-baseline.md, since no TLC/TDD baseline governs them.
-# v1.9.0: sdd-release joins this group for the same reason — release readiness is process work,
+# Milestone 6/7 (v1.5.0): saf-brainstorm and saf-explain are baseline:[] root/branch skills
+# like saf-route — they follow the 6-section skeleton and the config/init/safety markers, but
+# (like saf-route) never reference tlc-baseline.md, since no TLC/TDD baseline governs them.
+# v1.9.0: saf-release joins this group for the same reason — release readiness is process work,
 # not TLC/TDD methodology.
-new_skills=(sdd-brainstorm sdd-explain-me sdd-release)
+new_skills=(saf-brainstorm saf-explain saf-release)
 for skill in "${new_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   test -f "$file"
@@ -39,7 +39,7 @@ for skill in "${new_skills[@]}"; do
   done
 done
 
-all_skills=(setup-sdd-agentic-flow sdd-route sdd-brainstorm sdd-create-specs sdd-explain-me sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-create-pr sdd-pr-review sdd-pr-fix sdd-validation sdd-release)
+all_skills=(saf-setup saf-route saf-brainstorm saf-create-spec saf-explain saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-create-pr saf-review-pr saf-fix-pr saf-validate saf-release)
 for skill in "${all_skills[@]}"; do
   file="skills/$skill/SKILL.md"
   for marker in 'extends:' 'requires:' 'consumes:' 'produces:' 'baseline:' 'compatible_with:' 'depends_on:' 'conflicts:' 'requires_cli:' 'autonomy_profile:' 'supported_levels:' 'auto_continue_condition:' 'blocking_conditions:' 'evidence_required:'; do
@@ -60,12 +60,9 @@ const { validateContractReferences, parseContractArray } =
   require(path.resolve(process.cwd(), 'bin/contract-graph.js'));
 const { parseVersion, compareVersions } =
   require(path.resolve(process.cwd(), 'bin/version-compat.js'));
+const { OFFICIAL_SKILLS } = require(path.resolve(process.cwd(), 'bin/skill-identity.js'));
 
-const skillNames = [
-  'setup-sdd-agentic-flow', 'sdd-route', 'sdd-brainstorm', 'sdd-create-specs', 'sdd-explain-me',
-  'sdd-create-prompts', 'sdd-implement-task', 'sdd-implement-multi', 'sdd-task-check',
-  'sdd-create-pr', 'sdd-pr-review', 'sdd-pr-fix', 'sdd-validation', 'sdd-release',
-];
+const skillNames = OFFICIAL_SKILLS;
 const frontmatterOf = (content) => (content.match(/^---\n([\s\S]*?)\n---/) || [, content])[1];
 const skills = skillNames.map((name) => ({
   name,
@@ -116,27 +113,19 @@ if (versionCheck.cli.drifted) {
   drift = true;
 }
 
-// v1.9.1: bin/sdd-agentic-flow.js's OFFICIAL_SKILLS array (drives uninstall,
-// installationStatus(), and doctor --contracts' conflict validation) also drifted from the
-// real skill roster during v1.9.0 — sdd-release installed but uninstall never removed it.
-// Same drift-detection shape as compatible_with vs. presets/*.json above.
+// The runtime and source-tree rosters must stay identical. The canonical list lives in
+// bin/skill-identity.js so CLI consumers and this source check cannot drift.
 {
-  const cliSource = fs.readFileSync('bin/sdd-agentic-flow.js', 'utf8');
-  const officialSkillsMatch = cliSource.match(/const OFFICIAL_SKILLS = \[([\s\S]*?)\];/);
-  const officialSkills = officialSkillsMatch
-    ? [...officialSkillsMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
-    : [];
-  const missingFromOfficial = skillNames.filter((name) => !officialSkills.includes(name));
-  const extraInOfficial = officialSkills.filter((name) => !skillNames.includes(name));
+  const sourceSkillNames = fs.readdirSync('skills').filter((name) => fs.existsSync(`skills/${name}/SKILL.md`));
+  const missingFromOfficial = sourceSkillNames.filter((name) => !OFFICIAL_SKILLS.includes(name));
+  const extraInOfficial = OFFICIAL_SKILLS.filter((name) => !sourceSkillNames.includes(name));
   if (missingFromOfficial.length) {
-    console.error(
-      `bin/sdd-agentic-flow.js: OFFICIAL_SKILLS is missing ${missingFromOfficial.join(', ')}`,
-    );
+    console.error(`bin/skill-identity.js: OFFICIAL_SKILLS is missing ${missingFromOfficial.join(', ')}`);
     drift = true;
   }
   if (extraInOfficial.length) {
     console.error(
-      `bin/sdd-agentic-flow.js: OFFICIAL_SKILLS has unknown skill(s) ${extraInOfficial.join(', ')}`,
+      `bin/skill-identity.js: OFFICIAL_SKILLS has unknown skill(s) ${extraInOfficial.join(', ')}`,
     );
     drift = true;
   }
@@ -257,7 +246,7 @@ for ref in tlc-baseline.md tdd-baseline.md task-slicing.md workflow-routing.md s
     grep -F -q 'Baseline version: 0.7.0' "shared/references/$ref"
   fi
 done
-for skill in sdd-create-specs sdd-implement-task sdd-validation; do
+for skill in saf-create-spec saf-implement saf-validate; do
   grep -F -q 'feature-profiles.md' "skills/$skill/SKILL.md"
   grep -F -q 'feature_profile' "skills/$skill/SKILL.md"
 done
@@ -268,8 +257,8 @@ grep -F -q 'tdd' shared/baselines/registry.yml
 # contractual-seam sensor loop, not red/green/refactor-as-proof.
 [[ "$(grep -F -c -- 'baseline_version: 0.7.0' shared/baselines/registry.yml)" -eq 2 ]]
 grep -F -q 'test-at-contractual-seam' shared/baselines/registry.yml
-if grep -F -q 'produce RED when practical' skills/sdd-implement-task/SKILL.md; then
-  echo "sdd-implement-task still contains 'produce RED when practical'" >&2
+if grep -F -q 'produce RED when practical' skills/saf-implement/SKILL.md; then
+  echo "saf-implement still contains 'produce RED when practical'" >&2
   exit 1
 fi
 for marker in 'adequacy' 'anti-tautology' 'authority' 'contractual seam' 'oracle' 'invariant' 'minimize redundancy'; do
@@ -315,14 +304,14 @@ done
 grep -F -q 'self-report is not evidence' shared/references/evidence-standard.md
 grep -F -q 'requirement → sensor → current result' shared/references/evidence-standard.md
 grep -F -q 'strength ladder' shared/references/evidence-standard.md
-for skill in sdd-task-check sdd-validation; do
+for skill in saf-check-task saf-validate; do
   grep -F -q 'must not inherit author narrative' "skills/$skill/SKILL.md"
   grep -F -q 'self-report is not evidence' "skills/$skill/SKILL.md"
   grep -F -q 'requirement → sensor → current result' "skills/$skill/SKILL.md"
 done
-grep -F -q 'self-assessment' skills/sdd-implement-task/SKILL.md
-grep -F -q 'suite weakening' skills/sdd-implement-task/SKILL.md
-grep -F -q 'observable expected outcome' skills/sdd-create-specs/SKILL.md
+grep -F -q 'self-assessment' skills/saf-implement/SKILL.md
+grep -F -q 'suite weakening' skills/saf-implement/SKILL.md
+grep -F -q 'observable expected outcome' skills/saf-create-spec/SKILL.md
 grep -F -q 'reproduction sensor' shared/references/feature-profiles.md
 grep -F -q 'green-but-wrong' examples/golden/task-management/validation-report.md
 if grep -F -q -- '--type=bugfix' bin/sdd-agentic-flow.js; then
@@ -332,9 +321,9 @@ fi
 # v1.16.0: work-type contracts, unchanged behavior, spec analysis, living spec
 # (presence checks). These greps fail if those contracts are deleted.
 grep -F -q 'unchanged behavior' shared/references/work-types.md
-grep -F -q 'Spec analysis' skills/sdd-create-specs/SKILL.md
+grep -F -q 'Spec analysis' skills/saf-create-spec/SKILL.md
 grep -F -q 'living' shared/references/tlc-baseline.md
-grep -F -q 'work intent' skills/sdd-create-specs/SKILL.md
+grep -F -q 'work intent' skills/saf-create-spec/SKILL.md
 grep -F -q 'uncertainty' shared/references/feature-profiles.md
 grep -F -q 'DAG' shared/references/worktree-orchestration.md
 grep -F -q 'waves' shared/references/worktree-orchestration.md
@@ -359,23 +348,23 @@ done
 for template in context spec design tasks task-prompt check-report validation-report pr-description pr-review pr-fix domain-glossary release-readiness-report; do
   test -f "shared/templates/$template.template.md"
 done
-for skill in sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
+for skill in saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-validate; do
   grep -F -q 'tdd-baseline.md' "skills/$skill/SKILL.md"
 done
 # Milestone 2 (Evidence Standard extraction): the skills that classify pass/fail/ready must
 # reference the shared evidence-standard.md rather than re-deriving the principle with drift.
-# v1.9.0: sdd-release joins the original 6 (same evidence-first classification, one stage later).
-for skill in sdd-create-specs sdd-implement-task sdd-task-check sdd-validation sdd-pr-review sdd-pr-fix sdd-release; do
+# v1.9.0: saf-release joins the original 6 (same evidence-first classification, one stage later).
+for skill in saf-create-spec saf-implement saf-check-task saf-validate saf-review-pr saf-fix-pr saf-release; do
   grep -F -q 'evidence-standard.md' "skills/$skill/SKILL.md"
 done
 # v1.18.0: how-to-change-code contract. Not a skill, not a registry baseline.
-for skill in sdd-create-specs sdd-create-prompts sdd-implement-task \
-  sdd-implement-multi sdd-task-check sdd-pr-review sdd-pr-fix; do
+for skill in saf-create-spec saf-create-prompts saf-implement \
+  saf-implement-multi saf-check-task saf-review-pr saf-fix-pr; do
   grep -F -q 'engineering-principles.md' "skills/$skill/SKILL.md"
 done
 # v1.19.0: spec-package lifecycle and scoped context. Not a skill, not a CLI.
-for skill in sdd-create-specs sdd-create-prompts sdd-implement-task \
-  sdd-task-check sdd-explain-me sdd-validation sdd-route; do
+for skill in saf-create-spec saf-create-prompts saf-implement \
+  saf-check-task saf-explain saf-validate saf-route; do
   grep -F -q 'spec-lifecycle.md' "skills/$skill/SKILL.md"
 done
 grep -F -q 'Load rule' shared/references/spec-lifecycle.md
@@ -388,21 +377,21 @@ fi
 
 # v1.9.0 (Handoff Standard): the 7 skills whose work can pause across a session/agent boundary
 # must reference the shared handoff-standard.md rather than re-deriving when to write handoff.md.
-for skill in sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation sdd-pr-fix sdd-create-pr sdd-release; do
+for skill in saf-implement saf-implement-multi saf-check-task saf-validate saf-fix-pr saf-create-pr saf-release; do
   grep -F -q 'handoff-standard.md' "skills/$skill/SKILL.md"
 done
-for skill in sdd-create-specs sdd-create-prompts sdd-implement-task sdd-implement-multi sdd-task-check sdd-validation; do
+for skill in saf-create-spec saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-validate; do
   grep -F -q 'task-slicing.md' "skills/$skill/SKILL.md"
   grep -F -q 'domain-glossary.md' "skills/$skill/SKILL.md"
   grep -F -q 'project-context.md' "skills/$skill/SKILL.md"
 done
 grep -F -q 'discover' bin/sdd-agentic-flow.js
-grep -F -q 'project-context.md' skills/setup-sdd-agentic-flow/SKILL.md
+grep -F -q 'project-context.md' skills/saf-setup/SKILL.md
 for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"
 done
 for preset in core planning execution pr multi-worktree full local-files github; do
-  node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("sdd-route")) process.exit(1);'
+  node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("saf-route")) process.exit(1);'
 done
 for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/engineering-principles.md docs/spec-lifecycle.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/baselines.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/v2-breaking-changes.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
@@ -410,7 +399,7 @@ done
 grep -F -q 'no telemetry' README.md
 grep -F -q 'TDD baseline' README.md
 grep -F -q 'Plan → Prompt → Implement → Check → PR → Review → Fix → Validate' README.md
-grep -F -q 'sdd-route' README.md docs/invocation-model.md
+grep -F -q 'saf-route' README.md docs/invocation-model.md
 grep -F -q 'mattpocock/skills' NOTICE LICENSING.md docs/tdd-baseline.md
 grep -F -q 'Prompt injection safety' shared/references/workflow-safety.md
 grep -F -q 'postinstall' CONTRIBUTING.md

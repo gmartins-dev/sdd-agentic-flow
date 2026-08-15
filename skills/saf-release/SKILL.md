@@ -1,8 +1,8 @@
 ---
-name: sdd-release
+name: saf-release
 description: Check whether a project or feature is ready to tag and publish a release — version consistency, changelog presence, and configured release checks. Use when the user asks if a release is ready; never tags, publishes, or pushes.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: core
 extends: null
 requires: [config]
@@ -32,7 +32,7 @@ release. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safe
 
 Do not use to implement code, write a changelog entry from scratch, create a git tag, or run a
 publish command — this skill only checks readiness and reports gaps. Do not use for a single
-task's readiness; use `sdd-task-check` or `sdd-validation` instead, whose passing evidence this
+task's readiness; use `saf-check-task` or `saf-validate` instead, whose passing evidence this
 skill consumes rather than re-derives.
 
 ## Inputs
@@ -49,7 +49,7 @@ skill consumes rather than re-derives.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow`
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup`
    or `npx sdd-agentic-flow init`. Read `.sdd-agentic-flow/context/project-context.md` when it exists, for
    the repository's primary language and build/package tooling. Read any declared release
    conventions; when none are declared, fall back to the most common convention this project
@@ -60,8 +60,8 @@ skill consumes rather than re-derives.
 3. Confirm the changelog carries a section for the target version with real content, not a
    placeholder heading.
 4. Run only configured, safe, applicable checks (tests, lint, a dry-run package/build step),
-   applying `../sdd-agentic-flow-shared/references/evidence-standard.md` — reuse `sdd-task-check`
-   and `sdd-validation` evidence already gathered for this work instead of re-running it, and
+   applying `../sdd-agentic-flow-shared/references/evidence-standard.md` — reuse `saf-check-task`
+   and `saf-validate` evidence already gathered for this work instead of re-running it, and
    record what could not be verified and why.
 5. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A release is `ready` only when
    version consistency holds, the changelog entry is real, and every configured check passed.

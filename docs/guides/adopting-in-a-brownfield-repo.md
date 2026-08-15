@@ -66,10 +66,10 @@ remember the flag.
 ## 4. Install a pack and start the loop
 
 Once config and context exist, install a pack (`core` is the safe default) and follow the main
-SDD flow from the [README](../../README.md#main-sdd-flow), starting with `sdd-create-specs`.
+SDD flow from the [README](../../README.md#main-sdd-flow), starting with `saf-create-spec`.
 
 If the code you're bringing under SDD already exists with no prior spec and no requested
-outcome to start from, ask for `sdd-create-specs` in its **existing-code mode**: name an
+outcome to start from, ask for `saf-create-spec` in its **existing-code mode**: name an
 explicit scope (a module, feature, or bounded area — never the whole repository) and it will
 reconstruct `context.md`, `spec.md`, and `design.md` from the code and its tests, labeling
 every requirement and decision **Observed**, **Inferred**, or **Unknown** so you can confirm or

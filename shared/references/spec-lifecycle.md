@@ -3,7 +3,7 @@
 This file is **not a skill**, **not a baseline**, **not a CLI**, and **not a registry**. It is a shared methodology contract for *which spec package to
 resolve* and *which artifacts to load* for the active operation. Existing SDD
 skills still decide which workflow step to run. Do not invoke this file as a
-fifteenth skill or as a substitute for `sdd-route`.
+fifteenth skill or as a substitute for `saf-route`.
 
 Skills load this file at install time as
 `../sdd-agentic-flow-shared/references/spec-lifecycle.md`.
@@ -69,7 +69,7 @@ Related packages: load at most **one hop** when `Extends:` / `Supersedes:` is
 named or the user asks. Do not recurse (`A→B` may load B; do not auto-load C
 because B extends C).
 
-`sdd-route` may **list** slugs to disambiguate; listing ≠ loading bodies. It
+`saf-route` may **list** slugs to disambiguate; listing ≠ loading bodies. It
 remains a **skill** router, not a spec registry.
 
 ## Same slug vs new slug
@@ -81,7 +81,7 @@ Materially new change                     → new slug   → flow-forward histor
 
 Same slug when: clarifying requirements, correcting the current spec, refining
 design, adjusting tasks, or incorporating implementation discoveries **within
-the same intended change**. Confirm overwrite (already in `sdd-create-specs`
+the same intended change**. Confirm overwrite (already in `saf-create-spec`
 Safety).
 
 New slug when: intended behavior or scope changes materially; acceptance
@@ -147,7 +147,7 @@ Consumers should version `.specs/features/`.
 
 ## Validation does not archive
 
-`sdd-validation` may write a sanitized report under
+`saf-validate` may write a sanitized report under
 `.sdd-agentic-flow/reports`. After PASS it **may recommend** the human set
 `Lifecycle: implemented`. It never rewrites lifecycle metadata, never
 moves/deletes the package, never creates `validation.md` under `.specs`.
@@ -168,7 +168,7 @@ Per-feature pause already uses [handoff-standard.md](handoff-standard.md).
 
 | Skill | Use |
 | --- | --- |
-| `sdd-create-specs` | New vs same slug; optional Lifecycle + `Extends:` / `Supersedes:`; **do not glob** sibling `spec.md` except collision / explicit relation |
-| `sdd-create-prompts` / `sdd-implement-task` / `sdd-task-check` / `sdd-explain-me` | Resolve one package; load that skill’s existing Inputs only |
-| `sdd-validation` | That feature only; recommend `implemented`; never archive; never `validation.md` under `.specs` |
-| `sdd-route` | List slugs + skim `context.md`; 0/1/>1 gate; do not load every `spec.md` |
+| `saf-create-spec` | New vs same slug; optional Lifecycle + `Extends:` / `Supersedes:`; **do not glob** sibling `spec.md` except collision / explicit relation |
+| `saf-create-prompts` / `saf-implement` / `saf-check-task` / `saf-explain` | Resolve one package; load that skill’s existing Inputs only |
+| `saf-validate` | That feature only; recommend `implemented`; never archive; never `validation.md` under `.specs` |
+| `saf-route` | List slugs + skim `context.md`; 0/1/>1 gate; do not load every `spec.md` |

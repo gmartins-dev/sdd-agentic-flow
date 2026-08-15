@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+## 3.0.0
+
+Major skill-identity and installation-model release.
+
+**Breaking changes:**
+
+- Public skill names now use the `saf-*` namespace; legacy `sdd-*` and
+  `setup-sdd-agentic-flow` names are not installed as aliases.
+- Existing legacy installations are diagnosed and blocked for deliberate clean reinstall;
+  they are never migrated automatically.
+
+**Added and changed:**
+
+- Intent-aware installation with user and repository-scoped profiles, target selection,
+  `configure`, provenance schema 2, reconciliation plans, and safe local/shared project
+  sharing transitions.
+- Reconciliation supports CREATE, UPDATE, PRESERVE, REMOVE, COLLISION, and BLOCKED states.
+- `saf-implement-multi` plans and executes dependency waves with explicit worktree,
+  integration, and per-task check boundaries.
+- `doctor` and installation plans report persisted intent and reconciliation state.
+
+See `docs/v3-breaking-changes.md` for the complete rename map and reinstall guidance.
+
 ## 2.1.0
 
 DX / CLI UX / onboarding minor. Turns the CLI into a coherent **control plane** for setup,

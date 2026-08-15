@@ -1,10 +1,10 @@
 ---
-name: sdd-implement-task
+name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: core
-extends: sdd-create-prompts
+extends: saf-create-prompts
 requires: [config, task-identity]
 consumes: [domain-glossary, project-context]
 produces: [code-change+tdd-evidence]
@@ -38,7 +38,7 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict. Specifications are **living** control artifacts: if you find spec drift, stop and reconcile the spec with the human. Do not silently implement a “better” requirement. Do not silently rewrite the spec to match the code.
 4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. Do not add a competing architecture, new dependency, or new convention without confirmation (decision path step 5).
@@ -57,4 +57,4 @@ Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no c
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `sdd-task-check` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-check-task` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

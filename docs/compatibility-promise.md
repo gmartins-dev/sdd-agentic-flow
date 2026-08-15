@@ -73,9 +73,9 @@ This section makes explicit a rule that was already implicit in prior releases.
 - Removing a capability-contract field (required or optional).
 - Removing a skill, or replacing one skill with another under a different name without a
   documented migration (see [CHANGELOG.md](../CHANGELOG.md) for how the v0.8.0
-  `sdd-reverse-engineer` → `sdd-create-specs` merge was handled as a worked example).
+  `sdd-reverse-engineer` → `saf-create-spec` merge was handled as a worked example).
 - Changing the semantic meaning of an existing field without changing its name. For example,
-  `sdd-create-specs`'s `requires: [config, source-item]` in v0.8.0 came to cover two distinct
+  `saf-create-spec`'s `requires: [config, source-item]` in v0.8.0 came to cover two distinct
   modes (source-item and existing-code) under the same field name and values, which is a
   breaking semantic change even though the field's declared value list did not change.
 

@@ -61,51 +61,51 @@ Use este caminho para uma tarefa delimitada ou poucas tarefas seriais.
 
 ```mermaid
 flowchart TD
-  Source[Source item] --> Specs[sdd-create-specs]
-  Specs --> Prompts[sdd-create-prompts]
-  Prompts --> Implement[sdd-implement-task]
-  Implement --> Check[sdd-task-check]
-  Check --> Review[sdd-pr-review]
-  Review --> Validation[sdd-validation]
-  Validation -.->|on demand| Release[sdd-release]
-  Check -->|findings| Fix[sdd-pr-fix]
+  Source[Source item] --> Specs[saf-create-spec]
+  Specs --> Prompts[saf-create-prompts]
+  Prompts --> Implement[saf-implement]
+  Implement --> Check[saf-check-task]
+  Check --> Review[saf-review-pr]
+  Review --> Validation[saf-validate]
+  Validation -.->|on demand| Release[saf-release]
+  Check -->|findings| Fix[saf-fix-pr]
   Fix --> Review
 ```
 
 Prompts recomendados:
 
 ```text
-Use a skill instalada `sdd-create-specs` para este source item.
+Use a skill instalada `saf-create-spec` para este source item.
 Siga `.sdd-agentic-flow/config.yml`, trabalhe em modo `plan` e crie ou atualize apenas a
 especificação. Não implemente código nem crie commits. Pare se houver
 ambiguidade. Relate evidências, perguntas abertas e limitações.
 ```
 
 ```text
-Use a skill instalada `sdd-implement-task` para a task aprovada abaixo.
+Use a skill instalada `saf-implement` para a task aprovada abaixo.
 Siga o contrato da task e `.sdd-agentic-flow/config.yml`. Altere somente os arquivos
 necessários. Execute os checks exigidos. Não faça commit, push, merge, deploy ou
 publish. Relate evidências e limitações.
 ```
 
-Depois que `sdd-validation` passar, use `sdd-release` sob demanda quando precisar checar prontidão de release antes de criar uma tag. Veja [prompt-recipes](prompt-recipes.md#check-release-readiness) (em inglês).
+Depois que `saf-validate` passar, use `saf-release` sob demanda quando precisar checar prontidão de release antes de criar uma tag. Veja [prompt-recipes](prompt-recipes.md#check-release-readiness) (em inglês).
 
 ## 5. Use o fluxo de várias tarefas quando houver dependências
 
 Escolha este caminho quando as tarefas tiverem ownership independente ou waves
-de execução explícitas. `sdd-implement-multi` planeja e coordena o trabalho
+de execução explícitas. `saf-implement-multi` planeja e coordena o trabalho
 local; não transforma o fluxo em um pipeline automático de release.
 
 ```mermaid
 flowchart TD
-  Source[Source item] --> Specs[sdd-create-specs]
+  Source[Source item] --> Specs[saf-create-spec]
   Specs --> Tasks[Conjunto de tasks aprovadas]
-  Tasks --> Plan[sdd-implement-multi\nplanejar waves e ownership]
+  Tasks --> Plan[saf-implement-multi\nplanejar waves e ownership]
   Plan --> Wave1[Wave 1\ntrabalho local]
   Plan --> Wave2[Wave 2\napós dependências]
-  Wave1 --> Checks[sdd-task-check\npor task]
+  Wave1 --> Checks[saf-check-task\npor task]
   Wave2 --> Checks
-  Checks --> Validation[sdd-validation\nevidências da feature]
+  Checks --> Validation[saf-validate\nevidências da feature]
 ```
 
 Prefira o fluxo de uma tarefa quando as dependências forem seriais ou a
@@ -116,17 +116,17 @@ limites claros e a equipe puder revisar as evidências.
 
 | Skill | Entrada | Saída | Altera arquivos? | Modo |
 | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | Contexto do projeto    | Orientação de setup  | Quando autorizada | `guided` |
-| `sdd-create-specs`       | Source item            | Specs da feature     | Quando autorizada | `plan`   |
-| `sdd-create-prompts`     | Specs e tasks          | Prompts para agentes | Quando autorizada | `plan`   |
-| `sdd-implement-task`     | Task aprovada          | Código e evidências  | Quando autorizada | `apply`  |
-| `sdd-implement-multi`    | Conjunto de tasks      | Plano de execução    | Quando autorizada | `guided` |
-| `sdd-task-check`         | Task e evidências      | Report de check      | Não               | `review` |
-| `sdd-create-pr`          | Alteração concluída    | Pacote de PR         | Quando autorizada | `guided` |
-| `sdd-pr-review`          | Conjunto de alterações | Findings de review   | Não               | `review` |
-| `sdd-pr-fix`             | Findings aceitos       | Correções locais     | Quando autorizada | `apply`  |
-| `sdd-validation`         | Evidências da feature  | Report de validação  | Não               | `review` |
-| `sdd-release`            | Versão/changelog       | Report de prontidão de release | Não     | `review` |
+| `saf-setup` | Contexto do projeto    | Orientação de setup  | Quando autorizada | `guided` |
+| `saf-create-spec`       | Source item            | Specs da feature     | Quando autorizada | `plan`   |
+| `saf-create-prompts`     | Specs e tasks          | Prompts para agentes | Quando autorizada | `plan`   |
+| `saf-implement`     | Task aprovada          | Código e evidências  | Quando autorizada | `apply`  |
+| `saf-implement-multi`    | Conjunto de tasks      | Plano de execução    | Quando autorizada | `guided` |
+| `saf-check-task`         | Task e evidências      | Report de check      | Não               | `review` |
+| `saf-create-pr`          | Alteração concluída    | Pacote de PR         | Quando autorizada | `guided` |
+| `saf-review-pr`          | Conjunto de alterações | Findings de review   | Não               | `review` |
+| `saf-fix-pr`             | Findings aceitos       | Correções locais     | Quando autorizada | `apply`  |
+| `saf-validate`         | Evidências da feature  | Report de validação  | Não               | `review` |
+| `saf-release`            | Versão/changelog       | Report de prontidão de release | Não     | `review` |
 
 ## 7. Uso com agentes
 
@@ -136,14 +136,14 @@ para a skill correspondente e peça que siga a configuração do projeto.
 ### Codex CLI
 
 ```text
-Use `.agents/skills/sdd-create-specs/SKILL.md` para esta feature.
+Use `.agents/skills/saf-create-spec/SKILL.md` para esta feature.
 Siga `.sdd-agentic-flow/config.yml`, trabalhe em modo `plan` e deixe a decisão final comigo.
 ```
 
 ### Claude Code
 
 ```text
-Leia a skill instalada `sdd-validation` e valide esta feature localmente.
+Leia a skill instalada `saf-validate` e valide esta feature localmente.
 Use as evidências do repositório, não chame serviços externos e relate PASS,
 WARN, FAIL, evidências e limitações.
 ```
@@ -151,7 +151,7 @@ WARN, FAIL, evidências e limitações.
 ### Cursor
 
 ```text
-Use `.agents/skills/sdd-implement-task/SKILL.md` como contrato desta task.
+Use `.agents/skills/saf-implement/SKILL.md` como contrato desta task.
 Trabalhe em modo `apply` somente após minha autorização para alterações locais.
 Não faça commit nem push.
 ```

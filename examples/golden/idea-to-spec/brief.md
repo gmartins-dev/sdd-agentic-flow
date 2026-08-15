@@ -23,7 +23,7 @@ Add a per-user configurable quiet-hours window. A notification generated inside 
 recorded immediately (so nothing is lost) but its delivery is deferred until the window ends.
 Notifications generated outside the window deliver immediately, unchanged from today.
 
-## Open questions for sdd-create-specs
+## Open questions for saf-create-spec
 
 - Exact default quiet-hours window (proposed: none — opt-in only, off by default).
 - Whether deferred notifications should batch into one delivery or send individually when the

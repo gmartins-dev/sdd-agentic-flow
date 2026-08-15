@@ -1,5 +1,8 @@
 # Roadmap
 
+- **v3.0.0 (2026-08-15):** Public skill identity changes to `saf-*`; intent-aware install
+  profiles, safe reconciliation, and multi-task wave execution contracts.
+
 - **v2.1.0 (2026-08-14):** DX / CLI UX / onboarding minor. Control-plane commands:
   `config show|policy`, install preflight + `install --interactive`, welcome/menu policy
   blocks, `learn-sdd`, redesigned `init --interactive`. Collision-safe install; inspect-before-

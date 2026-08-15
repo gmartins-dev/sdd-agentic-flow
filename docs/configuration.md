@@ -18,11 +18,20 @@ evidence. It does **not** mean the RED → GREEN → REFACTOR ritual is mandator
 rename or deprecate the key. See [TDD baseline](tdd-baseline.md) and
 [shared/references/evidence-standard.md](../shared/references/evidence-standard.md).
 
-There is no dedicated `release` section yet — `sdd-release` (see the
+There is no dedicated `release` section yet — `saf-release` (see the
 [skills catalog](skills-catalog.md)) reads whatever version-bearing files and changelog
 conventions the project already uses, falling back to the most common pattern (a single
 manifest plus a root-level changelog) and saying so explicitly when nothing is declared,
 rather than assuming an undeclared convention silently.
+
+## Installation intent
+
+`configure` is separate from `config`: it edits the user-local installation intent at
+`~/.sdd-agentic-flow/install.yml`, while `config` edits project workflow policy. The intent keeps
+user packs and target IDs, plus per-repository project packs and `shared`/`local` sharing. It does
+not install skills; run `install <pack>` to reconcile. For project-local sharing, SAF owns only
+its exact `.git/info/exclude` block for `.agents/skills/` and removes only that block when sharing
+changes back to shared.
 
 `init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub that points at the
 canonical skills usage guide on GitHub. Re-running `init` refreshes that file and never
@@ -43,7 +52,7 @@ and cannot combine with `--execution-mode` or `--autonomy-level`. `init
 conservative value, so an existing `.sdd-agentic-flow/config.yml` predating v1.8.0 behaves identically once
 these fields are added (`WARN`, not `FAIL`, when missing). After init, change operating policy with
 `config policy` (interactive TTY, or `--plan` / `--yes` for CI). Only `execution_mode` and
-`autonomy_level` are CLI-editable in v2.1.0; other keys remain manual YAML edits. See
+`autonomy_level` are CLI-editable in v3.0.0; other keys remain manual YAML edits. See
 [commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides` —
 documented here, not editable via `config policy` yet. `workflow.autonomy_budget`
 (`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an

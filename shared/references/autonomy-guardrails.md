@@ -47,7 +47,7 @@ completion as license to invoke the next skill.
    changed); it did not silently expand into unrelated files or new features.
 5. **Skill transition validity** — the proposed next skill is on the workflow's authorized path
    (see the main SDD flow diagram in `README.md`); a guardrail failure here blocks skipping or
-   reversing a step, e.g. advancing straight from `sdd-create-specs` to `sdd-pr-review`.
+   reversing a step, e.g. advancing straight from `saf-create-spec` to `saf-review-pr`.
 6. **Resource sufficiency** — the configured budget (`workflow.autonomy_budget` in
    `.sdd-agentic-flow/config.yml`: `max_iterations`, `max_tokens`, `max_runtime_hours`) is not exhausted, and
    `pause_on_warning` triggers a stop, not just a warning, once remaining budget drops below 20%.
@@ -99,9 +99,9 @@ Autonomy level: autonomous
 
 ## Current State
 
-- Skill: sdd-task-check (completed)
+- Skill: saf-check-task (completed)
 - Status: PASS
-- Next: sdd-validation
+- Next: saf-validate
 - Guardrails: PASS
 - Human override: pause=false, stop=false
 
@@ -115,7 +115,7 @@ history, only adds to it. A human halts an autonomous run by setting `pause: tru
 `stop: true` under Human override — guardrail 7 picks that up on the next check.
 
 The `Skill:` value is not itself the SDD flow phase — `docs/sdd-methodology.md`'s
-`Phase | Typical skill` table is the existing mapping (`sdd-brainstorm` through `sdd-release`) for
+`Phase | Typical skill` table is the existing mapping (`saf-brainstorm` through `saf-release`) for
 reading which phase (Plan/Prompt/Implement/Check/PR/Review/Fix/Validate/Release) a given entry
 corresponds to. No new field is needed to make `loop-state.md` phase-inspectable; the data already
 exists, this is just where to read it.

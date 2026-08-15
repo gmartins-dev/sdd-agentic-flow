@@ -61,51 +61,51 @@ Use this path when the work has one bounded task or a small serial task set.
 
 ```mermaid
 flowchart TD
-  Source[Source item] --> Specs[sdd-create-specs]
-  Specs --> Prompts[sdd-create-prompts]
-  Prompts --> Implement[sdd-implement-task]
-  Implement --> Check[sdd-task-check]
-  Check --> Review[sdd-pr-review]
-  Review --> Validation[sdd-validation]
-  Validation -.->|on demand| Release[sdd-release]
-  Check -->|findings| Fix[sdd-pr-fix]
+  Source[Source item] --> Specs[saf-create-spec]
+  Specs --> Prompts[saf-create-prompts]
+  Prompts --> Implement[saf-implement]
+  Implement --> Check[saf-check-task]
+  Check --> Review[saf-review-pr]
+  Review --> Validation[saf-validate]
+  Validation -.->|on demand| Release[saf-release]
+  Check -->|findings| Fix[saf-fix-pr]
   Fix --> Review
 ```
 
 Recommended prompts:
 
 ```text
-Use the installed `sdd-create-specs` skill for this source item.
+Use the installed `saf-create-spec` skill for this source item.
 Follow `.sdd-agentic-flow/config.yml`. Create or update the feature specification only.
 Do not implement code or create commits. Stop if requirements are ambiguous.
 Report evidence, open questions, and limitations.
 ```
 
 ```text
-Use the installed `sdd-implement-task` skill for the approved task below.
+Use the installed `saf-implement` skill for the approved task below.
 Follow the task contract and `.sdd-agentic-flow/config.yml`.
 Change only the files required by this task. Run the required checks.
 Do not commit, push, merge, deploy, or publish. Report evidence and limitations.
 ```
 
-After `sdd-validation` passes, use `sdd-release` on demand when you need a release-readiness check before tagging. See [prompt-recipes](prompt-recipes.md#check-release-readiness).
+After `saf-validate` passes, use `saf-release` on demand when you need a release-readiness check before tagging. See [prompt-recipes](prompt-recipes.md#check-release-readiness).
 
 ## 5. Use the multi-task flow when dependencies justify it
 
 Choose this path when tasks have independent ownership or explicit execution
-waves. `sdd-implement-multi` plans and coordinates local work; it does not turn
+waves. `saf-implement-multi` plans and coordinates local work; it does not turn
 the workflow into an automatic release pipeline.
 
 ```mermaid
 flowchart TD
-  Source[Source item] --> Specs[sdd-create-specs]
+  Source[Source item] --> Specs[saf-create-spec]
   Specs --> Tasks[Approved task set]
-  Tasks --> Plan[sdd-implement-multi\nplan waves and ownership]
+  Tasks --> Plan[saf-implement-multi\nplan waves and ownership]
   Plan --> Wave1[Wave 1\nlocal task work]
   Plan --> Wave2[Wave 2\nafter dependencies]
-  Wave1 --> Checks[sdd-task-check\nper task]
+  Wave1 --> Checks[saf-check-task\nper task]
   Wave2 --> Checks
-  Checks --> Validation[sdd-validation\nfeature evidence]
+  Checks --> Validation[saf-validate\nfeature evidence]
 ```
 
 Use the single-task flow when dependencies are serial or the change is small.
@@ -116,17 +116,17 @@ can review the resulting evidence.
 
 | Skill | Input | Output | Mutates files? | Mode |
 | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | Project context   | Setup guidance    | When authorized | `guided` |
-| `sdd-create-specs`       | Source item       | Feature specs     | When authorized | `plan`   |
-| `sdd-create-prompts`     | Specs and tasks   | Agent prompts     | When authorized | `plan`   |
-| `sdd-implement-task`     | Approved task     | Code and evidence | When authorized | `apply`  |
-| `sdd-implement-multi`    | Task set          | Execution plan    | When authorized | `guided` |
-| `sdd-task-check`         | Task and evidence | Check report      | No              | `review` |
-| `sdd-create-pr`          | Completed change  | PR package        | When authorized | `guided` |
-| `sdd-pr-review`          | Change set        | Review findings   | No              | `review` |
-| `sdd-pr-fix`             | Accepted findings | Local fixes       | When authorized | `apply`  |
-| `sdd-validation`         | Feature evidence  | Validation report | No              | `review` |
-| `sdd-release`            | Version/changelog | Release readiness report | No       | `review` |
+| `saf-setup` | Project context   | Setup guidance    | When authorized | `guided` |
+| `saf-create-spec`       | Source item       | Feature specs     | When authorized | `plan`   |
+| `saf-create-prompts`     | Specs and tasks   | Agent prompts     | When authorized | `plan`   |
+| `saf-implement`     | Approved task     | Code and evidence | When authorized | `apply`  |
+| `saf-implement-multi`    | Task set          | Execution plan    | When authorized | `guided` |
+| `saf-check-task`         | Task and evidence | Check report      | No              | `review` |
+| `saf-create-pr`          | Completed change  | PR package        | When authorized | `guided` |
+| `saf-review-pr`          | Change set        | Review findings   | No              | `review` |
+| `saf-fix-pr`             | Accepted findings | Local fixes       | When authorized | `apply`  |
+| `saf-validate`         | Feature evidence  | Validation report | No              | `review` |
+| `saf-release`            | Version/changelog | Release readiness report | No       | `review` |
 
 ## 7. Agent-specific usage
 
@@ -136,14 +136,14 @@ at the relevant skill and ask it to follow the project configuration.
 ### Codex CLI
 
 ```text
-Use `.agents/skills/sdd-create-specs/SKILL.md` for this feature.
+Use `.agents/skills/saf-create-spec/SKILL.md` for this feature.
 Follow `.sdd-agentic-flow/config.yml`, work in `plan` mode, and leave the final decision to me.
 ```
 
 ### Claude Code
 
 ```text
-Read the installed `sdd-validation` skill and validate this feature locally.
+Read the installed `saf-validate` skill and validate this feature locally.
 Use the evidence in the repository, do not call external services, and report
 PASS, WARN, FAIL, evidence, and limitations.
 ```
@@ -151,7 +151,7 @@ PASS, WARN, FAIL, evidence, and limitations.
 ### Cursor
 
 ```text
-Use `.agents/skills/sdd-implement-task/SKILL.md` as the task contract.
+Use `.agents/skills/saf-implement/SKILL.md` as the task contract.
 Work in `apply` mode only after I authorize the local changes. Do not commit or push.
 ```
 

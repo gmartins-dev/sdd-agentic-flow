@@ -17,4 +17,4 @@ sdd-agentic-flow autonomous-resume
 ## Expected result
 
 - Resume clears `pause=true` on the latest `## Current State` block.
-- stdout reports the recorded next skill (`sdd-task-check`).
+- stdout reports the recorded next skill (`saf-check-task`).

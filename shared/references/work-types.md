@@ -19,7 +19,7 @@ Mandated content lives **inside** existing headers (`## Requirement {id}`, `## A
 criteria`, `context.md`). Do not add required spec headers such as `## Unchanged behavior` or
 `## System Invariants`. Do not create `bugfix.md`.
 
-Skills load this file from `sdd-create-specs` onward. See [feature-profiles.md](feature-profiles.md)
+Skills load this file from `saf-create-spec` onward. See [feature-profiles.md](feature-profiles.md)
 for the size/ceremony axis and [evidence-standard.md](evidence-standard.md) for sensors.
 
 ## Feature

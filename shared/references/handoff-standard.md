@@ -26,9 +26,9 @@ continuity on its own. A redundant `handoff.md` would only drift out of sync wit
 
 ## Named feedback loop (not auto-run)
 
-The portable cycle is implement → check (`sdd-task-check`) → needs-changes back to implement
-(bounded; human-gated) → validation → **human gate**. PR path remains `sdd-create-pr` →
-`sdd-pr-review` → `sdd-pr-fix`. A suggested bound (for example three check→implement cycles
+The portable cycle is implement → check (`saf-check-task`) → needs-changes back to implement
+(bounded; human-gated) → validation → **human gate**. PR path remains `saf-create-pr` →
+`saf-review-pr` → `saf-fix-pr`. A suggested bound (for example three check→implement cycles
 then escalate) is **guidance**, not a CLI flag. This package does not auto-run that loop.
 `handoff.md` is for pausing inside it, not for executing it.
 
@@ -45,7 +45,7 @@ then escalate) is **guidance**, not a CLI flag. This package does not auto-run t
 
 When both exist for the same paused work, `handoff.md`'s `## Current state` and `## Blockers`
 sections reference the relevant `loop-state.md` entry by skill name and timestamp instead of
-restating its content. For example: "Last recorded state: `sdd-implement-task` (completed),
+restating its content. For example: "Last recorded state: `saf-implement` (completed),
 guardrail 3 failed. See `.sdd-agentic-flow/autonomy/loop-state.md`." A skill running under `autonomy_level:
 manual` (no `loop-state.md` in use) omits that reference and describes the state directly.
 
@@ -58,8 +58,8 @@ manual` (no `loop-state.md` in use) omits that reference and describes the state
 - **Completed work**: what is done and verified, referencing existing artifacts by path
   (`check-report`, `validation-report`) rather than duplicating their evidence.
 - **Open decisions**: unresolved `Assumed`/`Unknown` items a human still needs to settle, using
-  whichever classification the producing skill already applies (e.g. `sdd-brainstorm`'s
-  Known/Assumed/Unknown/Needs research split, or `sdd-create-specs`' existing-code-mode
+  whichever classification the producing skill already applies (e.g. `saf-brainstorm`'s
+  Known/Assumed/Unknown/Needs research split, or `saf-create-spec`' existing-code-mode
   Observed/Inferred/Unknown).
 - **Blockers**: the specific failure or guardrail that stopped the work, in the same
   vocabulary the stopping skill already uses (evidence-standard.md's `blocked`/`inconclusive`

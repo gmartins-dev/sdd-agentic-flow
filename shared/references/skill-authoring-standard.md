@@ -21,7 +21,7 @@ that order, with no additional top-level sections. Each one has one job:
   reader knows what to load before acting.
   _Minimal example:_ "Use for one unambiguous task that is ready to implement or resume."
 - **`## When not to use`**: the boundary against the nearest neighboring skill, stated by name,
-  not just "don't do too much." A vague boundary is what let `sdd-task-check`/`sdd-validation`
+  not just "don't do too much." A vague boundary is what let `saf-check-task`/`saf-validate`
   drift apart before M4 tightened it.
   _Minimal example:_ "Do not use to implement fixes, review an entire feature, approve a PR, or
   infer an ambiguous task identity."
@@ -46,7 +46,7 @@ that order, with no additional top-level sections. Each one has one job:
 
 ## Output convention: Status / Next recommended skill / Reason
 
-`sdd-route` already uses a structured template for its recommendation. Every skill's
+`saf-route` already uses a structured template for its recommendation. Every skill's
 `## Output` section adopts the same closing vocabulary, so a caller (human or agent) can find
 the next step without re-reading the whole report:
 
@@ -58,8 +58,8 @@ Reason: <one line tying the status to the recommendation>
 
 This is a content requirement inside the existing `## Output` section, not a seventh section.
 It does not change the six-section contract that `scripts/check-skills.sh` already validates.
-A skill keeps its own status vocabulary (`sdd-task-check` uses `pass`/`needs changes`/`blocked`/
-`inconclusive`; `sdd-validation` uses `ready`/`not ready`/`blocked`/`inconclusive`; `sdd-route`
+A skill keeps its own status vocabulary (`saf-check-task` uses `pass`/`needs changes`/`blocked`/
+`inconclusive`; `saf-validate` uses `ready`/`not ready`/`blocked`/`inconclusive`; `saf-route`
 itself uses a route recommendation instead of a pass/fail state). Only the three labels
 (`Status`, `Next recommended skill`, `Reason`) are shared.
 

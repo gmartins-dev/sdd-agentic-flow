@@ -88,20 +88,20 @@ That exact-match check only runs at the source, in `scripts/check-skills.sh`.
 
 | Skill | extends | requires | produces | baseline |
 | --- | --- | --- | --- | --- |
-| `setup-sdd-agentic-flow` | —                   | config                                 | project-config, project-context | tlc-spec-driven  |
-| `sdd-route`               | —                   | config                                 | route-recommendation      | —                      |
-| `sdd-brainstorm`          | —                   | config                                 | spec-ready-brief           | —                      |
-| `sdd-create-specs`        | —                   | config, source-item                    | spec-package               | tlc-spec-driven        |
-| `sdd-explain-me`          | sdd-create-specs    | config, spec-package                   | explanation                | —                      |
-| `sdd-create-prompts`      | sdd-create-specs    | config, spec-package                   | task-prompts                | tlc-spec-driven, tdd |
-| `sdd-implement-task`      | sdd-create-prompts  | config, task-identity                  | code-change+tdd-evidence    | tlc-spec-driven, tdd |
-| `sdd-implement-multi`     | sdd-create-prompts  | config, spec-package                   | execution-plan              | tlc-spec-driven, tdd |
-| `sdd-task-check`          | sdd-implement-task  | config, task-evidence                  | check-report                | tlc-spec-driven, tdd |
-| `sdd-create-pr`           | sdd-task-check      | config, task-evidence                  | pr-package                   | tlc-spec-driven       |
-| `sdd-pr-review`           | sdd-create-pr       | config, pr-reference                   | review-findings               | tlc-spec-driven       |
-| `sdd-pr-fix`              | sdd-pr-review       | config, pr-reference, review-findings  | fix-evidence                   | tlc-spec-driven       |
-| `sdd-validation`          | sdd-task-check      | config, spec-package, task-evidence    | validation-report              | tlc-spec-driven, tdd |
-| `sdd-release`             | —                   | config                                 | release-readiness-report        | —                      |
+| `saf-setup` | —                   | config                                 | project-config, project-context | tlc-spec-driven  |
+| `saf-route`               | —                   | config                                 | route-recommendation      | —                      |
+| `saf-brainstorm`          | —                   | config                                 | spec-ready-brief           | —                      |
+| `saf-create-spec`        | —                   | config, source-item                    | spec-package               | tlc-spec-driven        |
+| `saf-explain`          | saf-create-spec    | config, spec-package                   | explanation                | —                      |
+| `saf-create-prompts`      | saf-create-spec    | config, spec-package                   | task-prompts                | tlc-spec-driven, tdd |
+| `saf-implement`      | saf-create-prompts  | config, task-identity                  | code-change+tdd-evidence    | tlc-spec-driven, tdd |
+| `saf-implement-multi`     | saf-create-prompts  | config, spec-package                   | execution-plan              | tlc-spec-driven, tdd |
+| `saf-check-task`          | saf-implement  | config, task-evidence                  | check-report                | tlc-spec-driven, tdd |
+| `saf-create-pr`           | saf-check-task      | config, task-evidence                  | pr-package                   | tlc-spec-driven       |
+| `saf-review-pr`           | saf-create-pr       | config, pr-reference                   | review-findings               | tlc-spec-driven       |
+| `saf-fix-pr`              | saf-review-pr       | config, pr-reference, review-findings  | fix-evidence                   | tlc-spec-driven       |
+| `saf-validate`          | saf-check-task      | config, spec-package, task-evidence    | validation-report              | tlc-spec-driven, tdd |
+| `saf-release`             | —                   | config                                 | release-readiness-report        | —                      |
 
 ## Canonical baselines
 

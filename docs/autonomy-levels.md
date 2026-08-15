@@ -48,7 +48,7 @@ it before writing `.sdd-agentic-flow/config.yml`.
 | Implement code | per `execution_mode` | yes (`apply`) | yes (`full`) |
 | Run tests / sensors | yes | yes | yes |
 | Task check / feature validation | yes | yes | yes |
-| Local PR **package** (`sdd-create-pr`) | yes | yes | yes |
+| Local PR **package** (`saf-create-pr`) | yes | yes | yes |
 | Open GitHub/Git PR, commit, push | **human** | **human** | **human** |
 | Tag / npm publish / deploy | **human** | **human** | **human** |
 | Advance to next skill without asking | no | confirm | yes, if 7 guardrails pass |
@@ -80,13 +80,13 @@ is not an error. `doctor --autonomy` reports `WARN` and both default to `guided`
 identical to today's behavior. See [configuration](configuration.md).
 
 `workflow.skill_overrides` (optional, not written by `init`) pins one skill to a stricter level
-regardless of the workflow default. For example, keep `sdd-pr-review` at `manual` even inside an
+regardless of the workflow default. For example, keep `saf-review-pr` at `manual` even inside an
 otherwise `autonomous` run, because a security-sensitive review should always get a human look:
 
 ```yaml
 workflow:
   skill_overrides:
-    sdd-pr-review:
+    saf-review-pr:
       autonomy_level: manual
 ```
 
@@ -124,8 +124,8 @@ autonomy_profile:
 ```
 
 - `supported_levels`: a skill whose output is always a recommendation or explanation for a human
-  to act on, never itself a link in the auto-advancing chain (`sdd-brainstorm`, `sdd-explain-me`,
-  `sdd-route`, `setup-sdd-agentic-flow`), omits `autonomous`.
+  to act on, never itself a link in the auto-advancing chain (`saf-brainstorm`, `saf-explain`,
+  `saf-route`, `saf-setup`), omits `autonomous`.
 - `auto_continue_condition`: one human-readable line describing "safe to advance automatically"
   for this skill. Informational; the actual gate is guardrails 1–3.
 - `blocking_conditions` / `evidence_required`: the specific failure modes and required artifacts

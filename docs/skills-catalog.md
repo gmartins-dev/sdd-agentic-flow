@@ -9,7 +9,7 @@ its skill's capability contract (`extends`/`requires`/`consumes`/`produces`/`bas
 `scripts/check-skills.sh` mechanically checks that every skill below has an entry, so this
 catalog cannot silently drop one.
 
-## `setup-sdd-agentic-flow`
+## `saf-setup`
 
 **Purpose:** Initialize the public SDD Agentic Flow structure in a repository.
 
@@ -32,9 +32,9 @@ glossary request with explicit authorization. Required input kind: `config`.
 
 **Pack(s):** `core`, `planning`, `full`, `local-files`, `github`.
 
-**Typical flow position:** first — before `sdd-route`.
+**Typical flow position:** first — before `saf-route`.
 
-## `sdd-route`
+## `saf-route`
 
 **Purpose:** Recommend the next local SDD skill without changing files.
 
@@ -63,18 +63,18 @@ automatically.
 **Typical flow position:** between any two steps — recommends the next skill whenever the
 phase is unclear; not itself a step in the linear chain.
 
-## `sdd-brainstorm`
+## `saf-brainstorm`
 
 **Purpose:** Explore a vague idea into a converged, spec-ready problem statement, or shape a
 solution once the problem is already clear.
 
-**When to use:** Use when a user has an idea that is not yet ready for `sdd-create-specs` —
+**When to use:** Use when a user has an idea that is not yet ready for `saf-create-spec` —
 either the problem itself is still vague, or the problem is clear but the solution approach is
 not decided.
 
 **When not to use:** Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — always
-delegated to `sdd-create-specs`. Do not use once the problem and approach are already decided,
-for a single ready task, or for explaining an already-specified feature (`sdd-explain-me`).
+delegated to `saf-create-spec`. Do not use once the problem and approach are already decided,
+for a single ready task, or for explaining an already-specified feature (`saf-explain`).
 
 **Inputs:** The user's idea in whatever shape it currently exists; `.sdd-agentic-flow/config.yml`,
 `project-context.md`, and `domain-glossary.md` when present; relevant existing code or docs the
@@ -83,20 +83,20 @@ idea touches. Required input kind: `config`.
 **Outputs:** `spec-ready-brief` (`.specs/features/<feature>/brief.md`, written only once the
 idea converges).
 
-**Dependencies:** `extends: null` (chain entry point, alongside `sdd-create-specs`, `sdd-route`,
-`setup-sdd-agentic-flow`); `depends_on: []`.
+**Dependencies:** `extends: null` (chain entry point, alongside `saf-create-spec`, `saf-route`,
+`saf-setup`); `depends_on: []`.
 
 **Conflicts:** none.
 
 **Baseline:** none (`baseline: []`) — brainstorming is exploration, not methodology work; the
-resulting brief is handed to `sdd-create-specs`, which does apply the TLC baseline.
+resulting brief is handed to `saf-create-spec`, which does apply the TLC baseline.
 
 **Pack(s):** `planning`, `full`.
 
-**Typical flow position:** before `sdd-create-specs` — the stage for an idea too vague or
+**Typical flow position:** before `saf-create-spec` — the stage for an idea too vague or
 undecided for a specification package to start from.
 
-## `sdd-create-specs`
+## `saf-create-spec`
 
 **Purpose:** Create or update a repository-local, evidence-based SDD specification package,
 either from a requested outcome (**source-item mode**) or from existing, undocumented code
@@ -109,7 +109,7 @@ start from.
 
 **When not to use:** Do not use for direct implementation, a casual explanation, or an unscoped
 brainstorming request. Do not proceed without repository-local configuration; use
-`setup-sdd-agentic-flow` first.
+`saf-setup` first.
 
 **Inputs:** Source-item mode: the requested outcome and known constraints. Existing-code mode:
 an explicit, user-named scope — never a whole-repository scope. `.sdd-agentic-flow/config.yml`; relevant
@@ -128,9 +128,9 @@ Observed/Inferred/Unknown in existing-code mode).
 
 **Pack(s):** `core`, `planning`, `full`, `local-files`, `github`.
 
-**Typical flow position:** between `sdd-route` and `sdd-create-prompts`.
+**Typical flow position:** between `saf-route` and `saf-create-prompts`.
 
-## `sdd-create-prompts`
+## `saf-create-prompts`
 
 **Purpose:** Generate self-contained, paste-ready implementation prompts from a validated
 repository-local SDD specification package.
@@ -140,7 +140,7 @@ implementation prompts for one or more tasks.
 
 **When not to use:** Do not use to create a specification from scratch, execute
 implementation, make repository changes outside prompt artifacts, or guess missing
-requirements. Use `sdd-create-specs` first when the specification is incomplete.
+requirements. Use `saf-create-spec` first when the specification is incomplete.
 
 **Inputs:** `.sdd-agentic-flow/config.yml`; a validated specification package and its acceptance criteria;
 optional task ordering, ownership boundaries, and target agent constraints. Required input
@@ -148,7 +148,7 @@ kinds: `config`, `spec-package`.
 
 **Outputs:** `task-prompts`.
 
-**Dependencies:** `extends: sdd-create-specs`; `depends_on: []`.
+**Dependencies:** `extends: saf-create-spec`; `depends_on: []`.
 
 **Conflicts:** none.
 
@@ -156,9 +156,9 @@ kinds: `config`, `spec-package`.
 
 **Pack(s):** `planning`, `full`.
 
-**Typical flow position:** between `sdd-create-specs` and `sdd-implement-task`.
+**Typical flow position:** between `saf-create-spec` and `saf-implement`.
 
-## `sdd-explain-me`
+## `saf-explain`
 
 **Purpose:** Explain an already-specified or already-implemented SDD feature in plain language,
 for a reader with no prior context.
@@ -168,8 +168,8 @@ context wants to understand what a feature does and why, without reading every t
 artifact.
 
 **When not to use:** Do not use to author or replace `spec.md`, `design.md`, or `tasks.md` — it
-only explains an existing package. Do not use before a spec package exists (`sdd-create-specs`
-first) or for an idea still being shaped (`sdd-brainstorm` first).
+only explains an existing package. Do not use before a spec package exists (`saf-create-spec`
+first) or for an idea still being shaped (`saf-brainstorm` first).
 
 **Inputs:** One feature identifier with an existing spec package; `.sdd-agentic-flow/config.yml`, the
 feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation;
@@ -178,7 +178,7 @@ feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated impleme
 
 **Outputs:** `explanation` (`.specs/features/<feature>/explanation.md`).
 
-**Dependencies:** `extends: sdd-create-specs`; `depends_on: []`. Read-only against the spec
+**Dependencies:** `extends: saf-create-spec`; `depends_on: []`. Read-only against the spec
 package.
 
 **Conflicts:** none.
@@ -187,10 +187,10 @@ package.
 
 **Pack(s):** `planning`, `full`.
 
-**Typical flow position:** optional branch from `sdd-create-specs`, never a required step; used
+**Typical flow position:** optional branch from `saf-create-spec`, never a required step; used
 on demand at any point once a spec package exists.
 
-## `sdd-implement-task`
+## `saf-implement`
 
 **Purpose:** Implement exactly one validated SDD task as the smallest tested, merge-ready
 increment. Required evidence is adequate behavioral sensors at the contractual seam plus
@@ -207,7 +207,7 @@ supporting evidence only. Required input kinds: `config`, `task-identity`.
 
 **Outputs:** `code-change+tdd-evidence`.
 
-**Dependencies:** `extends: sdd-create-prompts`; `depends_on: []`.
+**Dependencies:** `extends: saf-create-prompts`; `depends_on: []`.
 
 **Conflicts:** none.
 
@@ -215,10 +215,10 @@ supporting evidence only. Required input kinds: `config`, `task-identity`.
 
 **Pack(s):** `core`, `execution`, `full`, `local-files`, `github`.
 
-**Typical flow position:** between `sdd-create-prompts` and `sdd-task-check`. For multiple
-dependency-aware tasks, use `sdd-implement-multi` instead to plan the execution order first.
+**Typical flow position:** between `saf-create-prompts` and `saf-check-task`. For multiple
+dependency-aware tasks, use `saf-implement-multi` instead to plan the execution order first.
 
-## `sdd-implement-multi`
+## `saf-implement-multi`
 
 **Purpose:** Plan or coordinate implementation of multiple dependency-aware SDD tasks.
 
@@ -226,7 +226,7 @@ dependency-aware tasks, use `sdd-implement-multi` instead to plan the execution 
 orchestration — a feature has multiple explicitly selected tasks and needs a dependency-aware
 execution plan.
 
-**When not to use:** Do not use for one task (use `sdd-implement-task`), vague feature
+**When not to use:** Do not use for one task (use `saf-implement`), vague feature
 requests, specification creation, PR work, or when dependencies and task identities cannot be
 resolved.
 
@@ -237,8 +237,8 @@ when implementation orchestration is requested. Required input kinds: `config`,
 
 **Outputs:** `execution-plan`.
 
-**Dependencies:** `extends: sdd-create-prompts`; `depends_on: []`. Delegates to
-`sdd-implement-task` for each task's actual implementation.
+**Dependencies:** `extends: saf-create-prompts`; `depends_on: []`. Delegates to
+`saf-implement` for each task's actual implementation.
 
 **Conflicts:** none.
 
@@ -246,10 +246,10 @@ when implementation orchestration is requested. Required input kinds: `config`,
 
 **Pack(s):** `execution`, `multi-worktree`, `full`.
 
-**Typical flow position:** alternative to `sdd-implement-task`, between `sdd-create-prompts`
-and `sdd-task-check`, when tasks have cross-dependencies.
+**Typical flow position:** alternative to `saf-implement`, between `saf-create-prompts`
+and `saf-check-task`, when tasks have cross-dependencies.
 
-## `sdd-task-check`
+## `saf-check-task`
 
 **Purpose:** Independently check one implemented SDD task against its acceptance criteria and
 configured gates before handoff. Ground the oracle in spec / repo contracts / configured
@@ -265,7 +265,7 @@ diff, and configured validation commands. Required input kinds: `config`, `task-
 
 **Outputs:** `check-report`.
 
-**Dependencies:** `extends: sdd-implement-task`; `depends_on: []`. Read-only except for
+**Dependencies:** `extends: saf-implement`; `depends_on: []`. Read-only except for
 disposable test artifacts permitted by configuration.
 
 **Conflicts:** none.
@@ -274,9 +274,9 @@ disposable test artifacts permitted by configuration.
 
 **Pack(s):** `core`, `execution`, `full`, `local-files`, `github`.
 
-**Typical flow position:** between `sdd-implement-task` and `sdd-create-pr`.
+**Typical flow position:** between `saf-implement` and `saf-create-pr`.
 
-## `sdd-create-pr`
+## `saf-create-pr`
 
 **Purpose:** Prepare a task-scoped pull-request package from validated SDD evidence.
 
@@ -293,7 +293,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 
 **Outputs:** `pr-package`.
 
-**Dependencies:** `extends: sdd-task-check`; `depends_on: []`.
+**Dependencies:** `extends: saf-check-task`; `depends_on: []`.
 
 **Conflicts:** none.
 
@@ -301,9 +301,9 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 
 **Pack(s):** `pr`, `full`, `github`.
 
-**Typical flow position:** between `sdd-task-check` and `sdd-pr-review`.
+**Typical flow position:** between `saf-check-task` and `saf-review-pr`.
 
-## `sdd-pr-review`
+## `saf-review-pr`
 
 **Purpose:** Review one task-scoped pull request against its SDD, diff, and configured checks.
 
@@ -317,7 +317,7 @@ artifacts, diff, and available check evidence. Required input kinds: `config`, `
 
 **Outputs:** `review-findings`.
 
-**Dependencies:** `extends: sdd-create-pr`; `depends_on: []`. Read-only.
+**Dependencies:** `extends: saf-create-pr`; `depends_on: []`. Read-only.
 
 **Conflicts:** none.
 
@@ -325,10 +325,10 @@ artifacts, diff, and available check evidence. Required input kinds: `config`, `
 
 **Pack(s):** `pr`, `full`, `github`.
 
-**Typical flow position:** after `sdd-create-pr`; loops with `sdd-pr-fix` (review → fix →
-review) until findings are accepted, then proceeds to `sdd-validation`.
+**Typical flow position:** after `saf-create-pr`; loops with `saf-fix-pr` (review → fix →
+review) until findings are accepted, then proceeds to `saf-validate`.
 
-## `sdd-pr-fix`
+## `saf-fix-pr`
 
 **Purpose:** Apply the smallest task-scoped fixes for verified SDD pull-request findings.
 
@@ -344,7 +344,7 @@ input kinds: `config`, `pr-reference`, `review-findings`.
 
 **Outputs:** `fix-evidence`.
 
-**Dependencies:** `extends: sdd-pr-review`; `depends_on: []`. Hands off to `sdd-pr-review` for
+**Dependencies:** `extends: saf-review-pr`; `depends_on: []`. Hands off to `saf-review-pr` for
 focused re-review.
 
 **Conflicts:** none.
@@ -353,10 +353,10 @@ focused re-review.
 
 **Pack(s):** `pr`, `full`, `github`.
 
-**Typical flow position:** between `sdd-pr-review` and its own re-review loop back into
-`sdd-pr-review`.
+**Typical flow position:** between `saf-review-pr` and its own re-review loop back into
+`saf-review-pr`.
 
-## `sdd-validation`
+## `saf-validate`
 
 **Purpose:** Independently validate an accumulated SDD feature implementation against its
 specification and configured gates. Re-read spec and repo contracts; reject stale results
@@ -374,7 +374,7 @@ artifacts, accumulated implementation, and configured gates. Required input kind
 
 **Outputs:** `validation-report`.
 
-**Dependencies:** `extends: sdd-task-check`; `depends_on: []`. Read-only except for a
+**Dependencies:** `extends: saf-check-task`; `depends_on: []`. Read-only except for a
 permitted local report or disposable test artifacts.
 
 **Conflicts:** none.
@@ -383,9 +383,9 @@ permitted local report or disposable test artifacts.
 
 **Pack(s):** `core`, `full`, `local-files`, `github`.
 
-**Typical flow position:** after `sdd-pr-review` confirms the PR is ready.
+**Typical flow position:** after `saf-review-pr` confirms the PR is ready.
 
-## `sdd-release`
+## `saf-release`
 
 **Purpose:** Check whether a project or feature is ready to tag and publish a release —
 version consistency, changelog presence, and configured release checks.
@@ -411,5 +411,5 @@ Read-only.
 
 **Pack(s):** `core`, `full`, `local-files`, `github`.
 
-**Typical flow position:** last — after `sdd-validation` and, when a PR was used,
-`sdd-pr-review` confirm the work is ready; never tags or publishes itself.
+**Typical flow position:** last — after `saf-validate` and, when a PR was used,
+`saf-review-pr` confirm the work is ready; never tags or publishes itself.

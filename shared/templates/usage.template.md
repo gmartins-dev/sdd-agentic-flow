@@ -8,7 +8,7 @@ refreshes this file without touching `.sdd-agentic-flow/config.yml`.
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate → Release (on demand)
 
-When the next step is unclear, invoke the `sdd-route` skill. It recommends one skill from
+When the next step is unclear, invoke the `saf-route` skill. It recommends one skill from
 that chain. It does not run the workflow for you.
 
 ## Canonical guide

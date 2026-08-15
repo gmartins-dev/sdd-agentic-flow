@@ -1,10 +1,10 @@
 ---
-name: sdd-pr-fix
+name: saf-fix-pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: pr
-extends: sdd-pr-review
+extends: saf-review-pr
 requires: [config, pr-reference, review-findings]
 consumes: []
 produces: [fix-evidence]
@@ -37,10 +37,10 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
+1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
 2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. Do not close findings by reclassifying missing evidence as preference. Do not close spec drift by pretending the spec changed; stop and reconcile with the human.
 3. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md`. Apply the smallest patch per actionable finding and add or update focused regression evidence. No opportunistic cleanup.
-4. Run configured targeted checks, update the ledger, and hand off to `sdd-pr-review` for focused re-review.
+4. Run configured targeted checks, update the ledger, and hand off to `saf-review-pr` for focused re-review.
 
 ## Safety
 
@@ -52,4 +52,4 @@ Return the findings ledger, changes and checks, unresolved items, re-review scop
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing back to `sdd-pr-review` requires fix-evidence present and every actionable finding on the ledger resolved or explicitly deferred with a reason; an unresolved finding or a scope violation blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing back to `saf-review-pr` requires fix-evidence present and every actionable finding on the ledger resolved or explicitly deferred with a reason; an unresolved finding or a scope violation blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

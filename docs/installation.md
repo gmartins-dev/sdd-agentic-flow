@@ -33,8 +33,13 @@ model, the supported agents, and `--plan`/`--agent`.
 Use `init --language en-US` or `init --language pt-BR` (or the `--en`/`--br` shorthands) to
 select a profile without the interactive prompts. The default is `en-US`.
 
-Run `npx sdd-agentic-flow list` before installation to inspect pack membership. The installer
-never downloads or overwrites assets.
+Run `npx sdd-agentic-flow list` before installation to inspect pack membership. Installation
+stores desired packs and user targets in `~/.sdd-agentic-flow/install.yml`; subsequent installs
+reconcile that intent. Use `configure` to edit packs, targets, or project sharing, and
+`install <pack> --plan` to preview CREATE, UPDATE, REMOVE, and collision actions. Managed SAF
+assets may be updated or removed after confirmation; foreign and legacy `sdd-*` installations are
+blocked without migration. `--non-interactive` never prompts, and cannot be combined with
+`--interactive`.
 
 Add `--quiet` to `init` or `install` to suppress the "Suggested next step" line printed on
 success.

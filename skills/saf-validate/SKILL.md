@@ -1,10 +1,10 @@
 ---
-name: sdd-validation
+name: saf-validate
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 2.1.0
+  version: 3.0.0
   pack: core
-extends: sdd-task-check
+extends: saf-check-task
 requires: [config, spec-package, task-evidence]
 consumes: [domain-glossary, project-context]
 produces: [validation-report]
@@ -28,7 +28,7 @@ Use when the user asks whether one implemented feature is ready against its SDD.
 
 ## When not to use
 
-Do not use to implement code, repair findings, validate only one task, create a PR, or infer a feature identity from ambiguous branch names. For a single task before handoff/PR, use `sdd-task-check` instead — this skill assumes several already-checked tasks have accumulated.
+Do not use to implement code, repair findings, validate only one task, create a PR, or infer a feature identity from ambiguous branch names. For a single task before handoff/PR, use `saf-check-task` instead — this skill assumes several already-checked tasks have accumulated.
 
 ## Inputs
 
@@ -37,7 +37,7 @@ Do not use to implement code, repair findings, validate only one task, create a 
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/setup-sdd-agentic-flow` or `npx sdd-agentic-flow init`; otherwise resolve exactly one feature and its configured validation paths and commands.
+1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`; otherwise resolve exactly one feature and its configured validation paths and commands.
 2. Follow this **fresh-eyes** order at feature scope (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance to calibrate expected rigor.
 3. Re-read the spec **and** normative repo contracts. Confirm task-level TDD evidence for code changes: behavior, contractual seams, current passing-sensor commands, explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale results as context, not current proof. Record explicit evidence gaps. Distinguish verification limits from implementation failures. For each required behavior, name one wrong implementation that the current sensors would still pass (**non-shallow litmus**). If you cannot, record **Shallow sensor** or an evidence gap — not `Status: ready`.
 4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS / `Status: ready` an implementation of one interpretation. On spec drift, write `not ready` with a reconciliation note — do not rewrite the spec to match the code.
@@ -55,4 +55,4 @@ Return feature identity, decision, requirement/task evidence counts, required ga
 
 ## Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, treating the feature as ready for `sdd-create-pr` requires a validation-report with status PASS and every specification requirement satisfied (PASS invalid on a false-positive catalog hit); an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, treating the feature as ready for `saf-create-pr` requires a validation-report with status PASS and every specification requirement satisfied (PASS invalid on a false-positive catalog hit); an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

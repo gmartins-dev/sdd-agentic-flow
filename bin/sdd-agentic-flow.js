@@ -24,9 +24,22 @@ const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = requ
 const { checkForUpdate } = require('./update-check');
 const { runConfigCommand, renderPolicySummary } = require('./config');
 const { readConfig } = require('./config-domain');
+const { applyProjectSharing, configureIntent } = require('./configure');
+const {
+  AGENT_TO_TARGETS,
+  DEFAULT_USER_TARGETS,
+  USER_TARGETS,
+  defaultInstallConfig,
+  readInstallConfig,
+  repositoryKey,
+  shouldUseInteractiveInstall,
+  writeInstallConfig,
+} = require('./install-domain');
+const { CORE_SKILLS, OFFICIAL_SKILLS, isLegacySkillName } = require('./skill-identity');
 const {
   buildInstallPlan,
   applyInstallPlan,
+  isPlanEmpty,
   USER_TARGET_LABELS,
   targetLabelFor,
 } = require('./install-preflight');
@@ -90,22 +103,6 @@ function resolveOperatingPreset(token) {
     ...OPERATING_PRESETS[canonical],
   };
 }
-const OFFICIAL_SKILLS = [
-  'setup-sdd-agentic-flow',
-  'sdd-route',
-  'sdd-brainstorm',
-  'sdd-create-specs',
-  'sdd-explain-me',
-  'sdd-create-prompts',
-  'sdd-implement-task',
-  'sdd-implement-multi',
-  'sdd-task-check',
-  'sdd-create-pr',
-  'sdd-pr-review',
-  'sdd-pr-fix',
-  'sdd-validation',
-  'sdd-release',
-];
 const REQUIRED_CONTRACT_FIELDS = [
   'extends',
   'requires',
@@ -177,6 +174,10 @@ function userSkillsDirsFor(agent, homeDir = os.homedir()) {
     dirs.push(dir);
   }
   return dirs;
+}
+
+function userSkillsDirsForTargets(targets, homeDir) {
+  return [...new Set(targets.map((target) => path.join(homeDir, ...USER_TARGETS[target])))];
 }
 
 // Milestone 2 (Platform Abstraction): the only place that reads process.env for shell
@@ -800,7 +801,7 @@ function autonomousResume(cwd, options = {}) {
   log('INFO', `next skill: ${state.next || `unknown — inspect ${SDD_PATHS.loopState}`}`);
   log('INFO', 'the invoking agent re-checks all 7 guardrails before advancing to it.');
   if (state.next) nextStep(`invoke the ${state.next} skill`, { quiet: options.quiet });
-  else nextStep('invoke the sdd-route skill', { quiet: options.quiet });
+  else nextStep('invoke the saf-route skill', { quiet: options.quiet });
 }
 
 function validValue(value, allowed) {
@@ -971,11 +972,39 @@ function installationSummaryForWelcome(cwd) {
   return { mode, targets: [...new Set(targets)] };
 }
 
+function planForInstallProfile({ cwd, homeDir, scope, profile }) {
+  const desiredPacks = profile?.packs || [];
+  const desiredSkills = [
+    ...new Set(desiredPacks.flatMap((name) => readPreset(name)?.skills || [])),
+  ];
+  const targetIds =
+    scope === 'project'
+      ? ['project-agents']
+      : profile?.targets?.length
+        ? profile.targets
+        : DEFAULT_USER_TARGETS;
+  return buildInstallPlan({
+    packageRoot: PACKAGE_ROOT,
+    preset: { ...readPreset('core'), skills: desiredSkills },
+    targets:
+      scope === 'project'
+        ? [path.join(cwd, '.agents', 'skills')]
+        : userSkillsDirsForTargets(targetIds, homeDir),
+    officialSkills: OFFICIAL_SKILLS,
+    scope,
+    modeLabel: scope === 'project' ? 'Project / Team' : 'Local / User',
+    desiredPacks,
+    targetIds,
+  });
+}
+
 function printInstallPlanReport(plan, mode, _cwd) {
   const lines = [];
   lines.push(...renderSection('Installation plan', mode));
   lines.push(...renderKeyValue('Mode', plan.modeLabel, mode));
   lines.push(...renderKeyValue('Scope', plan.scope, mode));
+  lines.push(...renderKeyValue('Packs', plan.desiredPacks.join(', ') || '(none)', mode));
+  lines.push(...renderKeyValue('Target IDs', plan.targetIds.join(', ') || '(none)', mode));
   lines.push('');
   lines.push('Targets');
   for (const target of plan.targets) {
@@ -990,6 +1019,8 @@ function printInstallPlanReport(plan, mode, _cwd) {
   lines.push('');
   lines.push('Preflight');
   lines.push(...renderKeyValue('CREATE', String(plan.totals.CREATE), mode));
+  lines.push(...renderKeyValue('UPDATE', String(plan.totals.UPDATE), mode));
+  lines.push(...renderKeyValue('REMOVE', String(plan.totals.REMOVE), mode));
   lines.push(...renderKeyValue('PRESERVE', String(plan.totals.PRESERVE), mode));
   lines.push(...renderKeyValue('COLLISION', String(plan.totals.COLLISION), mode));
   if (plan.totals.PARTIAL) {
@@ -1000,18 +1031,18 @@ function printInstallPlanReport(plan, mode, _cwd) {
     lines.push('Note: project installs are Git-visible under .agents/skills/');
   }
   process.stdout.write(`${lines.join('\n')}\n`);
-  if (plan.totals.MANAGED_MODIFIED) {
-    log(
-      'INFO',
-      'Managed skills differ from package — preserved. Try: sdd-agentic-flow upgrade --skills-only',
-    );
-  }
+  if (plan.totals.MANAGED_MODIFIED)
+    log('INFO', 'Managed skills differ from package and will be updated after confirmation.');
   if (plan.totals.PARTIAL) {
     log(
       'WARN',
       'Partial skill tree detected — re-run install core or upgrade --skills-only to repair',
     );
   }
+  if (plan.totals.BLOCKED) {
+    log('WARN', 'BLOCKED — legacy installation detected (< 3.0). Remove it, then reinstall.');
+  }
+  if (isPlanEmpty(plan)) log('PASS', 'Already up to date.');
 }
 
 function learnSdd(_cwd) {
@@ -1055,7 +1086,11 @@ function install(pack, cwd, options = {}) {
       try: ['sdd-agentic-flow list', ...(hint ? [hint] : [])],
     });
   }
-  const scope = options.scope || 'user';
+  const homeDir = options.homeDir || os.homedir();
+  const installConfig = readInstallConfig(homeDir) || defaultInstallConfig();
+  const projectKey = repositoryKey(cwd);
+  const storedProject = installConfig.projects[projectKey];
+  const scope = options.scope || (storedProject ? 'project' : 'user');
   if (scope !== 'user' && scope !== 'project')
     return fail('unknown scope: use --scope user or --scope project', {
       reason: 'Only user and project scopes are supported.',
@@ -1078,31 +1113,41 @@ function install(pack, cwd, options = {}) {
     });
   }
 
-  const homeDir = options.homeDir || os.homedir();
+  const profile = scope === 'project' ? storedProject : installConfig.user;
+  const desiredPacks = [...new Set([...(profile?.packs || []), pack])];
+  const desiredSkills = [
+    ...new Set(desiredPacks.flatMap((name) => readPreset(name)?.skills || [])),
+  ];
+  const effectivePreset = { ...preset, skills: desiredSkills };
   let targets = [];
   if (scope === 'project') {
     targets = [path.join(cwd, '.agents', 'skills')];
   } else {
-    const agent = options.agent || resolveConfiguredAgent(cwd);
-    targets = userSkillsDirsFor(agent, homeDir);
-    if (options.targets?.length) {
-      targets = targets.filter((dir) => options.targets.includes(targetLabelFor(dir)));
-      if (!targets.length) {
-        return fail('no matching installation targets', {
-          reason: 'Chosen targets do not map to known user-scope directories.',
-          try: ['sdd-agentic-flow install core --interactive'],
-        });
-      }
-    }
+    const configuredTargets = profile?.targets?.length ? profile.targets : DEFAULT_USER_TARGETS;
+    const selectedTargets = options.agent
+      ? AGENT_TO_TARGETS[options.agent]
+      : options.targets?.length
+        ? options.targets
+        : configuredTargets;
+    targets = userSkillsDirsForTargets(selectedTargets, homeDir);
   }
 
   const plan = buildInstallPlan({
     packageRoot: PACKAGE_ROOT,
-    preset,
+    preset: effectivePreset,
     targets,
     officialSkills: OFFICIAL_SKILLS,
     scope,
     modeLabel: scope === 'project' ? 'Project / Team' : 'Local / User',
+    desiredPacks,
+    targetIds:
+      scope === 'project'
+        ? ['project-agents']
+        : options.agent
+          ? AGENT_TO_TARGETS[options.agent]
+          : profile?.targets?.length
+            ? profile.targets
+            : DEFAULT_USER_TARGETS,
   });
 
   if (options.plan) {
@@ -1111,19 +1156,54 @@ function install(pack, cwd, options = {}) {
   }
 
   if (plan.blocked) {
-    return fail('install blocked: foreign skill collision detected', {
-      reason: 'Existing same-name skills are not managed by sdd-agentic-flow.',
-      try: [
-        'sdd-agentic-flow install core --plan',
-        'sdd-agentic-flow upgrade --skills-only',
-        'Remove or rename conflicting directories manually, then retry',
-      ],
-    });
+    const legacy = plan.targets.some((target) => target.legacy);
+    return fail(
+      legacy
+        ? 'install blocked: legacy installation detected'
+        : 'install blocked: foreign skill collision detected',
+      {
+        reason: legacy
+          ? 'v3 does not migrate v2 installations automatically. Remove the previous installation, then reinstall.'
+          : 'Existing same-name skills are not managed by sdd-agentic-flow.',
+        try: [
+          'sdd-agentic-flow install core --plan',
+          'sdd-agentic-flow upgrade --skills-only',
+          'Remove or rename conflicting directories manually, then retry',
+        ],
+      },
+    );
   }
 
-  const totals = { installed: 0, preserved: 0 };
+  if (isPlanEmpty(plan)) {
+    if (scope === 'project') {
+      installConfig.projects[projectKey] = {
+        root: cwd,
+        packs: desiredPacks,
+        sharing: profile?.sharing || 'shared',
+      };
+    } else {
+      installConfig.user = {
+        ...installConfig.user,
+        packs: desiredPacks,
+        targets: profile?.targets?.length ? profile.targets : DEFAULT_USER_TARGETS,
+      };
+    }
+    try {
+      writeInstallConfig(installConfig, homeDir);
+    } catch (error) {
+      if (error.code !== 'EACCES' && error.code !== 'EROFS') throw error;
+      log('WARN', 'installation is current but user-local intent could not be saved');
+    }
+    logPassLine(`Already up to date; ${plan.totals.PRESERVE} managed files preserved.`, {
+      mode,
+      quiet: options.quiet,
+    });
+    return;
+  }
+
+  const totals = { installed: 0, updated: 0, preserved: 0, removed: 0 };
   for (const targetRoot of targets) {
-    const result = applyInstallPlan(PACKAGE_ROOT, preset, targetRoot, {
+    const result = applyInstallPlan(PACKAGE_ROOT, effectivePreset, targetRoot, {
       officialSkills: OFFICIAL_SKILLS,
     });
     if (result.blocked) {
@@ -1133,39 +1213,55 @@ function install(pack, cwd, options = {}) {
       });
     }
     totals.installed += result.summary.installed;
+    totals.updated += result.summary.updated;
     totals.preserved += result.summary.preserved;
-    if (result.summary.installed > 0) writeInstallProvenance(targetRoot, VERSION);
+    totals.removed += result.summary.removed;
+    writeInstallProvenance(targetRoot, {
+      packageVersion: VERSION,
+      scope,
+      target: scope === 'project' ? 'project-agents' : targetLabelFor(targetRoot),
+      packs: desiredPacks,
+      managedSkills: desiredSkills,
+    });
   }
 
-  if (options.projectLocalExclude && scope === 'project') {
-    applyProjectSkillsGitExclude(cwd);
+  const projectSharing = options.projectLocalExclude ? 'local' : profile?.sharing || 'shared';
+  if (scope === 'project') {
+    const sharingResult = applyProjectSharing(cwd, projectSharing);
+    if (sharingResult.warning) log('WARN', sharingResult.warning);
+  }
+
+  if (!options.plan) {
+    if (scope === 'project') {
+      installConfig.projects[projectKey] = {
+        root: cwd,
+        packs: desiredPacks,
+        sharing: projectSharing,
+      };
+    } else {
+      installConfig.user = {
+        ...installConfig.user,
+        packs: desiredPacks,
+        targets: profile?.targets?.length ? profile.targets : DEFAULT_USER_TARGETS,
+      };
+    }
+    try {
+      writeInstallConfig(installConfig, homeDir);
+    } catch (error) {
+      if (error.code !== 'EACCES' && error.code !== 'EROFS') throw error;
+      log('WARN', 'installation completed but user-local intent could not be saved');
+    }
   }
 
   logPassLine(
     scope === 'project'
-      ? `installed ${pack}: ${totals.installed} files`
-      : `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files`,
+      ? `installed ${pack}: ${totals.installed} files${totals.updated ? `, updated ${totals.updated}` : ''}${totals.removed ? `, removed ${totals.removed}` : ''}`
+      : `installed ${pack} to ${targets.length} user-scope target(s): ${totals.installed} files${totals.updated ? `, updated ${totals.updated}` : ''}${totals.removed ? `, removed ${totals.removed}` : ''}`,
     { mode, quiet: options.quiet },
   );
   if (totals.preserved) log('WARN', `preserved ${totals.preserved} existing files`);
   if (scope === 'user') logPassLine('Repository changes: none', { mode, quiet: options.quiet });
   if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
-}
-
-function applyProjectSkillsGitExclude(cwd) {
-  const gitDir = path.join(cwd, '.git');
-  if (!fs.existsSync(gitDir)) {
-    log('WARN', 'No Git repository — cannot update .git/info/exclude for local project skills');
-    return;
-  }
-  const excludePath = path.join(gitDir, 'info', 'exclude');
-  const entry = '.agents/skills/';
-  const comment = '# sdd-agentic-flow project-local skills install';
-  const content = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
-  if (content.includes(entry)) return;
-  const suffix = content.endsWith('\n') || !content ? '' : '\n';
-  fs.mkdirSync(path.dirname(excludePath), { recursive: true });
-  fs.writeFileSync(excludePath, `${content}${suffix}${comment}\n${entry}\n`, 'utf8');
 }
 
 async function installInteractive(pack, cwd, options = {}) {
@@ -1231,6 +1327,45 @@ async function installInteractive(pack, cwd, options = {}) {
   }
 }
 
+async function configureInteractive(cwd, homeDir) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const scopeAnswer = await rl.question('Installation model [Local / User]: ');
+    const scope = /project/i.test(scopeAnswer.trim()) ? 'project' : 'user';
+    const existing = readInstallConfig(homeDir) || defaultInstallConfig();
+    const profile =
+      scope === 'project'
+        ? existing.projects[repositoryKey(cwd)] || { packs: [], sharing: 'shared' }
+        : existing.user;
+    const packsAnswer = await rl.question(
+      `Packs [${(profile.packs || []).join(', ') || 'core'}]: `,
+    );
+    const packs = (packsAnswer || profile.packs.join(', ') || 'core')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    let targets = [];
+    let sharing = null;
+    if (scope === 'user') {
+      const targetsAnswer = await rl.question(
+        `Targets [${(profile.targets || DEFAULT_USER_TARGETS).join(', ')}]: `,
+      );
+      targets = (targetsAnswer || (profile.targets || DEFAULT_USER_TARGETS).join(','))
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+    } else {
+      const sharingAnswer = await rl.question(`Project sharing [${profile.sharing || 'shared'}]: `);
+      sharing = /local/i.test(sharingAnswer) ? 'local' : profile.sharing || 'shared';
+    }
+    const save = await rl.question('Save configuration? [Y/n]: ');
+    if (/^n(o)?$/i.test(save.trim())) return { cancelled: true };
+    return configureIntent({ homeDir, cwd, scope, packs, targets, sharing });
+  } finally {
+    rl.close();
+  }
+}
+
 function installationStatus(target) {
   if (!fs.existsSync(target)) return false;
   // A shared skills directory (e.g. `~/.agents/skills`) can hold unrelated skills from other
@@ -1242,14 +1377,6 @@ function installationStatus(target) {
     fs.existsSync(path.join(target, 'sdd-agentic-flow-shared', 'references', 'tlc-baseline.md'))
   );
 }
-
-const CORE_SKILLS = [
-  'setup-sdd-agentic-flow',
-  'sdd-create-specs',
-  'sdd-implement-task',
-  'sdd-task-check',
-  'sdd-validation',
-];
 
 function hasCoreSkillsAt(root) {
   return CORE_SKILLS.every((skill) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
@@ -1315,6 +1442,24 @@ function doctorChecks(cwd) {
         return false;
       }
     })();
+  (() => {
+    const roots = [path.join(cwd, '.agents', 'skills')];
+    for (const root of roots) {
+      if (!fs.existsSync(root)) continue;
+      const provenance = readInstallProvenance(root);
+      const legacy =
+        Boolean(provenance?.package === 'sdd-agentic-flow' && provenance.schema !== 2) ||
+        fs.readdirSync(root).some((name) => isLegacySkillName(name));
+      if (legacy) {
+        add(
+          'legacy_installation',
+          'WARN',
+          'legacy installation detected (< 3.0); remove it manually, then reinstall',
+          'Installation',
+        );
+      }
+    }
+  })();
   const configPath = sddJoin(cwd, 'config.yml');
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
@@ -1404,6 +1549,23 @@ function doctorChecks(cwd) {
           'Config',
         );
       }
+    })();
+    (() => {
+      const installConfig = readInstallConfig(os.homedir());
+      const key = repositoryKey(cwd);
+      const profile = installConfig?.projects[key] || installConfig?.user;
+      const scope = installConfig?.projects[key] ? 'project' : 'user';
+      if (!profile?.packs?.length) return;
+      const plan = planForInstallProfile({ cwd, homeDir: os.homedir(), scope, profile });
+      const status = plan.blocked || !isPlanEmpty(plan) ? 'WARN' : 'PASS';
+      add(
+        'installation_intent',
+        status,
+        isPlanEmpty(plan)
+          ? `installation intent is synchronized (${profile.packs.join(', ')})`
+          : `installation intent has pending reconciliation (${profile.packs.join(', ')})`,
+        'Installation',
+      );
     })();
     (() => {
       const presence = coreSkillsPresence(skillsRoot);
@@ -2103,10 +2265,17 @@ function uninstall(args, cwd) {
   const roots = [];
   if (scopes.includes('project')) roots.push(path.join(cwd, '.agents', 'skills'));
   if (scopes.includes('user')) roots.push(...userSkillsDirsFor(agent));
-  const targets = roots.flatMap((root) => [
-    ...OFFICIAL_SKILLS.map((skill) => path.join(root, skill)),
-    path.join(root, 'sdd-agentic-flow-shared'),
-  ]);
+  const targets = roots.flatMap((root) => {
+    const hasOwnedSkill = OFFICIAL_SKILLS.some((skill) =>
+      fs.existsSync(path.join(root, skill, 'SKILL.md')),
+    );
+    if (!hasOwnedSkill && scope !== 'project' && root !== path.join(cwd, '.agents', 'skills'))
+      return [];
+    return [
+      ...OFFICIAL_SKILLS.map((skill) => path.join(root, skill)),
+      path.join(root, 'sdd-agentic-flow-shared'),
+    ];
+  });
   if (includeConfig) targets.push(sddJoin(cwd, 'config.yml'));
   // --full additionally clears regenerable local state (context, snapshots, reports, usage.md).
   // .specs/features is never a target here, in any mode: it holds hand-authored specs, the
@@ -2153,8 +2322,10 @@ function uninstall(args, cwd) {
 const USAGE = {
   init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--preset manual|supervised|autonomous] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
   install:
-    'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--interactive] [--quiet]',
+    'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--interactive|--non-interactive] [--quiet]',
   config: 'usage: config [show|policy [--plan] [--yes] [--preset manual|supervised|autonomous]]',
+  configure:
+    'usage: configure [--scope user|project] [--pack <pack>] [--target agents|cursor|claude|copilot] [--sharing shared|local] [--plan]',
   doctor:
     'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
   uninstall:
@@ -2172,6 +2343,7 @@ const KNOWN_COMMANDS = [
   'discover',
   'context',
   'config',
+  'configure',
   'install',
   'doctor',
   'upgrade',
@@ -2268,13 +2440,14 @@ Pass --scope project to install into .agents/skills/ inside the project instead.
 USAGE
   sdd-agentic-flow install <pack> [--scope user|project]
                                    [--agent codex|cursor|claude-code|vscode-copilot]
-                                   [--plan] [--interactive] [--quiet] [--ascii]
+                                   [--plan] [--interactive|--non-interactive] [--quiet] [--ascii]
 
 OPTIONS
   --scope user|project  Install target: global per-agent dirs (default) or the project.
   --agent <name>         Restrict a user-scope install to a single agent's directory.
   --plan                 Print installation plan with preflight summary; no writes.
   --interactive          Guided installation model, targets, preflight, and confirm.
+  --non-interactive      Never prompt; use saved intent or documented defaults.
   --quiet                Suppress the "Suggested next step" line on success.
   --ascii                Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
 
@@ -3019,23 +3192,86 @@ async function runCommand(command, rawArgs, cwd) {
         ],
       });
     }
+  } else if (command === 'configure') {
+    if (args.includes('--help')) return process.stdout.write(`${USAGE.configure}\n`);
+    let scope = 'user';
+    let sharing = null;
+    let plan = false;
+    let interactive = false;
+    const packs = [];
+    const targets = [];
+    for (let index = 0; index < args.length; index += 1) {
+      const arg = args[index];
+      if (arg === '--plan') plan = true;
+      else if (arg === '--interactive') interactive = true;
+      else if (arg === '--scope' && ['user', 'project'].includes(args[index + 1]))
+        scope = args[++index];
+      else if (arg === '--pack' && args[index + 1]) packs.push(args[++index]);
+      else if (arg === '--target' && Object.hasOwn(USER_TARGETS, args[index + 1]))
+        targets.push(args[++index]);
+      else if (arg === '--sharing' && ['shared', 'local'].includes(args[index + 1]))
+        sharing = args[++index];
+      else return fail(USAGE.configure);
+    }
+    if (!packs.every((pack) => readPreset(pack))) return fail('unknown pack in configure');
+    if (interactive && plan) return fail('configure --interactive cannot combine with --plan');
+    const canInteract = shouldUseInteractiveInstall({
+      stdinIsTTY: process.stdin.isTTY,
+      stdoutIsTTY: process.stdout.isTTY,
+      ci: Boolean(process.env.CI),
+      plan,
+      quiet: false,
+      nonInteractive: false,
+      machine: false,
+    });
+    if (interactive || (args.length === 0 && canInteract)) {
+      const result = await configureInteractive(cwd, os.homedir());
+      if (result.cancelled) return log('INFO', 'Configuration cancelled');
+      log('PASS', 'saved installation intent');
+      return;
+    }
+    const result = configureIntent({
+      homeDir: os.homedir(),
+      cwd,
+      scope,
+      packs,
+      targets,
+      sharing,
+      plan,
+    });
+    log(plan ? 'PLAN' : 'PASS', `${plan ? 'would save' : 'saved'} ${scope} installation intent`);
+    log('INFO', `packs: ${(result.after.packs || []).join(', ') || '(none)'}`);
+    const reconcilePlan = planForInstallProfile({
+      cwd,
+      homeDir: os.homedir(),
+      scope,
+      profile: result.after,
+    });
+    printInstallPlanReport(reconcilePlan, resolveMode({}), cwd);
+    if (!plan)
+      log(
+        'INFO',
+        'Configuration saved only. Run `sdd-agentic-flow install core` to reconcile changes.',
+      );
   } else if (command === 'learn-sdd') {
     learnSdd(cwd);
   } else if (command === 'install') {
     const usage = USAGE.install;
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.install);
     let pack = null;
-    let scope = 'user';
+    let scope = null;
     let agent = null;
     let plan = false;
     let quiet = false;
     let interactive = false;
+    let nonInteractive = false;
     let valid = true;
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
       if (arg === '--plan') plan = true;
       else if (arg === '--quiet') quiet = true;
       else if (arg === '--interactive') interactive = true;
+      else if (arg === '--non-interactive') nonInteractive = true;
       else if (arg === '--scope' && ['user', 'project'].includes(args[index + 1])) {
         scope = args[index + 1];
         index += 1;
@@ -3048,8 +3284,18 @@ async function runCommand(command, rawArgs, cwd) {
       } else if (!arg.startsWith('--') && pack === null) pack = arg;
       else valid = false;
     }
-    if (!valid || !pack) return fail(usage);
-    if (interactive) await installInteractive(pack, cwd, { scope, agent, quiet, ascii });
+    if (!valid || !pack || (interactive && nonInteractive)) return fail(usage);
+    const automaticInteractive = shouldUseInteractiveInstall({
+      stdinIsTTY: process.stdin.isTTY,
+      stdoutIsTTY: process.stdout.isTTY,
+      ci: Boolean(process.env.CI),
+      plan,
+      quiet,
+      nonInteractive,
+      machine: resolveMode({ quiet, ascii }) === 'machine',
+    });
+    if (interactive || automaticInteractive)
+      await installInteractive(pack, cwd, { scope, agent, quiet, ascii });
     else install(pack, cwd, { scope, agent, plan, quiet, ascii });
   } else if (command === 'doctor') {
     if (args.includes('--help')) return process.stdout.write(COMMAND_HELP.doctor);

@@ -8,7 +8,7 @@ Install a pack, then reference the installed Markdown skill by name.
 [installation scope](installation-scope.md).
 
 ```text
-Use the installed sdd-implement-task skill for this approved task. Follow .sdd-agentic-flow/config.yml and the task acceptance criteria. Modify local files only when authorized. Do not commit, push, merge, deploy, or publish.
+Use the installed saf-implement skill for this approved task. Follow .sdd-agentic-flow/config.yml and the task acceptance criteria. Modify local files only when authorized. Do not commit, push, merge, deploy, or publish.
 ```
 
-Review the resulting evidence with `sdd-task-check` and `sdd-validation` before accepting the work. Use `sdd-release` on demand when you need a release-readiness check before tagging.
+Review the resulting evidence with `saf-check-task` and `saf-validate` before accepting the work. Use `saf-release` on demand when you need a release-readiness check before tagging.

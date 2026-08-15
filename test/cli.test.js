@@ -226,7 +226,7 @@ test('init writes a resolvable usage guide stub and never points at a package do
   const usagePath = path.join(cwd, '.sdd-agentic-flow/usage.md');
   assert.ok(fs.existsSync(usagePath));
   const usage = fs.readFileSync(usagePath, 'utf8');
-  assert.match(usage, /sdd-route/);
+  assert.match(usage, /saf-route/);
   assert.match(
     usage,
     /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
@@ -580,7 +580,7 @@ test('doctor --contracts validates installed capability contracts', () => {
     'PASS',
   );
 
-  const corruptedSkill = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const corruptedSkill = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const original = fs.readFileSync(corruptedSkill, 'utf8');
   fs.writeFileSync(corruptedSkill, original.replace(/^produces:.*$/m, ''));
   const failReport = JSON.parse(
@@ -588,7 +588,7 @@ test('doctor --contracts validates installed capability contracts', () => {
   );
   const failCheck = failReport.checks.find((check) => check.name === 'capability_contracts');
   assert.equal(failCheck.status, 'FAIL');
-  assert.match(failCheck.message, /sdd-create-specs/);
+  assert.match(failCheck.message, /saf-create-spec/);
   assert.match(failCheck.message, /produces/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -599,7 +599,7 @@ test('doctor --contracts detects dangling depends_on references', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-dangling-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const original = fs.readFileSync(skillPath, 'utf8');
   fs.writeFileSync(skillPath, original.replace('depends_on: []', 'depends_on: [not-a-real-skill]'));
   const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
@@ -613,24 +613,24 @@ test('doctor --contracts detects a depends_on cycle between installed skills', (
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-cycle-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  const specsPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
-  const taskCheckPath = path.join(cwd, '.agents/skills/sdd-task-check/SKILL.md');
+  const specsPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
+  const taskCheckPath = path.join(cwd, '.agents/skills/saf-check-task/SKILL.md');
   fs.writeFileSync(
     specsPath,
-    fs.readFileSync(specsPath, 'utf8').replace('depends_on: []', 'depends_on: [sdd-task-check]'),
+    fs.readFileSync(specsPath, 'utf8').replace('depends_on: []', 'depends_on: [saf-check-task]'),
   );
   fs.writeFileSync(
     taskCheckPath,
     fs
       .readFileSync(taskCheckPath, 'utf8')
-      .replace('depends_on: []', 'depends_on: [sdd-create-specs]'),
+      .replace('depends_on: []', 'depends_on: [saf-create-spec]'),
   );
   const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
   const check = report.checks.find((c) => c.name === 'capability_contracts');
   assert.equal(check.status, 'FAIL');
   assert.match(check.message, /contract cycle detected/);
-  assert.match(check.message, /sdd-create-specs/);
-  assert.match(check.message, /sdd-task-check/);
+  assert.match(check.message, /saf-create-spec/);
+  assert.match(check.message, /saf-check-task/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
@@ -638,13 +638,13 @@ test('doctor --contracts flags conflicting skills that are both installed', () =
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-conflict-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const original = fs.readFileSync(skillPath, 'utf8');
-  fs.writeFileSync(skillPath, original.replace('conflicts: []', 'conflicts: [sdd-task-check]'));
+  fs.writeFileSync(skillPath, original.replace('conflicts: []', 'conflicts: [saf-check-task]'));
   const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
   const check = report.checks.find((c) => c.name === 'capability_contracts');
   assert.equal(check.status, 'FAIL');
-  assert.match(check.message, /sdd-create-specs and sdd-task-check declare a conflict/);
+  assert.match(check.message, /saf-create-spec and saf-check-task declare a conflict/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
@@ -652,7 +652,7 @@ test('doctor --contracts detects an unknown baseline id', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-baseline-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const original = fs.readFileSync(skillPath, 'utf8');
   fs.writeFileSync(
     skillPath,
@@ -669,7 +669,7 @@ test('doctor --contracts fails deterministically when requires_cli is not satisf
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-contracts-requires-cli-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const original = fs.readFileSync(skillPath, 'utf8');
   fs.writeFileSync(skillPath, original.replace('requires_cli: null', 'requires_cli: >=99.0.0'));
   const report = JSON.parse(run(['doctor', '--json', '--contracts'], cwd).stdout);
@@ -678,7 +678,7 @@ test('doctor --contracts fails deterministically when requires_cli is not satisf
   assert.match(
     check.message,
     new RegExp(
-      `sdd-create-specs: requires CLI >=99\\.0\\.0, installed CLI is ${packageVersion.replace(/\./g, '\\.')}`,
+      `saf-create-spec: requires CLI >=99\\.0\\.0, installed CLI is ${packageVersion.replace(/\./g, '\\.')}`,
     ),
   );
 
@@ -866,9 +866,9 @@ test('doctor --autonomy validates config, the execution_mode x autonomy_level ma
   const unsupportedReport = JSON.parse(run(['doctor', '--json', '--autonomy'], cwd).stdout);
   const skillsCheck = unsupportedReport.checks.find((c) => c.name === 'autonomy_skills');
   assert.equal(skillsCheck.status, 'WARN');
-  assert.match(skillsCheck.message, /sdd-route/);
+  assert.match(skillsCheck.message, /saf-route/);
 
-  const skillPath = path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md');
   const skillOriginal = fs.readFileSync(skillPath, 'utf8');
   fs.writeFileSync(
     skillPath,
@@ -878,7 +878,7 @@ test('doctor --autonomy validates config, the execution_mode x autonomy_level ma
   const missingCheck = missingProfileReport.checks.find((c) => c.name === 'autonomy_skills');
   assert.equal(missingCheck.status, 'FAIL');
   assert.match(missingCheck.message, /missing autonomy_profile/);
-  assert.match(missingCheck.message, /sdd-create-specs/);
+  assert.match(missingCheck.message, /saf-create-spec/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -925,9 +925,9 @@ test('context autonomy-state reports config, then reflects a recorded loop-state
       '',
       '## Current State',
       '',
-      '- Skill: sdd-task-check (completed)',
+      '- Skill: saf-check-task (completed)',
       '- Status: PASS',
-      '- Next: sdd-validation',
+      '- Next: saf-validate',
       '- Guardrails: PASS',
       '- Human override: pause=false, stop=false',
       '',
@@ -937,8 +937,8 @@ test('context autonomy-state reports config, then reflects a recorded loop-state
   const found = run(['context', 'autonomy-state'], cwd);
   assert.equal(found.status, 0);
   assert.match(found.stdout, /status: available/);
-  assert.match(found.stdout, /current skill: sdd-task-check \(completed\)/);
-  assert.match(found.stdout, /next: sdd-validation/);
+  assert.match(found.stdout, /current skill: saf-check-task \(completed\)/);
+  assert.match(found.stdout, /next: saf-validate/);
   assert.match(found.stdout, /human override: none/);
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -964,9 +964,9 @@ test('autonomous-resume fails with no state, clears pause/stop with an audit ent
       '',
       '## Current State',
       '',
-      '- Skill: sdd-implement-task (blocked)',
+      '- Skill: saf-implement (blocked)',
       '- Status: FAIL',
-      '- Next: sdd-task-check',
+      '- Next: saf-check-task',
       '- Guardrails: FAIL (guardrail 3: tests_fail)',
       '- Human override: pause=false, stop=true',
       '',
@@ -984,7 +984,7 @@ test('autonomous-resume fails with no state, clears pause/stop with an audit ent
   );
   assert.equal(resumed.status, 0);
   assert.match(resumed.stdout, /resumed: cleared human override/);
-  assert.match(resumed.stdout, /next skill: sdd-task-check/);
+  assert.match(resumed.stdout, /next skill: saf-check-task/);
   const afterResume = fs.readFileSync(loopStatePath, 'utf8');
   assert.match(afterResume, /Human override: pause=false, stop=false/);
   assert.match(afterResume, /## Override Log/);
@@ -1014,17 +1014,17 @@ function writeMultiBlockLoopState(cwd) {
       '',
       '## Current State',
       '',
-      '- Skill: sdd-implement-task (blocked)',
+      '- Skill: saf-implement (blocked)',
       '- Status: FAIL',
-      '- Next: sdd-task-check',
+      '- Next: saf-check-task',
       '- Guardrails: FAIL (guardrail 3: tests_fail)',
       '- Human override: pause=false, stop=true',
       '',
       '## Current State',
       '',
-      '- Skill: sdd-task-check (completed)',
+      '- Skill: saf-check-task (completed)',
       '- Status: PASS',
-      '- Next: sdd-validation',
+      '- Next: saf-validate',
       '- Guardrails: PASS',
       '- Human override: pause=false, stop=false',
       '',
@@ -1040,16 +1040,16 @@ test('context autonomy-state and doctor --autonomy read the LATEST of multiple C
   writeMultiBlockLoopState(cwd);
 
   const contextOut = run(['context', 'autonomy-state'], cwd).stdout;
-  assert.match(contextOut, /current skill: sdd-task-check \(completed\)/);
-  assert.doesNotMatch(contextOut, /sdd-implement-task/);
-  assert.match(contextOut, /next: sdd-validation/);
+  assert.match(contextOut, /current skill: saf-check-task \(completed\)/);
+  assert.doesNotMatch(contextOut, /saf-implement/);
+  assert.match(contextOut, /next: saf-validate/);
   assert.match(contextOut, /human override: none/);
 
   const report = JSON.parse(run(['doctor', '--json', '--autonomy'], cwd).stdout);
   const loopCheck = report.checks.find((c) => c.name === 'autonomy_loop_state');
   assert.equal(loopCheck.status, 'PASS');
-  assert.match(loopCheck.message, /sdd-task-check/);
-  assert.doesNotMatch(loopCheck.message, /sdd-implement-task/);
+  assert.match(loopCheck.message, /saf-check-task/);
+  assert.doesNotMatch(loopCheck.message, /saf-implement/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -1073,7 +1073,7 @@ test('autonomous-resume clears the override on the LATEST block only, leaving ea
 
   const resumed = run(['autonomous-resume'], cwd);
   assert.equal(resumed.status, 0);
-  assert.match(resumed.stdout, /sdd-task-check/);
+  assert.match(resumed.stdout, /saf-check-task/);
 
   const after = fs.readFileSync(file, 'utf8');
   const blocks = after.split('## Current State');
@@ -1094,12 +1094,12 @@ test('workflow.skill_overrides lets a per-skill autonomy_level override the work
   const before = JSON.parse(run(['doctor', '--json', '--autonomy'], cwd).stdout);
   const beforeCheck = before.checks.find((c) => c.name === 'autonomy_skills');
   assert.equal(beforeCheck.status, 'WARN');
-  assert.match(beforeCheck.message, /sdd-route/);
+  assert.match(beforeCheck.message, /saf-route/);
 
   const configPath = path.join(cwd, '.sdd-agentic-flow/config.yml');
   fs.appendFileSync(
     configPath,
-    '\n  skill_overrides:\n    sdd-route:\n      autonomy_level: supervised\n    setup-sdd-agentic-flow:\n      autonomy_level: supervised\n',
+    '\n  skill_overrides:\n    saf-route:\n      autonomy_level: supervised\n    saf-setup:\n      autonomy_level: supervised\n',
   );
 
   const after = JSON.parse(run(['doctor', '--json', '--autonomy'], cwd).stdout);
@@ -1163,13 +1163,13 @@ test('doctor validates the TDD baseline in package and installed shared layers',
 });
 
 test('routing skill is listed, installed by public packs, and removed by uninstall', () => {
-  assert.match(run(['list']).stdout, /sdd-route/);
+  assert.match(run(['list']).stdout, /saf-route/);
 
   for (const pack of ['core', 'planning', 'execution', 'pr']) {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), `sdd-agentic-flow-route-${pack}-`));
     assert.equal(run(['init'], cwd).status, 0);
     assert.equal(run(['install', pack, '--scope', 'project'], cwd).status, 0);
-    assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/sdd-route/SKILL.md')));
+    assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/saf-route/SKILL.md')));
     fs.rmSync(cwd, { recursive: true, force: true });
   }
 
@@ -1177,7 +1177,7 @@ test('routing skill is listed, installed by public packs, and removed by uninsta
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
   assert.equal(run(['uninstall', '--apply'], cwd).status, 0);
-  assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/sdd-route')));
+  assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/saf-route')));
   assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/config.yml')));
   assert.ok(fs.existsSync(path.join(cwd, '.specs/features')));
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -1285,7 +1285,7 @@ test('uninstall --full clears config and regenerable state, never .specs/feature
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/reports')));
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/usage.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.specs/features/.keep')));
-  assert.ok(!fs.existsSync(path.join(home, '.agents/skills/sdd-create-specs')));
+  assert.ok(!fs.existsSync(path.join(home, '.agents/skills/saf-create-spec')));
 
   fs.rmSync(cwd, { recursive: true, force: true });
   fs.rmSync(home, { recursive: true, force: true });
@@ -1331,7 +1331,7 @@ test('install core (default scope user) never writes into the consumer project',
     path.join(home, '.claude', 'skills'),
     path.join(home, '.copilot', 'skills'),
   ]) {
-    assert.ok(fs.existsSync(path.join(target, 'sdd-create-specs', 'SKILL.md')), target);
+    assert.ok(fs.existsSync(path.join(target, 'saf-create-spec', 'SKILL.md')), target);
   }
   fs.rmSync(cwd, { recursive: true, force: true });
   fs.rmSync(home, { recursive: true, force: true });
@@ -1342,7 +1342,7 @@ test('install --agent restricts scope-user writes to a single agent target', () 
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-scope-agent-home-'));
   const result = runIsolatedHome(['install', 'core', '--agent', 'claude-code'], cwd, home);
   assert.equal(result.status, 0);
-  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills', 'sdd-create-specs', 'SKILL.md')));
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills', 'saf-create-spec', 'SKILL.md')));
   assert.ok(!fs.existsSync(path.join(home, '.agents', 'skills')));
   assert.ok(!fs.existsSync(path.join(home, '.copilot', 'skills')));
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -1352,7 +1352,7 @@ test('install --agent restricts scope-user writes to a single agent target', () 
 test('install --scope project behaves exactly like the pre-v0.9.0 default', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-scope-project-'));
   assert.equal(run(['install', 'core', '--scope', 'project'], cwd).status, 0);
-  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/sdd-create-specs/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/saf-create-spec/SKILL.md')));
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
@@ -1438,7 +1438,7 @@ test('doctor and the bare-invocation screen both detect a partial core skill ins
   // binary "some skill exists" check would give, and not the plain "no skills installed yet"
   // INFO message either).
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-partial-install-'));
-  for (const skill of ['setup-sdd-agentic-flow', 'sdd-create-specs']) {
+  for (const skill of ['saf-setup', 'saf-create-spec']) {
     const skillDir = path.join(cwd, '.agents', 'skills', skill);
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), `# ${skill}\n`);
@@ -1507,12 +1507,12 @@ test('uninstall --scope removes only the requested scope', () => {
     runIsolatedHome(['uninstall', '--apply', '--scope', 'project'], cwd, home).status,
     0,
   );
-  assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/sdd-create-specs')));
-  assert.ok(fs.existsSync(path.join(home, '.agents/skills/sdd-create-specs/SKILL.md')));
+  assert.ok(!fs.existsSync(path.join(cwd, '.agents/skills/saf-create-spec')));
+  assert.ok(fs.existsSync(path.join(home, '.agents/skills/saf-create-spec/SKILL.md')));
 
   assert.equal(runIsolatedHome(['uninstall', '--apply', '--scope', 'user'], cwd, home).status, 0);
-  assert.ok(!fs.existsSync(path.join(home, '.agents/skills/sdd-create-specs')));
-  assert.ok(!fs.existsSync(path.join(home, '.claude/skills/sdd-create-specs')));
+  assert.ok(!fs.existsSync(path.join(home, '.agents/skills/saf-create-spec')));
+  assert.ok(!fs.existsSync(path.join(home, '.claude/skills/saf-create-spec')));
 
   fs.rmSync(cwd, { recursive: true, force: true });
   fs.rmSync(home, { recursive: true, force: true });
@@ -1531,7 +1531,7 @@ test('golden flow: greenfield init -> install core -> copy spec artifacts -> doc
 
   // Mechanically prove the copied artifacts carry the required headers from
   // shared/references/artifact-contracts.md — the same presence contract a real
-  // sdd-create-specs run has to satisfy.
+  // saf-create-spec run has to satisfy.
   const spec = fs.readFileSync(path.join(targetDir, 'spec.md'), 'utf8');
   assert.match(spec, /^# Specification — task-management$/m);
   assert.match(spec, /^## Requirement REQ-1/m);
@@ -1580,13 +1580,13 @@ test('golden flow: existing-code mode artifacts carry Observed/Inferred/Unknown 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
-test('golden flow: idea to spec — brainstorm brief converges into a sdd-create-specs package', () => {
+test('golden flow: idea to spec — brainstorm brief converges into a saf-create-spec package', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-golden-idea-to-spec-'));
   assert.equal(run(['init'], cwd).status, 0);
   assert.equal(run(['install', 'planning', '--scope', 'project'], cwd).status, 0);
   assert.ok(
-    fs.existsSync(path.join(cwd, '.agents/skills/sdd-brainstorm/SKILL.md')),
-    'planning pack must install sdd-brainstorm',
+    fs.existsSync(path.join(cwd, '.agents/skills/saf-brainstorm/SKILL.md')),
+    'planning pack must install saf-brainstorm',
   );
 
   const fixtureDir = path.join(packageRoot, 'examples/golden/idea-to-spec');
@@ -1595,7 +1595,7 @@ test('golden flow: idea to spec — brainstorm brief converges into a sdd-create
   for (const file of ['brief.md', 'context.md', 'spec.md', 'design.md', 'tasks.md'])
     fs.copyFileSync(path.join(fixtureDir, file), path.join(targetDir, file));
 
-  // sdd-brainstorm only ever hands off brief.md; sdd-create-specs is what produces the spec
+  // saf-brainstorm only ever hands off brief.md; saf-create-spec is what produces the spec
   // package. Proving both live at the same feature path, with the package carrying the
   // required headers from shared/references/artifact-contracts.md, is the same handoff a real
   // brainstorm -> create-specs run has to complete.
@@ -1836,7 +1836,7 @@ test('golden flow: autonomy AUTO-001 — brainstorm handoff to create-specs unde
   assert.equal(report.checks.find((c) => c.name === 'autonomy_combo').status, 'PASS');
   const loop = report.checks.find((c) => c.name === 'autonomy_loop_state');
   assert.equal(loop.status, 'PASS');
-  assert.match(loop.message, /sdd-brainstorm/);
+  assert.match(loop.message, /saf-brainstorm/);
   assert.notEqual(report.status, 'FAIL');
 
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -1855,7 +1855,7 @@ test('golden flow: autonomy AUTO-002 — task-check hands off to validation', ()
   assert.equal(report.checks.filter((c) => c.name.startsWith('guardrail_')).length, 7);
   const loop = report.checks.find((c) => c.name === 'autonomy_loop_state');
   assert.equal(loop.status, 'PASS');
-  assert.match(loop.message, /sdd-validation/);
+  assert.match(loop.message, /saf-validate/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -1871,7 +1871,7 @@ test('golden flow: autonomy AUTO-003 — autonomous-resume clears pause', () => 
 
   const resumed = run(['autonomous-resume'], cwd);
   assert.equal(resumed.status, 0);
-  assert.match(resumed.stdout, /sdd-task-check/);
+  assert.match(resumed.stdout, /saf-check-task/);
   assert.match(fs.readFileSync(loopStatePath, 'utf8'), /pause=false, stop=false/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -1914,7 +1914,7 @@ test('golden flow: autonomy AUTO-005 — doctor reads budget-exhausted loop stat
   const report = JSON.parse(run(['doctor', '--json', '--autonomy'], cwd).stdout);
   const loop = report.checks.find((c) => c.name === 'autonomy_loop_state');
   assert.equal(loop.status, 'PASS');
-  assert.match(loop.message, /sdd-implement-task/);
+  assert.match(loop.message, /saf-implement/);
 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
@@ -1984,7 +1984,7 @@ test('upgrade --skills-only refreshes missing files and skips local modification
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-skills-only-home-'));
   assert.equal(runIsolatedHome(['init'], cwd, homeDir).status, 0);
   assert.equal(runIsolatedHome(['install', 'core'], cwd, homeDir).status, 0);
-  const skillPath = path.join(homeDir, '.agents/skills/sdd-create-specs/SKILL.md');
+  const skillPath = path.join(homeDir, '.agents/skills/saf-create-spec/SKILL.md');
   assert.ok(fs.existsSync(skillPath));
   fs.writeFileSync(skillPath, 'locally-edited-skill\n');
   const result = spawnSync(process.execPath, [cli, 'upgrade', '--skills-only'], {

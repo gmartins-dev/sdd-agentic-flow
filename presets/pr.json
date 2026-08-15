@@ -1,8 +1,8 @@
 {
   "name": "pr",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Read-first PR workflow.",
-  "skills": ["sdd-route", "sdd-create-pr", "sdd-pr-review", "sdd-pr-fix"],
+  "skills": ["saf-route", "saf-create-pr", "saf-review-pr", "saf-fix-pr"],
   "shared": true,
   "status": "stable"
 }

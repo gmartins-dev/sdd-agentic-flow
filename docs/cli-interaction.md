@@ -90,7 +90,7 @@ whether config and core skills are present. Ready state includes **Change operat
 (`config policy`), **Preview install plan**, and **Learn about SDD**. Includes **Check for
 updates / upgrade** once config exists. Uninstall in the menu is structurally `--plan` only.
 
-Bare welcome (v2.1.0) may show **Operating policy** and **Installation** blocks when config
+Bare welcome (v3.0.0) may show **Operating policy** and **Installation** blocks when config
 and skills are present. Copy does not claim the CLI invokes skills.
 
 ## Related

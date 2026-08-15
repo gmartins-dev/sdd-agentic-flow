@@ -8,7 +8,7 @@ Install a pack and let Cursor read the skill and `.sdd-agentic-flow/config.yml` 
 [installation scope](installation-scope.md).
 
 ```text
-Use the installed sdd-task-check skill to independently check this completed task. Follow .sdd-agentic-flow/config.yml. Do not modify files. Return findings and evidence only.
+Use the installed saf-check-task skill to independently check this completed task. Follow .sdd-agentic-flow/config.yml. Do not modify files. Return findings and evidence only.
 ```
 
 Keep configuration and skill files under project context. Cursor integrations are optional; this package does not require them.

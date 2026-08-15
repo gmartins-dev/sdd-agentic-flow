@@ -17,5 +17,5 @@ sdd-agentic-flow doctor --json --autonomy --verbose
 
 ## Expected result
 
-- Loop state shows `sdd-task-check` complete with `Next: sdd-validation`.
+- Loop state shows `saf-check-task` complete with `Next: saf-validate`.
 - `doctor --autonomy --verbose` lists all 7 guardrails and `autonomy_loop_state: PASS`.

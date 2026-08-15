@@ -5,7 +5,7 @@ The toolkit is agent-client agnostic. This taxonomy guides people and agents. It
 skill loop.
 
 The **canonical workflow path** is Plan → Prompt → Implement → Check → PR → Review → Fix →
-Validate; Release on demand. Invoke `sdd-route` when the next step is uncertain. Read the
+Validate; Release on demand. Invoke `saf-route` when the next step is uncertain. Read the
 recommended skill's local `SKILL.md` as the source of truth.
 
 Operating presets (`init --preset`) write `execution_mode` and `autonomy_level` only:
@@ -22,22 +22,22 @@ not invoke skills. Commit, push, merge, tag, and publish stay human on every pre
 
 ## User-invoked orchestrators
 
-- `setup-sdd-agentic-flow`
-- `sdd-route`
-- `sdd-brainstorm`
-- `sdd-create-specs`
-- `sdd-explain-me`
-- `sdd-create-prompts`
-- `sdd-implement-task`
-- `sdd-implement-multi`
-- `sdd-create-pr`
-- `sdd-validation`
-- `sdd-release` (on demand, after validation when tagging or publishing)
+- `saf-setup`
+- `saf-route`
+- `saf-brainstorm`
+- `saf-create-spec`
+- `saf-explain`
+- `saf-create-prompts`
+- `saf-implement`
+- `saf-implement-multi`
+- `saf-create-pr`
+- `saf-validate`
+- `saf-release` (on demand, after validation when tagging or publishing)
 
 ## Agent-assisted review discipline
 
-- `sdd-task-check`
-- `sdd-pr-review`
-- `sdd-pr-fix`
+- `saf-check-task`
+- `saf-review-pr`
+- `saf-fix-pr`
 
-Invoke `sdd-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 14 public skills.
+Invoke `saf-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 14 public skills.

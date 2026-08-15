@@ -2,7 +2,7 @@
 
 Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 
-When the current phase is unclear, invoke `sdd-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files. After `sdd-validation` passes, invoke `sdd-release` on demand when you need a release-readiness check before tagging.
+When the current phase is unclear, invoke `saf-route`. It recommends the next skill and points to that skill's `SKILL.md`; it does not invoke skills or change files. After `saf-validate` passes, invoke `saf-release` on demand when you need a release-readiness check before tagging.
 
 ## Where to read next
 
@@ -17,7 +17,7 @@ When the current phase is unclear, invoke `sdd-route`. It recommends the next sk
 
 ## Rules of thumb
 
-Create specs before implementation. Implement one task at a time. Run `sdd-task-check` on task evidence before accepting work. Run `sdd-validation` after integration.
+Create specs before implementation. Implement one task at a time. Run `saf-check-task` on task evidence before accepting work. Run `saf-validate` after integration.
 
 Use the TLC baseline for planning and the [TDD baseline](tdd-baseline.md) for code tasks. Confirm required behavior and contractual seams. Work in vertical slices. Record current sensor evidence (or an explicit gap). RED is optional and diagnostic; do not fabricate it.
 

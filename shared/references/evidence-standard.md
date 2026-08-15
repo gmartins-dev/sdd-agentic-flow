@@ -128,7 +128,7 @@ Independence does not require a second implementation or a second agent. It requ
 verification oracle or acceptance condition be independently grounded in authoritative
 requirements rather than inferred solely from the implementation under test.
 
-Implementation may **produce** tests. `sdd-task-check` / `sdd-validation` **ground the oracle in
+Implementation may **produce** tests. `saf-check-task` / `saf-validate` **ground the oracle in
 spec / repo contracts / configured gates** — they do not rewrite the suite as a second
 implementation. Full TLC Verifier remains out of scope.
 
@@ -253,26 +253,26 @@ Each skill below applies the principle above with wording specific to its own do
 wording is the operative text inside that skill's `SKILL.md`. This file is the shared rule it
 implements, not a replacement for it.
 
-- **`sdd-create-specs`**: classifies every finding as **Observed** (directly shown by code or a
+- **`saf-create-spec`**: classifies every finding as **Observed** (directly shown by code or a
   passing test), **Inferred** (a reasonable reading no test directly confirms), or **Unknown** (a
   gap neither code nor tests answer), and never presents an Inferred or Unknown finding as
   Observed.
-- **`sdd-implement-task`**: preserves behavioral sensors at contractual seams; records executed
+- **`saf-implement`**: preserves behavioral sensors at contractual seams; records executed
   **current** evidence; grounds the oracle in spec / repo contracts / configured gates, not a
   tautological `expected`. Test-first is allowed. Same-agent RED is not proof. Missing RED is
   not a failure by itself.
-- **`sdd-task-check`**: identifies requirements; selects the smallest sensor set that still
+- **`saf-check-task`**: identifies requirements; selects the smallest sensor set that still
   covers specified behaviors and relevant failure modes; grounds the oracle in authority; flags
   tautology; records commands/results as **evidence**; records missing/inadequate sensors as
   gaps; distinguishes current vs historical vs not-run. Missing RED is not an automatic fail.
   PASS is evidence, not a verdict. Never turn missing evidence into a pass.
-- **`sdd-validation`**: re-reads spec **and** repo contracts; evaluates accumulated evidence;
+- **`saf-validate`**: re-reads spec **and** repo contracts; evaluates accumulated evidence;
   runs required **current** gates; rejects stale results as current proof; traces
   requirement-to-evidence; records explicit gaps; distinguishes verification limits from
   implementation failures. Evidence from prior runs is context, not proof.
-- **`sdd-pr-review`**: "do not invent CI results": verifies every finding with code or
+- **`saf-review-pr`**: "do not invent CI results": verifies every finding with code or
   reproducible evidence before separating blocking defects from non-blocking observations.
-- **`sdd-pr-fix`**: keeps a findings ledger that classifies preferences, missing evidence, and
+- **`saf-fix-pr`**: keeps a findings ledger that classifies preferences, missing evidence, and
   spec drift without altering their classification just to close them out.
 
 A skill's local vocabulary may add nuance for its domain; it must never contradict the generic
@@ -282,13 +282,13 @@ principle above.
 
 `shared/templates/check-report.template.md` and `shared/templates/validation-report.template.md`
 carry a top-line `Status: {{status}}` field, filled with the producing skill's own local
-vocabulary (`sdd-task-check`: `pass`/`needs changes`/`blocked`/`inconclusive`; `sdd-validation`:
+vocabulary (`saf-check-task`: `pass`/`needs changes`/`blocked`/`inconclusive`; `saf-validate`:
 `ready`/`not ready`/`blocked`/`inconclusive`). This does not introduce a new, universal status
 enum; `skill-authoring-standard.md`'s existing per-skill vocabulary rule is unchanged.
 
 [Guardrail 1](autonomy-guardrails.md) ("the skill reports `PASS`/`DONE`, not `IN_PROGRESS`,
 `UNKNOWN`, or `FAIL`") reads this field, not the surrounding prose, and maps each skill's own
-positive value to a pass: `pass` (`sdd-task-check`) and `ready` (`sdd-validation`) count as
+positive value to a pass: `pass` (`saf-check-task`) and `ready` (`saf-validate`) count as
 `PASS`; every other local value (`needs changes`, `not ready`, `blocked`, `inconclusive`) counts
 as not-`PASS` and blocks an `autonomous` advance the same way a literal `FAIL` would. A skill
 must never write `Status: pass`/`Status: ready` while a required check in `## Evidence` recorded

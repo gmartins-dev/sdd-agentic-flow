@@ -5,8 +5,8 @@ Autonomy level: autonomous
 
 ## Current State
 
-- Skill: sdd-task-check (completed)
+- Skill: saf-check-task (completed)
 - Status: PASS
-- Next: sdd-validation
+- Next: saf-validate
 - Guardrails: PASS
 - Human override: pause=false, stop=false

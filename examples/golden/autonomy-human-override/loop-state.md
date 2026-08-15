@@ -5,8 +5,8 @@ Autonomy level: autonomous
 
 ## Current State
 
-- Skill: sdd-implement-task (blocked)
+- Skill: saf-implement (blocked)
 - Status: FAIL
-- Next: sdd-task-check
+- Next: saf-check-task
 - Guardrails: FAIL (guardrail 3: verification)
 - Human override: pause=false, stop=true

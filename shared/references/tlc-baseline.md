@@ -13,9 +13,9 @@ sensors from those criteria, and preserve current evidence before completion.
 
 ## Internal implementation
 
-`sdd-create-specs` owns Specify through Tasks. `sdd-implement-task` and
-`sdd-implement-multi` implement the Execute intent. `sdd-task-check` and
-`sdd-validation` implement Verify. Direct TLC Execute is not invoked.
+`saf-create-spec` owns Specify through Tasks. `saf-implement` and
+`saf-implement-multi` implement the Execute intent. `saf-check-task` and
+`saf-validate` implement Verify. Direct TLC Execute is not invoked.
 
 ## Extensions
 

@@ -50,6 +50,15 @@ pack → install → run recipe used by `cli:sandbox` is also exercised automati
 e2e tests in `test/cli.test.js` — use the script for interactive poking, the tests for
 regression coverage.
 
+### Exhaustive CLI audit
+
+Run `npm run cli:exhaustive` for the reusable black-box CLI audit. It exercises the documented
+commands through realistic user journeys, isolated temporary projects/HOMEs, negative paths,
+safe reconciliation, autonomy, uninstall, and a real packed-consumer flow. By default it writes
+an independent Markdown report to `.local/gmm/sdd-agentic-flow/` using the filename
+`v<version>-cli-test-report-YYYYMMDDTHHMMSSZ.md`; the same UTC timestamp is recorded in the
+report header. Set `SAF_CLI_REPORT=/path/to/report.md` when a specific output path is needed.
+
 ## Diagrams
 
 Diagrams use Mermaid as their textual, versionable source — always as inline ` ```mermaid `

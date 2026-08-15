@@ -48,6 +48,7 @@
     "sanitize": "bash ./scripts/sanitize-private-context.sh",
     "pack:dry": "node scripts/pack-dry.js",
     "cli:dev": "node scripts/cli-dev.js",
+    "cli:exhaustive": "node scripts/cli-exhaustive.js",
     "cli:sandbox": "node scripts/cli-sandbox.js",
     "release:check": "bash scripts/release-checklist.sh",
     "version:stamp": "node scripts/check-version-consistency.js --stamp"

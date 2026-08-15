@@ -110,7 +110,9 @@ Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users 
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-Use `init --interactive` to pick agent target, language profile, and feature profile. See [installation](docs/installation.md).
+Start with `npx sdd-agentic-flow init`. In a real terminal it guides configuration,
+installs the `full` pack, prepares context, and validates the result. Scripts and CI
+stay deterministic with `init --non-interactive`. See [getting started](docs/getting-started.md).
 
 ## How it works
 
@@ -198,7 +200,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language ...|--en|--br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Create local configuration
+init [--interactive|--non-interactive] [--language ...|--en|--br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Guided setup or local configuration
 configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
 discover [--force] [--quiet]          Refresh auto-discovered project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state

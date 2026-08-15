@@ -6,6 +6,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 
 | Doc | When to read |
 | --- | --- |
+| [getting-started.md](getting-started.md) | One-command guided setup |
 | [what-is-sdd.md](what-is-sdd.md) | Plain-language SDD overview and where the CLI fits |
 | [commands.md](commands.md) | Gh-style CLI command reference |
 | [installation.md](installation.md) | First install, pack selection, re-running install safely |

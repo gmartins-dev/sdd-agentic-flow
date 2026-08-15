@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 3.2.0
+
+Continuous guided onboarding release.
+
+**Changed:**
+
+- In a real TTY, `init` now guides a first project from configuration through
+  `full` installation, project context, and `doctor`; `--non-interactive` keeps
+  automation deterministic.
+- Returning setup is derived from durable configuration, intent, skills, context,
+  and doctor results. No onboarding state file is stored.
+- Existing valid `core` installations are preserved until setup is deliberately changed.
+
+**Added:**
+
+- Dependency-free keyboard/numeric selector with a plain-terminal fallback and cancellation.
+- `docs/getting-started.md` for the one-command first-run path.
+
 ## 3.1.0
 
 CLI UX, localization, diagnostic, and interaction-coherence release.

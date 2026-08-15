@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v3.2.0 (2026-08-15):** Continuous guided onboarding: `init` is a TTY-first
+  0 → Ready path with review-before-write, default `full` installation, context,
+  and doctor verification. Automation remains explicit through `--non-interactive`;
+  no onboarding state, dependency, or automatic registry access was added.
+
 - **v3.1.0 (2026-08-15):** CLI UX coherence: truthful guided flows, EN/pt-BR human-facing
   messages, human-plain output for pipes/CI, explicit JSON diagnostics, progressive doctor
   summaries, target-stable diagnostic IDs, state-aware navigation, and grouped uninstall plans.

@@ -4,16 +4,15 @@ Requires Node.js >= 22 to run the CLI (see [environment compatibility](environme
 for the full matrix). That requirement applies to the CLI only. The project you're installing
 into can be written in any language; the CLI never adds a dependency to it.
 
-Install the package, run `npx sdd-agentic-flow init`, then install the smallest pack
-that fits the project. Re-running installation preserves existing files.
+For a new project, run one command. In a real terminal it guides configuration,
+installs the `full` pack, prepares project context, and runs `doctor`.
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install core
-npx sdd-agentic-flow doctor
 ```
 
-Use `init --interactive` when selecting initial project defaults. `init` always writes
+Use `init --non-interactive` for scripts and CI. `--interactive` remains an explicit
+alias for guided onboarding. `init` always writes
 project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`)
 and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) that points at the canonical
 [skills usage guide](sdd-skills-usage-guide.md) (the same document on GitHub, because the

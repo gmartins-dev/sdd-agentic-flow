@@ -38,6 +38,15 @@ function menuActionByCommand(...command) {
 // Filter the static catalog by toolkit state. Welcome already points at one next command;
 // the menu shows only the actions that make sense for that state (plus help).
 function menuActionsFor(state = {}) {
+  if (state.onboardingState === 'READY' || state.onboardingState === 'NEEDS_ATTENTION') {
+    return [
+      { label: 'Keep current setup', command: [] },
+      { label: 'Check for updates', command: ['upgrade'] },
+      { label: 'Change setup', command: ['configure', '--interactive'] },
+      { label: 'Validate setup', command: ['doctor'] },
+      { label: 'More options', command: ['help'] },
+    ];
+  }
   const hasConfig = Boolean(state.hasConfig);
   const hasSkills = Boolean(state.hasSkills);
   const pick = (...commands) =>

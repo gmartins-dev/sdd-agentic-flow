@@ -14,8 +14,8 @@ One command, three modes — decided by `outputMode(streams, env, flags)` in `bi
 | Mode | When | Brand / connectors | ANSI | Symbols |
 | --- | --- | --- | --- | --- |
 | **human-rich** | stdout TTY, stdin TTY, not `CI`, no `--quiet`, no `--json` | full chevron art | yes | Unicode blocks + `✓` / `│` |
-| **human-plain** | human session but `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, or TTY without color | full chevron art (`#`/`+`/`=`) | no | ASCII (`OK`, `->`, …) |
-| **machine** | `--json`, pipe/redirect, `CI`, or non-TTY stdout | no | no | ASCII / status words |
+| **human-plain** | `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, pipe/redirect, CI, or no usable TTY color | full chevron art (`#`/`+`/`=`) | no | ASCII (`OK`, `->`, …) |
+| **machine** | explicit structured output (`--json`) | no | no | ASCII / status words |
 
 Rules:
 
@@ -42,7 +42,7 @@ Rules:
   left→right (~160ms steps) to echo the chevron flow; human-plain / `--ascii` stay
   instant. If the TTY reports `columns` or `rows` too small for the block, welcome falls
   back to a one-line mark (`›››` / `>>>`) with no animation. Set `SDD_BRAND_ANIMATE=0` to
-  skip the reveal. Machine / pipe / CI / agents get no art. SVG is never rendered in the CLI.
+  skip the reveal. Machine output gets no art. SVG is never rendered in the CLI.
 
 ## stdout vs stderr
 
@@ -76,7 +76,7 @@ does not suggest nonexistent flags such as `init --force`.
 After a mutating command succeeds (`init`, `install`, `discover`,
 `context refresh`, `autonomous-resume`), the CLI may print a short, copy-pasteable
 `Suggested next step` in human-rich / human-plain only. It is omitted under `--quiet`
-and in **machine** mode (pipe/CI/non-TTY/`--json`). Welcome (bare invocation) still
+and in **machine** mode (`--json`). Welcome (bare invocation) still
 points at one next command in every mode (compact status prose in machine) and, when
 relevant, the opt-in `upgrade` / `doctor --check-updates` hint. On **human-rich** interactive
 TTY only, welcome may ask `Check for updates? [y/N]` (default **N**) before any registry
@@ -87,10 +87,9 @@ human-plain).
 
 ## Interactive menu
 
-Shown only when stdout and stdin are TTYs and `CI` is unset. Actions are filtered by
-whether config and core skills are present. Ready state includes **Change operating policy**
-(`config policy`), **Preview install plan**, and **Learn about SDD**. Includes **Check for
-updates / upgrade** once config exists. Uninstall in the menu is structurally `--plan` only.
+Shown only when stdout and stdin are TTYs and `CI` is unset. First use resumes guided
+setup; ready or attention states offer **Keep current setup**, **Check for updates**,
+**Change setup**, **Validate setup**, and **More options**. Updates remain opt-in.
 
 Bare welcome (v3.0.0) may show **Operating policy** and **Installation** blocks when config
 and skills are present. Copy does not claim the CLI invokes skills.

@@ -12,7 +12,7 @@ first; it names the failing check.
 
 **Diagnose:** `sdd-agentic-flow doctor`. Look for `WARN .sdd-agentic-flow/config.yml not found`.
 
-**Fix:** `sdd-agentic-flow init` (or `init --interactive` to choose settings).
+**Fix:** `sdd-agentic-flow init` (or `init --non-interactive` for scripts and CI).
 
 ### `skills` / `shared_layer`: core skills or shared layer not fully installed
 

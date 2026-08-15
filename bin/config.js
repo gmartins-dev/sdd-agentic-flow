@@ -1,6 +1,5 @@
 'use strict';
 
-const readline = require('node:readline/promises');
 const {
   readConfig,
   applyPolicyMutation,
@@ -9,6 +8,7 @@ const {
 } = require('./config-domain');
 const { outputMode, renderKeyValue, renderSection, renderWarning } = require('./ui');
 const { resolveLocale, t } = require('./messages');
+const { select } = require('./selector');
 
 function localeForConfig(configPath) {
   const config = readConfig(configPath);
@@ -81,21 +81,17 @@ async function resolveNextPolicy(args, current = null, locale = 'en-US') {
     return { ok: true, policy: { executionMode, autonomyLevel } };
   }
   if (process.stdin.isTTY) {
-    process.stdout.write(`${t(locale, 'config.operatingPolicy')}:\n`);
-    for (const [name, value] of Object.entries(OPERATING_PRESETS)) {
-      process.stdout.write(`  ${name}: ${value.executionMode} + ${value.autonomyLevel}\n`);
-    }
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    try {
-      const fallback = current?.presetEquivalent || 'manual';
-      const raw = await rl.question(`\nPreset [${fallback}]: `);
-      const chosen = (raw || fallback).trim();
-      const resolved = resolvePolicyFromPreset(chosen);
-      if (!resolved) return { ok: false, message: `unknown preset: ${chosen}` };
-      return { ok: true, policy: resolved };
-    } finally {
-      rl.close();
-    }
+    const fallback = current?.presetEquivalent || 'manual';
+    const names = [fallback, ...Object.keys(OPERATING_PRESETS).filter((name) => name !== fallback)];
+    const chosen = await select(
+      t(locale, 'config.operatingPolicy'),
+      names.map((name) => ({
+        value: name,
+        label: `${name}: ${OPERATING_PRESETS[name].executionMode} + ${OPERATING_PRESETS[name].autonomyLevel}`,
+      })),
+    );
+    if (chosen.cancelled) return { ok: false, cancelled: true };
+    return { ok: true, policy: resolvePolicyFromPreset(chosen.value) };
   }
   return {
     ok: false,
@@ -136,6 +132,10 @@ async function runConfigPolicy(configPath, args, options = {}) {
   }
   const resolved = await resolveNextPolicy(args, current, locale);
   if (!resolved.ok) {
+    if (resolved.cancelled) {
+      process.stdout.write(`${renderWarning(t(locale, 'config.cancelled'), mode)}\n`);
+      return { ok: true, exitCode: 0, cancelled: true };
+    }
     return { ok: false, exitCode: 1, message: resolved.message, try: resolved.try };
   }
   const previewResult = applyPolicyMutation(configPath, resolved.policy, { dryRun: true });
@@ -168,15 +168,11 @@ async function runConfigPolicy(configPath, args, options = {}) {
     return { ok: true, exitCode: 0 };
   }
   if (!yes) {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    let confirmed = false;
-    try {
-      const raw = await rl.question(t(locale, 'config.applyChange'));
-      confirmed = /^(y|yes|s|sim)$/i.test((raw || '').trim());
-    } finally {
-      rl.close();
-    }
-    if (!confirmed) {
+    const confirmation = await select(t(locale, 'config.applyChange'), [
+      { value: 'yes', label: 'Continue' },
+      { value: 'no', label: 'Cancel' },
+    ]);
+    if (confirmation.cancelled || confirmation.value !== 'yes') {
       process.stdout.write(`${renderWarning(t(locale, 'config.cancelled'), mode)}\n`);
       return { ok: true, exitCode: 0, cancelled: true };
     }

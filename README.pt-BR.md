@@ -82,7 +82,7 @@ Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linea
 Requer Node.js >= 22 só para a CLI. Seu projeto não precisa ser Node.js. Veja [compatibilidade de ambiente](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init --preset manual
+npx sdd-agentic-flow init
 npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
@@ -101,7 +101,9 @@ Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomou
 
 Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
-Use `init --interactive` para escolher agente, perfil de idioma e perfil de feature. Veja [instalação](docs/installation.md).
+Em um terminal real, `init` guia a configuração, instala o pack `full`, prepara o
+contexto e valida o resultado. Use `init --non-interactive` em scripts e CI. Veja
+[início rápido](docs/getting-started.md).
 
 Ao escolher `pt-BR`, a saída humana da CLI — prompts, planos, doctor, menu e `learn-sdd` —
 passa a usar português brasileiro. Commands, paths, statuses, IDs e JSON permanecem em inglês

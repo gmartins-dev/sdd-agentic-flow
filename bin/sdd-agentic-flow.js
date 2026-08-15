@@ -19,7 +19,9 @@ const {
   renderStep,
   shortenPath,
 } = require('./ui');
-const { shouldShowInteractiveMenu, menuActionsFor, resolveMenuSelection } = require('./menu');
+const { shouldShowInteractiveMenu, menuActionsFor } = require('./menu');
+const { resolveOnboardingState } = require('./onboarding');
+const { select } = require('./selector');
 const { checkForUpdate } = require('./update-check');
 const { runConfigCommand, renderPolicySummary } = require('./config');
 const { readConfig } = require('./config-domain');
@@ -824,6 +826,110 @@ function validValue(value, allowed) {
   return allowed.includes(value) ? value : null;
 }
 
+function onboardingStateFor(cwd) {
+  const skillsRoot = resolveSkillsRoot(cwd);
+  return resolveOnboardingState({
+    hasConfig: fs.existsSync(sddJoin(cwd, 'config.yml')),
+    hasSkills: coreSkillsPresence(skillsRoot).missing.length === 0,
+    hasContext: fs.existsSync(sddJoin(cwd, 'context', 'project-context.md')),
+    doctorStatus: severity(doctorChecks(cwd)),
+  });
+}
+
+async function guidedInit(cwd, options = {}) {
+  const state = onboardingStateFor(cwd);
+  if (state === 'READY' || state === 'NEEDS_ATTENTION') {
+    process.stdout.write(`\nSetup status: ${state}\n`);
+    const action = await select(
+      'What would you like to do?',
+      [
+        { value: 'keep', label: 'Keep current setup' },
+        { value: 'updates', label: 'Check for updates' },
+        { value: 'change', label: 'Change setup' },
+        { value: 'validate', label: 'Validate setup' },
+        { value: 'more', label: 'More options' },
+      ],
+      { ascii: options.ascii },
+    );
+    if (action.cancelled || action.value === 'keep') return;
+    if (action.value === 'updates') return upgradeCommand(cwd, { ascii: options.ascii });
+    if (action.value === 'change') return runCommand('configure', ['--interactive'], cwd);
+    if (action.value === 'validate') return doctor(cwd, { ascii: options.ascii });
+    return runInteractiveMenu(cwd);
+  }
+
+  const newProject = state === 'NEW_PROJECT';
+  process.stdout.write(
+    `\n1/4 Project\n${newProject ? 'Existing user installation found; only this project will be configured.\n' : 'Project settings use the supplied flags or safe defaults.\n'}`,
+  );
+  let scope = 'user';
+  let targets = [...DEFAULT_USER_TARGETS];
+  if (!newProject) {
+    process.stdout.write('\n2/4 Installation\n');
+    const scopeChoice = await select(
+      'Where should the skills live?',
+      [
+        { value: 'user', label: 'For me - recommended' },
+        { value: 'project', label: 'Only in this project' },
+      ],
+      { ascii: options.ascii },
+    );
+    if (scopeChoice.cancelled) return log('INFO', 'CANCELLED');
+    scope = scopeChoice.value;
+    if (scope === 'user') {
+      const targetChoice = await select(
+        'Choose skill targets',
+        [
+          { value: 'agents', label: 'Shared Agent Skills', selected: true },
+          { value: 'claude', label: 'Claude Code', selected: true },
+          { value: 'copilot', label: 'GitHub Copilot', selected: true },
+          { value: 'cursor', label: 'Cursor', selected: false },
+        ],
+        { multiple: true, ascii: options.ascii },
+      );
+      if (targetChoice.cancelled) return log('INFO', 'CANCELLED');
+      if (!targetChoice.value.length) return fail('at least one installation target is required');
+      targets = targetChoice.value;
+    }
+  } else process.stdout.write('\n2/4 Installation\nReusing the existing user installation.\n');
+
+  process.stdout.write('\n3/4 Review\n');
+  process.stdout.write(
+    `  Configuration: ${SDD_PATHS.config}\n  Context: ${SDD_PATHS.projectContext}\n`,
+  );
+  if (!newProject) {
+    process.stdout.write(`  Pack: full\n  Scope: ${scope}\n`);
+    install('full', cwd, { scope, targets, plan: true, quiet: true, ascii: options.ascii });
+  }
+  const confirmation = await select(
+    'Apply this setup?',
+    [
+      { value: 'continue', label: 'Continue' },
+      { value: 'cancel', label: 'Cancel' },
+    ],
+    { ascii: options.ascii },
+  );
+  if (confirmation.cancelled || confirmation.value === 'cancel') return log('INFO', 'CANCELLED');
+
+  process.stdout.write('\n4/4 Apply\n');
+  init(cwd, {
+    profile: options.language,
+    featureProfile: options.featureProfile,
+    executionMode: options.executionMode,
+    autonomyLevel: options.autonomyLevel,
+    presetName: options.presetName,
+    presetAlias: options.presetAlias,
+    quiet: true,
+    localGitExclude: options.localGitExclude,
+    ascii: options.ascii,
+  });
+  if (!newProject) install('full', cwd, { scope, targets, quiet: true, ascii: options.ascii });
+  const result = await doctor(cwd, { ascii: options.ascii });
+  if (result.status === 'PASS') log('PASS', 'Ready');
+  else
+    log('WARN', `Setup ${result.status === 'FAIL' ? 'BLOCKED' : 'PARTIAL'}; rerun init to resume`);
+}
+
 async function initInteractive(
   cwd,
   languageDefault = 'en-US',
@@ -1368,87 +1474,95 @@ async function installInteractive(pack, cwd, options = {}) {
   process.stdout.write(
     `${renderStep(1, 4, t(locale, 'install.scope'), mode, t(locale, 'step')).join('\n')}\n`,
   );
-  process.stdout.write(
-    `  ${t(locale, 'install.localUser')}\n  ${t(locale, 'install.projectRepository')}\n\n`,
+  const model = await select(
+    t(locale, 'install.model'),
+    [
+      { value: 'user', label: t(locale, 'install.localUser') },
+      { value: 'project', label: t(locale, 'install.projectRepository') },
+    ],
+    { ascii: options.ascii },
   );
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  let scope = 'user';
+  if (model.cancelled) return log('INFO', t(locale, 'install.cancelled'));
+  const scope = model.value;
   let projectLocalExclude = false;
-  try {
-    const modelRaw = await rl.question(
-      `${t(locale, 'install.model')} [${t(locale, 'install.localUser')}]: `,
+  process.stdout.write(
+    `\n${renderStep(2, 4, t(locale, 'install.details'), mode, t(locale, 'step')).join('\n')}\n`,
+  );
+  if (scope === 'project') {
+    const sharing = await select(
+      t(locale, 'install.projectSharing'),
+      [
+        { value: 'shared', label: t(locale, 'install.sharedTeam') },
+        { value: 'local', label: t(locale, 'install.localRepository') },
+      ],
+      { ascii: options.ascii },
     );
-    if (/project/i.test((modelRaw || '').trim())) {
-      scope = 'project';
-    }
-    process.stdout.write(
-      `\n${renderStep(2, 4, t(locale, 'install.details'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    if (scope === 'project') {
-      process.stdout.write(
-        `  ${t(locale, 'install.sharedTeam')}\n  ${t(locale, 'install.localRepository')}\n\n`,
-      );
-      const shareRaw = await rl.question(`${t(locale, 'install.projectSharing')} [Shared]: `);
-      projectLocalExclude = /local/i.test((shareRaw || '').trim());
-    }
-    let selectedTargets = null;
-    if (scope === 'user') {
-      for (const [id, label] of Object.entries(USER_TARGET_LABELS))
-        process.stdout.write(`  ${id} — ${label}\n`);
-      const targetsRaw = await rl.question(
-        `${t(locale, 'install.targets')} [${DEFAULT_USER_TARGETS.join(', ')}]: `,
-      );
-      const parsed = parseTargetSelection(targetsRaw, DEFAULT_USER_TARGETS);
-      if (!parsed.ok) {
-        fail(parsed.message, {
-          reason: 'Use target IDs separated by commas, or all.',
-          try: ['sdd-agentic-flow install core --interactive'],
-        });
-        return;
-      }
-      selectedTargets = parsed.targets;
-    }
-    process.stdout.write(
-      `\n${renderStep(3, 4, t(locale, 'install.preflight'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    rl.close();
-    install(pack, cwd, {
-      ...options,
-      scope,
-      plan: true,
-      targets: selectedTargets,
-      projectLocalExclude,
-    });
-    const confirmRl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    process.stdout.write(
-      `\n${renderStep(4, 4, t(locale, 'install.confirm'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    const applyRaw = await confirmRl.question(t(locale, 'install.apply'));
-    confirmRl.close();
-    if (/^n(o)?$/i.test((applyRaw || '').trim())) {
-      log('INFO', t(locale, 'install.cancelled'));
-      return;
-    }
-    install(pack, cwd, {
-      ...options,
-      scope,
-      targets: selectedTargets,
-      projectLocalExclude,
-    });
-  } finally {
-    try {
-      rl.close();
-    } catch {
-      // already closed
-    }
+    if (sharing.cancelled) return log('INFO', t(locale, 'install.cancelled'));
+    projectLocalExclude = sharing.value === 'local';
   }
+  let selectedTargets = null;
+  if (scope === 'user') {
+    const targets = await select(
+      t(locale, 'install.targets'),
+      Object.entries(USER_TARGET_LABELS).map(([id, label]) => ({
+        value: id,
+        label,
+        selected: DEFAULT_USER_TARGETS.includes(id),
+      })),
+      { multiple: true, ascii: options.ascii },
+    );
+    if (targets.cancelled) return log('INFO', t(locale, 'install.cancelled'));
+    if (!targets.value.length) return fail('at least one installation target is required');
+    selectedTargets = targets.value;
+  }
+  process.stdout.write(
+    `\n${renderStep(3, 4, t(locale, 'install.preflight'), mode, t(locale, 'step')).join('\n')}\n`,
+  );
+  install(pack, cwd, {
+    ...options,
+    scope,
+    plan: true,
+    targets: selectedTargets,
+    projectLocalExclude,
+  });
+  process.stdout.write(
+    `\n${renderStep(4, 4, t(locale, 'install.confirm'), mode, t(locale, 'step')).join('\n')}\n`,
+  );
+  const confirmation = await select(
+    t(locale, 'install.apply'),
+    [
+      { value: 'apply', label: 'Continue' },
+      { value: 'cancel', label: 'Cancel' },
+    ],
+    { ascii: options.ascii },
+  );
+  if (confirmation.cancelled || confirmation.value !== 'apply') {
+    log('INFO', t(locale, 'install.cancelled'));
+    return;
+  }
+  install(pack, cwd, {
+    ...options,
+    scope,
+    targets: selectedTargets,
+    projectLocalExclude,
+  });
 }
 
 async function configureInteractive(cwd, homeDir) {
   const locale = localeFor(cwd);
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  let rl = null;
   try {
-    const scopeAnswer = await rl.question('Installation model [Local / User]: ');
+    const scopeChoice = process.stdin.isTTY
+      ? await select('Installation model', [
+          { value: 'user', label: 'Local / User' },
+          { value: 'project', label: 'Project / Team' },
+        ])
+      : null;
+    if (scopeChoice?.cancelled) return { cancelled: true };
+    if (!rl) rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const scopeAnswer = scopeChoice
+      ? scopeChoice.value
+      : await rl.question('Installation model [Local / User]: ');
     const scope = /project/i.test(scopeAnswer.trim()) ? 'project' : 'user';
     const existing = readInstallConfig(homeDir) || defaultInstallConfig();
     const profile =
@@ -1487,7 +1601,7 @@ async function configureInteractive(cwd, homeDir) {
     if (/^n(o)?$/i.test(save.trim())) return { cancelled: true };
     return configureIntent({ homeDir, cwd, scope, packs, targets, sharing });
   } finally {
-    rl.close();
+    if (rl) rl.close();
   }
 }
 
@@ -2340,6 +2454,7 @@ async function doctor(cwd, options = {}) {
       locale: resolveLocale({ configured: languageReport(cwd).profile }),
     });
   if (result.status === 'FAIL') process.exitCode = 1;
+  return result;
 }
 
 function describePath(cwd, target) {
@@ -2455,7 +2570,7 @@ function uninstall(args, cwd) {
 // alongside --quiet (v1.4.0) specifically because it lands in 4 of these strings at once, which
 // is exactly the kind of change that causes hand-duplicated copies to drift.
 const USAGE = {
-  init: 'usage: init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--preset manual|supervised|autonomous] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
+  init: 'usage: init [--interactive|--non-interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile small_fix|medium_feature|large_feature|epic] [--preset manual|supervised|autonomous] [--execution-mode plan|guided|apply|review|full] [--autonomy-level manual|supervised|autonomous] [--local-git-exclude] [--quiet]',
   install:
     'usage: install <pack> [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--plan] [--interactive|--non-interactive] [--quiet]',
   config: 'usage: config [show|policy [--plan] [--yes] [--preset manual|supervised|autonomous]]',
@@ -2499,7 +2614,7 @@ Existing ${SDD_PATHS.config} is preserved; init never overwrites it. ${SDD_PATHS
 is regenerable toolkit state and is refreshed on every init.
 
 USAGE
-  sdd-agentic-flow init [--interactive] [--language en-US|pt-BR | --en | --br]
+  sdd-agentic-flow init [--interactive|--non-interactive] [--language en-US|pt-BR | --en | --br]
                          [--feature-profile small_fix|medium_feature|large_feature|epic]
                          [--preset manual|supervised|autonomous]
                          [--execution-mode plan|guided|apply|review|full]
@@ -2507,9 +2622,8 @@ USAGE
                          [--local-git-exclude] [--quiet] [--ascii]
 
 OPTIONS
-  --interactive          Prompt for project name, agent target, language, source type,
-                         flow, feature profile, execution mode, and autonomy level
-                         instead of using defaults.
+  --interactive          Explicitly start guided onboarding (the default in a real TTY).
+  --non-interactive      Never prompt; use supplied values and documented defaults.
   --language <profile>   Human-facing output language: en-US or pt-BR.
   --en                   Alias for --language en-US.
   --br                   Alias for --language pt-BR.
@@ -2819,7 +2933,7 @@ QUICK START
   npx sdd-agentic-flow doctor
 
 START
-  init [--interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Create local configuration
+  init [--interactive|--non-interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Guided setup or local configuration
   configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
   discover [--force] [--quiet]           Refresh auto-discovered project context
   install <pack> [--scope user|project] [--agent ...] [--plan] [--interactive] [--quiet]  Install a pack (default: user scope, zero project footprint)
@@ -3235,6 +3349,7 @@ async function runCommand(command, rawArgs, cwd) {
         });
       }
       let interactive = false;
+      let nonInteractive = false;
       let language = 'en-US';
       let featureProfile = 'medium_feature';
       let executionMode = 'guided';
@@ -3245,6 +3360,7 @@ async function runCommand(command, rawArgs, cwd) {
       let presetAlias = null;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
+        else if (args[index] === '--non-interactive') nonInteractive = true;
         else if (args[index] === '--en') language = 'en-US';
         else if (args[index] === '--br') language = 'pt-BR';
         else if (args[index] === '--quiet') quiet = true;
@@ -3300,11 +3416,34 @@ async function runCommand(command, rawArgs, cwd) {
           index += 1;
         } else return fail(usage);
       }
+      if (interactive && nonInteractive)
+        return fail('init --interactive cannot combine with --non-interactive');
       if (!autonomyComboValid(executionMode, autonomyLevel))
         return fail(
           `--execution-mode ${executionMode} cannot combine with --autonomy-level ${autonomyLevel} (see docs/autonomy-levels.md).`,
         );
-      if (interactive)
+      const canOnboard = shouldUseInteractiveInstall({
+        stdinIsTTY: process.stdin.isTTY,
+        stdoutIsTTY: process.stdout.isTTY,
+        ci: Boolean(process.env.CI),
+        plan: false,
+        quiet,
+        nonInteractive,
+        machine: resolveMode({ quiet, ascii }) === 'machine',
+      });
+      const initOptions = {
+        language,
+        featureProfile,
+        executionMode,
+        autonomyLevel,
+        presetName,
+        presetAlias,
+        quiet,
+        localGitExclude,
+        ascii,
+      };
+      if (canOnboard) await guidedInit(cwd, initOptions);
+      else if (interactive)
         await initInteractive(
           cwd,
           language,
@@ -3314,18 +3453,7 @@ async function runCommand(command, rawArgs, cwd) {
           autonomyLevel,
           localGitExclude,
         );
-      else
-        init(cwd, {
-          profile: language,
-          featureProfile,
-          executionMode,
-          autonomyLevel,
-          presetName,
-          presetAlias,
-          quiet,
-          localGitExclude,
-          ascii,
-        });
+      else init(cwd, { ...initOptions, profile: language });
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) process.stdout.write(COMMAND_HELP.discover);
@@ -3615,21 +3743,19 @@ async function runCommand(command, rawArgs, cwd) {
 async function runInteractiveMenu(cwd) {
   const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
   const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
-  const actions = menuActionsFor({ hasConfig: configFound, hasSkills: skillsInstalled });
-  process.stdout.write('\nWhat would you like to do?\n');
-  actions.forEach((action, index) => {
-    process.stdout.write(`  ${index + 1}. ${action.label}\n`);
+  const actions = menuActionsFor({
+    hasConfig: configFound,
+    hasSkills: skillsInstalled,
+    onboardingState: onboardingStateFor(cwd),
   });
-  process.stdout.write('  0. Exit (press Enter, 0, or q)\n\n');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  let raw;
-  try {
-    raw = await rl.question('Select an option: ');
-  } finally {
-    rl.close();
-  }
-  const selection = resolveMenuSelection(raw, actions);
-  if (!selection) return;
+  process.stdout.write('\nWhat would you like to do?\n');
+  const choice = await select(
+    'Select an option',
+    actions.map((action) => ({ value: action, label: action.label })),
+  );
+  if (choice.cancelled) return;
+  const selection = choice.value;
+  if (!selection.command.length) return;
   process.stdout.write(`\nRunning: sdd-agentic-flow ${selection.command.join(' ')}\n\n`);
   await runCommand(selection.command[0], selection.command.slice(1), cwd);
   if (selection.command[0] === 'uninstall')
@@ -3651,6 +3777,9 @@ async function main() {
       { stdout: process.stdout, stdin: process.stdin },
       process.env,
     );
+    const onboardingState = onboardingStateFor(cwd);
+    if (interactive && ['FIRST_USE', 'NEW_PROJECT', 'PARTIAL'].includes(onboardingState))
+      return guidedInit(cwd, { ascii: welcomeAscii });
     // Trust-model exception: human-rich TTY only — ask before any registry request (default N).
     if (
       mode === 'human-rich' &&

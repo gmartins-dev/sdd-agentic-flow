@@ -351,6 +351,18 @@ test('interactive init with invalid input exits 1, not the generic unexpected-er
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
+test('init --non-interactive remains deterministic in a pipe and rejects conflicting flags', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-init-non-interactive-'));
+  const result = run(['init', '--non-interactive'], cwd, 'ignored input\n');
+  assert.equal(result.status, 0);
+  assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/config.yml')));
+  assert.doesNotMatch(result.stdout, /Where should the skills live/);
+  const conflict = run(['init', '--interactive', '--non-interactive'], cwd);
+  assert.equal(conflict.status, 1);
+  assert.match(conflict.stderr, /cannot combine/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
 test('init auto-discovers project context and discover refreshes it', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-discover-'));
   fs.writeFileSync(path.join(cwd, 'README.md'), '# sample\n');

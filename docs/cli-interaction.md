@@ -89,7 +89,19 @@ human-plain).
 
 Shown only when stdout and stdin are TTYs and `CI` is unset. First use resumes guided
 setup; ready or attention states offer **Keep current setup**, **Check for updates**,
-**Change setup**, **Validate setup**, and **More options**. Updates remain opt-in.
+**Change setup**, **Validate setup**, and **Commands and advanced options**. Updates remain opt-in.
+
+Guided setup is an inline CLI flow, not a full-screen TUI. It has one recommended path and an
+optional customization path, then a single review before the first write. It derives first-use,
+partial, and ready state from configuration, installation intent, context, and `doctor`; it does
+not store a separate onboarding marker. Before apply, **Back** only changes in-memory choices.
+After apply, **Change setup** starts a new deliberate change rather than pretending to roll back
+files. A handled failure keeps the human in the flow with retry, validation, change, or exit.
+
+Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
+navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive
+the complete numbered/plain interaction. Progress uses durable stage lines rather than spinners
+or cursor-dependent status.
 
 Bare welcome (v3.0.0) may show **Operating policy** and **Installation** blocks when config
 and skills are present. Copy does not claim the CLI invokes skills.

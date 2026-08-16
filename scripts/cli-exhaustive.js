@@ -41,6 +41,51 @@ function run(args, state, input = '') {
   });
 }
 
+function quoteShell(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function packTarball() {
+  const packDir = path.join(runRoot, 'pack');
+  const cacheDir = path.join(runRoot, 'npm-cache');
+  fs.mkdirSync(packDir, { recursive: true });
+  const pack = spawnSync(
+    'npm',
+    ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      timeout: 30_000,
+    },
+  );
+  assert.equal(pack.status, 0, pack.stderr);
+  const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0];
+  return { tarball: path.join(packDir, metadata.filename), cacheDir };
+}
+
+function runPacked(args, state, tarball, cacheDir, env = {}) {
+  return spawnSync('npx', ['--yes', '--cache', cacheDir, `file:${tarball}`, ...args], {
+    cwd: state.cwd,
+    encoding: 'utf8',
+    timeout: 30_000,
+    env: { ...process.env, HOME: state.home, USERPROFILE: state.home, CI: '1', ...env },
+  });
+}
+
+function runPackedInteractive(state, tarball, cacheDir) {
+  const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
+  if (probe.error || probe.status !== 0) return null;
+  const command =
+    "{ printf '\\n'; sleep 0.1; printf '\\n'; sleep 0.1; } | " +
+    `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)} init`;
+  return spawnSync('script', ['-qec', command, '/dev/null'], {
+    cwd: state.cwd,
+    encoding: 'utf8',
+    timeout: 30_000,
+    env: { ...process.env, HOME: state.home, USERPROFILE: state.home, SDD_NO_UPDATE_PROMPT: '1' },
+  });
+}
+
 function record(id, journey, command, fn) {
   const started = Date.now();
   try {
@@ -291,31 +336,35 @@ function runJourneys() {
   });
 
   const packed = project('09-packed-consumer');
+  const { tarball, cacheDir } = packTarball();
   record('J27', 'fresh packaged consumer', 'npm pack -> npx init/install/doctor', () => {
-    const packDir = path.join(runRoot, 'pack');
-    const cacheDir = path.join(runRoot, 'npm-cache');
-    fs.mkdirSync(packDir, { recursive: true });
-    const pack = spawnSync(
-      'npm',
-      ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
-      {
-        cwd: repoRoot,
-        encoding: 'utf8',
-        timeout: 30_000,
-      },
-    );
-    assert.equal(pack.status, 0, pack.stderr);
-    const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0];
-    const tarball = path.join(packDir, metadata.filename);
     for (const args of [['init'], ['install', 'core'], ['doctor', '--json']]) {
-      const result = spawnSync('npx', ['--yes', '--cache', cacheDir, `file:${tarball}`, ...args], {
-        cwd: packed.cwd,
-        encoding: 'utf8',
-        timeout: 30_000,
-        env: { ...process.env, HOME: packed.home, USERPROFILE: packed.home, CI: '1' },
-      });
+      const result = runPacked(args, packed, tarball, cacheDir);
       assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}${result.stdout}`);
     }
+  });
+  const packedPlain = project('10-packed-plain-br');
+  record('J28', 'packaged plain Portuguese consumer', 'NO_COLOR + init/install/doctor', () => {
+    const env = { NO_COLOR: '1' };
+    assert.equal(runPacked(['init', '--br'], packedPlain, tarball, cacheDir, env).status, 0);
+    assert.equal(
+      runPacked(['install', 'full', '--scope', 'project'], packedPlain, tarball, cacheDir, env)
+        .status,
+      0,
+    );
+    const doctor = runPacked(['doctor'], packedPlain, tarball, cacheDir, env);
+    assert.equal(doctor.status, 0, doctor.stderr);
+    assert.match(doctor.stdout, /Verificações: \d+ PASS/);
+    assert.equal(doctor.stdout.includes(String.fromCharCode(27)), false);
+  });
+  const packedInteractive = project('11-packed-interactive');
+  record('J29', 'packaged interactive consumer', 'TTY recommended setup', () => {
+    const result = runPackedInteractive(packedInteractive, tarball, cacheDir);
+    if (!result) return 'interactive TTY helper unavailable on this host';
+    assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
+    assert.match(result.stdout, /Recommended setup/);
+    assert.match(result.stdout, /PASS Ready/);
+    assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')));
   });
 }
 

@@ -340,6 +340,23 @@ test('interactive init writes selected safe configuration and preserves existing
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
+test('doctor localizes the final healthy summary in pt-BR', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-doctor-br-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-doctor-br-home-'));
+  try {
+    assert.equal(runIsolatedHome(['init', '--br'], cwd, home).status, 0);
+    assert.equal(runIsolatedHome(['install', 'core', '--scope', 'project'], cwd, home).status, 0);
+    const result = runIsolatedHome(['doctor'], cwd, home);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Verificações: \d+ PASS/);
+    assert.match(result.stdout, /Próxima etapa/);
+    assert.doesNotMatch(result.stdout, /\nChecks:|\nNext\n/);
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('interactive init with invalid input exits 1, not the generic unexpected-error code 2', () => {
   // Regression: invalid answers used to fall through main()'s top-level catch, which reserves
   // exit code 2 for genuinely unexpected/internal errors — indistinguishable from a real crash,

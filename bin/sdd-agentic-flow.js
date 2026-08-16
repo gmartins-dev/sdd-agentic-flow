@@ -415,6 +415,7 @@ function fail(message, codeOrOptions = 1) {
   if (tryLines.length) out += `\nTry:\n${tryLines.map((line) => `  ${line}`).join('\n')}\n`;
   process.stderr.write(out);
   process.exitCode = code;
+  return false;
 }
 
 function didYouMeanTry(input, candidates) {
@@ -836,11 +837,194 @@ function onboardingStateFor(cwd) {
   });
 }
 
+function savedSetupProfile(cwd) {
+  const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
+  const project = saved.projects[repositoryKey(cwd)];
+  if (project?.packs?.length) return { scope: 'project', profile: project };
+  if (saved.user?.packs?.length) return { scope: 'user', profile: saved.user };
+  return null;
+}
+
+function setupDraft(cwd, state) {
+  const saved = savedSetupProfile(cwd);
+  return {
+    install: state !== 'NEW_PROJECT',
+    scope: saved?.scope || 'user',
+    pack: saved?.profile.packs?.[0] || 'full',
+    targets: saved?.profile.targets || [...DEFAULT_USER_TARGETS],
+    projectLocalExclude: saved?.profile.sharing === 'local',
+    saved,
+  };
+}
+
+function printSetupStages(locale, active, complete = [], options = {}) {
+  const stages = ['project', 'skills', 'context', 'validation'];
+  const rich = isRich(resolveMode({ ascii: options.ascii }));
+  process.stdout.write(`\n${t(locale, 'setup.title')}\n\n`);
+  for (const stage of stages) {
+    const marker = complete.includes(stage)
+      ? rich
+        ? '✓'
+        : 'OK'
+      : stage === active
+        ? rich
+          ? '●'
+          : '>'
+        : rich
+          ? '○'
+          : 'o';
+    process.stdout.write(`${marker} ${t(locale, `setup.${stage}`)}\n`);
+  }
+}
+
+function setupLocationLabel(pack, scope, options = {}) {
+  return `${pack} ${isRich(resolveMode({ ascii: options.ascii })) ? '·' : '-'} ${scope}`;
+}
+
+function printSetupReview(draft, locale, options = {}) {
+  process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
+  process.stdout.write(`  ${t(locale, 'setup.project')}      ${SDD_PATHS.config}\n`);
+  if (!draft.install) {
+    process.stdout.write(
+      `  ${t(locale, 'setup.location')}       ${t(locale, 'setup.existingUser')}\n`,
+    );
+    return;
+  }
+  process.stdout.write(
+    `  ${t(locale, 'setup.location')}       ${setupLocationLabel(draft.pack, draft.scope, options)}\n`,
+  );
+  if (draft.scope === 'user')
+    process.stdout.write(`  ${t(locale, 'install.targets')}      ${draft.targets.join(', ')}\n`);
+  else
+    process.stdout.write(
+      `  ${t(locale, 'install.projectSharing')}   ${draft.projectLocalExclude ? t(locale, 'setup.local') : t(locale, 'setup.shared')}\n`,
+    );
+  process.stdout.write(`  ${t(locale, 'setup.context')}      ${SDD_PATHS.projectContext}\n`);
+}
+
+function printCurrentSetup(cwd, locale) {
+  const config = readConfig(sddJoin(cwd, 'config.yml'));
+  const saved = savedSetupProfile(cwd);
+  const state = onboardingStateFor(cwd);
+  const workflow = config.ok ? config.policy.executionMode : 'guided';
+  const location = saved
+    ? setupLocationLabel(saved.profile.packs.join(', '), saved.scope)
+    : t(locale, 'setup.missing');
+  const context = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'))
+    ? t(locale, 'setup.ready')
+    : t(locale, 'setup.missing');
+  const health =
+    state === 'READY'
+      ? t(locale, 'setup.ready')
+      : state === 'PARTIAL'
+        ? t(locale, 'setup.partial')
+        : t(locale, 'setup.attention');
+  process.stdout.write(
+    `\n${t(locale, 'setup.current')}\n\n` +
+      `  ${t(locale, 'setup.workflow')}     ${workflow}\n` +
+      `  ${t(locale, 'setup.location')}       ${location}\n` +
+      `  ${t(locale, 'setup.context')}      ${context}\n` +
+      `  ${t(locale, 'setup.health')}       ${health}\n`,
+  );
+}
+
+async function customizeSetup(draft, locale, options) {
+  const pack = await select(
+    t(locale, 'setup.pack'),
+    ['full', ...presetNames().filter((name) => name !== 'full')].map((value) => ({
+      value,
+      label: value,
+    })),
+    { ascii: options.ascii, cancelValues: ['q', '0'], locale },
+  );
+  if (pack.cancelled) return null;
+  const scope = await select(
+    t(locale, 'setup.scope'),
+    [
+      { value: 'user', label: t(locale, 'setup.scopeUser') },
+      { value: 'project', label: t(locale, 'setup.scopeProject') },
+    ],
+    { ascii: options.ascii, cancelValues: ['q', '0'], locale },
+  );
+  if (scope.cancelled) return null;
+  const next = { ...draft, install: true, pack: pack.value, scope: scope.value };
+  if (next.scope === 'user') {
+    const targets = await select(
+      t(locale, 'setup.targets'),
+      Object.entries(USER_TARGETS).map(([value, target]) => ({
+        value,
+        label: target[0] === '.agents' ? 'Shared Agent Skills' : USER_TARGET_LABELS[value],
+        selected: next.targets.includes(value),
+      })),
+      { multiple: true, ascii: options.ascii, cancelValues: ['q', '0'], locale },
+    );
+    if (targets.cancelled || !targets.value.length) return null;
+    next.targets = targets.value;
+  } else {
+    const sharing = await select(
+      t(locale, 'setup.sharing'),
+      [
+        { value: 'shared', label: t(locale, 'setup.shared') },
+        { value: 'local', label: t(locale, 'setup.local') },
+      ],
+      { ascii: options.ascii, cancelValues: ['q', '0'], locale },
+    );
+    if (sharing.cancelled) return null;
+    next.projectLocalExclude = sharing.value === 'local';
+  }
+  return next;
+}
+
+async function applySetup(cwd, draft, options, locale) {
+  // A successful retry must not inherit the exit code from a handled prior attempt.
+  process.exitCode = undefined;
+  printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
+  process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
+  init(cwd, {
+    profile: options.language,
+    featureProfile: options.featureProfile,
+    executionMode: options.executionMode,
+    autonomyLevel: options.autonomyLevel,
+    presetName: options.presetName,
+    presetAlias: options.presetAlias,
+    quiet: true,
+    localGitExclude: options.localGitExclude,
+    ascii: options.ascii,
+  });
+  if (draft.install) {
+    configureIntent({
+      homeDir: os.homedir(),
+      cwd,
+      scope: draft.scope,
+      packs: [draft.pack],
+      targets: draft.scope === 'user' ? draft.targets : undefined,
+      sharing:
+        draft.scope === 'project' ? (draft.projectLocalExclude ? 'local' : 'shared') : undefined,
+    });
+    if (
+      !install(draft.pack, cwd, {
+        scope: draft.scope,
+        targets: draft.targets,
+        projectLocalExclude: draft.projectLocalExclude,
+        quiet: true,
+        ascii: options.ascii,
+      })
+    )
+      return false;
+  }
+  const result = await doctor(cwd, { ascii: options.ascii });
+  if (result.status === 'PASS') {
+    log('PASS', t(locale, 'setup.ready'), locale);
+    return true;
+  }
+  return false;
+}
+
 async function guidedInit(cwd, options = {}) {
   const state = onboardingStateFor(cwd);
   const locale = localeFor(cwd, options.language);
   if (state === 'READY' || state === 'NEEDS_ATTENTION') {
-    process.stdout.write(`\n${t(locale, 'setup.status')}: ${state}\n`);
+    printCurrentSetup(cwd, locale);
     const action = await select(
       t(locale, 'menu.question'),
       [
@@ -856,91 +1040,62 @@ async function guidedInit(cwd, options = {}) {
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: options.ascii });
     if (action.value === 'change') return runCommand('configure', ['--interactive'], cwd);
     if (action.value === 'validate') return doctor(cwd, { ascii: options.ascii });
-    return runInteractiveMenu(cwd);
+    return runInteractiveMenu(cwd, { showSummary: false });
   }
 
-  const newProject = state === 'NEW_PROJECT';
-  const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
-  const savedProject = saved.projects[repositoryKey(cwd)];
-  const savedProfile = savedProject?.packs?.length
-    ? { scope: 'project', profile: savedProject }
-    : saved.user?.packs?.length
-      ? { scope: 'user', profile: saved.user }
-      : null;
-  process.stdout.write(
-    `\n1/4 Project\n${newProject ? 'Existing user installation found; only this project will be configured.\n' : 'Project settings use the supplied flags or safe defaults.\n'}`,
-  );
-  let scope = savedProfile?.scope || 'user';
-  let targets = savedProfile?.profile.targets || [...DEFAULT_USER_TARGETS];
-  const pack = savedProfile?.profile.packs?.[0] || 'full';
-  if (savedProfile) {
-    process.stdout.write('\n2/4 Installation\nResuming saved installation intent.\n');
-  } else if (!newProject) {
-    process.stdout.write('\n2/4 Installation\n');
-    const scopeChoice = await select(
-      'Where should the skills live?',
+  for (;;) {
+    let draft = setupDraft(cwd, state);
+    printSetupStages(locale, 'project', [], options);
+    process.stdout.write(
+      `\n${state === 'NEW_PROJECT' ? t(locale, 'setup.existingUser') : t(locale, 'setup.settings')}\n`,
+    );
+    const path = await select(
+      t(locale, 'setup.path'),
       [
-        { value: 'user', label: 'For me - recommended' },
-        { value: 'project', label: 'Only in this project' },
+        ...(draft.saved && state === 'PARTIAL'
+          ? [{ value: 'resume', label: t(locale, 'setup.resume') }]
+          : [{ value: 'recommended', label: t(locale, 'setup.recommended') }]),
+        { value: 'customize', label: t(locale, 'setup.customize') },
       ],
       { ascii: options.ascii, cancelValues: ['q', '0'], locale },
     );
-    if (scopeChoice.cancelled) return log('INFO', 'CANCELLED');
-    scope = scopeChoice.value;
-    if (scope === 'user') {
-      const targetChoice = await select(
-        'Choose skill targets',
-        [
-          { value: 'agents', label: 'Shared Agent Skills', selected: true },
-          { value: 'claude', label: 'Claude Code', selected: true },
-          { value: 'copilot', label: 'GitHub Copilot', selected: true },
-          { value: 'cursor', label: 'Cursor', selected: false },
-        ],
-        { multiple: true, ascii: options.ascii, cancelValues: ['q', '0'], locale },
-      );
-      if (targetChoice.cancelled) return log('INFO', 'CANCELLED');
-      if (!targetChoice.value.length) return fail('at least one installation target is required');
-      targets = targetChoice.value;
+    if (path.cancelled) return log('INFO', t(locale, 'setup.cancelled'), locale);
+    if (path.value === 'customize') {
+      draft = await customizeSetup(draft, locale, options);
+      if (!draft) return log('INFO', t(locale, 'setup.cancelled'), locale);
     }
-  } else process.stdout.write('\n2/4 Installation\nReusing the existing user installation.\n');
-
-  process.stdout.write('\n3/4 Review\n');
-  process.stdout.write(
-    `  Configuration: ${SDD_PATHS.config}\n  Context: ${SDD_PATHS.projectContext}\n`,
-  );
-  if (!newProject) {
-    process.stdout.write(
-      `  Pack: ${savedProfile?.profile.packs?.join(', ') || pack}\n  Scope: ${scope}\n`,
+    printSetupStages(locale, 'skills', ['project'], options);
+    printSetupReview(draft, locale, options);
+    const review = await select(
+      t(locale, 'setup.review'),
+      [
+        { value: 'continue', label: t(locale, 'setup.continue') },
+        { value: 'back', label: t(locale, 'setup.back') },
+        { value: 'cancel', label: t(locale, 'setup.cancel') },
+      ],
+      { ascii: options.ascii, cancelValues: ['q', '0'], locale },
     );
-    install(pack, cwd, { scope, targets, plan: true, quiet: true, ascii: options.ascii });
+    if (review.cancelled || review.value === 'cancel')
+      return log('INFO', t(locale, 'setup.cancelled'), locale);
+    if (review.value === 'back') continue;
+    for (;;) {
+      if (await applySetup(cwd, draft, options, locale)) return;
+      process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
+      const recovery = await select(
+        t(locale, 'menu.question'),
+        [
+          { value: 'retry', label: t(locale, 'setup.retry') },
+          { value: 'change', label: t(locale, 'setup.changeChoices') },
+          { value: 'validate', label: t(locale, 'menu.validate') },
+          { value: 'exit', label: t(locale, 'setup.exit') },
+        ],
+        { ascii: options.ascii, cancelValues: ['q', '0'], locale },
+      );
+      if (recovery.cancelled || recovery.value === 'exit') return;
+      if (recovery.value === 'change') break;
+      if (recovery.value === 'validate') await doctor(cwd, { ascii: options.ascii });
+    }
   }
-  const confirmation = await select(
-    'Apply this setup?',
-    [
-      { value: 'continue', label: 'Continue' },
-      { value: 'cancel', label: 'Cancel' },
-    ],
-    { ascii: options.ascii, cancelValues: ['q', '0'], locale },
-  );
-  if (confirmation.cancelled || confirmation.value === 'cancel') return log('INFO', 'CANCELLED');
-
-  process.stdout.write('\n4/4 Apply\n');
-  init(cwd, {
-    profile: options.language,
-    featureProfile: options.featureProfile,
-    executionMode: options.executionMode,
-    autonomyLevel: options.autonomyLevel,
-    presetName: options.presetName,
-    presetAlias: options.presetAlias,
-    quiet: true,
-    localGitExclude: options.localGitExclude,
-    ascii: options.ascii,
-  });
-  if (!newProject) install(pack, cwd, { scope, targets, quiet: true, ascii: options.ascii });
-  const result = await doctor(cwd, { ascii: options.ascii });
-  if (result.status === 'PASS') log('PASS', 'Ready');
-  else
-    log('WARN', `Setup ${result.status === 'FAIL' ? 'BLOCKED' : 'PARTIAL'}; rerun init to resume`);
 }
 
 async function initInteractive(
@@ -1362,7 +1517,7 @@ function install(pack, cwd, options = {}) {
 
   if (options.plan) {
     printInstallPlanReport(plan, mode, cwd);
-    return;
+    return true;
   }
 
   if (plan.blocked) {
@@ -1408,7 +1563,7 @@ function install(pack, cwd, options = {}) {
       mode,
       quiet: options.quiet,
     });
-    return;
+    return true;
   }
 
   const totals = { installed: 0, updated: 0, preserved: 0, removed: 0 };
@@ -1479,6 +1634,7 @@ function install(pack, cwd, options = {}) {
   if (scope === 'user')
     logPassLine(t(locale, 'install.repositoryNone'), { mode, quiet: options.quiet });
   if (!options.quiet) printInstallNextSteps(cwd, { ...options, mode });
+  return true;
 }
 
 async function installInteractive(pack, cwd, options = {}) {
@@ -2397,7 +2553,12 @@ function renderDoctor(checks, options = {}) {
     `\n${view.title}${view.hasProblems ? '' : ` — ${t(options.locale, 'doctor.passed')}`}\n`,
   );
   process.stdout.write(
-    `Checks: ${view.counts.PASS} PASS, ${view.counts.INFO} INFO, ${view.counts.WARN} WARN, ${view.counts.FAIL} FAIL\n`,
+    `${t(options.locale, 'doctor.summary', {
+      pass: view.counts.PASS,
+      info: view.counts.INFO,
+      warn: view.counts.WARN,
+      fail: view.counts.FAIL,
+    })}\n`,
   );
   if (view.primaryFix)
     process.stdout.write(`\n${t(options.locale, 'doctor.primaryFix')}\n  ${view.primaryFix}\n`);
@@ -2407,7 +2568,10 @@ function renderDoctor(checks, options = {}) {
     );
     for (const check of view.shown) log(check.status, check.message);
   }
-  if (!view.hasProblems) process.stdout.write(`\nNext\n  ${t(options.locale, 'ready.next')}\n`);
+  if (!view.hasProblems)
+    process.stdout.write(
+      `\n${t(options.locale, 'doctor.next')}\n  ${t(options.locale, 'ready.next')}\n`,
+    );
 }
 
 function smokeCheck() {
@@ -3761,15 +3925,18 @@ async function runCommand(command, rawArgs, cwd) {
 // agent invocations, where main() never gets here. Selecting an entry runs the exact same
 // runCommand() a typed command uses; the "uninstall" entry is structurally --plan only (see
 // bin/menu.js's MENU_ACTIONS), so the menu can never trigger a destructive action directly.
-async function runInteractiveMenu(cwd) {
+async function runInteractiveMenu(cwd, options = {}) {
   const locale = localeFor(cwd);
   for (;;) {
     const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
     const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
+    const onboardingState = onboardingStateFor(cwd);
+    if (options.showSummary !== false && ['READY', 'NEEDS_ATTENTION'].includes(onboardingState))
+      printCurrentSetup(cwd, locale);
     const actions = menuActionsFor({
       hasConfig: configFound,
       hasSkills: skillsInstalled,
-      onboardingState: onboardingStateFor(cwd),
+      onboardingState,
     });
     process.stdout.write(`\n${t(locale, 'menu.question')}\n`);
     const choice = await select(

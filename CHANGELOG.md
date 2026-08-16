@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## 3.4.0
+
+Guided CLI setup UX release.
+
+**Changed:**
+
+- Interactive setup now starts with **Recommended setup** or **Customize setup**, then presents
+  one review before the first write. Customization covers pack, scope, targets, and project sharing.
+- Setup progress is semantic (`Project`, `Skills`, `Context`, `Validation`) rather than a count of
+  prompts. Before apply, Back changes draft choices only; after apply, change setup is deliberate.
+- Ready and attention states show a canonical current-setup summary. Partial setup can continue
+  saved intent or change its choices.
+- Guided failure recovery offers retry, validation, change choices, or exit. `Ready` is printed
+  only after `doctor` passes.
+- Wizard, recovery, and summary prose are catalogued in English and Brazilian Portuguese. Menu
+  wording is now **Commands and advanced options**.
+
+**Compatibility:**
+
+- No command, flag, JSON shape, onboarding state file, runtime dependency, telemetry, or automatic
+  skill execution was added. Plain/non-interactive behavior remains deterministic.
+
 ## 3.3.1
 
 CLI correction release following real-user TTY and packaged-consumer validation.

@@ -73,6 +73,16 @@ test('project configure persists intent and only manages its owned exclude block
   );
 });
 
+test('configure intent replaces a selected pack instead of retaining a stale larger pack', () => {
+  const home = path.join(temporary, 'replace-pack-home');
+  writeInstallConfig(
+    { version: 1, user: { packs: ['full'], targets: DEFAULT_USER_TARGETS }, projects: {} },
+    home,
+  );
+  configureIntent({ homeDir: home, cwd: temporary, scope: 'user', packs: ['core'] });
+  assert.deepEqual(readInstallConfig(home).user.packs, ['core']);
+});
+
 test('project sharing leaves an equivalent user exclusion untouched', () => {
   const project = path.join(temporary, 'project-user-exclude');
   const exclude = path.join(project, '.git', 'info', 'exclude');

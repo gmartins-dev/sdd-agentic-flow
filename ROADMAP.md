@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v3.4.0 (2026-08-15):** Guided CLI setup UX. Interactive onboarding now offers a safe
+  recommended path or bounded customization, one review-before-write, semantic progress, derived
+  resume/maintenance state, localized recovery, and canonical setup summary. It remains an inline
+  CLI: no TUI framework, screen takeover, onboarding marker, telemetry, new dependency, or new
+  automation authority.
+
 - **v3.3.0 (2026-08-15):** Adaptive validation and workflow consolidation. Public workflow
   ends at feature validation with 13 skills. Verification selects the minimum adequate sensors
   from requirements, changed seams, repository contracts, and risk; no CLI validation engine,

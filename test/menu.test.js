@@ -78,3 +78,8 @@ test('menuActionsFor filters by config/skills state', () => {
     ],
   );
 });
+
+test('ready menu uses the explicit advanced-options label', () => {
+  const actions = menuActionsFor({ onboardingState: 'READY' });
+  assert.equal(actions.at(-1).label, 'Commands and advanced options');
+});

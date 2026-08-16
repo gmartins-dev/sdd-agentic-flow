@@ -109,9 +109,10 @@ Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users 
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-Start with `npx sdd-agentic-flow init`. In a real terminal it guides configuration,
-installs the `full` pack, prepares context, and validates the result. Scripts and CI
-stay deterministic with `init --non-interactive`. See [getting started](docs/getting-started.md).
+Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup or
+customization, then configures, installs the `full` pack by default, prepares context, and
+validates the result. Scripts and CI stay deterministic with `init --non-interactive`. See
+[getting started](docs/getting-started.md).
 
 ## How it works
 

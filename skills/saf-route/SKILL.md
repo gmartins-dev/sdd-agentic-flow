@@ -2,7 +2,7 @@
 name: saf-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 3.3.1
+  version: 3.4.0
   pack: core
 extends: null
 requires: [config]

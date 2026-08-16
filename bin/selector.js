@@ -97,13 +97,18 @@ async function select(question, options, settings = {}) {
     };
     const done = (result) => {
       input.off('keypress', onKeypress);
+      input.off('end', onEnd);
       if (input.setRawMode) input.setRawMode(Boolean(wasRaw));
       input.pause();
       output.write('\n');
       resolve(result);
     };
     const onKeypress = (_char, key = {}) => {
-      if (key.name === 'escape' || cancelValues.includes(String(_char || '').toLowerCase()))
+      if (
+        (key.ctrl && key.name === 'c') ||
+        key.name === 'escape' ||
+        cancelValues.includes(String(_char || '').toLowerCase())
+      )
         return done({ cancelled: true });
       if (key.name === 'return') return done({ value: multiple ? selected : options[index].value });
       if (key.name === 'up') {
@@ -130,6 +135,8 @@ async function select(question, options, settings = {}) {
     if (input.setRawMode) input.setRawMode(true);
     input.resume();
     input.on('keypress', onKeypress);
+    const onEnd = () => done({ cancelled: true });
+    input.once('end', onEnd);
   });
 }
 

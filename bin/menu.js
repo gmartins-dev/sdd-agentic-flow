@@ -44,7 +44,7 @@ function menuActionsFor(state = {}) {
       { label: 'Check for updates', command: ['upgrade'] },
       { label: 'Change setup', command: ['configure', '--interactive'] },
       { label: 'Validate setup', command: ['doctor'] },
-      { label: 'More options', command: ['help'] },
+      { label: 'Commands and advanced options', command: ['help'] },
     ];
   }
   const hasConfig = Boolean(state.hasConfig);

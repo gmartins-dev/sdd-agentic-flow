@@ -2,7 +2,7 @@
 name: saf-validate
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 3.3.1
+  version: 3.4.0
   pack: core
 extends: saf-check-task
 requires: [config, spec-package, task-evidence]

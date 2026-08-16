@@ -15,7 +15,7 @@ conflicts: []
 requires_cli: null
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-auto_continue_condition: 'execution-plan.md and multi-task evidence are present, the task dependency graph is acyclic, and every next-wave dependency and isolation boundary is satisfied'
+  auto_continue_condition: 'execution-plan.md and multi-task evidence are present, the task dependency graph is acyclic, and every next-wave dependency and isolation boundary is satisfied'
   blocking_conditions: [circular_task_dependencies, unscoped_worktrees]
   evidence_required: [execution-plan.md]
 ---

@@ -1,6 +1,6 @@
 # Golden flow: greenfield
 
-Proved by `test/cli.test.js` — `golden flow: greenfield init -> install core -> copy spec
+Proved by `test/cli.test.ts` — `golden flow: greenfield init -> install core -> copy spec
 artifacts -> doctor PASS`. This file describes what that test exercises; it is not a
 promise beyond what the test actually checks (see `docs/environment-compatibility.md` for the
 project's stance on documentation vs. mechanically-proved claims).

@@ -141,7 +141,7 @@ Invoke `saf-route` when the next step is unclear. It recommends a skill and poin
 
 ## Proved in this repository
 
-These walkthroughs are not slide-deck claims—they run as integration tests in `test/cli.test.js`. Each one lists the commands the test runs and what it checks.
+These walkthroughs are not slide-deck claims—they run as integration tests in `test/cli.test.ts`. Each one lists the commands the test runs and what it checks.
 
 | Flow | What it proves | Walkthrough |
 | --- | --- | --- |

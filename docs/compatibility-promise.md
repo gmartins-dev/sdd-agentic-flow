@@ -26,7 +26,7 @@ release. Historical 1.x notes stay in [CHANGELOG.md](../CHANGELOG.md).
 `x.y.z` (exact), `>=x.y.z`, or `^x.y.z` (same major, `>=` minor.patch). `null` means no
 constraint, same convention as `extends: null`. `doctor --contracts` validates it
 deterministically against the installed CLI's `VERSION` using the vendored comparator in
-`bin/version-compat.js`, not the npm `semver` package, which would break the zero-runtime-
+`src/version-compat.ts` (compiled to `dist/version-compat.js`), not the npm `semver` package, which would break the zero-runtime-
 dependency invariant (see [trust model](trust-model.md)).
 
 ## `autonomy_profile` (v1.8.0)
@@ -109,7 +109,7 @@ Starting at v1.0.0, `sdd-agentic-flow` makes a public compatibility commitment, 
 internal convention.
 
 - **CLI argument surface.** The *documented* CLI surface includes every command and flag listed in
-  `bin/sdd-agentic-flow.js`'s `help()` output and in `README.md`/`docs/**`, for example
+  `src/cli-help.ts` (`USAGE` / `COMMAND_HELP`) and `help()` in `src/sdd-agentic-flow.ts`, plus `README.md`/`docs/**`, for example
   `init [--interactive|--non-interactive] [--language ...] [--execution-mode ...] [--autonomy-level ...]
   [--local-git-exclude] [--quiet]`, `install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]`, `doctor
   [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]`, `upgrade

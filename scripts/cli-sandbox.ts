@@ -3,7 +3,7 @@
 // ship), then installs and runs it via `npx "file:<tarball>"` in a brand-new project directory
 // with an isolated HOME, so it exercises real npm package resolution and the `bin` shim exactly
 // like a first-time consumer would get it. This is the same pack->extract->run recipe already
-// proven in test/cli.test.js's tarball e2e tests, made runnable interactively outside the test
+// proven in test/cli.test.ts's tarball e2e tests, made runnable interactively outside the test
 // runner. Pass `--clean` to remove the resulting sandbox afterward; by default it's left in
 // place so you can inspect what got written (e.g. `.agents/skills`, `.sdd-agentic-flow/`).
 
@@ -34,7 +34,7 @@ const pack = spawnSync(
   'npm',
   ['pack', '--json', '--pack-destination', packDir, '--cache', cacheDir],
   // Windows can't spawn the npm.cmd shim directly without a shell (EINVAL/null status) since
-  // Node's CVE-2024-27980 hardening; POSIX doesn't need it. Matches test/cli.test.js.
+  // Node's CVE-2024-27980 hardening; POSIX doesn't need it. Matches test/cli.test.ts.
   { cwd: repoRoot, encoding: 'utf8', shell: process.platform === 'win32' },
 );
 if (pack.status !== 0) {

@@ -25,6 +25,14 @@ tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell ga
 Biome config: `biome.json` (ignores `dist/`, `.specs/`, `.local/`; TypeScript uses the same
 formatter rules as JavaScript). Do not reintroduce `node --check` lists — retired in v3.5.0.
 
+### Where new CLI code belongs
+
+Before adding CLI logic, read the [Maintainer source layout](docs/architecture.md#maintainer-source-layout)
+module map in `docs/architecture.md`. Put new code in the module that already owns the command
+or concern (`setup.ts` for init, `install.ts` for install, `doctor.ts` for health checks, and so
+on). Keep `src/sdd-agentic-flow.ts` as a thin bootstrap/router — route to an existing module or
+extract a new one when a responsibility does not fit an existing owner.
+
 Proposing a new feature or direction? This project scopes work audit-first: a candidate idea
 becomes real work only once a direct read of the current repository confirms a real gap, not
 from an assumed roadmap slot or an external comparison. Each dated entry in `ROADMAP.md` is the

@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-001 — idea to spec
 
-Proved by `test/cli.test.js` — `golden flow: autonomy AUTO-001 — brainstorm handoff to create-specs under autonomous config`.
+Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-001 — brainstorm handoff to create-specs under autonomous config`.
 
 ## Commands
 

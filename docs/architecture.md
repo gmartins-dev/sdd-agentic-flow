@@ -33,6 +33,38 @@ Consumer project (installed via `install <pack>` into a target repository)
 Each layer only depends on the layer below it. Skills never call the CLI. The CLI never
 authors SDD artifacts; it only creates configuration, discovers context, and copies files.
 
+## Maintainer source layout
+
+Maintainer code lives under `src/` (strict TypeScript) and compiles to `dist/` for the
+published npm bin (`dist/sdd-agentic-flow.js`). Modules are flat — grouped by responsibility,
+not by framework layer.
+
+| Module | Responsibility |
+| --- | --- |
+| `sdd-agentic-flow.ts` | Bootstrap, top-level routing (`runCommand`), process entry |
+| `paths.ts` | Canonical toolkit/package/project path vocabulary; `detectShellInfo()` |
+| `cli-help.ts` | `USAGE`, `COMMAND_HELP`, per-command help rendering |
+| `setup.ts` | `init` and guided setup orchestration |
+| `project-context.ts` | `discover`, `context status`/`refresh`, autonomy state |
+| `install.ts` | `install` command orchestration and application |
+| `doctor.ts` | `doctorChecks()`, contracts/smoke/autonomy sensors, `doctor` |
+| `uninstall.ts` | Uninstall plan/apply |
+| `config.ts`, `config-domain.ts`, `configure.ts` | Config read/validate/mutate and `config`/`configure` commands |
+| `install-domain.ts`, `install-preflight.ts` | Pack resolution, preflight checks for install |
+| `contract-graph.ts` | Skill contract graph validation helpers |
+| `doctor-view.ts` | Human-readable doctor output formatting |
+| `onboarding.ts`, `menu.ts`, `selector.ts` | Interactive onboarding and menu flows |
+| `messages.ts` | Locale strings and message catalog |
+| `skill-identity.ts` | Official skill name registry |
+| `ui.ts` | Output modes, logging, `didYouMean()` |
+| `brand-art.ts` | Welcome chevron art (human-rich / human-plain) |
+| `update-check.ts`, `upgrade.ts` | Registry update check and `upgrade` command |
+| `version-compat.ts` | Vendored semver-range comparator for `requires_cli` |
+
+Use [CONTRIBUTING.md](../CONTRIBUTING.md#where-new-cli-code-belongs) when adding or moving CLI
+logic — extend the module that already owns the command or concern rather than growing the
+entrypoint.
+
 Use [canonical vocabulary](../shared/references/canonical-vocabulary.md) for harness terms.
 It distinguishes the public Skill contract from host runtime mechanics such as Tools, Hooks,
 Agents, and Workers.

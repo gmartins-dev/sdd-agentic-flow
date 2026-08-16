@@ -34,7 +34,7 @@
     "rules": {
       "preset": "recommended",
       "correctness": {
-        "noUnusedVariables": "warn",
+        "noUnusedVariables": "off",
         "noUnusedImports": "warn"
       },
       "suspicious": {

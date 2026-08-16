@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-003 — guardrail pause → resume
 
-Proved by `test/cli.test.js` — `golden flow: autonomy AUTO-003 — autonomous-resume clears pause`.
+Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-003 — autonomous-resume clears pause`.
 
 ## Commands
 

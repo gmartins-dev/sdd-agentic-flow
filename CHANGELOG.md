@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## 3.6.0
+
+Maintainer architecture and code-quality consolidation after the TypeScript migration.
+
+**Changed:**
+
+- Decomposed the CLI entrypoint into cohesive command modules: `paths.ts`, `cli-help.ts`,
+  `setup.ts`, `project-context.ts`, `install.ts`, `doctor.ts`, and `uninstall.ts`.
+- `src/sdd-agentic-flow.ts` is now a bootstrap/router (~1,280 lines, down from ~4,400).
+- Enabled `noUnusedLocals` / `noUnusedParameters` in `tsconfig.json`; Biome defers unused-symbol
+  checks to TypeScript.
+- Version consistency tooling now treats `src/paths.ts` as the canonical VERSION derivation
+  source (removed legacy `bin/` fallback).
+- Operational docs, golden walkthroughs, and `LICENSING.md` now reference `src/` / `dist/` /
+  `test/cli.test.ts` instead of the removed pre-TypeScript layout.
+- Added maintainer source-layout guidance to `docs/architecture.md` and `CONTRIBUTING.md`.
+
+**Compatibility:**
+
+- Published CLI behavior, command surface, skills, presets, and packaging contract are unchanged.
+  Consumers still invoke `npx sdd-agentic-flow` from compiled `dist/` output.
+
 ## 3.5.0
 
 TypeScript strict migration release.

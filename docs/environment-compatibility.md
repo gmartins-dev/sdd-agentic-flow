@@ -50,7 +50,7 @@ and its own transitive dependencies) needs.
 None of these are a requirement. The CLI only uses Node.js APIs (`fs`, `path`, `os`,
 `child_process` with argument arrays). They are illustrative only, for documentation examples
 and for `doctor`'s informational `Shell:` line (`detectShellInfo()` in
-`bin/sdd-agentic-flow.js`, which reads `SHELL`/`PSModulePath`/`ComSpec`, never used to change
+`detectShellInfo()` in `src/paths.ts`, which reads `SHELL`/`PSModulePath`/`ComSpec`, never used to change
 CLI behavior, and never reported as `FAIL`).
 
 | Shell | Platform | Role |

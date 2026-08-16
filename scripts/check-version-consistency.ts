@@ -45,20 +45,19 @@ function listPresetVersions(root = process.cwd()) {
 
 // The CLI must derive VERSION from package.json. A hardcoded `const VERSION = 'x.y.z'`
 // is always drift — that is the v1.9.1 failure mode (VERSION stuck at 1.8.0).
+// Since v3.6.0 the canonical derivation lives in src/paths.ts (compiled into dist/).
 function listCliVersion(root = process.cwd()) {
-  const candidates = [
-    'dist/sdd-agentic-flow.js',
-    'bin/sdd-agentic-flow.js',
-    'src/sdd-agentic-flow.ts',
-  ];
+  const candidates = ['src/paths.ts', 'dist/paths.js', 'dist/sdd-agentic-flow.js'];
   const file = candidates.find((candidate) => fs.existsSync(path.join(root, candidate)));
   if (!file) {
     return { file: candidates[0], version: null, derived: false };
   }
   const content = fs.readFileSync(path.join(root, file), 'utf8');
-  const hardcoded = content.match(/^const VERSION = ['"](\d+\.\d+\.\d+)['"];/m);
+  const hardcoded =
+    content.match(/^const VERSION = ['"](\d+\.\d+\.\d+)['"];/m) ||
+    content.match(/^export const VERSION = ['"](\d+\.\d+\.\d+)['"];/m);
   const derived =
-    !hardcoded && /^const VERSION = /m.test(content) && content.includes('package.json');
+    !hardcoded && /^(export )?const VERSION = /m.test(content) && content.includes('package.json');
   return {
     file,
     version: hardcoded ? hardcoded[1] : derived ? getPackageVersion(root) : null,

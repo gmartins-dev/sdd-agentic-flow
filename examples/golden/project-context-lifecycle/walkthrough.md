@@ -1,6 +1,6 @@
 # Golden flow: project-context lifecycle
 
-Proved by `test/cli.test.js` — `context status detects repository revision drift in a real git
+Proved by `test/cli.test.ts` — `context status detects repository revision drift in a real git
 repository` (added in v0.8.0). This directory has no separate fixture: the test creates a real,
 temporary Git repository directly, since project-context provenance is inherently about Git
 state, not static files.

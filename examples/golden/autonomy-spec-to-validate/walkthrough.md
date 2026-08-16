@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-002 — spec to validate
 
-Proved by `test/cli.test.js` — `golden flow: autonomy AUTO-002 — task-check hands off to validation`.
+Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-002 — task-check hands off to validation`.
 
 ## Commands
 

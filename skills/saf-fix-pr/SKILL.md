@@ -2,7 +2,7 @@
 name: saf-fix-pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 4.0.0
+  version: 4.0.1
   pack: pr
 extends: saf-review-pr
 requires: [config, pr-reference, review-findings]

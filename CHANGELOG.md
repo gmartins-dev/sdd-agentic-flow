@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 4.0.1
+
+**Fixed:**
+
+- Restore `bin/sdd-agentic-flow.js` as the published npm bin entry so `npx sdd-agentic-flow`
+  resolves correctly from the repository root and matches the pre-v3.5 bin layout.
+
 ## 4.0.0
 
 Harness integrity, evidence graph, and clean reset — breaking major release.

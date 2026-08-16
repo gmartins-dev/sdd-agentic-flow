@@ -6,6 +6,7 @@ cd "$root"
 
 node -e 'JSON.parse(require("fs").readFileSync("package.json"));'
 test -f dist/sdd-agentic-flow.js
+test -f bin/sdd-agentic-flow.js
 
 skills=(saf-setup saf-create-spec saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-create-pr saf-review-pr saf-fix-pr saf-validate)
 for skill in "${skills[@]}"; do

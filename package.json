@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A local-first, zero-dependency Spec Driven Development skill toolkit with capability-contracted skills, condensed TLC/TDD baselines, and adaptive feature sizing for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -13,6 +13,7 @@
   "bugs": "https://github.com/gmartins-dev/sdd-agentic-flow/issues",
   "homepage": "https://github.com/gmartins-dev/sdd-agentic-flow#readme",
   "files": [
+    "bin",
     "dist",
     "skills",
     "shared",
@@ -69,7 +70,7 @@
   ],
   "license": "MIT",
   "bin": {
-    "sdd-agentic-flow": "dist/sdd-agentic-flow.js"
+    "sdd-agentic-flow": "bin/sdd-agentic-flow.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",

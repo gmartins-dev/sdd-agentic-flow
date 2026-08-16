@@ -2,7 +2,7 @@
 name: saf-check-task
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 4.0.0
+  version: 4.0.1
   pack: core
 extends: saf-implement
 requires: [config, task-evidence]

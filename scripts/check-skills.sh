@@ -263,7 +263,7 @@ grep -F -q 'requirement → sensor → current result' shared/references/evidenc
 grep -F -q 'strength ladder' shared/references/evidence-standard.md
 for skill in saf-check-task saf-validate; do
   grep -F -q 'must not inherit author narrative' "skills/$skill/SKILL.md"
-  grep -F -q 'self-report is not evidence' "skills/$skill/SKILL.md"
+  grep -F -qi 'self-report is not evidence' "skills/$skill/SKILL.md"
   grep -F -q 'requirement → sensor → current result' "skills/$skill/SKILL.md"
 done
 grep -F -q 'self-assessment' skills/saf-implement/SKILL.md

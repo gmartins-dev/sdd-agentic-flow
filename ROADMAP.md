@@ -1,5 +1,9 @@
 # Roadmap
 
+- **v4.0.0 (2026-08-16):** Harness integrity. v4 artifact contract (`REQ-*`, requirement
+  anchors, feature-scoped evidence tables), shared bounded-execution contracts, read-only
+  `doctor --evidence-graph`, cross-scope `uninstall --purge`, and SPEC-Q spec gate. Breaking;
+  no migration layer.
 - **v3.6.0 (2026-08-16):** Maintainer architecture consolidation. Post-TypeScript CLI
   entrypoint decomposed into flat command modules (`doctor.ts`, `setup.ts`, `install.ts`,
   etc.); docs/tooling aligned to `src/` / `dist/` layout; TypeScript unused-code flags enabled.

@@ -7,6 +7,7 @@ Implement only this task. Preserve spec/design traceability and provide evidence
 - Slice type: {{vertical | horizontal | non-code}}
 - Independently verifiable: {{yes | no}}
 - Public seam: {{public_seam_or_na}}
+- Requirement anchors: {{requirement_anchors}}
 - Dependencies: {{dependencies_or_none}}
 - Horizontal-slice justification: {{justification_or_na}}
 - Expand-contract strategy: {{strategy_or_na}}

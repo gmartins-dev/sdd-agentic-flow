@@ -12,9 +12,9 @@ export const USAGE = {
   configure:
     'usage: configure [--scope user|project] [--pack <pack>] [--target agents|cursor|claude|copilot] [--sharing shared|local] [--plan]',
   doctor:
-    'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
+    'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--evidence-graph <feature-slug>] [--verbose] [--check-updates]',
   uninstall:
-    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--verbose] [--quiet]',
+    'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--purge] [--yes] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--verbose] [--quiet]',
   discover: 'usage: discover [--force] [--quiet]',
   context: 'usage: context [status|refresh|autonomy-state]',
   'autonomous-resume':
@@ -180,7 +180,8 @@ Validate local setup: configuration, installed skills (project and user scope),
 baselines, language profile, safety defaults, and platform/environment.
 
 USAGE
-  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose]
+  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--autonomy]
+                          [--evidence-graph <feature-slug>] [--verbose]
                           [--check-updates] [--ascii]
 
 OPTIONS
@@ -191,6 +192,9 @@ OPTIONS
                    execution_mode × autonomy_level matrix, each installed skill's
                    autonomy_profile support, workflow.autonomy_budget, and the last
                    recorded .sdd-agentic-flow/autonomy/loop-state.md. See docs/autonomy-levels.md.
+  --evidence-graph <feature-slug>
+                   Read-only v4 evidence graph for one feature under .specs/features/.
+                   Recurses only .sdd-agentic-flow/reports for feature-scoped task checks.
   --verbose        With --autonomy, also list all 7 guardrails and what each one gates.
   --check-updates  Make one request to the npm registry to check for a newer version
                    as part of the doctor diagnostic report (read-only). Prefer
@@ -248,6 +252,7 @@ Requires an explicit --plan or --apply; running with neither fails.
 USAGE
   sdd-agentic-flow uninstall --plan
   sdd-agentic-flow uninstall --apply [--include-config] [--full]
+                                      [--purge] [--yes]
                                       [--scope user|project]
                                       [--agent codex|cursor|claude-code|vscode-copilot]
                                       [--verbose] [--quiet]
@@ -260,6 +265,10 @@ OPTIONS
                          .sdd-agentic-flow/context/project-context.md, .sdd-agentic-flow/snapshots, and
                          .sdd-agentic-flow/reports (regenerable state). Implies --include-config.
                          Never removes .specs/features.
+  --purge                Cross-scope clean reset: remove all recognized current and legacy SAF
+                         state across supported user and project targets. Cannot combine with
+                         --scope, --agent, --full, or --include-config. Requires --yes with --apply.
+  --yes                  Required for non-interactive destructive apply (--apply --purge).
   --scope user|project  Limit to one scope (default: both).
   --agent <name>         Limit user-scope removal to a single agent's directory.
   --verbose               List every exact removal path after the grouped summary.

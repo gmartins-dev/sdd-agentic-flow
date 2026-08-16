@@ -2176,3 +2176,50 @@ test('machine upgrade does not mutate when an update is available', () => {
   assert.match(result.stdout, /Update available: yes|non-interactive/);
   assert.doesNotMatch(result.stderr + result.stdout, /simulated npm install failure/);
 });
+
+test('doctor --evidence-graph reports feature-scoped paths', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-evidence-graph-cli-'));
+  const feature = 'sample-feature';
+  const specDir = path.join(cwd, '.specs', 'features', feature);
+  fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow', 'reports'), { recursive: true });
+  fs.mkdirSync(specDir, { recursive: true });
+  const fixtureRoot = path.join(__dirname, 'fixtures', 'v4');
+  fs.copyFileSync(path.join(fixtureRoot, 'valid-spec.md'), path.join(specDir, 'spec.md'));
+  fs.copyFileSync(path.join(fixtureRoot, 'valid-tasks.md'), path.join(specDir, 'tasks.md'));
+  fs.copyFileSync(
+    path.join(fixtureRoot, 'valid-check.md'),
+    path.join(cwd, '.sdd-agentic-flow', 'reports', 'T1-check.md'),
+  );
+  const ok = run(['doctor', '--evidence-graph', feature], cwd);
+  assert.match(ok.stdout, /REQ-1: current/);
+  assert.equal(ok.status, 1, 'incomplete REQ-2 keeps non-zero exit');
+  const missing = run(['doctor', '--evidence-graph', 'missing-feature'], cwd);
+  assert.equal(missing.status, 2);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('uninstall --purge requires --plan or --apply and --yes for apply', () => {
+  const bad = run(['uninstall', '--purge']);
+  assert.equal(bad.status, 1);
+  const plan = run(['uninstall', '--plan', '--purge']);
+  assert.equal(plan.status, 0);
+  assert.match(plan.stdout, /purge/i);
+  const applyNoYes = run(['uninstall', '--apply', '--purge']);
+  assert.equal(applyNoYes.status, 1);
+});
+
+test('uninstall --apply --purge --yes removes owned skills in isolated HOME', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-purge-home-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-purge-cwd-'));
+  const skillRoot = path.join(home, '.agents', 'skills', 'saf-setup');
+  fs.mkdirSync(skillRoot, { recursive: true });
+  fs.writeFileSync(path.join(skillRoot, 'SKILL.md'), '# setup\n');
+  fs.mkdirSync(path.join(cwd, '.specs', 'features', 'keep-me'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.specs', 'features', 'keep-me', 'spec.md'), '# keep\n');
+  const applied = runIsolatedHome(['uninstall', '--apply', '--purge', '--yes'], cwd, home);
+  assert.equal(applied.status, 0, applied.stderr + applied.stdout);
+  assert.equal(fs.existsSync(skillRoot), false);
+  assert.equal(fs.existsSync(path.join(cwd, '.specs', 'features', 'keep-me', 'spec.md')), true);
+  fs.rmSync(home, { recursive: true, force: true });
+  fs.rmSync(cwd, { recursive: true, force: true });
+});

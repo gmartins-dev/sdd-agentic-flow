@@ -238,6 +238,7 @@ if grep -E -n 'Expected RED command:.*fails:' examples/golden/*/tasks.md; then
 fi
 for f in examples/golden/task-management/tasks.md examples/golden/idea-to-spec/tasks.md; do
   grep -F -q 'n/a — not used as proof' "$f"
+  grep -F -q 'Requirement anchors: REQ-' "$f"
 done
 for template in check-report validation-report; do
   grep -F -q 'current vs historical vs not-run' "shared/templates/$template.template.md"
@@ -262,7 +263,7 @@ grep -F -q 'requirement → sensor → current result' shared/references/evidenc
 grep -F -q 'strength ladder' shared/references/evidence-standard.md
 for skill in saf-check-task saf-validate; do
   grep -F -q 'must not inherit author narrative' "skills/$skill/SKILL.md"
-  grep -F -q 'self-report is not evidence' "skills/$skill/SKILL.md"
+  grep -F -qi 'self-report is not evidence' "skills/$skill/SKILL.md"
   grep -F -q 'requirement → sensor → current result' "skills/$skill/SKILL.md"
 done
 grep -F -q 'self-assessment' skills/saf-implement/SKILL.md

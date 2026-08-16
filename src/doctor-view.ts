@@ -1,3 +1,4 @@
+import type { EvidenceGraphResult } from './evidence-graph';
 import { t } from './messages';
 
 type CheckStatus = 'PASS' | 'INFO' | 'WARN' | 'FAIL';
@@ -61,5 +62,22 @@ function buildDoctorView(checks: DoctorCheck[], options: DoctorViewOptions = {})
   };
 }
 
+function formatEvidenceGraph(result: EvidenceGraphResult): string {
+  const lines: string[] = [`Evidence graph — ${result.featureSlug}`, ''];
+  if (result.errors.length) {
+    for (const error of result.errors) lines.push(`ERROR: ${error}`);
+    lines.push('');
+  }
+  for (const node of result.requirements) {
+    lines.push(`${node.reqId}: ${node.status}`);
+    if (node.taskIds.length) lines.push(`  tasks: ${node.taskIds.join(', ')}`);
+    if (node.checkReports.length)
+      lines.push(
+        `  checks: ${node.checkReports.map((reportPath) => reportPath.split(/[/\\]/).pop() ?? reportPath).join(', ')}`,
+      );
+  }
+  return lines.join('\n');
+}
+
 export type { CheckStatus, DoctorCheck, DoctorView, DoctorViewOptions };
-export { buildDoctorView, primaryRemediation, summarizeChecks };
+export { buildDoctorView, formatEvidenceGraph, primaryRemediation, summarizeChecks };

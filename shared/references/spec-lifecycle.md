@@ -153,6 +153,12 @@ Consumers should version `.specs/features/`.
 moves/deletes the package, never creates `validation.md` under `.specs`.
 PASS is still not a correctness verdict.
 
+## Validated feature knowledge reconciliation
+
+When a validated feature changes durable project truth (architecture, glossary, operational
+docs, or relationships between packages), reconcile the appropriate existing project knowledge.
+Do not add a global system-spec database, delta-spec engine, archive tree, or mandatory ADR folder.
+
 ## Living specs (pointer)
 
 On drift, stop and reconcile with the human. See

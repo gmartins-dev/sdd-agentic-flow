@@ -75,3 +75,16 @@ evidence behind it, and evidence from a prior run is context, not proof of the c
 skill may keep domain-specific vocabulary for how it applies that principle (see
 evidence-standard.md for the six skills that already do), but the vocabulary must never
 contradict the shared principle.
+
+## v4 capability discoverability
+
+Every skill must make discoverable (within the six-section shape, no new frontmatter fields):
+
+- purpose and completion semantics
+- required context ([task-context-package.md](task-context-package.md))
+- mutation/authorization boundary
+- local outcome semantics and next admissible action ([bounded-execution.md](bounded-execution.md))
+
+Skills that execute bounded work add goal and completion criteria; skills eligible for repeated
+autonomous work additionally expose iteration/escalation semantics and stop conditions per
+[system-invariants.md](system-invariants.md).

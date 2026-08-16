@@ -2,7 +2,7 @@
 name: saf-implement-multi
 description: Implement multiple SDD tasks using dependency-aware waves, isolated Git worktrees, and concurrent workers when safe and authorized. Use for multi-task implementation; use saf-implement for exactly one task.
 metadata:
-  version: 3.6.0
+  version: 4.0.0
   pack: multi-worktree
 extends: saf-create-prompts
 requires: [config, spec-package]
@@ -49,8 +49,8 @@ Do not use for one task, vague feature requests, specification creation, PR work
 3. Before recommending that any two tasks run in parallel, analyze whether they are genuinely independent: check for files either task writes that the other also touches, shared contracts or types, shared runtime or test state, and any ordering the tasks' own evidence implies even if not stated as a formal dependency. Only place tasks in the same parallel wave when this analysis confirms real independence; when it does not, keep them sequential regardless of what the candidate grouping in step 2 suggested. This is the analysis the worktree-isolation rule in `## Safety` depends on — decide eligibility here, do not restate the rule itself.
 4. Write `execution-plan.md` with waves, ownership, paths, sensors, and integration boundary. In `plan`/`guided` mode stop before Git mutations. In `apply`/`full`, require explicit authorization before creating worktrees or changing code.
 5. Plan each ready task as an independently verifiable vertical slice with a contractual seam (field label: `Public seam`), targeted sensor command, and evidence owner. Justify horizontal work explicitly. Expected RED is a diagnostic sensor hint (`n/a — not used as proof` is valid); do not instruct faking RED.
-6. Execute every ready wave through `saf-implement`, once per task. Concurrent work requires isolated owned worktrees; otherwise execute the wave sequentially. Run `saf-check-task` for each completed task before allowing dependent work to proceed. After each wave, collect current evidence and verify next-wave dependencies before continuing.
-7. Collect `multi-task-evidence` with each task's result (`implemented-isolated`, `integrated`, `partial`, `blocked`, or `no-change`), worktree/branch ownership, sensors, and integration required. Stop at blockers. Do not treat orchestration completion as feature validation or merge readiness.
+6. Execute every ready wave through `saf-implement`, once per task. Concurrent work requires isolated owned worktrees; otherwise execute the wave sequentially. Run `saf-check-task` for each completed task before allowing dependent work to proceed. After each wave barrier: collect task evidence, evaluate completion criteria and semantic progress, identify stalled work (`stalled-progress` reason — not a second durable state), evaluate shared changes, re-check affected stale evidence, resolve decision gates, and unlock only legitimate dependent work. Record per-task ledger fields: ID, bounded goal/criteria reference, wave, owner, dependencies, path/worktree boundary, execution state (`planned`, `ready`, `running`, `implemented-isolated`, `checked`, `integration-required`, `integrated`, `blocked`, `failed`, `skipped`, `no-change`), check-report reference/status, freshness, integration requirement, blocker/gate, last meaningful progress, next admissible action. A worktree result is never `integrated` until separately authorized integration. Stop at blockers. Do not treat orchestration completion as feature validation or merge readiness.
+7. Collect `multi-task-evidence` summarizing the ledger. Stop at blockers.
 
 ## Safety
 

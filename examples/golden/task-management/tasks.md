@@ -17,6 +17,8 @@ Independently verifiable: yes
 
 Public seam: `createTask(input)`
 
+Requirement anchors: REQ-1
+
 Dependencies: none
 
 Horizontal-slice justification: n/a
@@ -51,6 +53,8 @@ Independently verifiable: yes
 
 Public seam: `transitionTask(task, nextStatus)`
 
+Requirement anchors: REQ-2, REQ-4
+
 Dependencies: T1
 
 Horizontal-slice justification: n/a
@@ -84,6 +88,8 @@ Slice type: vertical
 Independently verifiable: yes
 
 Public seam: `notifyOnAssignment(task)`, `notifyIfDueSoon(task, now)`
+
+Requirement anchors: REQ-3
 
 Dependencies: T1
 

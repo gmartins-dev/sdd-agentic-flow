@@ -15,6 +15,14 @@ existing spec/design/tasks artifacts by path; never duplicate their content here
 
 {{completed_work}}
 
+## Unsatisfied completion criteria
+
+{{unsatisfied_criteria}}
+
+## Freshness concerns
+
+{{freshness_concerns}}
+
 ## Open decisions
 
 {{open_decisions}}

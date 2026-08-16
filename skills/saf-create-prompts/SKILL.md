@@ -2,7 +2,7 @@
 name: saf-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 3.6.0
+  version: 4.0.0
   pack: planning
 extends: saf-create-spec
 requires: [config, spec-package]
@@ -44,7 +44,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 4. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist.
 5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
 6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
-7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy, Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations.
+7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy, Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations. Copy **Requirement anchors** from `tasks.md` into each task prompt; never conflate anchors with task-order Dependencies.
 8. Write self-contained prompts with scope, repository evidence to inspect, allowed files, explicit non-goals, implementation steps, and proportionate validation commands. Copy spec-derived expected outcomes into each prompt. When work intent is **bugfix**, also copy **unchanged behavior** and the regression / reproduction sensors from the spec. Do not invite the implementer to derive expected from the implementation. Require the implementer to search existing patterns, prefer modifying existing files, and keep the complexity budget. Do not dump `engineering-principles.md` into every prompt.
 9. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
 

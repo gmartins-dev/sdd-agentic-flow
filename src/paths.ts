@@ -84,6 +84,19 @@ export const USAGE_GUIDE_URL =
   'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md';
 export const LOCAL_GIT_EXCLUDE_COMMENT = '# sdd-agentic-flow init --local-git-exclude';
 export const LOCAL_GIT_EXCLUDE_ENTRY = `${SDD_ROOT}/`;
+export const USER_INSTALL_CONFIG = `${SDD_ROOT}/install.yml`;
+
+export function userInstallConfigPath(homeDir: string = os.homedir()) {
+  return path.join(homeDir, USER_INSTALL_CONFIG);
+}
+
+export function projectSddRoot(cwd: string) {
+  return path.join(cwd, SDD_ROOT);
+}
+
+export function defaultSpecsRoot(cwd: string) {
+  return path.join(cwd, '.specs', 'features');
+}
 
 export function sddJoin(cwd: string, ...segments: string[]) {
   return path.join(cwd, SDD_ROOT, ...segments);

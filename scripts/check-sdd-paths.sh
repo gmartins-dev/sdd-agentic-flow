@@ -19,6 +19,7 @@ matches="$(git grep -n --fixed-strings '.sdd/' -- \
   ':(exclude)README.md' \
   ':(exclude)README.pt-BR.md' \
   ':(exclude)ROADMAP.md' \
+  ':(exclude)docs/uninstall.md' \
   || true)"
 
 if [[ -n "$matches" ]]; then

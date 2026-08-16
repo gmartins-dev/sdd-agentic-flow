@@ -35,11 +35,21 @@ function isLegacySkillName(name: unknown): boolean {
   );
 }
 
+function listManagedSkillDirNames(entries: string[]): string[] {
+  return entries.filter(
+    (name) =>
+      (OFFICIAL_SKILLS as readonly string[]).includes(name) ||
+      isLegacySkillName(name) ||
+      name === 'sdd-agentic-flow-shared',
+  );
+}
+
 export {
   CORE_SKILLS,
   isLegacySkillName,
   isOfficialSkill,
   LEGACY_SKILL_PREFIXES,
+  listManagedSkillDirNames,
   OFFICIAL_SKILLS,
   SKILL_NAMESPACE,
 };

@@ -34,7 +34,11 @@ When texts conflict, this order wins (no extra doc):
 `config.yml` parametrizes execution and autonomy **inside** (1). No configuration value
 overrides safety. Skill Workflow does not outrank the methodology.
 
-**Graph** is not a fifth runtime layer. Workflow rails already live in `saf-route` (skills are selected, not chained automatically) plus the optional `REQ-{id}` convention in artifact contracts. `doctor --evidence-graph` is a watched direction, not a current command.
+**Graph** is not a fifth runtime layer. Workflow rails live in `saf-route` (skills are selected,
+not chained automatically) plus the v4 `REQ-*` traceability contract in
+[artifact-contracts.md](../shared/references/artifact-contracts.md). `doctor --evidence-graph`
+is a read-only inspection command over `.sdd-agentic-flow/reports`; it does not mutate artifacts
+or run agents.
 
 ## What controls what
 

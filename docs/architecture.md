@@ -47,8 +47,9 @@ not by framework layer.
 | `setup.ts` | `init` and guided setup orchestration |
 | `project-context.ts` | `discover`, `context status`/`refresh`, autonomy state |
 | `install.ts` | `install` command orchestration and application |
-| `doctor.ts` | `doctorChecks()`, contracts/smoke/autonomy sensors, `doctor` |
-| `uninstall.ts` | Uninstall plan/apply |
+| `doctor.ts` | `doctorChecks()`, contracts/smoke/autonomy sensors, `doctor`, `--evidence-graph` orchestration |
+| `evidence-graph.ts` | Read-only v4 requirement traceability collector/model (no I/O) |
+| `uninstall.ts` | Uninstall plan/apply and v4 `--purge` clean reset |
 | `config.ts`, `config-domain.ts`, `configure.ts` | Config read/validate/mutate and `config`/`configure` commands |
 | `install-domain.ts`, `install-preflight.ts` | Pack resolution, preflight checks for install |
 | `contract-graph.ts` | Skill contract graph validation helpers |

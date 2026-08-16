@@ -4,7 +4,19 @@ import path from 'node:path';
 import readline from 'node:readline/promises';
 
 import { renderPolicySummary } from './config';
-import { AUTONOMY_LEVELS, EXECUTION_MODES, readConfig } from './config-domain';
+import {
+  AUTONOMY_LEVELS,
+  defaultOnboardingPolicy,
+  EXECUTION_MODES,
+  formatPolicyPair,
+  ONBOARDING_DEFAULT_PRESET,
+  onboardingPresetOrder,
+  policyDisplayTitle,
+  readConfig,
+  type SetupPolicyDraft,
+  setupPolicyFromPair,
+  setupPolicyFromPreset,
+} from './config-domain';
 import { configureIntent } from './configure';
 import {
   coreSkillsPresence,
@@ -68,6 +80,7 @@ type SetupDraft = {
   path?: string | undefined;
   projectLocalExclude?: boolean | undefined;
   saved?: Record<string, unknown> | null | undefined;
+  policy?: SetupPolicyDraft | undefined;
 };
 
 type InitInteractiveState = {
@@ -97,6 +110,7 @@ type SetupCommandOptions = {
   autonomyLevel?: string | undefined;
   presetName?: string | null | undefined;
   presetAlias?: string | null | undefined;
+  policyFromCli?: boolean | undefined;
   localGitExclude?: boolean | undefined;
   showSummary?: boolean | undefined;
   [key: string]: unknown;
@@ -414,6 +428,113 @@ function printSetupStages(
   }
 }
 
+function resolvePolicyFromCommandOptions(options: SetupCommandOptions): SetupPolicyDraft | null {
+  if (options.presetName) {
+    return setupPolicyFromPreset(options.presetName);
+  }
+  if (options.policyFromCli && options.executionMode && options.autonomyLevel) {
+    return setupPolicyFromPair(options.executionMode, options.autonomyLevel);
+  }
+  return null;
+}
+
+function policyReviewTitle(draft: SetupPolicyDraft, locale: string): string {
+  if (draft.kind === 'custom' || !draft.presetName) {
+    return t(locale, 'setup.policyCustom');
+  }
+  return policyDisplayTitle(draft);
+}
+
+function printPolicyLines(draft: SetupPolicyDraft, locale: string, indent = '  ') {
+  process.stdout.write(
+    `${indent}${t(locale, 'setup.policy')}        ${policyReviewTitle(draft, locale)}\n`,
+  );
+  process.stdout.write(
+    `${indent}                ${formatPolicyPair(draft.executionMode, draft.autonomyLevel)}\n`,
+  );
+}
+
+function policyFromConfig(
+  config: ReturnType<typeof readConfig>,
+  _locale: string,
+): SetupPolicyDraft {
+  const executionMode = config.policy?.executionMode ?? 'guided';
+  const autonomyLevel = config.policy?.autonomyLevel ?? 'manual';
+  return (
+    setupPolicyFromPair(executionMode, autonomyLevel) ?? {
+      kind: 'custom',
+      presetName: null,
+      executionMode: 'guided',
+      autonomyLevel: 'manual',
+    }
+  );
+}
+
+async function selectAdvancedPolicy(
+  locale: string,
+  options: SetupCommandOptions,
+  initial: SetupPolicyDraft | null = null,
+): Promise<SetupPolicyDraft | null> {
+  for (;;) {
+    const modeChoice = await select(
+      t(locale, 'setup.policyExecutionMode'),
+      EXECUTION_MODES.map((value) => ({ value, label: value })),
+      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+    );
+    if (modeChoice.cancelled) return null;
+    const executionMode = selectionString(modeChoice);
+    if (!executionMode) return null;
+
+    const levelChoice = await select(
+      t(locale, 'setup.policyAutonomyLevel'),
+      AUTONOMY_LEVELS.map((value) => ({ value, label: value })),
+      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+    );
+    if (levelChoice.cancelled) return null;
+    const autonomyLevel = selectionString(levelChoice);
+    if (!autonomyLevel) return null;
+
+    const resolved = setupPolicyFromPair(executionMode, autonomyLevel);
+    if (resolved) return resolved;
+    log(
+      'FAIL',
+      `Execution mode ${executionMode} cannot combine with autonomy level ${autonomyLevel}`,
+      locale,
+    );
+    if (!initial) return null;
+  }
+}
+
+async function selectOperatingPolicy(
+  locale: string,
+  options: SetupCommandOptions,
+  initial: SetupPolicyDraft | null = null,
+  honorFlags = true,
+): Promise<SetupPolicyDraft | null> {
+  if (honorFlags) {
+    const flagged = resolvePolicyFromCommandOptions(options);
+    if (flagged) return flagged;
+  }
+
+  const presetChoice = await select(
+    t(locale, 'setup.policyPrompt'),
+    [
+      { value: 'supervised', label: t(locale, 'setup.policySupervised') },
+      { value: 'manual', label: t(locale, 'setup.policyManual') },
+      { value: 'autonomous', label: t(locale, 'setup.policyAutonomous') },
+      { value: 'advanced', label: t(locale, 'setup.policyAdvanced') },
+    ],
+    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+  );
+  if (presetChoice.cancelled) return null;
+  const chosen = selectionString(presetChoice);
+  if (!chosen) return null;
+  if (chosen === 'advanced') {
+    return selectAdvancedPolicy(locale, options, initial ?? defaultOnboardingPolicy());
+  }
+  return setupPolicyFromPreset(chosen);
+}
+
 function setupLocationLabel(pack: string, scope: string, options: SetupCommandOptions = {}) {
   return `${pack} ${isRich(resolveMode({ ascii: Boolean(options.ascii) })) ? '·' : '-'} ${scope}`;
 }
@@ -439,13 +560,13 @@ function printSetupReview(draft: SetupDraft, locale: string, options: SetupComma
       `  ${t(locale, 'install.projectSharing')}   ${draft.projectLocalExclude ? t(locale, 'setup.local') : t(locale, 'setup.shared')}\n`,
     );
   process.stdout.write(`  ${t(locale, 'setup.context')}      ${SDD_PATHS.projectContext}\n`);
+  if (draft.policy) printPolicyLines(draft.policy, locale);
 }
 
 function printCurrentSetup(cwd: string, locale: string) {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const saved = savedSetupProfile(cwd);
   const state = onboardingStateFor(cwd);
-  const workflow = config.ok ? (config.policy?.executionMode ?? '') : 'guided';
   const location = saved
     ? setupLocationLabel(
         asString(
@@ -463,13 +584,11 @@ function printCurrentSetup(cwd: string, locale: string) {
       : state === 'PARTIAL'
         ? t(locale, 'setup.partial')
         : t(locale, 'setup.attention');
-  process.stdout.write(
-    `\n${t(locale, 'setup.current')}\n\n` +
-      `  ${t(locale, 'setup.workflow')}     ${workflow}\n` +
-      `  ${t(locale, 'setup.location')}       ${location}\n` +
-      `  ${t(locale, 'setup.context')}      ${context}\n` +
-      `  ${t(locale, 'setup.health')}       ${health}\n`,
-  );
+  process.stdout.write(`\n${t(locale, 'setup.current')}\n\n`);
+  process.stdout.write(`  ${t(locale, 'setup.location')}       ${location}\n`);
+  if (config.ok) printPolicyLines(policyFromConfig(config, locale), locale);
+  process.stdout.write(`  ${t(locale, 'setup.context')}      ${context}\n`);
+  process.stdout.write(`  ${t(locale, 'setup.health')}       ${health}\n`);
 }
 
 async function customizeSetup(draft: SetupDraft, locale: string, options: SetupCommandOptions) {
@@ -528,6 +647,14 @@ async function customizeSetup(draft: SetupDraft, locale: string, options: SetupC
     if (sharing.cancelled) return null;
     next.projectLocalExclude = selectionString(sharing) === 'local';
   }
+  const policy = await selectOperatingPolicy(
+    locale,
+    options,
+    next.policy ?? defaultOnboardingPolicy(),
+    false,
+  );
+  if (!policy) return null;
+  next.policy = policy;
   return next;
 }
 
@@ -541,12 +668,14 @@ async function applySetup(
   process.exitCode = undefined;
   printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
   process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
+  const policy =
+    draft.policy ?? resolvePolicyFromCommandOptions(options) ?? defaultOnboardingPolicy();
   init(cwd, {
     ...(options.language ? { profile: options.language } : {}),
     ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
-    ...(options.executionMode ? { executionMode: options.executionMode } : {}),
-    ...(options.autonomyLevel ? { autonomyLevel: options.autonomyLevel } : {}),
-    ...(options.presetName ? { presetName: options.presetName } : {}),
+    executionMode: policy.executionMode,
+    autonomyLevel: policy.autonomyLevel,
+    ...(policy.presetName ? { presetName: policy.presetName } : {}),
     ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
     quiet: true,
     ...(options.localGitExclude ? { localGitExclude: options.localGitExclude } : {}),
@@ -577,6 +706,12 @@ async function applySetup(
   const result = await doctor(cwd, { ascii: Boolean(options.ascii) });
   if ('status' in result && result.status === 'PASS') {
     log('PASS', t(locale, 'setup.ready'), locale);
+    process.stdout.write(
+      `\n${t(locale, 'setup.policyReady', {
+        preset: policyReviewTitle(policy, locale),
+        pair: formatPolicyPair(policy.executionMode, policy.autonomyLevel),
+      })}\n${t(locale, 'setup.policyChangeHint')}\n`,
+    );
     return true;
   }
   return false;
@@ -592,8 +727,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       t(locale, 'menu.question'),
       [
         { value: 'keep', label: t(locale, 'menu.keep') },
+        { value: 'changePolicy', label: t(locale, 'menu.changePolicy') },
+        { value: 'changeInstall', label: t(locale, 'menu.changeInstall') },
         { value: 'updates', label: t(locale, 'menu.updates') },
-        { value: 'change', label: t(locale, 'menu.change') },
         { value: 'validate', label: t(locale, 'menu.validate') },
         { value: 'more', label: t(locale, 'menu.more') },
       ],
@@ -601,7 +737,8 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     );
     if (action.cancelled || action.value === 'keep') return;
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: Boolean(options.ascii) });
-    if (action.value === 'change') return runCommand('configure', ['--interactive'], cwd);
+    if (action.value === 'changePolicy') return runCommand('config', ['policy'], cwd);
+    if (action.value === 'changeInstall') return runCommand('configure', ['--interactive'], cwd);
     if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii) });
     return runInteractiveMenu(cwd, { showSummary: false });
   }
@@ -627,6 +764,14 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       const customized = await customizeSetup(draft, locale, options);
       if (!customized) return log('INFO', t(locale, 'setup.cancelled'), locale);
       draft = customized;
+    } else {
+      const selected = await selectOperatingPolicy(
+        locale,
+        options,
+        draft.policy ?? defaultOnboardingPolicy(),
+      );
+      if (!selected) return log('INFO', t(locale, 'setup.cancelled'), locale);
+      draft = { ...draft, policy: selected };
     }
     printSetupStages(locale, 'skills', ['project'], options);
     printSetupReview(draft, locale, options);
@@ -766,18 +911,20 @@ async function initInteractive(
     process.stdout.write(
       `\n${renderStep(5, 7, t(locale, 'init.policy'), mode, t(locale, 'step')).join('\n')}\n`,
     );
-    for (const [name, preset] of Object.entries(OPERATING_PRESETS)) {
+    for (const name of onboardingPresetOrder()) {
+      const preset = OPERATING_PRESETS[name];
+      if (!preset) continue;
       process.stdout.write(`  ${name}: ${preset.executionMode} + ${preset.autonomyLevel}\n`);
     }
-    const presetPrompt = `${t(locale, 'init.presetPrompt')} [manual]: `;
+    const presetPrompt = `${t(locale, 'init.presetPrompt')} [${ONBOARDING_DEFAULT_PRESET}]: `;
     let presetRaw: string | undefined;
     if (pipedAnswers) {
       process.stdout.write(presetPrompt);
       presetRaw = pipedAnswers[answerIndex++];
     } else {
-      presetRaw = rl ? await rl.question(presetPrompt) : 'manual';
+      presetRaw = rl ? await rl.question(presetPrompt) : ONBOARDING_DEFAULT_PRESET;
     }
-    const presetChoice = (presetRaw || 'manual').trim();
+    const presetChoice = (presetRaw || ONBOARDING_DEFAULT_PRESET).trim();
     if (presetChoice === 'advanced') {
       initOptions.executionMode = await ask(
         'Execution mode',
@@ -790,7 +937,7 @@ async function initInteractive(
         AUTONOMY_LEVELS,
       );
     } else {
-      const resolved = resolveOperatingPreset(presetChoice || 'manual');
+      const resolved = resolveOperatingPreset(presetChoice || ONBOARDING_DEFAULT_PRESET);
       if (!resolved) throw new Error(`Unknown operating preset: ${presetChoice}`);
       initOptions.executionMode = resolved.executionMode;
       initOptions.autonomyLevel = resolved.autonomyLevel;
@@ -857,7 +1004,11 @@ export {
   init,
   initInteractive,
   onboardingStateFor,
+  policyFromConfig,
+  policyReviewTitle,
   printCurrentSetup,
+  printPolicyLines,
   printUsageGuidePointer,
+  resolvePolicyFromCommandOptions,
   setSetupCommandDeps,
 };

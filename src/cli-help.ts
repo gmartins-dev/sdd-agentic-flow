@@ -57,7 +57,7 @@ USAGE
                          [--local-git-exclude] [--quiet] [--ascii]
 
 OPTIONS
-  --interactive          Explicitly start guided onboarding (the default in a real TTY).
+  --interactive          Same guided onboarding as default TTY init (includes operating policy).
   --non-interactive      Never prompt; use supplied values and documented defaults.
   --language <profile>   Human-facing output language: en-US or pt-BR.
   --en                   Alias for --language en-US.

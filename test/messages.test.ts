@@ -19,7 +19,9 @@ test('message catalogs keep parity and locale resolution is deterministic', () =
   assert.equal(t('en-US', 'menu.more'), 'Commands and advanced options');
   assert.equal(t('pt-BR', 'menu.more'), 'Comandos e opções avançadas');
   assert.equal(t('pt-BR', 'setup.recommended'), 'Configuração recomendada');
-  assert.equal(t('pt-BR', 'setup.cancelled'), 'Configuração cancelada');
+  assert.equal(t('pt-BR', 'menu.changePolicy'), 'Alterar política operacional');
+  assert.equal(t('en-US', 'menu.changeInstall'), 'Change installation setup');
+  assert.equal(t('en-US', 'setup.policySupervised'), 'Supervised — recommended');
   assert.equal(t('pt-BR', 'doctor.next'), 'Próxima etapa');
   assert.equal(t('en-US', 'unknown.key'), 'unknown.key');
   assert.equal(translateText('pt-BR', 'No changes were made.'), 'Nenhuma alteração foi feita.');

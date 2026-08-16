@@ -88,15 +88,18 @@ human-plain).
 ## Interactive menu
 
 Shown only when stdout and stdin are TTYs and `CI` is unset. First use resumes guided
-setup; ready or attention states offer **Keep current setup**, **Check for updates**,
-**Change setup**, **Validate setup**, and **Commands and advanced options**. Updates remain opt-in.
+setup; ready or attention states offer **Keep current setup**, **Change operating policy**,
+**Change installation setup**, **Check for updates**, **Validate setup**, and **Commands and
+advanced options**. Updates remain opt-in.
 
 Guided setup is an inline CLI flow, not a full-screen TUI. It has one recommended path and an
-optional customization path, then a single review before the first write. It derives first-use,
-partial, and ready state from configuration, installation intent, context, and `doctor`; it does
-not store a separate onboarding marker. Before apply, **Back** only changes in-memory choices.
-After apply, **Change setup** starts a new deliberate change rather than pretending to roll back
-files. A handled failure keeps the human in the flow with retry, validation, change, or exit.
+optional customization path, including an operating-policy step (Supervised recommended), then a
+single review before the first write. It derives first-use, partial, and ready state from
+configuration, installation intent, context, and `doctor`; it does not store a separate onboarding
+marker. Before apply, **Back** only changes in-memory choices. After apply, **Change operating
+policy** runs `config policy`; **Change installation setup** runs `configure --interactive` —
+each is a deliberate change, not a rollback. A handled failure keeps the human in the flow with
+retry, validation, change, or exit.
 
 Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
 navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive

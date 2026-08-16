@@ -15,8 +15,9 @@ defaults, quality gates, safety defaults) and auto-runs discovery, writing
 `.sdd-agentic-flow/context/project-context.md`. Existing `.sdd-agentic-flow/config.yml` files are preserved, never
 overwritten — safe to re-run.
 
-Use `init --interactive` if you want to set a specific agent target, language profile, or
-feature profile instead of the defaults. See [configuration](../configuration.md).
+Use guided `init` in a real terminal to set agent target, language profile, operating policy,
+and related options. For automation, use `init --non-interactive` or explicit flags. See
+[configuration](../configuration.md).
 
 ## 2. Read what `discover` found
 

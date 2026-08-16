@@ -74,8 +74,11 @@ workflow:
     pause_on_warning: true # stop, not just warn, once budget drops below ~20%
 ```
 
-`init --execution-mode <mode> --autonomy-level <level>` sets both at creation time (also
-available via `init --interactive`). An `.sdd-agentic-flow/config.yml` predating v1.8.0 that has neither field
+`init --execution-mode <mode> --autonomy-level <level>` sets both at creation time. On a TTY,
+`init` runs **guided setup**, which includes an operating-policy step (Supervised recommended,
+Manual, Autonomous, or Advanced). `init --interactive` on a TTY is the same guided flow; the
+legacy piped seven-step wizard remains for non-TTY `--interactive` compatibility only. An
+`.sdd-agentic-flow/config.yml` predating v1.8.0 that has neither field
 is not an error. `doctor --autonomy` reports `WARN` and both default to `guided`/`manual`,
 identical to today's behavior. See [configuration](configuration.md).
 
@@ -149,6 +152,10 @@ GitHub) the same way they already treat the `local-files`/`github` adapters
 ([adapters](adapters.md)); this package hosts no MCP server itself.
 
 ## What this does not promise
+
+`autonomous` is not unrestricted authority, not permission to commit/push/release, and not a CLI
+orchestration engine. The CLI validates policy and loop state; it never invokes skills or runs
+workflows for you.
 
 Same posture as [what this does not promise](compatibility-promise.md#what-this-does-not-promise):
 `autonomous` is not a guarantee of correctness, a substitute for review, or a claim that a

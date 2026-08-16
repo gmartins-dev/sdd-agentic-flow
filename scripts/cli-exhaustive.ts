@@ -106,7 +106,7 @@ function runPackedInteractive(
     cwd: state.cwd,
     encoding: 'utf8',
     timeout: 30_000,
-    input: '\n\n\n\n\n',
+    input: '\n\n\n\n\n\n',
     env,
   });
 }
@@ -176,6 +176,10 @@ function runJourneys() {
     assert.match(
       fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
       /pt-BR/,
+    );
+    assert.match(
+      fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
+      /execution_mode: apply[\s\S]*autonomy_level: supervised/,
     );
   });
   record('J03', 'new user', 'init again', () => {
@@ -393,9 +397,15 @@ function runJourneys() {
     const result = runPackedInteractive(packedInteractive, tarball, cacheDir);
     if (!result) return 'interactive TTY helper unavailable on this host';
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
-    assert.match(result.stdout, /Recommended setup/);
-    assert.match(result.stdout, /PASS Ready/);
+    assert.match(result.stdout, /Recommended setup|Supervised|Supervisionado/);
+    assert.match(result.stdout, /PASS Ready|Pronto/);
     assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')));
+    const config = fs.readFileSync(
+      path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml'),
+      'utf8',
+    );
+    assert.match(config, /execution_mode: apply/);
+    assert.match(config, /autonomy_level: supervised/);
     return 'interactive setup completed';
   });
 }

@@ -22,7 +22,8 @@ is unaffected by install scope.
 Interactive setup is an inline terminal flow, not a full-screen TUI. The recommended path uses
 safe defaults; **Customize setup** exposes pack, scope, targets, and project sharing. It shows one
 review before writing. Before that review, **Back** changes only draft choices. After files are
-written, use **Change setup** for a new deliberate change rather than a rollback.
+written, use **Change operating policy** or **Change installation setup** for a deliberate
+change rather than a rollback.
 
 Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` so
 toolkit state stays out of `git status` without editing the team's `.gitignore`. Default

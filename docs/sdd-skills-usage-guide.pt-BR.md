@@ -12,9 +12,9 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-Use `init --interactive` para escolher projeto, agente, idioma, origem, fluxo e
-configurações de segurança. A CLI grava `.sdd-agentic-flow/config.yml` e preserva uma
-configuração existente.
+O `init` guiado em terminal real inclui política operacional (Supervisionado recomendado).
+Use `init --non-interactive` ou `init --preset` em automação. A CLI grava
+`.sdd-agentic-flow/config.yml` e preserva uma configuração existente.
 
 Use `npx sdd-agentic-flow list` para consultar os packs:
 

@@ -88,19 +88,21 @@ You stay the decision-maker; the toolkit holds the gates. It gives you a linear 
 Requires Node.js >= 22 for the CLI only. Your project does not need Node.js. See [environment compatibility](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init --preset manual
+npx sdd-agentic-flow init
 npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
 That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspect, guide, and maintain — it does not invoke skills. See [What is SDD?](docs/what-is-sdd.md) and the [commands reference](docs/commands.md).
 
+In a real terminal, guided `init` includes an operating-policy step (**Supervised** is recommended on Enter-through). Use `init --preset` or `config policy` to set policy explicitly in scripts.
+
 `init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`) — it is not a third config axis.
 
 | Preset | Writes | How the path runs |
 | --- | --- | --- |
-| `manual` (default; alias `man`) | `guided` + `manual` | Stop after each skill |
-| `supervised` (aliases `assist`, `assisted`) | `apply` + `supervised` | Propose next skill; you confirm |
+| `supervised` (recommended in guided TTY; aliases `assist`, `assisted`) | `apply` + `supervised` | Propose next skill; you confirm |
+| `manual` (fail-safe non-interactive default; alias `man`) | `guided` + `manual` | Stop after each skill |
 | `autonomous` (alias `auto`) | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` while all 7 guardrails pass |
 
 Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users can still set those two flags without `--preset`. See [configuration](docs/configuration.md).
@@ -109,10 +111,11 @@ Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users 
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup or
-customization, then configures, installs the `full` pack by default, prepares context, and
-validates the result. Scripts and CI stay deterministic with `init --non-interactive`. See
-[getting started](docs/getting-started.md).
+Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup and
+operating policy (Supervised recommended), optional customization, then configures, installs
+the `full` pack by default, prepares context, and validates the result. Change policy later
+with `config policy`; change installation with `configure --interactive`. Scripts and CI stay
+deterministic with `init --non-interactive`. See [getting started](docs/getting-started.md).
 
 ## How it works
 

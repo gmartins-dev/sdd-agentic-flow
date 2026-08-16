@@ -1,5 +1,9 @@
 # Roadmap
 
+- **v4.1.0 (2026-08-16):** Operating policy & autonomy UX. Guided `init` includes
+  Supervised/Manual/Autonomous/Advanced policy selection; Current setup and Review show the full
+  policy pair; returning menu separates policy changes from installation changes. No CLI
+  orchestration engine or new persisted policy axis.
 - **v4.0.0 (2026-08-16):** Harness integrity. v4 artifact contract (`REQ-*`, requirement
   anchors, feature-scoped evidence tables), shared bounded-execution contracts, read-only
   `doctor --evidence-graph`, cross-scope `uninstall --purge`, and SPEC-Q spec gate. Breaking;

@@ -1,6 +1,6 @@
 {
   "name": "planning",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Specification and task-prompt planning.",
   "skills": [
     "saf-setup",

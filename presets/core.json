@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Safe baseline workflow.",
   "skills": [
     "saf-setup",

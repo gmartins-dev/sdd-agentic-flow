@@ -8,6 +8,16 @@ type ExecutionMode = (typeof EXECUTION_MODES)[number];
 type AutonomyLevel = (typeof AUTONOMY_LEVELS)[number];
 type OperatingPresetName = keyof typeof OPERATING_PRESETS;
 
+/** Recommended preset for guided onboarding Enter-through (not global fail-safe default). */
+const ONBOARDING_DEFAULT_PRESET: OperatingPresetName = 'supervised';
+
+type SetupPolicyDraft = {
+  kind: 'preset' | 'custom';
+  presetName: string | null;
+  executionMode: ExecutionMode;
+  autonomyLevel: AutonomyLevel;
+};
+
 const OPERATING_PRESETS = {
   manual: { executionMode: 'guided', autonomyLevel: 'manual' },
   supervised: { executionMode: 'apply', autonomyLevel: 'supervised' },
@@ -223,16 +233,84 @@ function resolvePolicyFromPreset(presetName: string): {
   };
 }
 
-export type { AutonomyLevel, ExecutionMode, PolicyMutationInput, PolicyPreview, ReadConfigResult };
+function setupPolicyFromPreset(presetName: string): SetupPolicyDraft | null {
+  const resolved = resolvePolicyFromPreset(presetName);
+  if (!resolved) return null;
+  return {
+    kind: 'preset',
+    presetName: resolved.presetName,
+    executionMode: resolved.executionMode,
+    autonomyLevel: resolved.autonomyLevel,
+  };
+}
+
+function setupPolicyFromPair(
+  executionMode: string,
+  autonomyLevel: string,
+): SetupPolicyDraft | null {
+  if (!isExecutionMode(executionMode) || !isAutonomyLevel(autonomyLevel)) return null;
+  if (!autonomyComboValid(executionMode, autonomyLevel)) return null;
+  const equivalent = presetEquivalentFor(executionMode, autonomyLevel);
+  return {
+    kind: equivalent ? 'preset' : 'custom',
+    presetName: equivalent,
+    executionMode,
+    autonomyLevel,
+  };
+}
+
+/** Display order for onboarding preset prompts (recommended first). */
+const ONBOARDING_PRESET_ORDER: OperatingPresetName[] = ['supervised', 'manual', 'autonomous'];
+
+function onboardingPresetOrder(): OperatingPresetName[] {
+  return [...ONBOARDING_PRESET_ORDER];
+}
+
+function defaultOnboardingPolicy(): SetupPolicyDraft {
+  const draft = setupPolicyFromPreset(ONBOARDING_DEFAULT_PRESET);
+  if (!draft) {
+    throw new Error(`missing onboarding preset: ${ONBOARDING_DEFAULT_PRESET}`);
+  }
+  return draft;
+}
+
+function formatPolicyPair(executionMode: string, autonomyLevel: string): string {
+  return `${executionMode} + ${autonomyLevel}`;
+}
+
+function policyDisplayTitle(draft: SetupPolicyDraft): string {
+  if (draft.presetName) {
+    return draft.presetName.charAt(0).toUpperCase() + draft.presetName.slice(1);
+  }
+  return 'Custom';
+}
+
+export type {
+  AutonomyLevel,
+  ExecutionMode,
+  OperatingPresetName,
+  PolicyMutationInput,
+  PolicyPreview,
+  ReadConfigResult,
+  SetupPolicyDraft,
+};
 export {
   AUTONOMY_LEVELS,
   applyPolicyMutation,
   autonomyComboValid,
   configValue,
+  defaultOnboardingPolicy,
   EXECUTION_MODES,
+  formatPolicyPair,
+  ONBOARDING_DEFAULT_PRESET,
+  ONBOARDING_PRESET_ORDER,
   OPERATING_PRESETS,
+  onboardingPresetOrder,
+  policyDisplayTitle,
   presetEquivalentFor,
   readConfig,
   resolvePolicyFromPreset,
+  setupPolicyFromPair,
+  setupPolicyFromPreset,
   validatePolicyMutation,
 };

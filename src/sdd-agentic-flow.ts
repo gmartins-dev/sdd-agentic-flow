@@ -746,6 +746,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       let localGitExclude = false;
       let presetName = null;
       let presetAlias = null;
+      let policyFromCli = false;
       for (let index = 0; index < args.length; index += 1) {
         if (args[index] === '--interactive') interactive = true;
         else if (args[index] === '--non-interactive') nonInteractive = true;
@@ -778,6 +779,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
             });
             return;
           }
+          policyFromCli = true;
           presetName = resolved.name;
           presetAlias = resolved.alias;
           executionMode = resolved.executionMode;
@@ -793,6 +795,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
             });
             return;
           }
+          policyFromCli = true;
           executionMode = asString(args[index + 1]);
           index += 1;
         } else if (args[index] === '--autonomy-level') {
@@ -806,6 +809,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
             });
             return;
           }
+          policyFromCli = true;
           autonomyLevel = resolved;
           index += 1;
         } else {
@@ -835,10 +839,8 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       const initOptions = {
         language,
         featureProfile,
-        executionMode,
-        autonomyLevel,
-        presetName,
-        presetAlias,
+        ...(policyFromCli ? { executionMode, autonomyLevel, presetName, presetAlias } : {}),
+        policyFromCli,
         quiet,
         localGitExclude,
         ascii,
@@ -854,7 +856,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           autonomyLevel,
           localGitExclude,
         );
-      else init(cwd, { ...initOptions, profile: language });
+      else
+        init(cwd, {
+          ...initOptions,
+          profile: language,
+          executionMode,
+          autonomyLevel,
+          ...(presetName ? { presetName, presetAlias } : {}),
+        });
     }
   } else if (command === 'discover') {
     if (args.includes('--help')) writeCommandHelp('discover');

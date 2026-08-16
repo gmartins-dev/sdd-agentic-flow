@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 4.1.0
+
+Operating policy and autonomous workflow UX — compatible minor release.
+
+**Added:**
+
+- Operating-policy selector in guided `init` onboarding (Supervised recommended, Manual, Autonomous, Advanced).
+- Split returning setup menu: **Change operating policy** (`config policy`) vs **Change installation setup** (`configure --interactive`).
+- Policy block in setup Review and Current setup (preset title + canonical `execution_mode + autonomy_level` pair).
+- i18n keys for setup policy and menu labels (en-US + pt-BR).
+
+**Changed:**
+
+- Guided onboarding Enter-through default: **Supervised** (`apply + supervised`) instead of Manual.
+- Piped `init --interactive` preset prompt default: **supervised** (fail-safe non-TTY `init` without flags remains `guided + manual`).
+- `initInteractive` shares onboarding preset default with guided setup.
+- `init` no longer treats implicit CLI defaults as explicit policy flags (`policyFromCli`); guided setup always offers the policy step unless `--preset` or explicit `--execution-mode` / `--autonomy-level` are passed.
+
 ## 4.0.1
 
 **Fixed:**

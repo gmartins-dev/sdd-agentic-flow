@@ -18,7 +18,7 @@ for full usage text.
 | Command | Summary |
 | --- | --- |
 | `init` | Create `.sdd-agentic-flow/config.yml` and regenerable toolkit state |
-| `init` | Guided 0 → Ready onboarding in a real TTY; `--non-interactive` for automation |
+| `init` | Guided 0 → Ready onboarding in a real TTY (includes operating policy); `--non-interactive` for automation |
 | `config` / `config show` | Read-only operating policy summary |
 | `config policy` | Change `execution_mode` and `autonomy_level` |
 | `config policy --plan` | Preview policy change; never writes |

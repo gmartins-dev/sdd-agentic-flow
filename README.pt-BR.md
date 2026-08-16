@@ -92,17 +92,18 @@ Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. A CLI
 
 | Preset | Grava | Como o caminho corre |
 | --- | --- | --- |
-| `manual` (padrão; alias `man`) | `guided` + `manual` | Para depois de cada skill |
-| `supervised` (aliases `assist`, `assisted`) | `apply` + `supervised` | Propõe a próxima skill; você confirma |
+| `supervised` (recomendado no TTY; aliases `assist`, `assisted`) | `apply` + `supervised` | Propõe a próxima skill; você confirma |
+| `manual` (padrão fail-safe sem flags; alias `man`) | `guided` + `manual` | Para depois de cada skill |
 | `autonomous` (alias `auto`) | `full` + `autonomous` | A mesma sessão pode seguir o próximo `SKILL.md` no caminho enquanto os 7 guardrails passam |
 
 Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous does not mean unattended.** Commit, push, merge, tag e publish continuam humanos em todo preset. A CLI não executa skills.
 
 Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
-Em um terminal real, `init` guia a configuração, instala o pack `full`, prepara o
-contexto e valida o resultado. Use `init --non-interactive` em scripts e CI. Veja
-[início rápido](docs/getting-started.md).
+Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
+recomendado ao pressionar Enter), instala o pack `full`, prepara o contexto e valida o resultado.
+Altere a política com `config policy`; altere a instalação com `configure --interactive`.
+Use `init --non-interactive` em scripts e CI. Veja [início rápido](docs/getting-started.md).
 
 Ao escolher `pt-BR`, a saída humana da CLI — prompts, planos, doctor, menu e `learn-sdd` —
 passa a usar português brasileiro. Commands, paths, statuses, IDs e JSON permanecem em inglês

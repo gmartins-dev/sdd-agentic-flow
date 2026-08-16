@@ -1,6 +1,6 @@
 {
   "name": "pr",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Read-first PR workflow.",
   "skills": ["saf-route", "saf-create-pr", "saf-review-pr", "saf-fix-pr"],
   "shared": true,

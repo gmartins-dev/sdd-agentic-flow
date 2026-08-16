@@ -57,7 +57,7 @@ async function select(question, options, settings = {}) {
     typeof input.setRawMode !== 'function';
   output.write(`${renderSelector(question, options, { multiple, locale: settings.locale })}\n`);
   if (plain) {
-    const rl = readline.createInterface({ input, output });
+    const rl = readline.createInterface({ input, output, terminal: false });
     try {
       let selected = options.filter((option) => option.selected).map((option) => option.value);
       for (;;) {

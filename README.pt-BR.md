@@ -135,7 +135,7 @@ Use `saf-route` quando o próximo passo não estiver claro. Ele recomenda uma sk
 
 ## Comprovado neste repositório
 
-Esses walkthroughs não são claim de slide — rodam como testes de integração em `test/cli.test.js`. Cada um lista os comandos que o teste executa e o que ele verifica.
+Esses walkthroughs não são claim de slide — rodam como testes de integração em `test/cli.test.ts`. Cada um lista os comandos que o teste executa e o que ele verifica.
 
 | Fluxo | O que comprova | Walkthrough |
 | --- | --- | --- |

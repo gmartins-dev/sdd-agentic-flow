@@ -1,5 +1,9 @@
 # Roadmap
 
+- **v3.6.0 (2026-08-16):** Maintainer architecture consolidation. Post-TypeScript CLI
+  entrypoint decomposed into flat command modules (`doctor.ts`, `setup.ts`, `install.ts`,
+  etc.); docs/tooling aligned to `src/` / `dist/` layout; TypeScript unused-code flags enabled.
+  No public CLI, skill, or preset contract change.
 - **v3.5.0 (2026-08-15):** TypeScript strict migration. Maintainer code moved from `bin/*.js`
   to `src/*.ts`, compiled output in `dist/`, tests/scripts converted to `.ts`, and CI gates
   updated to validate the new layout.

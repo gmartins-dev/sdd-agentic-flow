@@ -9,7 +9,7 @@ colors, and small brand marks are not.
 
 ## Output modes
 
-One command, three modes — decided by `outputMode(streams, env, flags)` in `bin/ui.js`:
+One command, three modes — decided by `outputMode(streams, env, flags)` in `src/ui.ts`:
 
 | Mode | When | Brand / connectors | ANSI | Symbols |
 | --- | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ Rules:
 - Status words (`PASS` / `WARN` / `FAIL` / …) may be colored; symbols are optional extras
   in human modes only.
 - Welcome prints a **compact** three-chevron brand mark (~8–10 lines, ≤52 columns) in
-  human-rich / human-plain only (embedded in `bin/brand-art.js` so it ships in the npm
+  human-rich / human-plain only (embedded in `src/brand-art.ts` so it ships in the npm
   package — no runtime read of `public/`). In human-rich TTY, the three bands reveal
   left→right (~160ms steps) to echo the chevron flow; human-plain / `--ascii` stay
   instant. If the TTY reports `columns` or `rows` too small for the block, welcome falls

@@ -1,6 +1,6 @@
 # Golden flow: idea to spec
 
-Proved by `test/cli.test.js` — `golden flow: idea to spec — brainstorm brief converges into a
+Proved by `test/cli.test.ts` — `golden flow: idea to spec — brainstorm brief converges into a
 saf-create-spec package`. This file describes what that test exercises; it is not a promise
 beyond what the test actually checks (see `docs/environment-compatibility.md` for the project's
 stance on documentation vs. mechanically-proved claims).

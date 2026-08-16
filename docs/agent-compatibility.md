@@ -5,7 +5,7 @@ installed locally, and read no vendor-specific API. This matrix separates two di
 
 - **Skill format / scope support**: whether the CLI knows this agent's skill directory
   conventions (see [installation scope](installation-scope.md)). This is mechanically true for the 4
-  agents below, since `bin/sdd-agentic-flow.js` writes to them.
+  agents below, since `src/install.ts` writes to them.
 - **Manually validated**: whether an actual workflow was manually exercised against that
   agent's harness. Cells marked "not verified" are an honest gap, not a claim.
 

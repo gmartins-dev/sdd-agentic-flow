@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-005 — budget exhaustion (guardrail 6)
 
-Proved by `test/cli.test.js` — `golden flow: autonomy AUTO-005 — doctor reads budget-exhausted loop state`.
+Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-005 — doctor reads budget-exhausted loop state`.
 
 ## Commands
 

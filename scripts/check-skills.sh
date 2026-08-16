@@ -230,7 +230,7 @@ for template in check-report validation-report; do
   grep -F -q '## TDD evidence' "shared/templates/$template.template.md"
 done
 grep -F -q 'quality.require_tdd' docs/configuration.md
-grep -F -q 'require_tdd:' dist/sdd-agentic-flow.js
+grep -F -q 'require_tdd:' dist/doctor.js dist/setup.js
 # v1.14.0: golden tasks keep Expected RED but must not instruct fabricating a fail.
 if grep -E -n 'Expected RED command:.*fails:' examples/golden/*/tasks.md; then
   echo "golden tasks still instruct a fabricated RED failure" >&2

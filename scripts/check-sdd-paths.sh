@@ -11,6 +11,7 @@ matches="$(git grep -n --fixed-strings '.sdd/' -- \
   ':(exclude)scripts/check-sdd-paths.sh' \
   ':(exclude)dist/sdd-agentic-flow.js' \
   ':(exclude)src/sdd-agentic-flow.ts' \
+  ':(exclude)src/paths.ts' \
   ':(exclude)test/cli.test.ts' \
   ':(exclude).gitignore' \
   ':(exclude)docs/v2-breaking-changes.md' \

@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Symptom → likely cause → diagnostic command → fix, for every `WARN`/`FAIL` `doctor` can
-emit today. The source of truth is `doctorChecks()` in `bin/sdd-agentic-flow.js`. Run `sdd-agentic-flow doctor --json`
+emit today. The source of truth is `doctorChecks()` in `src/doctor.ts`. Run `sdd-agentic-flow doctor --json`
 first; it names the failing check.
 
 ## Consumer project checks

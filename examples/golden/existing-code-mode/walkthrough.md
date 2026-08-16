@@ -1,6 +1,6 @@
 # Golden flow: existing-code mode
 
-Proved by `test/cli.test.js` — `golden flow: existing-code mode artifacts carry
+Proved by `test/cli.test.ts` — `golden flow: existing-code mode artifacts carry
 Observed/Inferred/Unknown labels and are accepted`.
 
 ## Fixture

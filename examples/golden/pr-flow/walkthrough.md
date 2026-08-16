@@ -1,6 +1,6 @@
 # Golden flow: PR (create → review → fix → review)
 
-Proved by `test/cli.test.js` — `golden flow: PR fixtures match the pr-* template presence
+Proved by `test/cli.test.ts` — `golden flow: PR fixtures match the pr-* template presence
 contract from artifact-contracts.md`.
 
 None of `saf-create-pr`, `saf-review-pr`, or `saf-fix-pr` are CLI subcommands — they are

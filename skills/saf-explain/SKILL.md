@@ -2,7 +2,7 @@
 name: saf-explain
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 3.5.0
+  version: 3.6.0
   pack: planning
 extends: saf-create-spec
 requires: [config, spec-package]

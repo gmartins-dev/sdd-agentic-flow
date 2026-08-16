@@ -70,7 +70,7 @@ terms most useful when operating this toolkit.
 | **Loop state** | Append-only execution memory for supervised/autonomous runs |
 | **Evidence** | Sensor results + `Status:` establishing confidence about specified properties |
 | **Handoff** | Cross-session bridge when a skill spans agent boundaries |
-| **Golden flow** | Fixture + walkthrough + `test/cli.test.js` integration proof |
+| **Golden flow** | Fixture + walkthrough + `test/cli.test.ts` integration proof |
 | **Doctor** | Local validator; never invokes skills or runs your tests |
 | **Golden flow ID** | e.g. `AUTO-001` — autonomy chain proofs in this repository |
 

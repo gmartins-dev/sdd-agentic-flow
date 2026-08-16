@@ -6,6 +6,11 @@ const { PassThrough, Readable } = require('node:stream');
 const { resolveOnboardingState } = require('../bin/onboarding');
 const { resolveSelection, select } = require('../bin/selector');
 
+function setTty(stream) {
+  Object.defineProperty(stream, 'isTTY', { value: true, configurable: true });
+  return stream;
+}
+
 test('onboarding state is derived from setup artifacts', () => {
   assert.equal(resolveOnboardingState(), 'FIRST_USE');
   assert.equal(resolveOnboardingState({ hasSkills: true }), 'NEW_PROJECT');
@@ -54,9 +59,8 @@ test('selector honors defaults, numbers, multi-select, and cancellation', () => 
 
 test('selector falls back to numbered input when a TTY cannot enter raw mode', async () => {
   const input = Readable.from(['\n']);
-  input.isTTY = true;
-  const output = new PassThrough();
-  output.isTTY = true;
+  setTty(input);
+  const output = setTty(new PassThrough());
   const selected = await select('Choose', [{ value: 'default', label: 'Default' }], {
     input,
     output,
@@ -69,10 +73,9 @@ test('NO_COLOR keeps the complete numbered selector without ANSI output', async 
   const prior = process.env.NO_COLOR;
   process.env.NO_COLOR = '1';
   const input = Readable.from(['2\n']);
-  input.isTTY = true;
+  setTty(input);
   input.setRawMode = () => {};
-  const output = new PassThrough();
-  output.isTTY = true;
+  const output = setTty(new PassThrough());
   try {
     const result = await select(
       'Choose',
@@ -94,13 +97,12 @@ test('raw selector redraws the active option before Enter commits it', async () 
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
   const input = new PassThrough();
-  input.isTTY = true;
+  setTty(input);
   input.isRaw = false;
   input.setRawMode = (value) => {
     input.isRaw = value;
   };
-  const output = new PassThrough();
-  output.isTTY = true;
+  const output = setTty(new PassThrough());
 
   try {
     const pending = select(
@@ -127,13 +129,12 @@ test('raw selector accepts configured menu exits', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
   const input = new PassThrough();
-  input.isTTY = true;
+  setTty(input);
   input.isRaw = false;
   input.setRawMode = (value) => {
     input.isRaw = value;
   };
-  const output = new PassThrough();
-  output.isTTY = true;
+  const output = setTty(new PassThrough());
   try {
     const pending = select('Choose', [{ value: 'one', label: 'One' }], {
       input,
@@ -150,50 +151,62 @@ test('raw selector accepts configured menu exits', async () => {
 });
 
 test('raw selector treats Ctrl+C as cancellation and restores raw mode', async () => {
+  const noColor = process.env.NO_COLOR;
+  delete process.env.NO_COLOR;
   const input = new PassThrough();
-  input.isTTY = true;
+  setTty(input);
   input.isRaw = false;
   input.setRawMode = (value) => {
     input.isRaw = value;
   };
-  const output = new PassThrough();
-  output.isTTY = true;
-  const pending = select('Choose', [{ value: 'one', label: 'One' }], { input, output });
-  await new Promise((resolve) => setImmediate(resolve));
-  input.emit('keypress', '\u0003', { ctrl: true, name: 'c' });
-  assert.deepEqual(await pending, { cancelled: true });
-  assert.equal(input.isRaw, false);
+  const output = setTty(new PassThrough());
+  try {
+    const pending = select('Choose', [{ value: 'one', label: 'One' }], { input, output });
+    await new Promise((resolve) => setImmediate(resolve));
+    input.emit('keypress', '\u0003', { ctrl: true, name: 'c' });
+    assert.deepEqual(await pending, { cancelled: true });
+    assert.equal(input.isRaw, false);
+  } finally {
+    if (noColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = noColor;
+  }
 });
 
 test('raw selector cancels on EOF and ignores terminal resize without changing selection', async () => {
+  const noColor = process.env.NO_COLOR;
+  delete process.env.NO_COLOR;
   const input = new PassThrough();
-  input.isTTY = true;
+  setTty(input);
   input.isRaw = false;
   input.setRawMode = (value) => {
     input.isRaw = value;
   };
-  const output = new PassThrough();
-  output.isTTY = true;
-  const selected = select(
-    'Choose',
-    [
-      { value: 'one', label: 'One' },
-      { value: 'two', label: 'Two' },
-    ],
-    { input, output },
-  );
-  await new Promise((resolve) => setImmediate(resolve));
-  output.emit('resize');
-  input.emit('keypress', '', { name: 'down' });
-  input.emit('keypress', '', { name: 'return' });
-  assert.deepEqual(await selected, { value: 'two' });
+  const output = setTty(new PassThrough());
+  try {
+    const selected = select(
+      'Choose',
+      [
+        { value: 'one', label: 'One' },
+        { value: 'two', label: 'Two' },
+      ],
+      { input, output },
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    output.emit('resize');
+    input.emit('keypress', '', { name: 'down' });
+    input.emit('keypress', '', { name: 'return' });
+    assert.deepEqual(await selected, { value: 'two' });
 
-  const eof = new PassThrough();
-  eof.isTTY = true;
-  eof.isRaw = false;
-  eof.setRawMode = () => {};
-  const pending = select('Choose', [{ value: 'one', label: 'One' }], { input: eof, output });
-  await new Promise((resolve) => setImmediate(resolve));
-  eof.end();
-  assert.deepEqual(await pending, { cancelled: true });
+    const eof = new PassThrough();
+    setTty(eof);
+    eof.isRaw = false;
+    eof.setRawMode = () => {};
+    const pending = select('Choose', [{ value: 'one', label: 'One' }], { input: eof, output });
+    await new Promise((resolve) => setImmediate(resolve));
+    eof.end();
+    assert.deepEqual(await pending, { cancelled: true });
+  } finally {
+    if (noColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = noColor;
+  }
 });

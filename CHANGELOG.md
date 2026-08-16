@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 3.3.1
+
+CLI correction release following real-user TTY and packaged-consumer validation.
+
+**Fixed:**
+
+- TTY selector arrows now redraw the active cursor; `q` and `0` exit interactive menus.
+- Interactive menus return to navigation after actions instead of terminating unexpectedly.
+- Fresh project-scope installs no longer trigger false legacy-installation warnings.
+- Saved installation intent is resumed, including project/core selections.
+- Full installation intent and full-pack upgrades are reported and reconciled correctly.
+- Portuguese navigation copy and the generated local usage guide no longer send ready users
+  through an incorrect `install core` loop.
+
+**Tests:**
+
+- Added raw selector exit/redraw regression coverage and full-pack detection coverage.
+
 ## 3.3.0
 
 Adaptive validation and workflow consolidation.

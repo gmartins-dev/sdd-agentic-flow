@@ -19,9 +19,10 @@ is zero footprint). Read the full guide here:
 - English: `https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md`
 - Português: `https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.pt-BR.md`
 
-Then run:
+Validate the installed setup with:
 
 ```bash
-npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
+
+If `doctor` reports missing skills, install the pack selected in your installation intent.

@@ -838,18 +838,19 @@ function onboardingStateFor(cwd) {
 
 async function guidedInit(cwd, options = {}) {
   const state = onboardingStateFor(cwd);
+  const locale = localeFor(cwd, options.language);
   if (state === 'READY' || state === 'NEEDS_ATTENTION') {
-    process.stdout.write(`\nSetup status: ${state}\n`);
+    process.stdout.write(`\n${t(locale, 'setup.status')}: ${state}\n`);
     const action = await select(
-      'What would you like to do?',
+      t(locale, 'menu.question'),
       [
-        { value: 'keep', label: 'Keep current setup' },
-        { value: 'updates', label: 'Check for updates' },
-        { value: 'change', label: 'Change setup' },
-        { value: 'validate', label: 'Validate setup' },
-        { value: 'more', label: 'More options' },
+        { value: 'keep', label: t(locale, 'menu.keep') },
+        { value: 'updates', label: t(locale, 'menu.updates') },
+        { value: 'change', label: t(locale, 'menu.change') },
+        { value: 'validate', label: t(locale, 'menu.validate') },
+        { value: 'more', label: t(locale, 'menu.more') },
       ],
-      { ascii: options.ascii },
+      { ascii: options.ascii, cancelValues: ['q', '0'], locale },
     );
     if (action.cancelled || action.value === 'keep') return;
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: options.ascii });
@@ -859,12 +860,22 @@ async function guidedInit(cwd, options = {}) {
   }
 
   const newProject = state === 'NEW_PROJECT';
+  const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
+  const savedProject = saved.projects[repositoryKey(cwd)];
+  const savedProfile = savedProject?.packs?.length
+    ? { scope: 'project', profile: savedProject }
+    : saved.user?.packs?.length
+      ? { scope: 'user', profile: saved.user }
+      : null;
   process.stdout.write(
     `\n1/4 Project\n${newProject ? 'Existing user installation found; only this project will be configured.\n' : 'Project settings use the supplied flags or safe defaults.\n'}`,
   );
-  let scope = 'user';
-  let targets = [...DEFAULT_USER_TARGETS];
-  if (!newProject) {
+  let scope = savedProfile?.scope || 'user';
+  let targets = savedProfile?.profile.targets || [...DEFAULT_USER_TARGETS];
+  const pack = savedProfile?.profile.packs?.[0] || 'full';
+  if (savedProfile) {
+    process.stdout.write('\n2/4 Installation\nResuming saved installation intent.\n');
+  } else if (!newProject) {
     process.stdout.write('\n2/4 Installation\n');
     const scopeChoice = await select(
       'Where should the skills live?',
@@ -872,7 +883,7 @@ async function guidedInit(cwd, options = {}) {
         { value: 'user', label: 'For me - recommended' },
         { value: 'project', label: 'Only in this project' },
       ],
-      { ascii: options.ascii },
+      { ascii: options.ascii, cancelValues: ['q', '0'], locale },
     );
     if (scopeChoice.cancelled) return log('INFO', 'CANCELLED');
     scope = scopeChoice.value;
@@ -885,7 +896,7 @@ async function guidedInit(cwd, options = {}) {
           { value: 'copilot', label: 'GitHub Copilot', selected: true },
           { value: 'cursor', label: 'Cursor', selected: false },
         ],
-        { multiple: true, ascii: options.ascii },
+        { multiple: true, ascii: options.ascii, cancelValues: ['q', '0'], locale },
       );
       if (targetChoice.cancelled) return log('INFO', 'CANCELLED');
       if (!targetChoice.value.length) return fail('at least one installation target is required');
@@ -898,8 +909,10 @@ async function guidedInit(cwd, options = {}) {
     `  Configuration: ${SDD_PATHS.config}\n  Context: ${SDD_PATHS.projectContext}\n`,
   );
   if (!newProject) {
-    process.stdout.write(`  Pack: full\n  Scope: ${scope}\n`);
-    install('full', cwd, { scope, targets, plan: true, quiet: true, ascii: options.ascii });
+    process.stdout.write(
+      `  Pack: ${savedProfile?.profile.packs?.join(', ') || pack}\n  Scope: ${scope}\n`,
+    );
+    install(pack, cwd, { scope, targets, plan: true, quiet: true, ascii: options.ascii });
   }
   const confirmation = await select(
     'Apply this setup?',
@@ -907,7 +920,7 @@ async function guidedInit(cwd, options = {}) {
       { value: 'continue', label: 'Continue' },
       { value: 'cancel', label: 'Cancel' },
     ],
-    { ascii: options.ascii },
+    { ascii: options.ascii, cancelValues: ['q', '0'], locale },
   );
   if (confirmation.cancelled || confirmation.value === 'cancel') return log('INFO', 'CANCELLED');
 
@@ -923,7 +936,7 @@ async function guidedInit(cwd, options = {}) {
     localGitExclude: options.localGitExclude,
     ascii: options.ascii,
   });
-  if (!newProject) install('full', cwd, { scope, targets, quiet: true, ascii: options.ascii });
+  if (!newProject) install(pack, cwd, { scope, targets, quiet: true, ascii: options.ascii });
   const result = await doctor(cwd, { ascii: options.ascii });
   if (result.status === 'PASS') log('PASS', 'Ready');
   else
@@ -1688,7 +1701,9 @@ function doctorChecks(cwd) {
       const provenance = readInstallProvenance(root);
       const legacy =
         Boolean(provenance?.package === 'sdd-agentic-flow' && provenance.schema !== 2) ||
-        fs.readdirSync(root).some((name) => isLegacySkillName(name));
+        fs
+          .readdirSync(root)
+          .some((name) => name !== 'sdd-agentic-flow-shared' && isLegacySkillName(name));
       if (legacy) {
         add(
           'legacy_installation',
@@ -2379,7 +2394,7 @@ function autonomyCheck(cwd, options = {}) {
 function renderDoctor(checks, options = {}) {
   const view = buildDoctorView(checks, { verbose: options.verbose, locale: options.locale });
   process.stdout.write(
-    `\n${view.title}${view.hasProblems ? '' : ' — configuration, installation and safety checks passed'}\n`,
+    `\n${view.title}${view.hasProblems ? '' : ` — ${t(options.locale, 'doctor.passed')}`}\n`,
   );
   process.stdout.write(
     `Checks: ${view.counts.PASS} PASS, ${view.counts.INFO} INFO, ${view.counts.WARN} WARN, ${view.counts.FAIL} FAIL\n`,
@@ -2388,7 +2403,7 @@ function renderDoctor(checks, options = {}) {
     process.stdout.write(`\n${t(options.locale, 'doctor.primaryFix')}\n  ${view.primaryFix}\n`);
   if (view.shown.length) {
     process.stdout.write(
-      `\n${view.hasProblems ? t(options.locale, 'doctor.related') : 'Checks'}\n`,
+      `\n${view.hasProblems ? t(options.locale, 'doctor.related') : t(options.locale, 'doctor.checks')}\n`,
     );
     for (const check of view.shown) log(check.status, check.message);
   }
@@ -3546,9 +3561,15 @@ async function runCommand(command, rawArgs, cwd) {
           try: ['sdd-agentic-flow configure --interactive'],
         });
       log('PASS', 'saved installation intent');
+      const reconcilePlan = planForInstallProfile({
+        cwd,
+        homeDir: os.homedir(),
+        scope: result.after.root ? 'project' : 'user',
+        profile: result.after,
+      });
       log(
         'INFO',
-        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`sdd-agentic-flow install core\`.`,
+        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`${installApplyCommand(reconcilePlan)}\`.`,
       );
       return;
     }
@@ -3586,7 +3607,7 @@ async function runCommand(command, rawArgs, cwd) {
     else
       log(
         'INFO',
-        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`sdd-agentic-flow install core\`.`,
+        `${t(localeFor(cwd), 'configure.savedOnly')} Run \`${installApplyCommand(reconcilePlan)}\`.`,
       );
   } else if (command === 'learn-sdd') {
     learnSdd(cwd);
@@ -3741,27 +3762,47 @@ async function runCommand(command, rawArgs, cwd) {
 // runCommand() a typed command uses; the "uninstall" entry is structurally --plan only (see
 // bin/menu.js's MENU_ACTIONS), so the menu can never trigger a destructive action directly.
 async function runInteractiveMenu(cwd) {
-  const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
-  const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
-  const actions = menuActionsFor({
-    hasConfig: configFound,
-    hasSkills: skillsInstalled,
-    onboardingState: onboardingStateFor(cwd),
-  });
-  process.stdout.write('\nWhat would you like to do?\n');
-  const choice = await select(
-    'Select an option',
-    actions.map((action) => ({ value: action, label: action.label })),
-  );
-  if (choice.cancelled) return;
-  const selection = choice.value;
-  if (!selection.command.length) return;
-  process.stdout.write(`\nRunning: sdd-agentic-flow ${selection.command.join(' ')}\n\n`);
-  await runCommand(selection.command[0], selection.command.slice(1), cwd);
-  if (selection.command[0] === 'uninstall')
-    process.stdout.write(
-      '\nTo actually remove these, run `sdd-agentic-flow uninstall --apply` explicitly.\n',
+  const locale = localeFor(cwd);
+  for (;;) {
+    const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
+    const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
+    const actions = menuActionsFor({
+      hasConfig: configFound,
+      hasSkills: skillsInstalled,
+      onboardingState: onboardingStateFor(cwd),
+    });
+    process.stdout.write(`\n${t(locale, 'menu.question')}\n`);
+    const choice = await select(
+      t(locale, 'menu.select'),
+      actions.map((action) => {
+        const key =
+          action.command[0] === 'upgrade'
+            ? 'menu.updates'
+            : action.command[0] === 'configure'
+              ? 'menu.change'
+              : action.command[0] === 'doctor'
+                ? 'menu.validate'
+                : action.command[0] === 'help'
+                  ? 'menu.more'
+                  : action.command.length === 0
+                    ? 'menu.keep'
+                    : null;
+        return { value: action, label: key ? t(locale, key) : action.label };
+      }),
+      { cancelValues: ['q', '0'], locale },
     );
+    if (choice.cancelled) return;
+    const selection = choice.value;
+    if (!selection.command.length) return;
+    process.stdout.write(
+      `\n${t(locale, 'menu.running')}: sdd-agentic-flow ${selection.command.join(' ')}\n\n`,
+    );
+    await runCommand(selection.command[0], selection.command.slice(1), cwd);
+    if (selection.command[0] === 'uninstall')
+      process.stdout.write(
+        '\nTo actually remove these, run `sdd-agentic-flow uninstall --apply` explicitly.\n',
+      );
+  }
 }
 
 async function main() {

@@ -12,6 +12,7 @@ const {
   collectManagedPairs,
   classifyManagedPairs,
   applyManagedPairs,
+  detectInstalledPacks,
   formatCheckReport,
   checkForUpdate,
 } = require('../bin/upgrade');
@@ -40,6 +41,18 @@ test('install provenance round-trips', () => {
     schema: 2,
     skillIdentity: 'saf',
   });
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('pack detection preserves a full installation instead of collapsing it to core', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-packs-'));
+  const full = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'presets/full.json'), 'utf8'));
+  for (const skill of full.skills) {
+    const dir = path.join(root, skill);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'SKILL.md'), '# test\n');
+  }
+  assert.deepEqual(detectInstalledPacks(root, path.join(PACKAGE_ROOT, 'presets')), ['full']);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

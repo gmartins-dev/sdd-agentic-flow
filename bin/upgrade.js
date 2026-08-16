@@ -196,9 +196,24 @@ function detectInstalledPacks(skillsRoot, presetsDir) {
     if (skills.every((skill) => fs.existsSync(path.join(skillsRoot, skill, 'SKILL.md'))))
       found.push(name);
   }
-  // Prefer core when present; otherwise every fully matched pack.
-  if (found.includes('core')) return ['core'];
-  return found;
+  const provenance = readInstallProvenance(skillsRoot);
+  if (provenance?.package === 'sdd-agentic-flow' && provenance.schema === 2) {
+    const recorded = (provenance.packs || []).filter((pack) => names.includes(pack));
+    if (recorded.length) return recorded;
+  }
+  // A larger matching pack subsumes its smaller subsets (for example full includes core).
+  return found.filter((name) => {
+    const skills =
+      JSON.parse(fs.readFileSync(path.join(presetsDir, `${name}.json`), 'utf8')).skills || [];
+    return !found.some((other) => {
+      if (other === name) return false;
+      const otherSkills =
+        JSON.parse(fs.readFileSync(path.join(presetsDir, `${other}.json`), 'utf8')).skills || [];
+      return (
+        skills.length < otherSkills.length && skills.every((skill) => otherSkills.includes(skill))
+      );
+    });
+  });
 }
 
 function runNpmGlobalInstall({

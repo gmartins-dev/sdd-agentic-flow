@@ -5,6 +5,11 @@
   from requirements, changed seams, repository contracts, and risk; no CLI validation engine,
   new config axis, or new Status enum. Canonical terminology documents harness boundaries.
 
+- **v3.3.1 (2026-08-15):** Corrective CLI release after real-user packaged-flow validation.
+  Fixed TTY cursor/menu behavior, project-scope legacy detection, saved-intent resumption,
+  full-pack reporting, Portuguese navigation, and the post-install usage guidance. No new
+  workflow capability, dependency, skill, or automation authority was added.
+
 - **v3.2.0 (2026-08-15):** Continuous guided onboarding: `init` is a TTY-first
   0 → Ready path with review-before-write, default `full` installation, context,
   and doctor verification. Automation remains explicit through `--non-interactive`;

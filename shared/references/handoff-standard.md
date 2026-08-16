@@ -51,6 +51,16 @@ manual` (no `loop-state.md` in use) omits that reference and describes the state
 
 ## What belongs in each `handoff.template.md` section
 
+Non-terminal handoffs are compact projections of:
+
+```text
+goal, current unit/state, verified work by artifact reference,
+unsatisfied completion criteria and last meaningful progress (non-terminal work only),
+decision gates, blockers, freshness concerns, relevant paths, next typed action
+```
+
+Never duplicate full logs or evidence tables in handoff; reference check/validation reports by path.
+
 - **Goal**: the feature or task's goal, one line, not a restatement of `spec.md` in full.
   Link to it instead.
 - **Current state**: the concrete state right now: what has run, what its `Status:` was, and

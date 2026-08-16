@@ -16,6 +16,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [uninstall.md](uninstall.md) | Removing installed skills and optional config |
 | [v2-breaking-changes.md](v2-breaking-changes.md) | What 2.0 removes; leftover short toolkit directory is a manual rename |
 | [v3-breaking-changes.md](v3-breaking-changes.md) | SAF skill rename and clean reinstall guidance |
+| [v4-breaking-changes.md](v4-breaking-changes.md) | v4 artifact contract, evidence graph, and purge |
 
 ## SDD workflow
 

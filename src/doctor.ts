@@ -4,7 +4,8 @@ import path from 'node:path';
 
 import { AUTONOMY_LEVELS, configValue, EXECUTION_MODES } from './config-domain';
 import { parseContractArray, validateContractReferences } from './contract-graph';
-import { buildDoctorView, type DoctorCheck } from './doctor-view';
+import { buildDoctorView, type DoctorCheck, formatEvidenceGraph } from './doctor-view';
+import { collectEvidenceGraph, type EvidenceGraphResult } from './evidence-graph';
 import type { PlanForInstallProfileInput } from './install';
 import { readInstallConfig, repositoryKey, USER_TARGETS } from './install-domain';
 import { type InstallPlan, isPlanEmpty } from './install-preflight';
@@ -46,6 +47,7 @@ type DoctorCommandOptions = {
   contracts?: boolean | undefined;
   autonomy?: boolean | undefined;
   checkUpdates?: boolean | undefined;
+  evidenceGraph?: string | undefined;
   locale?: string | undefined;
 };
 
@@ -988,6 +990,9 @@ function smokeCheck(): InternalDoctorCheck {
 }
 
 async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
+  if (options.evidenceGraph) {
+    return evidenceGraphDoctor(cwd, options.evidenceGraph, { json: options.json });
+  }
   const checks: InternalDoctorCheck[] = doctorChecks(cwd);
   if (options.smoke) checks.push(smokeCheck());
   if (options.contracts) checks.push(contractsCheck(cwd));
@@ -1006,6 +1011,29 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
       locale: resolveLocale({ configured: languageReport(cwd).profile ?? undefined }),
     });
   if (result.status === 'FAIL') process.exitCode = 1;
+  return result;
+}
+
+function evidenceGraphExitCode(result: EvidenceGraphResult): number {
+  if (result.errors.some((error) => error.startsWith('feature not found'))) return 2;
+  if (!result.v4Compatible) return 1;
+  if (result.requirements.some((node) => node.status !== 'current')) return 1;
+  return 0;
+}
+
+function evidenceGraphDoctor(
+  cwd: string,
+  featureSlug: string,
+  options: { json?: boolean | undefined } = {},
+) {
+  const result = collectEvidenceGraph(cwd, featureSlug);
+  const exitCode = evidenceGraphExitCode(result);
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify({ ...result, exitCode })}\n`);
+  } else {
+    process.stdout.write(`${formatEvidenceGraph(result)}\n`);
+  }
+  if (exitCode) process.exitCode = exitCode;
   return result;
 }
 

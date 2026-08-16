@@ -12,6 +12,8 @@ Independently verifiable: {{yes | no}}
 
 Public seam: {{public_seam_or_na}}
 
+Requirement anchors: {{requirement_anchors}}
+
 Dependencies: {{dependencies_or_none}}
 
 Horizontal-slice justification: {{justification_or_na}}

@@ -1072,7 +1072,21 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       writeCommandHelp('doctor');
       return;
     }
-    const valid = args.every(
+    let evidenceGraphSlug: string | undefined;
+    const doctorFlags: string[] = [];
+    for (let index = 0; index < args.length; index += 1) {
+      const arg = args[index];
+      if (arg === '--evidence-graph') {
+        const slug = args[index + 1];
+        if (!slug || slug.startsWith('--')) {
+          fail(USAGE.doctor);
+          return;
+        }
+        evidenceGraphSlug = slug;
+        index += 1;
+      } else if (arg) doctorFlags.push(arg);
+    }
+    const valid = doctorFlags.every(
       (arg: string) =>
         arg === '--json' ||
         arg === '--smoke' ||
@@ -1081,8 +1095,11 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         arg === '--verbose' ||
         arg === '--check-updates',
     );
-    if (!valid) {
-      if (args.includes('--json')) {
+    if (
+      !valid ||
+      (evidenceGraphSlug && doctorFlags.some((arg) => arg !== '--json' && arg !== '--verbose'))
+    ) {
+      if (doctorFlags.includes('--json')) {
         process.stdout.write(
           `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: USAGE.doctor }] })}\n`,
         );
@@ -1091,12 +1108,13 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       return;
     } else
       await doctor(cwd, {
-        json: args.includes('--json'),
-        smoke: args.includes('--smoke'),
-        contracts: args.includes('--contracts'),
-        autonomy: args.includes('--autonomy'),
-        verbose: args.includes('--verbose'),
-        checkUpdates: args.includes('--check-updates'),
+        json: doctorFlags.includes('--json'),
+        smoke: doctorFlags.includes('--smoke'),
+        contracts: doctorFlags.includes('--contracts'),
+        autonomy: doctorFlags.includes('--autonomy'),
+        verbose: doctorFlags.includes('--verbose'),
+        checkUpdates: doctorFlags.includes('--check-updates'),
+        ...(evidenceGraphSlug ? { evidenceGraph: evidenceGraphSlug } : {}),
         ascii,
       });
   } else if (command === 'upgrade') {

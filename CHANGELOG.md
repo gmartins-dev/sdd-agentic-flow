@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 4.0.0
+
+Harness integrity, evidence graph, and clean reset — breaking major release.
+
+**Added:**
+
+- Shared contracts: `system-invariants.md`, `task-context-package.md`, `decision-gates.md`,
+  `bounded-execution.md`.
+- Read-only evidence graph: `sdd-agentic-flow doctor --evidence-graph <feature-slug>`.
+- Cross-scope purge reinstall: `uninstall --plan --purge` and `uninstall --apply --purge --yes`.
+- `src/evidence-graph.ts` collector/model with doctor orchestration in `src/doctor.ts`.
+
+**Changed (breaking):**
+
+- v4 artifact contract: stable `REQ-*` identifiers, `Requirement anchors` in tasks/prompts,
+  `Feature: <slug>` and evidence index tables with freshness in check/validation reports.
+- `saf-create-spec` SPEC-Q completion gate; bounded-execution semantics in implement/check skills.
+- Templates, `artifact-contracts.md`, and skill producer/consumer guidance updated atomically.
+- No migration layer: legacy reports without `Feature:` remain history but cannot satisfy v4 graph paths.
+
+**Compatibility:**
+
+- No runtime dependencies, scheduler, telemetry, or automatic Git mutation added.
+- Purge preserves `.specs/features/**`, source, Git history, and foreign skills.
+
 ## 3.6.0
 
 Maintainer architecture and code-quality consolidation after the TypeScript migration.

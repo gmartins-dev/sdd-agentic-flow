@@ -2,7 +2,7 @@
 name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 3.6.0
+  version: 4.0.0
   pack: core
 extends: saf-create-prompts
 requires: [config, task-identity]
@@ -39,7 +39,7 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, dependencies, allowed scope, and current implementation state.
+2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load the [Task Context Package](../sdd-agentic-flow-shared/references/task-context-package.md) minimum context. Resolve bounded goal, completion criteria, constraints and applicable [decision gates](../sdd-agentic-flow-shared/references/decision-gates.md) before mutation per [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, requirement anchors, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict. Specifications are **living** control artifacts: if you find spec drift, stop and reconcile the spec with the human. Do not silently implement a “better” requirement. Do not silently rewrite the spec to match the code.
 4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. Do not add a competing architecture, new dependency, or new convention without confirmation (decision path step 5).
 5. Identify the required behavior from the spec, the contractual seam (field label: `Public seam`; prefer public/observable when practical), the sensor, and the oracle/acceptance condition from spec, repo contracts, or configured gates — never solely from the implementation. Stop when the seam is unclear. Stay inside the fix boundary; do not expand into **unchanged behavior**. For bugfix or refactor intent, record regression sensors. Do not complete an **investigation** as a fix (`Status: pass` on findings is forbidden).
@@ -53,7 +53,7 @@ Preserve unrelated and pre-existing changes. Keep credentials, personal data, an
 
 ## Output
 
-Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. Terminal output is an **implementation candidate ready for verification**, never its own final verification verdict. You may report another bounded attempt as admissible only while evidence shows semantic progress and iteration policy permits; the host decides whether that attempt runs. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ## Autonomy
 

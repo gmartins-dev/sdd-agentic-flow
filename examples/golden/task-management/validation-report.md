@@ -1,10 +1,26 @@
-# Validation report
+# Feature validation — task-management
+
+Status: ready
+
+Feature: task-management
+
+## Validation scope
+
+Generic task-management golden example; notification transport out of scope.
 
 ## Evidence
 
-- Creation and assignment satisfy required fields.
-- Valid and invalid status transitions are covered.
-- Assignment and due-soon notifications are verified locally.
+| Requirement anchor | Sensor | Result | Freshness |
+| --- | --- | --- | --- |
+| REQ-1 | unit tests | fields and enum verified | current |
+| REQ-2 | unit tests | transition matrix verified | current |
+| REQ-3 | unit tests | notification records verified | current |
+| REQ-4 | unit tests | invalid transition messages verified | current |
+
+Command: npm test -- task.spec.ts transitions.spec.ts notifications.spec.ts
+Exit status: 0
+Observable result: required behaviors covered locally
+Requirement mapping: REQ-1 through REQ-4
 
 ## Limitations
 

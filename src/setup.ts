@@ -575,7 +575,7 @@ async function applySetup(
       return false;
   }
   const result = await doctor(cwd, { ascii: Boolean(options.ascii) });
-  if (result.status === 'PASS') {
+  if ('status' in result && result.status === 'PASS') {
     log('PASS', t(locale, 'setup.ready'), locale);
     return true;
   }

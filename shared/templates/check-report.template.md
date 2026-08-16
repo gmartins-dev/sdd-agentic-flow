@@ -2,6 +2,8 @@
 
 Status: {{status}}
 
+Feature: {{feature_slug}}
+
 ## Validation scope
 
 <!-- Record impact, obligations, selected sensors, and omitted sensors with reasons. -->
@@ -12,13 +14,13 @@ Status: {{status}}
 <!--
 Distinguish current vs historical vs not-run.
 A passing sensor is evidence, not a correctness verdict.
-Missing RED is not an automatic fail; n/a is valid and must not be fabricated.
-A false-positive class hit forbids Status: pass / Status: ready.
-Classes: Tautological oracle; Error propagation; Green-but-wrong; Shallow sensor;
-Stale evidence; Silent gap; False success / self-assessment; Inherited author narrative;
-Suite weakening; Completion theater.
-Self-report is not evidence. Record requirement → sensor → current result.
+Record requirement → sensor → current result in the table below AND detailed evidence prose.
 -->
+
+| Requirement anchor | Sensor | Result | Freshness |
+| --- | --- | --- | --- |
+| {{requirement_anchor}} | {{sensor}} | {{result}} | {{freshness}} |
+
 {{evidence}}
 
 ## TDD evidence

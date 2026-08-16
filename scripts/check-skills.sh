@@ -238,6 +238,7 @@ if grep -E -n 'Expected RED command:.*fails:' examples/golden/*/tasks.md; then
 fi
 for f in examples/golden/task-management/tasks.md examples/golden/idea-to-spec/tasks.md; do
   grep -F -q 'n/a — not used as proof' "$f"
+  grep -F -q 'Requirement anchors: REQ-' "$f"
 done
 for template in check-report validation-report; do
   grep -F -q 'current vs historical vs not-run' "shared/templates/$template.template.md"

@@ -17,6 +17,8 @@ Independently verifiable: yes
 
 Public seam: `setQuietHours(userId, window)`
 
+Requirement anchors: REQ-1
+
 Dependencies: none
 
 Horizontal-slice justification: n/a
@@ -51,6 +53,8 @@ Slice type: vertical
 Independently verifiable: yes
 
 Public seam: `recordNotification(userId, notification, now)`
+
+Requirement anchors: REQ-2
 
 Dependencies: T1
 

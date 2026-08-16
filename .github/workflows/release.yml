@@ -50,6 +50,9 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
+      - run: npm ci
+      - run: npm run build
+
       - name: Read package.json version
         id: pkg
         run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> "$GITHUB_OUTPUT"
@@ -62,7 +65,7 @@ jobs:
         id: decide
         run: |
           result="$(node -e "
-            const { compareVersions, parseVersion } = require('./bin/version-compat.js');
+            const { compareVersions, parseVersion } = require('./dist/version-compat.js');
             const [pkgVersion, latestTag] = process.argv.slice(1);
             const latestVersion = latestTag ? latestTag.replace(/^v/, '') : null;
             if (!parseVersion(pkgVersion)) {
@@ -111,7 +114,7 @@ jobs:
       - name: Require a matching CHANGELOG.md section (guards against an accidental bump)
         id: changelog
         run: |
-          if node scripts/extract-changelog-section.js "${{ steps.pkg.outputs.version }}" > /tmp/release-notes.md; then
+          if npx tsx scripts/extract-changelog-section.ts "${{ steps.pkg.outputs.version }}" > /tmp/release-notes.md; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"

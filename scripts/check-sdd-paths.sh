@@ -9,8 +9,9 @@ cd "$root"
 matches="$(git grep -n --fixed-strings '.sdd/' -- \
   ':(exclude)CHANGELOG.md' \
   ':(exclude)scripts/check-sdd-paths.sh' \
-  ':(exclude)bin/sdd-agentic-flow.js' \
-  ':(exclude)test/cli.test.js' \
+  ':(exclude)dist/sdd-agentic-flow.js' \
+  ':(exclude)src/sdd-agentic-flow.ts' \
+  ':(exclude)test/cli.test.ts' \
   ':(exclude).gitignore' \
   ':(exclude)docs/v2-breaking-changes.md' \
   ':(exclude)docs/sdd-agentic-flow-model.md' \

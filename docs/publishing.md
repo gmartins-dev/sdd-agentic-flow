@@ -18,7 +18,7 @@ That writes the same `x.y.z` into every `skills/*/SKILL.md` `metadata.version` a
 `presets/*.json` `version` (copies that must exist on disk after `install` — agents and
 `doctor --contracts` read the skill file, not this repository's `package.json`). The CLI
 reads `package.json` at runtime; do not put a literal `const VERSION = 'x.y.z'` back in
-`bin/sdd-agentic-flow.js`.
+`src/sdd-agentic-flow.ts` or `dist/sdd-agentic-flow.js`.
 
 Add the matching `## x.y.z` section to `CHANGELOG.md`. `npm run check` / `release:check`
 fail if any stamped copy drifted, and print `npm run version:stamp` as the fix. Do not

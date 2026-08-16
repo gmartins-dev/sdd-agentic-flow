@@ -1,5 +1,8 @@
 # Roadmap
 
+- **v3.5.0 (2026-08-15):** TypeScript strict migration. Maintainer code moved from `bin/*.js`
+  to `src/*.ts`, compiled output in `dist/`, tests/scripts converted to `.ts`, and CI gates
+  updated to validate the new layout.
 - **v3.4.0 (2026-08-15):** Guided CLI setup UX. Interactive onboarding now offers a safe
   recommended path or bounded customization, one review-before-write, semantic progress, derived
   resume/maintenance state, localized recovery, and canonical setup summary. It remains an inline

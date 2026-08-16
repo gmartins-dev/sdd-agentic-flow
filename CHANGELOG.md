@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 3.5.0
+
+TypeScript strict migration release.
+
+**Changed:**
+
+- CLI and supporting modules now live under `src/` and ship as compiled JavaScript in
+  `dist/` (`package.json` `"bin"` points at `dist/sdd-agentic-flow.js`).
+- Maintainer tests and scripts are TypeScript (`test/*.test.ts`, `scripts/*.ts`) and run via
+  `tsx`; legacy `bin/*.js` sources were removed.
+- Release and skill checks (`check-skills.sh`, `release-checklist.sh`, version consistency)
+  validate `dist/` / `src/` layout instead of `bin/`.
+
+**Compatibility:**
+
+- Published CLI behavior and command surface are unchanged. Consumers still invoke
+  `npx sdd-agentic-flow`; only the maintainer build layout changed.
+
 ## 3.4.0
 
 Guided CLI setup UX release.

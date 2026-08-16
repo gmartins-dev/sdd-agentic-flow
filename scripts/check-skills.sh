@@ -5,7 +5,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
 node -e 'JSON.parse(require("fs").readFileSync("package.json"));'
-test -x bin/sdd-agentic-flow.js
+test -f dist/sdd-agentic-flow.js
 
 skills=(saf-setup saf-create-spec saf-create-prompts saf-implement saf-implement-multi saf-check-task saf-create-pr saf-review-pr saf-fix-pr saf-validate)
 for skill in "${skills[@]}"; do
@@ -49,14 +49,14 @@ for skill in "${all_skills[@]}"; do
   grep -F -q -- "\`$skill\`" docs/skills-catalog.md
 done
 
+npx tsx scripts/check-version-consistency.ts
+
 node <<'NODE'
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateContractReferences, parseContractArray } =
-  require(path.resolve(process.cwd(), 'bin/contract-graph.js'));
-const { parseVersion, compareVersions } =
-  require(path.resolve(process.cwd(), 'bin/version-compat.js'));
-const { OFFICIAL_SKILLS } = require(path.resolve(process.cwd(), 'bin/skill-identity.js'));
+  require(path.resolve(process.cwd(), 'dist/contract-graph.js'));
+const { OFFICIAL_SKILLS } = require(path.resolve(process.cwd(), 'dist/skill-identity.js'));
 
 const skillNames = OFFICIAL_SKILLS;
 const frontmatterOf = (content) => (content.match(/^---\n([\s\S]*?)\n---/) || [, content])[1];
@@ -69,59 +69,19 @@ const presets = presetFiles.map((file) => JSON.parse(fs.readFileSync(`presets/${
 
 let drift = false;
 
-// Version consistency: package.json is the single source of truth. Every skill's
-// metadata.version and every preset's "version" must match it exactly (stamp with
-// `npm run version:stamp`). The walk and comparison live in
-// scripts/check-version-consistency.js (Milestone 2, v1.6.0), shared with
-// scripts/release-checklist.sh, so this check never needs manual editing on a version bump.
-const { checkVersionConsistency } = require(
-  path.resolve(process.cwd(), 'scripts/check-version-consistency.js'),
-);
-const versionCheck = checkVersionConsistency();
-const packageVersion = versionCheck.packageVersion;
-if (!parseVersion(packageVersion)) {
-  console.error(`package.json version '${packageVersion}' is not a valid x.y.z version`);
-  drift = true;
-}
-for (const entry of versionCheck.skills) {
-  if (entry.drifted) {
-    console.error(
-      `skills/${entry.name}/SKILL.md metadata.version is '${entry.version}', expected '${packageVersion}' (from package.json). Run \`npm run version:stamp\`.`,
-    );
-    drift = true;
-  }
-}
-for (const entry of versionCheck.presets) {
-  if (entry.drifted) {
-    console.error(
-      `${entry.file} version is '${entry.version}', expected '${packageVersion}' (from package.json). Run \`npm run version:stamp\`.`,
-    );
-    drift = true;
-  }
-}
-// The CLI must read VERSION from package.json (v1.9.1 hardcoded const drifted during v1.9.0).
-if (versionCheck.cli.drifted) {
-  console.error(
-    versionCheck.cli.derived
-      ? `${versionCheck.cli.file} VERSION is '${versionCheck.cli.version}', expected '${packageVersion}' (from package.json)`
-      : `${versionCheck.cli.file} must read VERSION from package.json, not a hardcoded string (found '${versionCheck.cli.version}')`,
-  );
-  drift = true;
-}
-
-// The runtime and source-tree rosters must stay identical. The canonical list lives in
-// bin/skill-identity.js so CLI consumers and this source check cannot drift.
+// Version consistency: package.json is the single source of truth. The walk lives in
+// scripts/check-version-consistency.ts (run above via tsx).
 {
   const sourceSkillNames = fs.readdirSync('skills').filter((name) => fs.existsSync(`skills/${name}/SKILL.md`));
   const missingFromOfficial = sourceSkillNames.filter((name) => !OFFICIAL_SKILLS.includes(name));
   const extraInOfficial = OFFICIAL_SKILLS.filter((name) => !sourceSkillNames.includes(name));
   if (missingFromOfficial.length) {
-    console.error(`bin/skill-identity.js: OFFICIAL_SKILLS is missing ${missingFromOfficial.join(', ')}`);
+    console.error(`src/skill-identity.ts: OFFICIAL_SKILLS is missing ${missingFromOfficial.join(', ')}`);
     drift = true;
   }
   if (extraInOfficial.length) {
     console.error(
-      `bin/skill-identity.js: OFFICIAL_SKILLS has unknown skill(s) ${extraInOfficial.join(', ')}`,
+      `src/skill-identity.ts: OFFICIAL_SKILLS has unknown skill(s) ${extraInOfficial.join(', ')}`,
     );
     drift = true;
   }
@@ -231,8 +191,8 @@ NODE
 # Milestone 2 (Platform Abstraction): the CLI must never shell out to Bash/POSIX-specific
 # commands or use shell-string interpolation. `execFileSync('git', [...])` with an argument
 # array is the only allowed external process.
-if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.exec\(|mkdir -p|rm -rf|cp -R" bin/*.js; then
-  echo "shell-out or POSIX-shell-specific usage detected in bin/*.js" >&2
+if grep -nE "execSync\(|child_process\.exec\(|require\('node:child_process'\)\.exec\(|mkdir -p|rm -rf|cp -R" src/*.ts; then
+  echo "shell-out or POSIX-shell-specific usage detected in src/*.ts" >&2
   exit 1
 fi
 
@@ -270,7 +230,7 @@ for template in check-report validation-report; do
   grep -F -q '## TDD evidence' "shared/templates/$template.template.md"
 done
 grep -F -q 'quality.require_tdd' docs/configuration.md
-grep -F -q 'require_tdd:' bin/sdd-agentic-flow.js
+grep -F -q 'require_tdd:' dist/sdd-agentic-flow.js
 # v1.14.0: golden tasks keep Expected RED but must not instruct fabricating a fail.
 if grep -E -n 'Expected RED command:.*fails:' examples/golden/*/tasks.md; then
   echo "golden tasks still instruct a fabricated RED failure" >&2
@@ -310,7 +270,7 @@ grep -F -q 'suite weakening' skills/saf-implement/SKILL.md
 grep -F -q 'observable expected outcome' skills/saf-create-spec/SKILL.md
 grep -F -q 'reproduction sensor' shared/references/feature-profiles.md
 grep -F -q 'green-but-wrong' examples/golden/task-management/validation-report.md
-if grep -F -q -- '--type=bugfix' bin/sdd-agentic-flow.js; then
+if grep -F -q -- '--type=bugfix' dist/sdd-agentic-flow.js; then
   echo "CLI must not gain --type=bugfix in v1.15.0" >&2
   exit 1
 fi
@@ -364,7 +324,7 @@ done
 grep -F -q 'Load rule' shared/references/spec-lifecycle.md
 grep -F -q 'do not glob' shared/references/spec-lifecycle.md
 grep -F -q 'spec-lifecycle.md' shared/references/tlc-baseline.md
-if grep -F -q -- 'specs.active_slug' bin/sdd-agentic-flow.js; then
+if grep -F -q -- 'specs.active_slug' dist/sdd-agentic-flow.js; then
   echo "CLI must not gain specs.active_slug in v1.19.0" >&2
   exit 1
 fi
@@ -379,7 +339,7 @@ for skill in saf-create-spec saf-create-prompts saf-implement saf-implement-mult
   grep -F -q 'domain-glossary.md' "skills/$skill/SKILL.md"
   grep -F -q 'project-context.md' "skills/$skill/SKILL.md"
 done
-grep -F -q 'discover' bin/sdd-agentic-flow.js
+grep -F -q 'discover' dist/sdd-agentic-flow.js
 grep -F -q 'project-context.md' skills/saf-setup/SKILL.md
 for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"

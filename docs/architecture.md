@@ -8,7 +8,7 @@ The sections below show how those pieces fit together.
 ## Layers
 
 ```text
-CLI (bin/sdd-agentic-flow.js)
+CLI (dist/sdd-agentic-flow.js, built from src/)
   |  list, init, discover, context, install, doctor, uninstall
   v
 Pack registry (presets/*.json)
@@ -58,7 +58,8 @@ Every skill's frontmatter declares:
   Empty by default.
 - `requires_cli` — optional (Milestone 3, v0.9.0): the minimum `sdd-agentic-flow` CLI version
   this skill needs, as a range (`x.y.z`, `>=x.y.z`, or `^x.y.z`). `null` by default, meaning no
-  constraint. Validated by `doctor --contracts` using `bin/version-compat.js`. See
+  constraint. Validated by `doctor --contracts` using `src/version-compat.ts` (compiled to
+  `dist/version-compat.js`). See
   [compatibility promise](compatibility-promise.md#requires_cli).
 
 ### Field semantics at a glance

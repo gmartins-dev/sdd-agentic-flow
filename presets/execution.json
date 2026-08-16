@@ -1,6 +1,6 @@
 {
   "name": "execution",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "Task execution and verification.",
   "skills": ["saf-route", "saf-implement", "saf-implement-multi", "saf-check-task"],
   "shared": true,

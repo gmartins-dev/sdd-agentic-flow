@@ -2,6 +2,29 @@
 
 Keep changes small, documented, and covered by `npm run check` and `npm run sanitize`.
 
+## Maintainer toolchain (TypeScript strict)
+
+Canonical Node code lives under `src/` (strict TypeScript). The published CLI is compiled
+CommonJS in `dist/`. Tests and maintainer scripts are `test/*.test.ts` and `scripts/*.ts`.
+
+Gate order in `npm run check` matches the v3.5.0 layout:
+
+```text
+tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell gates → tests
+```
+
+| Command | Role |
+| --- | --- |
+| `npm run typecheck` | Strict TypeScript on `src/`, `test/`, `scripts/` (`tsconfig.json`) |
+| `npm run build` | Clean emit of `src/` → `dist/` (`tsconfig.build.json`) |
+| `npm run lint:biome` | Biome format + lint (no type semantics — that is `tsc`) |
+| `npm run lint:biome:fix` | Apply Biome fixes and organize imports |
+| `npm run lint` | `typecheck` then `lint:biome` |
+| `npm run lint:fix:all` | Biome fix + YAML Prettier + markdown fix |
+
+Biome config: `biome.json` (ignores `dist/`, `.specs/`, `.local/`; TypeScript uses the same
+formatter rules as JavaScript). Do not reintroduce `node --check` lists — retired in v3.5.0.
+
 Proposing a new feature or direction? This project scopes work audit-first: a candidate idea
 becomes real work only once a direct read of the current repository confirms a real gap, not
 from an assumed roadmap slot or an external comparison. Each dated entry in `ROADMAP.md` is the
@@ -31,8 +54,8 @@ Do not hand-edit those copies, and do not stamp changelog or roadmap history.
 Two scripts let you try out a CLI change (wording, a new flag, onboarding flow) as if you were
 a user, without ever running `npm publish`:
 
-- **`npm run cli:dev -- <args>`** — fastest loop. Runs `bin/sdd-agentic-flow.js` straight from
-  source (no packing) against a persistent scratch project + isolated `HOME` under your temp
+- **`npm run cli:dev -- <args>`** — fastest loop. Runs `dist/sdd-agentic-flow.js` (build first
+  if needed) against a persistent scratch project + isolated `HOME` under your temp
   directory, so state (e.g. an `init`, then `install core`, then `doctor`) carries across runs
   like a real evolving project. Pass `--fresh` to wipe both and start over. Use this while
   iterating on a change — "did that wording come out right?"
@@ -45,9 +68,9 @@ a user, without ever running `npm publish`:
   to remove them automatically. Run this before a release, or whenever you want to confirm a
   change survives the actual packaging boundary.
 
-Both scripts are plain Node with no new dependency, matching `scripts/pack-dry.js`. The same
+Both scripts are TypeScript (`scripts/*.ts`) with no runtime dependency. The same
 pack → install → run recipe used by `cli:sandbox` is also exercised automatically by the tarball
-e2e tests in `test/cli.test.js` — use the script for interactive poking, the tests for
+e2e tests in `test/cli.test.ts` — use the script for interactive poking, the tests for
 regression coverage.
 
 ### Exhaustive CLI audit

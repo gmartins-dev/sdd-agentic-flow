@@ -15,33 +15,10 @@ echo "-- 2/7: npm run pack:dry --"
 npm run pack:dry
 
 echo "-- 3/7: doctor --smoke --"
-node bin/sdd-agentic-flow.js doctor --smoke
+node dist/sdd-agentic-flow.js doctor --smoke
 
-echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json vs bin/) --"
-node <<'NODE'
-const { checkVersionConsistency } = require('./scripts/check-version-consistency.js');
-
-const { packageVersion, skills, presets, cli } = checkVersionConsistency();
-const drifted = [
-  ...skills.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
-  ...presets.filter((entry) => entry.drifted).map((entry) => `${entry.file} (version: ${entry.version})`),
-    ...(cli.drifted
-      ? [
-          cli.derived
-            ? `${cli.file} (version: ${cli.version})`
-            : `${cli.file} must read VERSION from package.json (found ${cli.version})`,
-        ]
-      : []),
-];
-
-if (drifted.length) {
-  console.error(`version mismatch against package.json (${packageVersion}):`);
-  for (const entry of drifted) console.error(`  - ${entry}`);
-  console.error('run `npm run version:stamp` and commit the result');
-  process.exit(1);
-}
-console.log(`all skill, preset, and CLI versions match package.json (${packageVersion})`);
-NODE
+echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json vs dist/) --"
+npx tsx scripts/check-version-consistency.ts
 
 echo "-- 5/7: no pinned sdd-agentic-flow@<version> examples remaining --"
 if grep -rEn 'sdd-agentic-flow@[0-9]' README.md README.pt-BR.md docs/ 2>/dev/null; then
@@ -50,11 +27,11 @@ if grep -rEn 'sdd-agentic-flow@[0-9]' README.md README.pt-BR.md docs/ 2>/dev/nul
 fi
 echo "no pinned sdd-agentic-flow@<version> references found"
 
-echo "-- 6/7: documented CLI commands exist in bin/sdd-agentic-flow.js --"
+echo "-- 6/7: documented CLI commands exist in dist/sdd-agentic-flow.js --"
 node <<'NODE'
 const fs = require('node:fs');
 
-const cliSource = fs.readFileSync('bin/sdd-agentic-flow.js', 'utf8');
+const cliSource = fs.readFileSync('dist/sdd-agentic-flow.js', 'utf8');
 const dispatched = new Set(
   [...cliSource.matchAll(/command\s*===\s*'([a-z-]+)'/g)].map((m) => m[1]),
 );

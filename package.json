@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "A local-first, zero-dependency Spec Driven Development skill toolkit with capability-contracted skills, condensed TLC/TDD baselines, and adaptive feature sizing for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -13,13 +13,12 @@
   "bugs": "https://github.com/gmartins-dev/sdd-agentic-flow/issues",
   "homepage": "https://github.com/gmartins-dev/sdd-agentic-flow#readme",
   "files": [
-    "bin",
+    "dist",
     "skills",
     "shared",
     "presets",
     "examples",
     "docs",
-    "scripts",
     "README.md",
     "README.pt-BR.md",
     "LICENSE",
@@ -32,26 +31,29 @@
     "ROADMAP.md"
   ],
   "scripts": {
-    "build": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/brand-art.js && node --check ./bin/doctor-view.js && node --check ./bin/messages.js && node --check ./bin/upgrade.js && node --check ./bin/update-check.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js && node --check ./bin/config-domain.js && node --check ./bin/config.js && node --check ./bin/configure.js && node --check ./bin/install-domain.js && node --check ./bin/install-preflight.js && node --check ./bin/skill-identity.js",
-    "lint": "node --check ./bin/sdd-agentic-flow.js && node --check ./bin/brand-art.js && node --check ./bin/doctor-view.js && node --check ./bin/messages.js && node --check ./bin/upgrade.js && node --check ./bin/update-check.js && node --check ./bin/ui.js && node --check ./bin/menu.js && node --check ./bin/contract-graph.js && node --check ./bin/version-compat.js && node --check ./bin/config-domain.js && node --check ./bin/config.js && node --check ./bin/install-preflight.js && node --check ./test/cli.test.js && node --check ./test/doctor-view.test.js && node --check ./test/messages.test.js && node --check ./test/version-compat.test.js && node --check ./test/version-consistency.test.js && node --check ./scripts/check-version-consistency.js",
-    "test": "node --test --experimental-test-coverage",
-    "check": "npm run lint:check && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && bash ./scripts/check-sdd-paths.sh && npm run build && npm run lint && npm test",
-    "lint:check": "biome check .",
-    "lint:fix": "biome check . --write",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "lint:biome": "biome check .",
+    "lint:biome:fix": "biome check . --write",
+    "lint": "npm run typecheck && npm run lint:biome",
+    "test": "npm run build && tsx --test --experimental-test-coverage test/**/*.test.ts",
+    "check": "npm run typecheck && npm run build && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && bash ./scripts/check-sdd-paths.sh && npm test",
+    "lint:check": "npm run lint:biome",
+    "lint:fix": "npm run lint:biome:fix",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
     "lint:yaml:fix": "prettier --write \".github/workflows/**/*.{yml,yaml}\"",
     "docs:lint": "markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\"",
-    "docs:diagrams": "node scripts/check-mermaid.js",
-    "docs:check": "npm run docs:lint && node scripts/check-markdown-links.js && npm run docs:diagrams",
+    "docs:diagrams": "tsx scripts/check-mermaid.ts",
+    "docs:check": "npm run docs:lint && tsx scripts/check-markdown-links.ts && npm run docs:diagrams",
     "docs:fix": "git ls-files \"*.md\" \":!.specs/**\" | xargs prettier --write && markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\" --fix",
-    "lint:fix:all": "npm run lint:fix && npm run lint:yaml:fix && npm run docs:fix",
+    "lint:fix:all": "npm run lint:biome:fix && npm run lint:yaml:fix && npm run docs:fix",
     "sanitize": "bash ./scripts/sanitize-private-context.sh",
-    "pack:dry": "node scripts/pack-dry.js",
-    "cli:dev": "node scripts/cli-dev.js",
-    "cli:exhaustive": "node scripts/cli-exhaustive.js",
-    "cli:sandbox": "node scripts/cli-sandbox.js",
+    "pack:dry": "tsx scripts/pack-dry.ts",
+    "cli:dev": "tsx scripts/cli-dev.ts",
+    "cli:exhaustive": "tsx scripts/cli-exhaustive.ts",
+    "cli:sandbox": "tsx scripts/cli-sandbox.ts",
     "release:check": "bash scripts/release-checklist.sh",
-    "version:stamp": "node scripts/check-version-consistency.js --stamp"
+    "version:stamp": "tsx scripts/check-version-consistency.ts --stamp"
   },
   "keywords": [
     "sdd",
@@ -67,13 +69,16 @@
   ],
   "license": "MIT",
   "bin": {
-    "sdd-agentic-flow": "bin/sdd-agentic-flow.js"
+    "sdd-agentic-flow": "dist/sdd-agentic-flow.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
     "@mermaid-js/mermaid-cli": "^11.16.0",
+    "@types/node": "^22.20.1",
     "markdown-link-check": "^3.15.0",
     "markdownlint-cli": "^0.49.1",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
   }
 }

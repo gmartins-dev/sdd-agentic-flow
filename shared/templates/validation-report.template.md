@@ -9,6 +9,12 @@ Status: {{status}}
 
 ## Evidence
 
+<!--
+Distinguish current vs historical vs not-run.
+A passing sensor is evidence, not a correctness verdict.
+Record requirement → sensor → current result in the table below AND detailed evidence prose.
+-->
+
 | Requirement anchor | Sensor | Result | Freshness |
 | --- | --- | --- | --- |
 | {{requirement_anchor}} | {{sensor}} | {{result}} | {{freshness}} |

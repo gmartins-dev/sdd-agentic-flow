@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v4.2.0 (2026-08-17):** Init and local artifact polish. Enriched `usage.md` generation
+  (workflow mermaid, localized stub, bundled guide copy), `inferInitDefaults()` for contextual
+  `config.yml`, automatic `.git/info/exclude` for user-scope installs, canonical docs renamed to
+  `saf-skills-usage-guide*`, and `saf-explain` outputs moved to
+  `.sdd-agentic-flow/explanations/<feature>.md`.
 - **v4.1.0 (2026-08-16):** Operating policy & autonomy UX. Guided `init` includes
   Supervised/Manual/Autonomous/Advanced policy selection; Current setup and Review show the full
   policy pair; returning menu separates policy changes from installation changes. No CLI

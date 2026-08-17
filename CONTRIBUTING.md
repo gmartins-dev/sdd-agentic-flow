@@ -94,7 +94,9 @@ report header. Set `SAF_CLI_REPORT=/path/to/report.md` when a specific output pa
 
 Diagrams use Mermaid as their textual, versionable source — always as inline ` ```mermaid `
 code blocks in Markdown, never as separate `.mmd` files, matching the diagrams that already
-exist in `README.md` and `docs/sdd-skills-usage-guide.md`. `npm run docs:diagrams` (part of
+exist in `README.md` and `docs/saf-skills-usage-guide.md`. Edit
+`shared/templates/workflow-diagram.mmd` and run `npm run docs:fix` (or
+`tsx scripts/sync-workflow-diagram.ts`) to sync README mermaid blocks. `npm run docs:diagrams`
 `npm run docs:check`) renders every such block through `@mermaid-js/mermaid-cli` to catch
 syntax errors; it is a **devDependency only** — never added to `dependencies`, and never a
 runtime requirement of the distributed CLI (see `docs/environment-compatibility.md`).

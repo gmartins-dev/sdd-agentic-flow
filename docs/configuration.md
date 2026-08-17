@@ -32,11 +32,12 @@ Use `configure --plan` to preview both the saved intent and its later reconcilia
 shown `Reconcile:` command. `install --plan` is human-readable when piped or run in CI; only
 explicit `--json` output is machine structured.
 
-`init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub that points at the
-canonical skills usage guide on GitHub. Re-running `init` refreshes that file and never
-overwrites `config.yml`. Teams that want toolkit state hidden from `git status` without
-editing `.gitignore` can pass `init --local-git-exclude` (opt-in; excludes only
-`.sdd-agentic-flow/`, never `.specs/`). See [installation scope](installation-scope.md).
+`init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub with the workflow
+diagram and an internal link to the bundled full guide (`.sdd-agentic-flow/saf-skills-usage-guide.md`
+or `.pt-BR.md` by locale). Re-running `init` refreshes those files and never overwrites
+`config.yml`. With the default user installation scope, `init` also appends `.sdd-agentic-flow/`
+to `.git/info/exclude` so toolkit state stays out of `git status` without editing `.gitignore`
+(never excludes `.specs/`). See [installation scope](installation-scope.md).
 
 ## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
 

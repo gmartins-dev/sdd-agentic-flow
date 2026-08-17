@@ -274,6 +274,9 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       sddJoin(cwd, 'snapshots'),
       sddJoin(cwd, 'reports'),
       sddJoin(cwd, 'usage.md'),
+      sddJoin(cwd, 'saf-skills-usage-guide.md'),
+      sddJoin(cwd, 'saf-skills-usage-guide.pt-BR.md'),
+      sddJoin(cwd, 'explanations'),
     );
   }
   const existing = targets.filter((target: string) => fs.existsSync(target));

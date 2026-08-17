@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 4.2.0
+
+Init, usage guide, and local artifact improvements.
+
+**Added:**
+
+- `scripts/sync-workflow-diagram.ts` keeps README workflow mermaid in sync with
+  `shared/templates/workflow-diagram.mmd`.
+- `init` writes a localized usage stub (mermaid + internal link) and copies the active-locale
+  full guide into `.sdd-agentic-flow/`.
+- `inferInitDefaults()` pre-fills `config.yml` from `package.json`, Git, and agent hint files.
+- Explanation outputs from `saf-explain` live at
+  `.sdd-agentic-flow/explanations/<feature>.md` (flat path, not under `.specs/`).
+
+**Changed:**
+
+- Renamed canonical docs to `docs/saf-skills-usage-guide.md` and `.pt-BR.md` (redirect stubs at
+  old `sdd-skills-usage-guide*` paths).
+- `init` appends `.sdd-agentic-flow/` to `.git/info/exclude` automatically when installation
+  intent scope is `user`; `--local-git-exclude` remains for project scope.
+
+**Deprecated:**
+
+- `.specs/features/<feature>/explanation.md` — use `.sdd-agentic-flow/explanations/<feature>.md`.
+
 ## 4.1.0
 
 Operating policy and autonomous workflow UX — compatible minor release.

@@ -176,7 +176,7 @@ feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated impleme
 `project-context.md`/`domain-glossary.md` when present. Required input kinds: `config`,
 `spec-package`.
 
-**Outputs:** `explanation` (`.specs/features/<feature>/explanation.md`).
+**Outputs:** `explanation` (`.sdd-agentic-flow/explanations/<feature>.md`).
 
 **Dependencies:** `extends: saf-create-spec`; `depends_on: []`. Read-only against the spec
 package.

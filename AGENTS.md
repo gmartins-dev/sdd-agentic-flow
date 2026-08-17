@@ -12,7 +12,7 @@ Run `npx sdd-agentic-flow init`, then `install core`, then `doctor`. Start at [d
 
 ## Run an SDD workflow
 
-Read [docs/sdd-methodology.md](docs/sdd-methodology.md) for what Spec-Driven Development means in this toolkit. Follow [docs/sdd-skills-usage-guide.md](docs/sdd-skills-usage-guide.md) for the Plan → Prompt → Implement → Check → PR → Review → Fix → Validate chain. When the next step is unclear, invoke `saf-route`. Read [docs/invocation-model.md](docs/invocation-model.md) for how skills are selected, not chained automatically. Agent-specific setup: [docs/using-with-cursor.md](docs/using-with-cursor.md), [docs/using-with-claude-code.md](docs/using-with-claude-code.md), [docs/using-with-codex.md](docs/using-with-codex.md), [docs/using-with-vscode-copilot.md](docs/using-with-vscode-copilot.md).
+Read [docs/sdd-methodology.md](docs/sdd-methodology.md) for what Spec-Driven Development means in this toolkit. Follow [docs/saf-skills-usage-guide.md](docs/saf-skills-usage-guide.md) for the Plan → Prompt → Implement → Check → PR → Review → Fix → Validate chain. When the next step is unclear, invoke `saf-route`. Read [docs/invocation-model.md](docs/invocation-model.md) for how skills are selected, not chained automatically. Agent-specific setup: [docs/using-with-cursor.md](docs/using-with-cursor.md), [docs/using-with-claude-code.md](docs/using-with-claude-code.md), [docs/using-with-codex.md](docs/using-with-codex.md), [docs/using-with-vscode-copilot.md](docs/using-with-vscode-copilot.md).
 
 ## Trust and safety boundaries
 
@@ -24,7 +24,7 @@ Skills load canonical rules from `shared/references/` at install time (TDD basel
 
 ## Language
 
-English is canonical for commands, paths, skill names, and technical tokens. Brazilian Portuguese introductions: [README.pt-BR.md](README.pt-BR.md), [docs/sdd-skills-usage-guide.pt-BR.md](docs/sdd-skills-usage-guide.pt-BR.md), [docs/language-profiles.pt-BR.md](docs/language-profiles.pt-BR.md). See [docs/i18n.md](docs/i18n.md).
+English is canonical for commands, paths, skill names, and technical tokens. Brazilian Portuguese introductions: [README.pt-BR.md](README.pt-BR.md), [docs/saf-skills-usage-guide.pt-BR.md](docs/saf-skills-usage-guide.pt-BR.md), [docs/language-profiles.pt-BR.md](docs/language-profiles.pt-BR.md). See [docs/i18n.md](docs/i18n.md).
 
 ## Troubleshooting
 

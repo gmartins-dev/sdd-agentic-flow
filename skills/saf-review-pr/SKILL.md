@@ -2,7 +2,7 @@
 name: saf-review-pr
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 metadata:
-  version: 4.1.0
+  version: 4.2.0
   pack: pr
 extends: saf-create-pr
 requires: [config, pr-reference]

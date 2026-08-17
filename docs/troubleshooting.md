@@ -14,6 +14,20 @@ first; it names the failing check.
 
 **Fix:** `sdd-agentic-flow init` (or `init --non-interactive` for scripts and CI).
 
+### `.sdd-agentic-flow/` or `.agents/skills/` visible in Git after setup
+
+**Cause:** user-scope `init` hides `.sdd-agentic-flow/` only via `.git/info/exclude` (not
+`.gitignore`). Project-scope install writes `.agents/skills/` into the repo (Git-visible unless
+you chose **Local to this repository** in customize setup or `configure --sharing local`).
+
+**Diagnose:** `git status --short` and `sdd-agentic-flow configure --plan`. Confirm intent scope
+(`user` vs `project`) and project sharing (`shared` vs `local`).
+
+**Fix:** For user-local toolkit state, save user scope with `configure --scope user` and re-run
+`init`, or pass `init --local-git-exclude` when using project scope. To hide project skills
+locally, run `configure --scope project --sharing local` then
+`install <pack> --scope project`.
+
 ### `skills` / `shared_layer`: core skills or shared layer not fully installed
 
 **Cause:** `install <pack>` was never run, or was run with `--scope user` (so nothing is in

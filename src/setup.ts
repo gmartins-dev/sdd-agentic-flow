@@ -26,6 +26,7 @@ import {
   resolveSkillsRoot,
   severity,
 } from './doctor';
+import { inferInitDefaults } from './init-defaults';
 import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
   DEFAULT_USER_TARGETS,
@@ -50,6 +51,7 @@ import {
   SDD_PATHS,
   SDD_ROOT,
   sddJoin,
+  USAGE_GUIDE_PT_BR_URL,
   USAGE_GUIDE_URL,
 } from './paths';
 import { discoverProject } from './project-context';
@@ -212,16 +214,17 @@ function presetNames(): string[] {
     .sort();
 }
 
-function configFor(options: SetupCommandOptions = {}) {
+function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
+  const inferred = inferInitDefaults(cwd);
   const profile = options.profile || options.language || 'en-US';
   return `version: 1
 
 project:
-  name: ${options.name || 'example-project'}
-  default_branch: ${options.branch || 'main'}
+  name: ${options.name || inferred.name}
+  default_branch: ${options.branch || inferred.branch}
 
 agent:
-  target: ${options.agent || 'generic'}
+  target: ${options.agent || inferred.agent}
 
 language:
   profile: ${profile}
@@ -269,12 +272,63 @@ safety:
 `;
 }
 
+function usageGuideLinks(locale: string): string {
+  if (locale === 'pt-BR') {
+    return (
+      `- [Guia completo](saf-skills-usage-guide.pt-BR.md) — referência local completa do fluxo.\n` +
+      `- GitHub (canônico): \`${USAGE_GUIDE_PT_BR_URL}\`\n` +
+      `- Outro idioma: [Full guide](saf-skills-usage-guide.md)`
+    );
+  }
+  return (
+    `- [Full guide](saf-skills-usage-guide.md) — complete local workflow reference.\n` +
+    `- GitHub (canonical): \`${USAGE_GUIDE_URL}\`\n` +
+    `- Other locale: [Guia completo](saf-skills-usage-guide.pt-BR.md)`
+  );
+}
+
 function writeUsageGuide(cwd: string, locale: string) {
-  const source = path.join(PACKAGE_ROOT, 'shared', 'templates', 'usage.template.md');
+  const resolvedLocale = resolveLocale({ configured: locale });
+  const templateName = resolvedLocale === 'pt-BR' ? 'usage.template.pt-BR.md' : 'usage.template.md';
+  const templatePath = path.join(PACKAGE_ROOT, 'shared', 'templates', templateName);
+  const mermaidPath = path.join(PACKAGE_ROOT, 'shared', 'templates', 'workflow-diagram.mmd');
+  const mermaid = fs.readFileSync(mermaidPath, 'utf8').trim();
+  const stub = fs
+    .readFileSync(templatePath, 'utf8')
+    .replace('{{WORKFLOW_DIAGRAM_SECTION}}', `\`\`\`mermaid\n${mermaid}\n\`\`\``)
+    .replace('{{FULL_GUIDE_LINKS}}', usageGuideLinks(resolvedLocale));
+
   const destination = sddJoin(cwd, 'usage.md');
   fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.copyFileSync(source, destination);
+  fs.writeFileSync(destination, stub, 'utf8');
+
+  const activeGuide =
+    resolvedLocale === 'pt-BR'
+      ? ([
+          [
+            'saf-skills-usage-guide.pt-BR.md',
+            path.join(PACKAGE_ROOT, 'docs', 'saf-skills-usage-guide.pt-BR.md'),
+          ],
+        ] as const)
+      : ([
+          [
+            'saf-skills-usage-guide.md',
+            path.join(PACKAGE_ROOT, 'docs', 'saf-skills-usage-guide.md'),
+          ],
+        ] as const);
+  for (const [name, source] of activeGuide) {
+    fs.copyFileSync(source, sddJoin(cwd, name));
+  }
+
   log('PASS', `wrote ${SDD_PATHS.usage}`, locale);
+  log('PASS', `wrote ${activeGuide[0][0]}`, locale);
+}
+
+function resolveLocalGitExclude(cwd: string, options: SetupCommandOptions = {}): boolean {
+  if (options.localGitExclude) return true;
+  const saved = savedSetupProfile(cwd);
+  const scope = asString(options.scope, (saved?.scope as string | undefined) || 'user');
+  return scope === 'user';
 }
 
 function applyLocalGitExclude(cwd: string, locale: string) {
@@ -306,16 +360,20 @@ function applyLocalGitExclude(cwd: string, locale: string) {
 function applyInitSideEffects(cwd: string, options: SetupCommandOptions = {}) {
   const locale = asString(options.locale, localeFor(cwd));
   writeUsageGuide(cwd, locale);
-  if (options.localGitExclude) applyLocalGitExclude(cwd, locale);
+  if (resolveLocalGitExclude(cwd, options)) applyLocalGitExclude(cwd, locale);
 }
 
-function printUsageGuidePointer(cwd: string) {
+function printUsageGuidePointer(cwd: string, locale = 'en-US') {
+  const resolvedLocale = resolveLocale({ configured: locale });
+  const localGuide = resolvedLocale === 'pt-BR' ? SDD_PATHS.usageGuidePtBr : SDD_PATHS.usageGuideEn;
   const localExists = fs.existsSync(path.join(cwd, SDD_PATHS.usage));
-  if (localExists)
+  if (localExists) {
     return (
       `Skills usage guide (local stub, regenerable):\n  ${SDD_PATHS.usage}\n` +
-      `Canonical guide:\n  ${USAGE_GUIDE_URL}\n`
+      `Full guide (local copy):\n  ${localGuide}\n` +
+      `Canonical guide (GitHub):\n  ${USAGE_GUIDE_URL}\n`
     );
+  }
   return `Skills usage guide:\n  ${USAGE_GUIDE_URL}\n`;
 }
 
@@ -340,10 +398,15 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
     log('WARN', `preserved existing ${SDD_PATHS.config}`);
     return false;
   }
-  for (const relative of [SDD_PATHS.snapshots, SDD_PATHS.reports, '.specs/features']) {
+  for (const relative of [
+    SDD_PATHS.snapshots,
+    SDD_PATHS.reports,
+    SDD_PATHS.explanationsDir,
+    '.specs/features',
+  ]) {
     fs.mkdirSync(path.join(cwd, relative), { recursive: true });
   }
-  fs.writeFileSync(configPath, configFor(options), 'utf8');
+  fs.writeFileSync(configPath, configFor(cwd, options), 'utf8');
   logPassLine(t(locale, 'init.createdConfig', { path: SDD_PATHS.config }), {
     mode,
     quiet: options.quiet,
@@ -358,7 +421,7 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   discoverProject(cwd, { force: false, quiet: true, ascii: Boolean(options.ascii) });
   if (!options.quiet) {
     nextStep('npx sdd-agentic-flow install core', { quiet: options.quiet, mode });
-    process.stdout.write(`\n${printUsageGuidePointer(cwd)}`);
+    process.stdout.write(`\n${printUsageGuidePointer(cwd, locale)}`);
   }
   return true;
 }
@@ -678,7 +741,8 @@ async function applySetup(
     ...(policy.presetName ? { presetName: policy.presetName } : {}),
     ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
     quiet: true,
-    ...(options.localGitExclude ? { localGitExclude: options.localGitExclude } : {}),
+    scope: draft.scope,
+    localGitExclude: draft.scope === 'user' || Boolean(options.localGitExclude),
     ascii: Boolean(options.ascii),
   });
   if (draft.install) {
@@ -826,9 +890,12 @@ async function initInteractive(
       '\nChange operating policy with: npx sdd-agentic-flow config policy\n' +
         'Install skills with: npx sdd-agentic-flow install core\n',
     );
-    applyInitSideEffects(cwd, { localGitExclude });
+    applyInitSideEffects(cwd, {
+      localGitExclude: resolveLocalGitExclude(cwd, { localGitExclude }),
+    });
     return;
   }
+  const inferred = inferInitDefaults(cwd);
   const pipedAnswers = process.stdin.isTTY ? null : fs.readFileSync(0, 'utf8').split(/\r?\n/);
   let answerIndex = 0;
   const rl = pipedAnswers
@@ -883,14 +950,19 @@ async function initInteractive(
     process.stdout.write(
       `\n${renderStep(2, 7, t(locale, 'init.identity'), mode, t(locale, 'step')).join('\n')}\n`,
     );
-    initOptions.name = await ask(t(locale, 'init.projectName'), 'example-project', null);
-    initOptions.branch = await ask(t(locale, 'init.defaultBranch'), 'main', null, 'branch');
+    initOptions.name = await ask(t(locale, 'init.projectName'), inferred.name, null);
+    initOptions.branch = await ask(
+      t(locale, 'init.defaultBranch'),
+      inferred.branch,
+      null,
+      'branch',
+    );
 
     process.stdout.write(
       `\n${renderStep(3, 7, t(locale, 'init.agent'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     process.stdout.write(`  ${t(locale, 'init.agentHint')}\n`);
-    initOptions.agent = await ask(t(locale, 'init.agentPrompt'), 'generic', [
+    initOptions.agent = await ask(t(locale, 'init.agentPrompt'), inferred.agent, [
       'generic',
       'codex',
       'cursor',
@@ -989,7 +1061,7 @@ async function initInteractive(
       ...initOptions,
       ...(initOptions.language ? { profile: initOptions.language } : {}),
       quiet,
-      localGitExclude,
+      localGitExclude: resolveLocalGitExclude(cwd, { localGitExclude }),
     });
   } catch (error: unknown) {
     fail(errorMessage(error), 1);

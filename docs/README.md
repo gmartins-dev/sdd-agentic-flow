@@ -24,7 +24,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | --- | --- |
 | [sdd-agentic-flow-model.md](sdd-agentic-flow-model.md) | One-page mental model: 4 layers + SDD, glossary, control map |
 | [sdd-methodology.md](sdd-methodology.md) | What SDD means in this toolkit and why specs help agents |
-| [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) | Running the full SDD chain with coding agents |
+| [saf-skills-usage-guide.md](saf-skills-usage-guide.md) | Running the full SDD chain with coding agents |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
 | [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
 | [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, outputs, packs) |
@@ -86,7 +86,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [i18n.md](i18n.md) | Bilingual policy |
 | [language-profiles.md](language-profiles.md) | `en-US` and `pt-BR` profile contract |
 | [language-profiles.pt-BR.md](language-profiles.pt-BR.md) | Same contract in Brazilian Portuguese |
-| [sdd-skills-usage-guide.pt-BR.md](sdd-skills-usage-guide.pt-BR.md) | Usage guide in Brazilian Portuguese |
+| [saf-skills-usage-guide.pt-BR.md](saf-skills-usage-guide.pt-BR.md) | Usage guide in Brazilian Portuguese |
 
 ## Maintainer
 

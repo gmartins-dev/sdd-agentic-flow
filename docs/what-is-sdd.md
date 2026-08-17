@@ -52,7 +52,7 @@ auto-push, or hide autonomy behind the CLI.
 
 ## Further reading
 
-- [SDD skills usage guide](sdd-skills-usage-guide.md)
+- [SDD skills usage guide](saf-skills-usage-guide.md)
 - [Installation](installation.md)
 - [Configuration](configuration.md)
 - [Commands reference](commands.md)

@@ -1,0 +1,16 @@
+flowchart TD
+  setup[saf-setup] --> route[saf-route]
+  route --> brainstorm[saf-brainstorm]
+  brainstorm -->|converged| specs[saf-create-spec]
+  route --> specs
+  specs -.->|on demand| explain[saf-explain]
+  specs --> prompts[saf-create-prompts]
+  prompts --> implement[saf-implement]
+  prompts -->|dependent tasks| implementmulti[saf-implement-multi]
+  implementmulti -->|delegates per task| implement
+  implement --> check[saf-check-task]
+  check --> pr[saf-create-pr]
+  pr --> review[saf-review-pr]
+  review -->|findings accepted| fix[saf-fix-pr]
+  fix --> review
+  review -->|ready| validate[saf-validate]

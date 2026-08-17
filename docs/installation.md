@@ -14,10 +14,9 @@ npx sdd-agentic-flow init
 Use `init --non-interactive` for scripts and CI. `--interactive` remains an explicit
 alias for guided onboarding. `init` always writes
 project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`)
-and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) that points at the canonical
-[skills usage guide](sdd-skills-usage-guide.md) (the same document on GitHub, because the
-consumer project does not receive a copy of package `docs/`). That part
-is unaffected by install scope.
+and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) with the workflow diagram and a
+local copy of the [skills usage guide](saf-skills-usage-guide.md). That part is unaffected by
+install scope.
 
 Interactive setup is an inline terminal flow, not a full-screen TUI. The recommended path uses
 safe defaults; **Customize setup** exposes pack, scope, targets, and project sharing. It shows one
@@ -25,9 +24,11 @@ review before writing. Before that review, **Back** changes only draft choices. 
 written, use **Change operating policy** or **Change installation setup** for a deliberate
 change rather than a rollback.
 
-Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` so
-toolkit state stays out of `git status` without editing the team's `.gitignore`. Default
-off. Specs under `.specs/` are not excluded. See [installation scope](installation-scope.md).
+Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` when
+using project scope but still wanting toolkit state hidden locally. With the default user scope,
+`init` applies that exclude automatically so toolkit state stays out of `git status` without
+editing the team's `.gitignore`. Specs under `.specs/` are not excluded. See
+[installation scope](installation-scope.md).
 
 `install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill
 directories (e.g. `~/.claude/skills`) and creates **zero files in the project**. Pass

@@ -8,7 +8,7 @@ When the current phase is unclear, invoke `saf-route`. It recommends the next sk
 
 | Step | Doc |
 | --- | --- |
-| Full workflow with agents | [sdd-skills-usage-guide.md](sdd-skills-usage-guide.md) |
+| Full workflow with agents | [saf-skills-usage-guide.md](saf-skills-usage-guide.md) |
 | Skill reference | [skills-catalog.md](skills-catalog.md) |
 | How skills are invoked | [invocation-model.md](invocation-model.md) |
 | Execution modes | [execution-modes.md](execution-modes.md) |

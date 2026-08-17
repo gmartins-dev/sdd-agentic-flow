@@ -27,6 +27,8 @@ or `.sdd-agentic-flow/context/project-context.md`, which are project policy, alw
 | `.sdd-agentic-flow/config.yml` (project policy) | project                                | team         |
 | `.sdd-agentic-flow/context/project-context.md`  | project                                | team         |
 | `.sdd-agentic-flow/usage.md` (regenerable stub) | project                                | toolkit      |
+| `.sdd-agentic-flow/saf-skills-usage-guide.md` or `.pt-BR.md` (active locale copy) | project | toolkit      |
+| `.sdd-agentic-flow/explanations/*.md` (on-demand) | project                              | toolkit      |
 | `.specs/features/**`               | project                                | team         |
 
 `init` and `install` are different commands:
@@ -39,11 +41,13 @@ or `.sdd-agentic-flow/context/project-context.md`, which are project policy, alw
 
 `.specs/features/` is project work and should normally be versioned. This toolkit repository gitignores `.specs/` for local dogfooding only — that exception is not the consumer default. `.sdd-agentic-flow/config.yml` is project policy; teams that want shared defaults commit it. `usage.md` is regenerable — re-run `init` to refresh it.
 
-## Local git exclude (`init --local-git-exclude`)
+## Local git exclude (user scope)
 
-Opt-in, default off. When the current directory is a Git repository, `init --local-git-exclude`
-appends `.sdd-agentic-flow/` to `.git/info/exclude` (idempotent). That hides toolkit state from
-`git status` **without** editing the team's `.gitignore`. It does **not** exclude `.specs/`.
+When the saved installation intent uses `scope: user` (the default), `init` automatically
+appends `.sdd-agentic-flow/` to `.git/info/exclude` in a Git repository (idempotent). That hides
+toolkit state from `git status` **without** editing the team's `.gitignore`. It does **not**
+exclude `.specs/`. Pass `init --local-git-exclude` explicitly when using `scope: project` but
+still wanting toolkit state hidden locally.
 
 If Git is absent, the command continues with a `WARN`. The CLI never auto-edits `.gitignore`.
 

@@ -33,8 +33,9 @@ Canonical path remains:
   tasks.md       # optional per profile / existing-code mode
 ```
 
-Optional extras already in the toolkit (`brief.md`, `explanation.md`,
-`handoff.md`) stay in that folder. Do **not** require `.specs/active/` or
+Optional extras already in the toolkit (`brief.md`, `handoff.md`) stay in that
+folder. Pedagogical explanations live under `.sdd-agentic-flow/explanations/<slug>.md`
+(produced by `saf-explain`, not under `.specs/`). Do **not** require `.specs/active/` or
 `.specs/archive/`. Do **not** create `validation.md` under `.specs`.
 
 ## Package resolution

@@ -32,7 +32,7 @@ Structured specs, clear boundaries, and human governance:
 
 For AI-first and AI-driven teams, that split is the point: humans architect and verify; agents execute under this harness. Craftsmanship still matters — agents fail on code humans cannot read. This README does not quote token or speed multipliers.
 
-📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/sdd-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
+📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/saf-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*
@@ -109,7 +109,7 @@ Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users 
 
 **Autonomous does not mean unattended.** Commit, push, merge, tag, and publish stay human on every preset. The CLI does not run skills.
 
-Next: invoke `saf-route` or open the [skills usage guide](docs/sdd-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
+Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
 Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup and
 operating policy (Supervised recommended), optional customization, then configures, installs
@@ -298,7 +298,7 @@ For the long-form version of this table, see the [skills catalog](docs/skills-ca
 
 ## Agent workflows
 
-Read the [skills usage guide](docs/sdd-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
+Read the [skills usage guide](docs/saf-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
 
 The skills are Markdown-first and installed locally. See [agent compatibility](docs/agent-compatibility.md) for validated workflows and limits.
 
@@ -308,7 +308,7 @@ Language profiles select human-facing output language; a domain glossary records
 
 ## Inspiration and guides
 
-The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. Those inspirations now include epistemic roles; project contracts remain authoritative. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/sdd-skills-usage-guide.pt-BR.md).
+The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. Those inspirations now include epistemic roles; project contracts remain authoritative. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/saf-skills-usage-guide.pt-BR.md).
 
 For decision help, see [choosing a feature profile](docs/guides/choosing-a-feature-profile.md), [adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and [condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).
 

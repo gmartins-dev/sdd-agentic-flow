@@ -28,7 +28,7 @@ Specs estruturadas, limites claros e governança humana:
 
 Para times AI-first e AI-driven, essa divisão é o ponto: humanos arquitetam e verificam; agentes executam sob este harness. Craftsmanship continua importando — agentes falham em código que humanos não conseguem ler. Este README não cita multiplicadores de token ou velocidade.
 
-📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md) · 🏗 [Arquitetura](docs/architecture.md)
+📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md) · 🏗 [Arquitetura](docs/architecture.md)
 
 ## O problema
 
@@ -98,7 +98,7 @@ Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. A CLI
 
 Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous does not mean unattended.** Commit, push, merge, tag e publish continuam humanos em todo preset. A CLI não executa skills.
 
-Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/sdd-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
 Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
 recomendado ao pressionar Enter), instala o pack `full`, prepara o contexto e valida o resultado.

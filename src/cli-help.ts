@@ -74,9 +74,10 @@ OPTIONS
                          autonomous (aliases: man, assist|assisted, auto).
                          Default: manual. plan/guided never combine with
                          autonomous. See docs/autonomy-levels.md.
-  --local-git-exclude    Opt-in: append ${SDD_ROOT}/ to .git/info/exclude so toolkit
-                         state stays out of git status. Does not edit .gitignore and
-                         does not exclude .specs/. No-ops with WARN when Git is absent.
+  --local-git-exclude    Append ${SDD_ROOT}/ to .git/info/exclude so toolkit state stays out
+                         of git status. Applied automatically when installation scope is user;
+                         use this flag explicitly for project scope. Does not edit .gitignore
+                         and does not exclude .specs/. No-ops with WARN when Git is absent.
   --quiet                Suppress the "Suggested next step" line on success.
   --ascii                Force ASCII symbols (also via SDD_ASCII=1). Presentation only.
 

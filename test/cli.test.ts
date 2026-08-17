@@ -173,8 +173,9 @@ test('uninstall with neither --plan nor --apply points at --plan as the safe fir
 
 test('bare invocation shows a contextual, read-only status screen and never mutates the cwd', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-welcome-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-welcome-home-'));
 
-  const before = run([], cwd);
+  const before = runIsolatedHome([], cwd, home);
   assert.equal(before.status, 0);
   assert.match(before.stdout, /^sdd-agentic-flow \d+\.\d+\.\d+/);
   assert.match(before.stdout, /Suggested next step/);
@@ -183,14 +184,15 @@ test('bare invocation shows a contextual, read-only status screen and never muta
   assert.match(before.stdout, /doctor --check-updates/);
   assert.deepEqual(listAllEntries(cwd), []);
 
-  assert.equal(run(['init'], cwd).status, 0);
-  const afterInit = run([], cwd);
+  assert.equal(runIsolatedHome(['init'], cwd, home).status, 0);
+  const afterInit = runIsolatedHome([], cwd, home);
   assert.match(afterInit.stdout, /npx sdd-agentic-flow install core/);
   const snapshot = listAllEntries(cwd).sort();
-  assert.equal(run([], cwd).status, 0);
+  assert.equal(runIsolatedHome([], cwd, home).status, 0);
   assert.deepEqual(listAllEntries(cwd).sort(), snapshot);
 
   fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(home, { recursive: true, force: true });
 });
 
 test('init and install core are idempotent', () => {
@@ -228,31 +230,67 @@ test('--quiet suppresses decorative output on init, install, and uninstall', () 
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
-test('init writes a resolvable usage guide stub and never points at a package docs path', () => {
+test('init writes a localized usage stub with mermaid, bundled guides, and internal links', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-usage-guide-'));
   const first = run(['init'], cwd);
   assert.equal(first.status, 0);
   const usagePath = path.join(cwd, '.sdd-agentic-flow/usage.md');
+  const guideEnPath = path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.md');
+  const guidePtPath = path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.pt-BR.md');
   assert.ok(fs.existsSync(usagePath));
+  assert.ok(fs.existsSync(guideEnPath));
+  assert.ok(!fs.existsSync(guidePtPath));
   const usage = fs.readFileSync(usagePath, 'utf8');
   assert.match(usage, /saf-route/);
+  assert.match(usage, /```mermaid/);
+  assert.match(usage, /saf-create-spec/);
+  assert.match(usage, /\[Full guide\]\(saf-skills-usage-guide\.md\)/);
   assert.match(
     usage,
-    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/saf-skills-usage-guide\.md/,
   );
   assert.match(first.stdout, /\.sdd-agentic-flow\/usage\.md/);
+  assert.match(first.stdout, /\.sdd-agentic-flow\/saf-skills-usage-guide\.md/);
   assert.match(
     first.stdout,
-    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/saf-skills-usage-guide\.md/,
   );
-  assert.doesNotMatch(first.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+  assert.doesNotMatch(first.stdout, /Full guide:\n\s*docs\/saf-skills-usage-guide\.md/);
 
   const second = run(['init'], cwd);
   assert.equal(second.status, 0);
   assert.ok(fs.existsSync(usagePath));
   assert.match(second.stdout, /preserved existing/);
-  assert.doesNotMatch(second.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+  assert.doesNotMatch(second.stdout, /Full guide:\n\s*docs\/saf-skills-usage-guide\.md/);
   fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('init --language pt-BR writes a Portuguese usage stub and links to the pt-BR guide', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-usage-guide-pt-'));
+  assert.equal(run(['init', '--language', 'pt-BR'], cwd).status, 0);
+  const usage = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/usage.md'), 'utf8');
+  assert.match(usage, /Guia completo/);
+  assert.match(usage, /\[Guia completo\]\(saf-skills-usage-guide\.pt-BR\.md\)/);
+  assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.md')));
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('init with project install intent does not apply toolkit git exclude', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-git-exclude-project-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-git-exclude-project-home-'));
+  const git = (gitArgs: string[]) => spawnSync('git', gitArgs, { cwd, encoding: 'utf8' });
+  git(['init', '-q']);
+  const excludePath = path.join(cwd, '.git/info/exclude');
+  assert.equal(
+    runIsolatedHome(['configure', '--scope', 'project', '--pack', 'core'], cwd, home).status,
+    0,
+  );
+  assert.equal(runIsolatedHome(['init'], cwd, home).status, 0);
+  const exclude = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
+  assert.doesNotMatch(exclude, /# sdd-agentic-flow init --local-git-exclude/);
+  assert.doesNotMatch(exclude, /^\.sdd-agentic-flow\/$/m);
+  fs.rmSync(cwd, { recursive: true, force: true });
+  fs.rmSync(home, { recursive: true, force: true });
 });
 
 test('install core next-steps point at a resolvable usage guide, not a package docs path', () => {
@@ -264,14 +302,14 @@ test('install core next-steps point at a resolvable usage guide, not a package d
   assert.match(result.stdout, /\.sdd-agentic-flow\/usage\.md/);
   assert.match(
     result.stdout,
-    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/sdd-skills-usage-guide\.md/,
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/saf-skills-usage-guide\.md/,
   );
-  assert.doesNotMatch(result.stdout, /Full guide:\n\s*docs\/sdd-skills-usage-guide\.md/);
+  assert.doesNotMatch(result.stdout, /Full guide:\n\s*docs\/saf-skills-usage-guide\.md/);
   fs.rmSync(cwd, { recursive: true, force: true });
   fs.rmSync(home, { recursive: true, force: true });
 });
 
-test('init --local-git-exclude is opt-in, idempotent, and degrades without Git', () => {
+test('init applies local git exclude by default for user scope and stays idempotent', () => {
   const withGit = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-git-exclude-'));
   const git = (gitArgs: string[]) => spawnSync('git', gitArgs, { cwd: withGit, encoding: 'utf8' });
   assert.equal(spawnSync('git', ['--version']).status, 0);
@@ -279,21 +317,16 @@ test('init --local-git-exclude is opt-in, idempotent, and degrades without Git',
   const excludePath = path.join(withGit, '.git/info/exclude');
   const beforeExclude = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
 
-  const withoutFlag = run(['init'], withGit);
-  assert.equal(withoutFlag.status, 0);
-  const afterDefault = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
-  assert.equal(afterDefault, beforeExclude);
-  assert.doesNotMatch(afterDefault, /sdd-agentic-flow init --local-git-exclude/);
-
-  const withFlag = run(['init', '--local-git-exclude'], withGit);
-  assert.equal(withFlag.status, 0);
+  const firstInit = run(['init'], withGit);
+  assert.equal(firstInit.status, 0);
   const exclude = fs.readFileSync(excludePath, 'utf8');
+  assert.notEqual(exclude, beforeExclude);
   assert.match(exclude, /# sdd-agentic-flow init --local-git-exclude/);
   assert.match(exclude, /^\.sdd-agentic-flow\/$/m);
   assert.doesNotMatch(exclude, /^\.specs\/$/m);
   const firstLength = exclude.length;
 
-  const second = run(['init', '--local-git-exclude'], withGit);
+  const second = run(['init'], withGit);
   assert.equal(second.status, 0);
   const again = fs.readFileSync(excludePath, 'utf8');
   assert.equal(again, exclude);
@@ -306,6 +339,21 @@ test('init --local-git-exclude is opt-in, idempotent, and degrades without Git',
   assert.match(degraded.stdout, /no \.git directory/);
   assert.ok(!fs.existsSync(path.join(noGit, '.git')));
   fs.rmSync(noGit, { recursive: true, force: true });
+});
+
+test('init infers project identity from package.json when options are omitted', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-init-defaults-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), JSON.stringify({ name: 'my-consumer-app' }));
+  assert.equal(run(['init', '--non-interactive'], cwd).status, 0);
+  const config = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
+  assert.match(config, /name: my-consumer-app/);
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+test('saf-explain contract writes explanations under .sdd-agentic-flow/explanations', () => {
+  const skill = fs.readFileSync(path.join(packageRoot, 'skills/saf-explain/SKILL.md'), 'utf8');
+  assert.match(skill, /\.sdd-agentic-flow\/explanations\/<feature>\.md/);
+  assert.doesNotMatch(skill, /\.specs\/features\/<feature>\/explanation\.md/);
 });
 
 test('explanation template requires source-artifact anchors and the required headings', () => {

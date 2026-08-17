@@ -79,9 +79,14 @@ export const SDD_PATHS = {
   snapshots: `${SDD_ROOT}/snapshots`,
   reports: `${SDD_ROOT}/reports`,
   usage: `${SDD_ROOT}/usage.md`,
+  explanationsDir: `${SDD_ROOT}/explanations`,
+  usageGuideEn: `${SDD_ROOT}/saf-skills-usage-guide.md`,
+  usageGuidePtBr: `${SDD_ROOT}/saf-skills-usage-guide.pt-BR.md`,
 };
 export const USAGE_GUIDE_URL =
-  'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/sdd-skills-usage-guide.md';
+  'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/saf-skills-usage-guide.md';
+export const USAGE_GUIDE_PT_BR_URL =
+  'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/saf-skills-usage-guide.pt-BR.md';
 export const LOCAL_GIT_EXCLUDE_COMMENT = '# sdd-agentic-flow init --local-git-exclude';
 export const LOCAL_GIT_EXCLUDE_ENTRY = `${SDD_ROOT}/`;
 export const USER_INSTALL_CONFIG = `${SDD_ROOT}/install.yml`;
@@ -100,6 +105,14 @@ export function defaultSpecsRoot(cwd: string) {
 
 export function sddJoin(cwd: string, ...segments: string[]) {
   return path.join(cwd, SDD_ROOT, ...segments);
+}
+
+export function explanationPath(cwd: string, featureSlug: string) {
+  return sddJoin(cwd, 'explanations', `${featureSlug}.md`);
+}
+
+export function explanationRelativePath(featureSlug: string) {
+  return `${SDD_PATHS.explanationsDir}/${featureSlug}.md`;
 }
 
 export function legacySddJoin(cwd: string, ...segments: string[]) {

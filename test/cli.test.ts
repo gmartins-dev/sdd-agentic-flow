@@ -184,9 +184,22 @@ test('doctor --harness projects only harness readiness checks', () => {
 
 test('Evidence Graph HTML is stdout-only unless --output is explicit', () => {
   const output = path.join(os.tmpdir(), `sdd-agentic-flow-graph-${Date.now()}.html`);
+  const featureCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-graph-fixture-'));
+  const featureDir = path.join(
+    featureCwd,
+    '.specs',
+    'features',
+    'engineering-control-plane-coherence',
+  );
+  fs.mkdirSync(featureDir, { recursive: true });
+  fs.writeFileSync(path.join(featureDir, 'spec.md'), '## Requirement REQ-001\n\nA requirement.\n');
+  fs.writeFileSync(
+    path.join(featureDir, 'tasks.md'),
+    '## T1 Implement requirement\n\nRequirement anchors: REQ-001\n',
+  );
   const stdout = run(
     ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--html'],
-    packageRoot,
+    featureCwd,
   );
   assert.match(stdout.stdout, /^<!doctype html>/i);
   assert.equal(fs.existsSync(output), false);
@@ -199,25 +212,26 @@ test('Evidence Graph HTML is stdout-only unless --output is explicit', () => {
       '--output',
       output,
     ],
-    packageRoot,
+    featureCwd,
   );
   assert.match(written.stdout, new RegExp(output.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.ok(fs.existsSync(output));
   assert.equal(
     run(
       ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--json', '--html'],
-      packageRoot,
+      featureCwd,
     ).status,
     1,
   );
   assert.equal(
     run(
       ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--output', output],
-      packageRoot,
+      featureCwd,
     ).status,
     1,
   );
   fs.rmSync(output, { force: true });
+  fs.rmSync(featureCwd, { recursive: true, force: true });
 });
 
 test('uninstall with neither --plan nor --apply points at --plan as the safe first step', () => {

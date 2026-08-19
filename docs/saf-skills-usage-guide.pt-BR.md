@@ -2,6 +2,10 @@
 
 Use as skills públicas do `sdd-agentic-flow` em um fluxo local com agentes de código. O toolkit mantém especificações, prompts, alterações e evidências no projeto para que uma pessoa revise cada etapa.
 
+SAF define restrições de workflow e transições admissíveis. O host de agentes de código executa.
+As evidências atuais apoiam a verificação antes que o trabalho avance. Veja a jornada
+ilustrativa em [developer journey](https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/developer-journey.md).
+
 ## 1. Instale o toolkit
 
 Execute no diretório raiz do projeto:

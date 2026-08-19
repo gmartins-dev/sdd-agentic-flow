@@ -313,6 +313,15 @@ test('init writes a localized usage stub with mermaid, bundled guides, and inter
   assert.match(usage, /saf-route/);
   assert.match(usage, /```mermaid/);
   assert.match(usage, /saf-create-spec/);
+  assert.match(usage, /SAF defines workflow constraints and admissible transitions/);
+  assert.match(
+    fs.readFileSync(guideEnPath, 'utf8'),
+    /SAF defines workflow constraints and admissible transitions/,
+  );
+  assert.match(
+    fs.readFileSync(guideEnPath, 'utf8'),
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/developer-journey\.md/,
+  );
   assert.match(usage, /\[Full guide\]\(saf-skills-usage-guide\.md\)/);
   assert.match(
     usage,
@@ -340,6 +349,15 @@ test('init --language pt-BR writes a Portuguese usage stub and links to the pt-B
   const usage = fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/usage.md'), 'utf8');
   assert.match(usage, /Guia completo/);
   assert.match(usage, /\[Guia completo\]\(saf-skills-usage-guide\.pt-BR\.md\)/);
+  assert.match(usage, /SAF define restrições de workflow e transições admissíveis/);
+  assert.match(
+    fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.pt-BR.md'), 'utf8'),
+    /SAF define restrições de workflow e transições admissíveis/,
+  );
+  assert.match(
+    fs.readFileSync(path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.pt-BR.md'), 'utf8'),
+    /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\/blob\/main\/docs\/developer-journey\.md/,
+  );
   assert.ok(!fs.existsSync(path.join(cwd, '.sdd-agentic-flow/saf-skills-usage-guide.md')));
   fs.rmSync(cwd, { recursive: true, force: true });
 });

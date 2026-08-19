@@ -1,6 +1,6 @@
 {
   "name": "local-files",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "Core workflow for local source files.",
   "skills": [
     "saf-setup",

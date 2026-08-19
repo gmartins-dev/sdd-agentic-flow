@@ -1,7 +1,16 @@
 # Canonical vocabulary
 
-Use one term for one concept. These terms describe the harness, not a host
-runtime implementation.
+Use one term for one concept. These terms describe SAF's outer workflow harness,
+not a host runtime implementation.
+
+- **Agentic Workflow Harness:** SAF's public category: repository-local contracts
+  and control artifacts that bound and make coding-agent workflow transitions assessable.
+- **Host runtime harness:** the coding-agent host's model, sessions, tools, workers,
+  hooks, and sandbox. SAF does not own or implement it.
+- **Skill / capability:** public engineering guidance, not a persistent agent, worker,
+  or runtime execution layer.
+- **Runtime execution:** host-owned inspection, editing, command execution, and delegation
+  after an admissible or human-authorized transition.
 
 | Layer | Terms | Meaning |
 | --- | --- | --- |

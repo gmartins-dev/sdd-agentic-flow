@@ -10,4 +10,6 @@
 - Session handoffs via `handoff.md` when work spans agents or sessions (see [handoff standard](../shared/references/handoff-standard.md)).
 - Language-agnostic engineering principles as a shared contract, not a skill (see [engineering principles](engineering-principles.md)).
 - The [engineering model](engineering-model.md) explains the repository-native
-  control layer: SAF defines admissible transitions while the host executes.
+  engineering control-plane role: SAF is an Agentic Workflow Harness that defines
+  admissible transitions while the coding-agent host executes. Skills remain public
+  capabilities, not runtime mechanics.

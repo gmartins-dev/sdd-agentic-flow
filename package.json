@@ -1,7 +1,7 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "4.3.0",
-  "description": "A local-first, zero-dependency engineering control plane for Spec-Driven Development coding-agent workflows.",
+  "version": "4.4.0",
+  "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
     "node": ">=22"
@@ -45,7 +45,7 @@
     "lint:yaml:fix": "prettier --write \".github/workflows/**/*.{yml,yaml}\"",
     "docs:lint": "markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\"",
     "docs:diagrams": "tsx scripts/sync-workflow-diagram.ts --check && tsx scripts/check-mermaid.ts",
-    "docs:check": "npm run docs:lint && tsx scripts/check-markdown-links.ts && npm run docs:diagrams",
+    "docs:check": "npm run docs:lint && tsx scripts/check-markdown-links.ts && tsx scripts/check-product-positioning.ts && npm run docs:diagrams",
     "docs:fix": "tsx scripts/sync-workflow-diagram.ts && git ls-files \"*.md\" \":!.specs/**\" | xargs prettier --write && markdownlint \"**/*.md\" --ignore \"**/node_modules/**\" --ignore \"**/.specs/**\" --ignore \"**/.sdd-agentic-flow/**\" --fix",
     "lint:fix:all": "npm run lint:biome:fix && npm run lint:yaml:fix && npm run docs:fix",
     "sanitize": "bash ./scripts/sanitize-private-context.sh",

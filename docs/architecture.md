@@ -8,7 +8,7 @@ The sections below show how those pieces fit together.
 ## Layers
 
 ```text
-CLI (dist/sdd-agentic-flow.js, built from src/)
+CLI (bin/sdd-agentic-flow.js wrapper → dist/sdd-agentic-flow.js, built from src/)
   |  list, init, discover, context, install, doctor, uninstall
   v
 Pack registry (presets/*.json)
@@ -36,7 +36,7 @@ authors SDD artifacts; it only creates configuration, discovers context, and cop
 ## Maintainer source layout
 
 Maintainer code lives under `src/` (strict TypeScript) and compiles to `dist/` for the
-published npm bin (`dist/sdd-agentic-flow.js`). Modules are flat — grouped by responsibility,
+published npm bin (`bin/sdd-agentic-flow.js`, which requires `dist/sdd-agentic-flow.js`). Modules are flat — grouped by responsibility,
 not by framework layer.
 
 | Module | Responsibility |

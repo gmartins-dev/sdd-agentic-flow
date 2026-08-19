@@ -2,6 +2,10 @@
 
 Use the public `sdd-agentic-flow` skills in a local coding-agent workflow. The toolkit keeps specifications, prompts, changes, and validation evidence in the project so a person can inspect each step.
 
+SAF defines workflow constraints and admissible transitions. The coding-agent host executes.
+Current evidence supports verification before work can advance. See the illustrative
+[developer journey](https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/developer-journey.md).
+
 ## 1. Install the toolkit
 
 Run these commands from the project root:

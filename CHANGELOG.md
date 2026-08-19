@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 4.4.0
+
+Agentic Workflow Harness identity and developer lifecycle — compatible minor release.
+
+**Added:**
+
+- Public taxonomy, illustrative developer journey, and focused positioning-regression sensor.
+- Package-lock root metadata to the version stamp and consistency contract.
+
+**Changed:**
+
+- Active documentation and generated guidance distinguish SAF workflow constraints from coding-agent-host runtime execution.
+- Optional companion tooling and the published npm bin wrapper chain are documented accurately.
+
+**Compatibility:**
+
+- No runtime capability, public-skill, configuration, artifact schema, dependency, telemetry, or automatic Git change.
+
 ## 4.3.0
 
 Engineering control-plane coherence — compatible minor release.

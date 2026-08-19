@@ -2,11 +2,15 @@
 
 The agent said done. The spec, the tests, and the PR still disagree. That mismatch is what this toolkit is for.
 
-Expanded narrative: see the [README](../README.md), [SDD methodology](sdd-methodology.md), and the [mental model](sdd-agentic-flow-model.md) (Prompt → Context → Harness → Loop + SDD).
+Expanded narrative: see the [README](../README.md), [SDD methodology](sdd-methodology.md), [engineering model](engineering-model.md), and the [developer journey](developer-journey.md).
 
 Coding agents can implement before understanding the request, lose task boundaries, or report completion without executable evidence. **sdd-agentic-flow** keeps the workflow local and explicit so you approve from artifacts—not from chat confidence.
 
-The toolkit is more than a prompt pack: **prompts** tell the agent what to do; **context** (`.specs/`, `.sdd-agentic-flow/`) holds durable project state; the **harness** (modes, contracts, guardrails) bounds behavior; the **loop** (autonomy, `loop-state.md`, resume) helps multi-step work finish without losing place. **SDD** defines what “done” means up front. Skills are the **execution layer** of that harness, not the whole product — see README [`## What is sdd-agentic-flow?`](../README.md#what-is-sdd-agentic-flow).
+The toolkit is more than a prompt pack: durable intent lives in specifications; bounded work
+selects minimum sufficient context and a public capability; policy and gates constrain the
+next transition; the coding-agent host executes. Current evidence supports verification, which
+evaluates requirements before work can advance. Skills are the public capability layer, while
+the host owns runtime execution.
 
 | Common failure | Local response |
 | --- | --- |

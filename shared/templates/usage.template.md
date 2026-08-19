@@ -11,6 +11,10 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 When the next step is unclear, invoke the `saf-route` skill. It recommends one skill from
 that chain. It does not run the workflow for you.
 
+SAF defines workflow constraints and admissible transitions. The coding-agent host executes.
+Current evidence supports verification before work can advance. Read the canonical developer
+journey: <https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/developer-journey.md>.
+
 ## Workflow diagram
 
 {{WORKFLOW_DIAGRAM_SECTION}}

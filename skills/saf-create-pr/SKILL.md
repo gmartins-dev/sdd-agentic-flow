@@ -2,7 +2,7 @@
 name: saf-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 4.3.0
+  version: 4.4.0
   pack: pr
 extends: saf-check-task
 requires: [config, task-evidence]

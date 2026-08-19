@@ -26,6 +26,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [engineering-model.md](engineering-model.md) | Control-plane principles and host boundary |
 | [sdd-methodology.md](sdd-methodology.md) | What SDD means in this toolkit and why specs help agents |
 | [saf-skills-usage-guide.md](saf-skills-usage-guide.md) | Running the full SDD chain with coding agents |
+| [developer-journey.md](developer-journey.md) | Illustrative intent-to-transition developer lifecycle |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
 | [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
 | [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, outputs, packs) |
@@ -64,7 +65,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [using-with-claude-code.md](using-with-claude-code.md) | Claude Code setup |
 | [using-with-codex.md](using-with-codex.md) | Codex CLI setup |
 | [using-with-vscode-copilot.md](using-with-vscode-copilot.md) | VS Code + GitHub Copilot setup |
-| [recommended-harness.md](recommended-harness.md) | Optional AI development harness |
+| [recommended-harness.md](recommended-harness.md) | Optional companion tooling |
 
 ## Architecture and compatibility
 

@@ -19,6 +19,27 @@ function getPackageVersion(root = process.cwd()) {
   return JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 }
 
+function getLockfileVersions(root = process.cwd()) {
+  const file = path.join(root, 'package-lock.json');
+  let lock: { version?: unknown; packages?: Record<string, { version?: unknown }> };
+  try {
+    lock = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `package-lock.json is missing or invalid: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (typeof lock.version !== 'string' || typeof lock.packages?.['']?.version !== 'string') {
+    throw new Error('package-lock.json must contain root version and packages[""].version');
+  }
+  return {
+    file: 'package-lock.json',
+    version: lock.version,
+    rootVersion: lock.packages[''].version,
+    lock,
+  };
+}
+
 function listSkillVersions(root = process.cwd()) {
   return fs
     .readdirSync(path.join(root, 'skills'), { withFileTypes: true })
@@ -106,6 +127,7 @@ function stampPresetFile(abs: string, packageVersion: string): boolean {
 function stampVersions(root = process.cwd()) {
   const packageVersion = getPackageVersion(root);
   const written: string[] = [];
+  const lockfile = getLockfileVersions(root);
   for (const skill of listSkillVersions(root)) {
     if (stampSkillFile(path.join(root, skill.file), skill.file, packageVersion)) {
       written.push(skill.file);
@@ -115,6 +137,14 @@ function stampVersions(root = process.cwd()) {
     if (stampPresetFile(path.join(root, preset.file), packageVersion)) {
       written.push(preset.file);
     }
+  }
+  if (lockfile.version !== packageVersion || lockfile.rootVersion !== packageVersion) {
+    lockfile.lock.version = packageVersion;
+    const rootPackage = lockfile.lock.packages?.[''];
+    if (!rootPackage) throw new Error('package-lock.json must contain packages[""].version');
+    rootPackage.version = packageVersion;
+    fs.writeFileSync(path.join(root, lockfile.file), `${JSON.stringify(lockfile.lock, null, 2)}\n`);
+    written.push(lockfile.file);
   }
   return { packageVersion, written };
 }
@@ -127,8 +157,14 @@ function checkVersionConsistency(root = process.cwd()) {
   const isDrifted = (version: string | null | undefined) =>
     !version || compareVersions(version, packageVersion) !== 0;
   const cli = listCliVersion(root);
+  const lockfile = getLockfileVersions(root);
   return {
     packageVersion,
+    lockfile: {
+      ...lockfile,
+      versionDrifted: isDrifted(lockfile.version),
+      rootVersionDrifted: isDrifted(lockfile.rootVersion),
+    },
     skills: listSkillVersions(root).map((entry) => ({
       ...entry,
       drifted: isDrifted(entry.version),
@@ -143,6 +179,7 @@ function checkVersionConsistency(root = process.cwd()) {
 
 export {
   checkVersionConsistency,
+  getLockfileVersions,
   getPackageVersion,
   listCliVersion,
   listPresetVersions,
@@ -166,8 +203,14 @@ if (isMain) {
       for (const file of written) console.log(`  ${file}`);
     }
   }
-  const { packageVersion, skills, presets, cli } = checkVersionConsistency();
+  const { packageVersion, lockfile, skills, presets, cli } = checkVersionConsistency();
   const drifted = [
+    ...(lockfile.versionDrifted
+      ? [`package-lock.json.version (version: ${lockfile.version})`]
+      : []),
+    ...(lockfile.rootVersionDrifted
+      ? [`package-lock.json.packages[""].version (version: ${lockfile.rootVersion})`]
+      : []),
     ...skills
       .filter((entry) => entry.drifted)
       .map((entry) => `${entry.file} (version: ${entry.version})`),
@@ -188,5 +231,7 @@ if (isMain) {
     console.error('run `npm run version:stamp` and commit the result');
     process.exit(1);
   }
-  console.log(`all skill, preset, and CLI versions match package.json (${packageVersion})`);
+  console.log(
+    `all package-lock root, skill, preset, and CLI versions match package.json (${packageVersion})`,
+  );
 }

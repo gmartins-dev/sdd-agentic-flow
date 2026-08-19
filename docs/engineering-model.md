@@ -8,6 +8,27 @@ worker runtime, session store, or agent framework.
 > Evidence is observable. Verification is independent. Autonomy is conditional.
 > Humans retain authority.
 
+## Product identity
+
+`sdd-agentic-flow` is a **Spec-Driven Agentic Workflow Harness** for coding agents.
+It acts as a repository-native engineering control plane while the coding-agent host
+owns runtime execution.
+
+| Level | SAF term |
+| --- | --- |
+| Public category | Agentic Workflow Harness |
+| Primary full category | Spec-Driven Agentic Workflow Harness |
+| Explicit target form | Spec-Driven Coding-Agent Workflow Harness |
+| Architecture role | repository-native engineering control plane |
+| Methodology | Spec-Driven Development |
+| Runtime owner | coding-agent host |
+
+The host runtime harness owns models, sessions, tools, workers, hooks, and sandboxing.
+SAF is the outer workflow harness: intent, specifications, capabilities, policy, artifacts,
+evidence, verification, and admissible transitions. Skills are public capabilities; they are
+not runtime execution mechanics. See the [canonical vocabulary](../shared/references/canonical-vocabulary.md)
+and the [developer journey](developer-journey.md).
+
 ## Principles
 
 1. **Durable intent** — specifications preserve the behavior and decision context.

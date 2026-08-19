@@ -6,15 +6,15 @@
   </picture>
 </p>
 
-**sdd-agentic-flow** is a local-first, zero-dependency engineering control plane for Spec-Driven Development (SDD) coding-agent workflows.
+**sdd-agentic-flow** is a local-first, zero-dependency **Spec-Driven Agentic Workflow Harness** for coding agents.
 
 Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
 
 ## What is sdd-agentic-flow?
 
-**sdd-agentic-flow is a repository-native engineering control plane that turns specification-driven development into bounded, verifiable coding-agent workflows.**
+**sdd-agentic-flow is an Agentic Workflow Harness: a repository-native engineering control plane that turns specification-driven development into bounded, verifiable coding-agent workflows.**
 
-It is not just a collection of Agent Skills. Skills are the **execution layer**. Around them sit the methodology, artifact contracts, condensed TLC and TDD baselines, evidence model, configuration, CLI, and lifecycle.
+It is not just a collection of Agent Skills. Skills are the public **capability layer**; the coding-agent host owns runtime execution. Around them sit the methodology, artifact contracts, condensed TLC and TDD baselines, evidence model, configuration, CLI, and lifecycle.
 
 The goal is not agent autonomy. The goal is structured, traceable, verifiable agent-assisted engineering, with humans as the gate.
 
@@ -24,7 +24,7 @@ Sources that inform this design — tagged by epistemic role, not as specificati
 
 Structured specs, clear boundaries, and human governance:
 
-- **Execution layer:** capability-contracted Markdown skills on condensed TLC and TDD baselines.
+- **Capability layer:** capability-contracted Markdown skills on condensed TLC and TDD baselines.
 - **Adaptive sizing:** Feature-profile sizing with optional auto-discovered project context.
 - **Zero footprint by default:** User-local skill install; `.sdd-agentic-flow/config.yml` only when you create it.
 - **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
@@ -164,7 +164,8 @@ The generic [task-management example](examples/golden/task-management/) shows on
 
 | Topic | Doc |
 | --- | --- |
-| Mental model (4 layers + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
+| Engineering model and product identity | [docs/engineering-model.md](docs/engineering-model.md) |
+| Illustrative developer journey | [docs/developer-journey.md](docs/developer-journey.md) |
 | SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | All 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
@@ -298,7 +299,7 @@ For the long-form version of this table, see the [skills catalog](docs/skills-ca
 
 ## Agent workflows
 
-Read the [skills usage guide](docs/saf-skills-usage-guide.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md), and [prompt recipes](docs/prompt-recipes.md). For an optional AI development harness, see [recommended harness](docs/recommended-harness.md).
+Read the [skills usage guide](docs/saf-skills-usage-guide.md), [developer journey](docs/developer-journey.md), [Codex CLI](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md), and [prompt recipes](docs/prompt-recipes.md). For optional companion tooling, see the [recommended companion stack](docs/recommended-harness.md).
 
 The skills are Markdown-first and installed locally. See [agent compatibility](docs/agent-compatibility.md) for validated workflows and limits.
 

@@ -1,5 +1,6 @@
 # Roadmap
 
+- **v4.4.0 (2026-08-19):** Agentic Workflow Harness identity and developer lifecycle. Audited A1–A4: root lock metadata is stamped and checked, architecture documents the npm wrapper chain, optional companion tooling is scoped, and active documentation distinguishes skills/capabilities from host runtime execution. Added a practical lifecycle guide and narrow positioning sensor; no runtime, scheduler, dependency, or remote automation was added.
 - **v4.3.0 (2026-08-19):** Engineering control-plane coherence. Qualified public model and host-capability matrix; `doctor --harness` projects canonical readiness checks; Evidence Graph gains a safe deterministic HTML projection that writes only with explicit `--output`. No runtime, scheduler, new skill, telemetry, or implicit file write.
 - **v4.2.0 (2026-08-17):** Init and local artifact polish. Enriched `usage.md` generation
   (workflow mermaid, localized stub, bundled guide copy), `inferInitDefaults()` for contextual

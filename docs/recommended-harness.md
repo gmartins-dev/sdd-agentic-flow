@@ -1,6 +1,7 @@
-# Recommended optional harness
+# Recommended optional companion stack
 
-`sdd-agentic-flow` is self-contained. The tools below are optional complements, not requirements to install, run, or benefit from the toolkit.
+SAF is the workflow harness. The tools below are optional coding-agent-host, runtime, and
+development-tooling complements; they do not replace or enlarge SAF's runtime ownership.
 
 ## Core
 

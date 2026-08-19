@@ -20,7 +20,7 @@ Read [docs/trust-model.md](docs/trust-model.md) for what the CLI does and does n
 
 ## Shared references vs docs
 
-Skills load canonical rules from `shared/references/` at install time (TDD baseline, safety, routing, evidence, handoffs). Human-oriented explanations and CLI surfaces live under [docs/](docs/README.md). When a doc points at a shared reference, treat the shared file as the skill contract and the doc as the reader's guide.
+Skills are the public capability layer; the coding-agent host owns runtime execution. SAF defines workflow constraints and admissible transitions, while current evidence supports verification before work can advance. Skills load canonical rules from `shared/references/` at install time (TDD baseline, safety, routing, evidence, handoffs). Human-oriented explanations and CLI surfaces live under [docs/](docs/README.md). When a doc points at a shared reference, treat the shared file as the skill contract and the doc as the reader's guide.
 
 ## Language
 

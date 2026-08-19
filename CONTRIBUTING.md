@@ -52,9 +52,10 @@ is not on `PATH`.
 
 ## Version bumps
 
-Edit only `package.json` `"version"`, then run `npm run version:stamp` and add the matching
-`## x.y.z` section to `CHANGELOG.md`. The stamp writes skill `metadata.version` and preset
-`version` fields; the CLI reads `package.json` at runtime. See [docs/publishing.md](docs/publishing.md).
+Edit only `package.json` `"version"`, then run `npm run version:stamp`, check version consistency,
+and add the matching `## x.y.z` section to `CHANGELOG.md`. The stamp writes skill
+`metadata.version`, preset version fields, and the two package-lock root version fields; the CLI
+reads `package.json` at runtime. See [docs/publishing.md](docs/publishing.md).
 Do not hand-edit those copies, and do not stamp changelog or roadmap history.
 
 ## Testing CLI changes locally, without publishing

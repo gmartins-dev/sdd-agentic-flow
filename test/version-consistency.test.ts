@@ -28,6 +28,10 @@ function writeFixture({
     path.join(root, 'package.json'),
     `${JSON.stringify({ name: 'fixture', version }, null, 2)}\n`,
   );
+  fs.writeFileSync(
+    path.join(root, 'package-lock.json'),
+    `${JSON.stringify({ name: 'fixture', version, lockfileVersion: 3, packages: { '': { name: 'fixture', version }, 'node_modules/demo': { version: '1.0.0' } } }, null, 2)}\n`,
+  );
   fs.mkdirSync(path.join(root, 'dist'));
   fs.mkdirSync(path.join(root, 'skills', 'demo'), { recursive: true });
   fs.mkdirSync(path.join(root, 'presets'));
@@ -56,6 +60,8 @@ test('this repository is version-consistent and the CLI derives VERSION from pac
   assert.ok(result.presets.length > 0);
   assert.ok(result.skills.every((entry) => !entry.drifted));
   assert.ok(result.presets.every((entry) => !entry.drifted));
+  assert.equal(result.lockfile.versionDrifted, false);
+  assert.equal(result.lockfile.rootVersionDrifted, false);
 });
 
 test('a hardcoded CLI VERSION is always drift, even when the number matches package.json', () => {
@@ -96,4 +102,32 @@ test('stampVersions writes package.json into skill frontmatter and presets, not 
   assert.equal(checkVersionConsistency(root).cli.drifted, false);
   assert.ok(checkVersionConsistency(root).skills.every((entry) => !entry.drifted));
   assert.ok(checkVersionConsistency(root).presets.every((entry) => !entry.drifted));
+});
+
+test('lockfile root mismatches are reported and stamping preserves every other field', () => {
+  const root = writeFixture({ version: '2.0.0' });
+  const lockPath = path.join(root, 'package-lock.json');
+  const before = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  before.version = '1.0.0';
+  before.packages[''].version = '1.1.0';
+  fs.writeFileSync(lockPath, `${JSON.stringify(before, null, 2)}\n`);
+  const inconsistent = checkVersionConsistency(root);
+  assert.equal(inconsistent.lockfile.versionDrifted, true);
+  assert.equal(inconsistent.lockfile.rootVersionDrifted, true);
+  stampVersions(root);
+  const after = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  after.version = before.version;
+  after.packages[''].version = before.packages[''].version;
+  assert.deepEqual(after, before);
+});
+
+test('missing, invalid, and incomplete lockfiles fail closed', () => {
+  for (const body of [undefined, '{', '{}']) {
+    const root = writeFixture();
+    const lockPath = path.join(root, 'package-lock.json');
+    if (body === undefined) fs.rmSync(lockPath);
+    else fs.writeFileSync(lockPath, body);
+    assert.throws(() => checkVersionConsistency(root), /package-lock\.json/);
+    assert.throws(() => stampVersions(root), /package-lock\.json/);
+  }
 });

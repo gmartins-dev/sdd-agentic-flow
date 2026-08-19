@@ -4,10 +4,14 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 ## Positioning
 
-**sdd-agentic-flow** is a repository-native **engineering control plane for
+**sdd-agentic-flow** is a **Spec-Driven Agentic Workflow Harness** and repository-native **engineering control plane for
 Spec-Driven coding-agent workflows**: Markdown skills, local CLI, and
 evidence-first gates—not an agent runtime or scheduler. Skills are
 capabilities; host workers and loops are execution mechanics.
+
+The short public category is **Agentic Workflow Harness**; the explicit target form is
+**Spec-Driven Coding-Agent Workflow Harness**. Read the [developer journey](developer-journey.md)
+for an illustrative lifecycle.
 
 > The model proposes. The host executes. SAF defines constraints and admissible
 > transitions. Sensors observe. Evidence records. Verification evaluates.

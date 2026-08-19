@@ -2,15 +2,15 @@
 
 Versão prática em português. Leia o [README principal em inglês](README.md) para a referência técnica completa.
 
-**sdd-agentic-flow** é um plano de controle de engenharia local-first e zero-dependência para fluxos de Spec-Driven Development (SDD) com agentes de código.
+**sdd-agentic-flow** é um **Spec-Driven Agentic Workflow Harness** local-first e zero-dependência para agentes de código.
 
 Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpriu a intenção. Este toolkit fecha esse gap: **spec primeiro, evidência antes de concluir, você aprova o merge.**
 
 ## O que é o sdd-agentic-flow?
 
-**O sdd-agentic-flow é um plano de controle de engenharia nativo do repositório que transforma desenvolvimento orientado a especificações em workflows limitados e verificáveis para coding agents.**
+**O sdd-agentic-flow é um Agentic Workflow Harness: um plano de controle de engenharia nativo do repositório que transforma desenvolvimento orientado a especificações em workflows limitados e verificáveis para coding agents.**
 
-Não é só um pacote de Agent Skills. As skills são a **camada de execução** (*execution layer*). Em volta delas: metodologia, contratos de artefato, baselines, modelo de evidência, configuração, CLI e lifecycle.
+Não é só um pacote de Agent Skills. As skills são a camada pública de **capacidade**; o host de agentes de código é dono da execução em runtime. Em volta delas: metodologia, contratos de artefato, baselines, modelo de evidência, configuração, CLI e lifecycle.
 
 O objetivo não é autonomia do agente. O objetivo é engenharia assistida por agentes, estruturada, rastreável e verificável, com humanos como o gate.
 
@@ -20,7 +20,7 @@ Fontes que informam este desenho — com papéis epistêmicos, não como specs �
 
 Specs estruturadas, limites claros e governança humana:
 
-- **Camada de execução:** skills Markdown com contrato de capacidade sobre baselines TLC e TDD condensados.
+- **Camada de capacidade:** skills Markdown com contrato de capacidade sobre baselines TLC e TDD condensados.
 - **Dimensionamento adaptativo:** perfis de feature com contexto de projeto auto-descoberto opcional.
 - **Zero footprint por padrão:** instalação user-local; `.sdd-agentic-flow/config.yml` só quando você cria.
 - **Humano no loop:** o toolkit estrutura o trabalho do agente; você mantém a autoridade final de revisão.
@@ -28,7 +28,7 @@ Specs estruturadas, limites claros e governança humana:
 
 Para times AI-first e AI-driven, essa divisão é o ponto: humanos arquitetam e verificam; agentes executam sob este harness. Craftsmanship continua importando — agentes falham em código que humanos não conseguem ler. Este README não cita multiplicadores de token ou velocidade.
 
-📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md) · 🏗 [Arquitetura](docs/architecture.md)
+📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md) · 🧭 [Jornada do desenvolvedor](docs/developer-journey.md) · 🏗 [Arquitetura](docs/architecture.md)
 
 ## O problema
 
@@ -160,7 +160,8 @@ O toolkit usa um baseline TLC para planejamento e um baseline TDD para implement
 
 | Tópico | Doc |
 | --- | --- |
-| Modelo mental (4 camadas + SDD) | [docs/sdd-agentic-flow-model.md](docs/sdd-agentic-flow-model.md) |
+| Modelo de engenharia e identidade do produto | [docs/engineering-model.md](docs/engineering-model.md) |
+| Jornada ilustrativa do desenvolvedor | [docs/developer-journey.md](docs/developer-journey.md) |
 | Metodologia SDD | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Arquitetura | [docs/architecture.md](docs/architecture.md) |
 | As 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |

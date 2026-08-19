@@ -10,6 +10,10 @@ Plan → Prompt → Implement → Check → PR → Review → Fix → Validate
 Quando o próximo passo não estiver claro, invoque a skill `saf-route`. Ela recomenda uma skill
 dessa cadeia. Ela não executa o fluxo por você.
 
+SAF define restrições de workflow e transições admissíveis. O host de agentes de código executa.
+As evidências atuais apoiam a verificação antes que o trabalho avance. Leia a jornada canônica:
+<https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/developer-journey.md>.
+
 ## Diagrama do fluxo
 
 {{WORKFLOW_DIAGRAM_SECTION}}

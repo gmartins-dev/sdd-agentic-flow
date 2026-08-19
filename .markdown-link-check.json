@@ -9,6 +9,7 @@
     { "pattern": "^https://npm.pkg.github.com" },
     { "pattern": "^https://martinfowler.com" },
     { "pattern": "^https://agent-skills.techleads.club" },
+    { "pattern": "^https?://" },
     { "pattern": "^\\.\\./sdd-agentic-flow-shared/" }
   ]
 }

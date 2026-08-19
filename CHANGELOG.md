@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 4.3.0
+
+Engineering control-plane coherence — compatible minor release.
+
+**Added:**
+
+- Qualified engineering-model and host-capabilities documentation.
+- `doctor --harness`, a curated projection of canonical repository/project readiness checks.
+- `doctor --evidence-graph <slug> --html [--output <path>]`, a safe deterministic HTML projection.
+
+**Changed:**
+
+- Public model distinguishes host execution from SAF constraints and treats Evidence Graph as a read-only projection.
+- Shared verification guidance prefers fresh independent context when a host supports it and defines an explicit re-grounding fallback.
+
+**Compatibility:**
+
+- No runtime dependencies, public skills, scheduler, telemetry, implicit HTML write, or automatic Git mutation added.
+
 ## 4.2.0
 
 Init, usage guide, and local artifact improvements.

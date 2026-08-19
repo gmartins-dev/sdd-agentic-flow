@@ -1,5 +1,6 @@
 # Roadmap
 
+- **v4.3.0 (2026-08-19):** Engineering control-plane coherence. Qualified public model and host-capability matrix; `doctor --harness` projects canonical readiness checks; Evidence Graph gains a safe deterministic HTML projection that writes only with explicit `--output`. No runtime, scheduler, new skill, telemetry, or implicit file write.
 - **v4.2.0 (2026-08-17):** Init and local artifact polish. Enriched `usage.md` generation
   (workflow mermaid, localized stub, bundled guide copy), `inferInitDefaults()` for contextual
   `config.yml`, automatic `.git/info/exclude` for user-scope installs, canonical docs renamed to

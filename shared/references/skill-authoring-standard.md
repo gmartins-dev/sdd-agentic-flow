@@ -76,7 +76,7 @@ skill may keep domain-specific vocabulary for how it applies that principle (see
 evidence-standard.md for the six skills that already do), but the vocabulary must never
 contradict the shared principle.
 
-## v4 capability discoverability
+## Capability contract guidance
 
 Every skill must make discoverable (within the six-section shape, no new frontmatter fields):
 

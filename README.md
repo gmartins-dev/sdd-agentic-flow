@@ -6,13 +6,13 @@
   </picture>
 </p>
 
-**sdd-agentic-flow** is a local-first, zero-dependency Spec-Driven Development (SDD) toolkit for coding-agent workflows.
+**sdd-agentic-flow** is a local-first, zero-dependency engineering control plane for Spec-Driven Development (SDD) coding-agent workflows.
 
 Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
 
 ## What is sdd-agentic-flow?
 
-**sdd-agentic-flow is a local-first agentic software-engineering harness that turns specification-driven development into a structured, verifiable workflow for coding agents.**
+**sdd-agentic-flow is a repository-native engineering control plane that turns specification-driven development into bounded, verifiable coding-agent workflows.**
 
 It is not just a collection of Agent Skills. Skills are the **execution layer**. Around them sit the methodology, artifact contracts, condensed TLC and TDD baselines, evidence model, configuration, CLI, and lifecycle.
 
@@ -48,20 +48,20 @@ You delegate a task. The agent jumps to code, blurs boundaries, and marks work d
 | Output is accepted without evidence | `saf-check-task` and `saf-validate` |
 | A PR loses traceability to the feature | `saf-create-pr`, `saf-review-pr`, and `saf-fix-pr` |
 
-See [why this exists](docs/why-this-exists.md) for the short form. For the four-layer mental model (Prompt → Context → Harness → Loop + SDD), see [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
+See [why this exists](docs/why-this-exists.md) for the short form. For the control-plane mental model, see [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md) and the [engineering model](docs/engineering-model.md).
 
 ## Beyond prompts
 
-Most agent tooling stops at better prompts. **sdd-agentic-flow** adds the layers prompts alone cannot hold:
+Most agent tooling stops at better prompts. **sdd-agentic-flow** makes the engineering boundary explicit:
 
-| Layer | One-line role |
+| Concern | One-line role |
 | --- | --- |
 | Prompt | Task instructions per skill |
 | Context | Specs + project context + config |
 | Harness | Modes, contracts, safety, evidence rules |
-| Loop | Autonomy, guardrails, loop-state, resume |
+| Host execution | Loops, sessions, and workers chosen by the host |
 
-**SDD** defines done before implementation starts. The CLI installs and validates; your agent executes. Read the [mental model doc](docs/sdd-agentic-flow-model.md) for the full map.
+**SDD** defines done before implementation starts. SAF defines constraints and admissible transitions; the host executes. Evidence Graph is a read-only traceability projection, not an execution graph. Read the [engineering model](docs/engineering-model.md) for the full map.
 
 ## The solution
 
@@ -93,7 +93,7 @@ npx sdd-agentic-flow install core
 npx sdd-agentic-flow doctor
 ```
 
-That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspect, guide, and maintain — it does not invoke skills. See [What is SDD?](docs/what-is-sdd.md) and the [commands reference](docs/commands.md).
+That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspect, guide, and maintain — it does not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md), and the [commands reference](docs/commands.md).
 
 In a real terminal, guided `init` includes an operating-policy step (**Supervised** is recommended on Enter-through). Use `init --preset` or `config policy` to set policy explicitly in scripts.
 

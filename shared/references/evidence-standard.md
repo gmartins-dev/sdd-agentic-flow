@@ -102,6 +102,11 @@ Bad:  oracle = implementation(input); actual = implementation(input)
 Good: oracle = spec/acceptance/invariant/repo contract; actual = implementation(input)
 ```
 
+Correctness dimensions such as structural validity, behavioral evidence,
+domain/contract validity, and requirement coverage are explanatory lenses, not
+a new sensor taxonomy or mandatory gate pipeline. Domain semantics remain part
+of the oracle; sensors observe whether that oracle holds.
+
 ## Adequacy
 
 A sensor is adequate only when all that apply hold:

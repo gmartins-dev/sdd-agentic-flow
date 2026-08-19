@@ -318,7 +318,7 @@ START
   configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
   discover [--force] [--quiet]           Refresh auto-discovered project context
   install <pack> [--scope user|project] [--agent ...] [--plan] [--interactive] [--quiet]  Install a pack (default: user scope, zero project footprint)
-  doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+  doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 
 OPERATE
   config [show|policy]                   Inspect or change operating policy
@@ -1082,6 +1082,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       return;
     }
     let evidenceGraphSlug: string | undefined;
+    let output: string | undefined;
     const doctorFlags: string[] = [];
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
@@ -1093,11 +1094,21 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         }
         evidenceGraphSlug = slug;
         index += 1;
+      } else if (arg === '--output') {
+        const target = args[index + 1];
+        if (!target || target.startsWith('--')) {
+          fail(USAGE.doctor);
+          return;
+        }
+        output = target;
+        index += 1;
       } else if (arg) doctorFlags.push(arg);
     }
     const valid = doctorFlags.every(
       (arg: string) =>
         arg === '--json' ||
+        arg === '--harness' ||
+        arg === '--html' ||
         arg === '--smoke' ||
         arg === '--contracts' ||
         arg === '--autonomy' ||
@@ -1106,7 +1117,13 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     );
     if (
       !valid ||
-      (evidenceGraphSlug && doctorFlags.some((arg) => arg !== '--json' && arg !== '--verbose'))
+      (evidenceGraphSlug &&
+        doctorFlags.some((arg) => !['--json', '--verbose', '--html'].includes(arg))) ||
+      (doctorFlags.includes('--html') && doctorFlags.includes('--json')) ||
+      (doctorFlags.includes('--html') && !evidenceGraphSlug) ||
+      (output && (!evidenceGraphSlug || !doctorFlags.includes('--html'))) ||
+      (doctorFlags.includes('--harness') &&
+        doctorFlags.some((arg) => !['--harness', '--json', '--verbose'].includes(arg)))
     ) {
       if (doctorFlags.includes('--json')) {
         process.stdout.write(
@@ -1118,12 +1135,15 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     } else
       await doctor(cwd, {
         json: doctorFlags.includes('--json'),
+        harness: doctorFlags.includes('--harness'),
         smoke: doctorFlags.includes('--smoke'),
         contracts: doctorFlags.includes('--contracts'),
         autonomy: doctorFlags.includes('--autonomy'),
         verbose: doctorFlags.includes('--verbose'),
         checkUpdates: doctorFlags.includes('--check-updates'),
         ...(evidenceGraphSlug ? { evidenceGraph: evidenceGraphSlug } : {}),
+        evidenceGraphHtml: doctorFlags.includes('--html'),
+        ...(output ? { output } : {}),
         ascii,
       });
   } else if (command === 'upgrade') {

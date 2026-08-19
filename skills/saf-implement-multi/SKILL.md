@@ -2,7 +2,7 @@
 name: saf-implement-multi
 description: Implement multiple SDD tasks using dependency-aware waves, isolated Git worktrees, and concurrent workers when safe and authorized. Use for multi-task implementation; use saf-implement for exactly one task.
 metadata:
-  version: 4.2.0
+  version: 4.3.0
   pack: multi-worktree
 extends: saf-create-prompts
 requires: [config, spec-package]

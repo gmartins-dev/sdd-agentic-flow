@@ -33,7 +33,9 @@ for full usage text.
 | `install <pack> --interactive` | Guided model, targets, preflight, confirm |
 | `install <pack> --scope project` | Project install to `.agents/skills/` only |
 | `doctor` | Read-only health check |
+| `doctor --harness` | Curated repository/project harness-readiness projection |
 | `doctor --evidence-graph <slug>` | Read-only v4 requirement traceability graph |
+| `doctor --evidence-graph <slug> --html [--output <path>]` | HTML evidence-graph projection; stdout by default, explicit output path to write |
 | `upgrade` | Interactive CLI/skill upgrade |
 | `uninstall --plan` / `--apply` | Preview or remove installed assets |
 | `uninstall --plan --purge` / `--apply --purge --yes` | Cross-scope clean reset for v4 reinstall |

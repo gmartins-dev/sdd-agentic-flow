@@ -2,13 +2,13 @@
 
 Versão prática em português. Leia o [README principal em inglês](README.md) para a referência técnica completa.
 
-**sdd-agentic-flow** é um toolkit local-first e zero-dependência de Spec-Driven Development (SDD) para fluxos com agentes de código.
+**sdd-agentic-flow** é um plano de controle de engenharia local-first e zero-dependência para fluxos de Spec-Driven Development (SDD) com agentes de código.
 
 Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpriu a intenção. Este toolkit fecha esse gap: **spec primeiro, evidência antes de concluir, você aprova o merge.**
 
 ## O que é o sdd-agentic-flow?
 
-**O sdd-agentic-flow é um harness local-first de engenharia de software assistida por agentes que transforma desenvolvimento orientado a especificações em um workflow estruturado e verificável para coding agents.**
+**O sdd-agentic-flow é um plano de controle de engenharia nativo do repositório que transforma desenvolvimento orientado a especificações em workflows limitados e verificáveis para coding agents.**
 
 Não é só um pacote de Agent Skills. As skills são a **camada de execução** (*execution layer*). Em volta delas: metodologia, contratos de artefato, baselines, modelo de evidência, configuração, CLI e lifecycle.
 
@@ -41,20 +41,20 @@ Você delega uma tarefa. O agente pula para o código, mistura limites e marca t
 | Saída aceita sem evidência | `saf-check-task` e `saf-validate` |
 | PR perde rastreabilidade com a feature | `saf-create-pr`, `saf-review-pr` e `saf-fix-pr` |
 
-Veja [por que o toolkit existe](docs/why-this-exists.md). Para o modelo mental das quatro camadas (Prompt → Context → Harness → Loop + SDD), leia [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md).
+Veja [por que o toolkit existe](docs/why-this-exists.md). Para o modelo mental do plano de controle, leia [sdd-agentic-flow model](docs/sdd-agentic-flow-model.md) e [engineering model](docs/engineering-model.md).
 
 ## Além dos prompts
 
-A maioria das ferramentas para agentes para em prompts melhores. O **sdd-agentic-flow** adiciona camadas que prompt sozinho não sustenta:
+A maioria das ferramentas para agentes para em prompts melhores. O **sdd-agentic-flow** explicita a fronteira de engenharia:
 
-| Camada | Papel em uma linha |
+| Aspecto | Papel em uma linha |
 | --- | --- |
 | Prompt | Instruções por skill |
 | Context | Specs + contexto de projeto + config |
 | Harness | Modos, contratos, safety, evidência |
-| Loop | Autonomia, guardrails, loop-state, resume |
+| Execução do host | Loops, sessões e workers escolhidos pelo host |
 
-**SDD** define o que é “pronto” antes da implementação. A CLI instala e valida; seu agente executa. Veja o [doc de modelo mental](docs/sdd-agentic-flow-model.md).
+**SDD** define o que é “pronto” antes da implementação. SAF define restrições e transições admissíveis; o host executa. Evidence Graph é uma projeção de rastreabilidade somente-leitura, não um grafo de execução. Veja o [engineering model](docs/engineering-model.md).
 
 ## A solução
 

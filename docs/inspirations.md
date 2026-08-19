@@ -60,6 +60,9 @@ second specification.
 - Kief Morris, *Humans and Agents in Software Engineering Loops*
   ([martinfowler.com](https://martinfowler.com/articles/exploring-gen-ai/humans-and-agents.html))
   — humans remain on the loop. Adjacent framing, not a product spec.
+- DeepSeek Harness, Eve, Graph/Loop, harness-score, AI-DLC, and Oracle Agent
+  Spec are landscape references: SAF borrows the need for explicit evidence and
+  human authority, not their runtime, score, ontology, or ceremony models.
 
 ### Empirical
 

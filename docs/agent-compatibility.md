@@ -38,6 +38,8 @@ This procedure is **manual validation** (two interactive harnesses). The matrix 
 Compatibility with every agent client is not guaranteed. See
 [installation-scope.md](installation-scope.md) for the full directory table, sources, and the
 `--agent` flag; see [publishing.md](publishing.md) for when each validation was last performed.
+See [host capabilities](host-capabilities.md) for optional runtime capabilities and their
+documented, manually verified, or unverified status.
 
 The "Generic / other Markdown-first agent" row's "Supported by design" claim is not incidental.
 Every `SKILL.md` this toolkit ships already matches the shape of the open

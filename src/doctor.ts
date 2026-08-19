@@ -6,6 +6,8 @@ import { AUTONOMY_LEVELS, configValue, EXECUTION_MODES } from './config-domain';
 import { parseContractArray, validateContractReferences } from './contract-graph';
 import { buildDoctorView, type DoctorCheck, formatEvidenceGraph } from './doctor-view';
 import { collectEvidenceGraph, type EvidenceGraphResult } from './evidence-graph';
+import { renderEvidenceGraphHtml } from './evidence-graph-html';
+import { harnessReadinessChecks } from './harness-readiness';
 import type { PlanForInstallProfileInput } from './install';
 import { readInstallConfig, repositoryKey, USER_TARGETS } from './install-domain';
 import { type InstallPlan, isPlanEmpty } from './install-preflight';
@@ -48,6 +50,9 @@ type DoctorCommandOptions = {
   autonomy?: boolean | undefined;
   checkUpdates?: boolean | undefined;
   evidenceGraph?: string | undefined;
+  evidenceGraphHtml?: boolean | undefined;
+  output?: string | undefined;
+  harness?: boolean | undefined;
   locale?: string | undefined;
 };
 
@@ -261,7 +266,7 @@ function severity(checks: DoctorCheck[]): 'PASS' | 'WARN' | 'FAIL' {
   return 'PASS';
 }
 
-function doctorChecks(cwd: string): InternalDoctorCheck[] {
+function doctorChecks(cwd: string, options: { harness?: boolean } = {}): InternalDoctorCheck[] {
   const checks: InternalDoctorCheck[] = [];
   const add = (name: string, status: DoctorCheck['status'], message: string, section?: string) =>
     checks.push({ name, status, message, ...(section ? { section } : {}) });
@@ -301,6 +306,7 @@ function doctorChecks(cwd: string): InternalDoctorCheck[] {
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : defaultConfigYaml();
+  const specsRoot = configValue(safetyConfig, 'root');
   const language = languageReport(cwd);
   const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd);
   const tddBaseline = isPackage
@@ -455,6 +461,34 @@ function doctorChecks(cwd: string): InternalDoctorCheck[] {
         'Project context',
       );
     }
+  }
+  if (options.harness) {
+    add(
+      'project_instructions',
+      'INFO',
+      ['AGENTS.md', 'CLAUDE.md', '.cursor/rules'].some((candidate) =>
+        fs.existsSync(path.join(cwd, candidate)),
+      )
+        ? 'project instruction files detected'
+        : 'no project instruction files detected (not required)',
+      'Project instructions',
+    );
+    add(
+      'specs_root',
+      specsRoot && !fs.existsSync(path.resolve(cwd, specsRoot)) ? 'WARN' : 'PASS',
+      specsRoot && !fs.existsSync(path.resolve(cwd, specsRoot))
+        ? `configured specs root is missing: ${specsRoot}`
+        : `configured specs root is valid: ${specsRoot ?? '.specs/features'}`,
+      'Project readiness',
+    );
+    add(
+      'ci_present',
+      'INFO',
+      fs.existsSync(path.join(cwd, '.github', 'workflows'))
+        ? 'CI workflow directory detected'
+        : 'no CI workflow directory detected (not required)',
+      'Project readiness',
+    );
   }
   add(
     'tdd-baseline',
@@ -991,22 +1025,31 @@ function smokeCheck(): InternalDoctorCheck {
 
 async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
   if (options.evidenceGraph) {
-    return evidenceGraphDoctor(cwd, options.evidenceGraph, { json: options.json });
+    return evidenceGraphDoctor(cwd, options.evidenceGraph, {
+      json: options.json,
+      html: options.evidenceGraphHtml,
+      output: options.output,
+    });
   }
-  const checks: InternalDoctorCheck[] = doctorChecks(cwd);
+  const checks: InternalDoctorCheck[] = doctorChecks(cwd, {
+    ...(options.harness === undefined ? {} : { harness: options.harness }),
+  });
   if (options.smoke) checks.push(smokeCheck());
   if (options.contracts) checks.push(contractsCheck(cwd));
   if (options.autonomy) checks.push(...autonomyCheck(cwd, { verbose: options.verbose }));
   if (options.checkUpdates) checks.push(await checkForUpdate({ currentVersion: VERSION }));
+  const projectedChecks: InternalDoctorCheck[] = options.harness
+    ? harnessReadinessChecks(checks)
+    : checks;
   const result = {
-    status: severity(checks),
+    status: severity(projectedChecks),
     version: VERSION,
-    checks: checks.map(({ section: _section, ...check }) => check),
+    checks: projectedChecks.map(({ section: _section, ...check }) => check),
     language: languageReport(cwd),
   };
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else
-    renderDoctor(checks, {
+    renderDoctor(projectedChecks, {
       verbose: options.verbose,
       locale: resolveLocale({ configured: languageReport(cwd).profile ?? undefined }),
     });
@@ -1024,11 +1067,22 @@ function evidenceGraphExitCode(result: EvidenceGraphResult): number {
 function evidenceGraphDoctor(
   cwd: string,
   featureSlug: string,
-  options: { json?: boolean | undefined } = {},
+  options: {
+    json?: boolean | undefined;
+    html?: boolean | undefined;
+    output?: string | undefined;
+  } = {},
 ) {
   const result = collectEvidenceGraph(cwd, featureSlug);
   const exitCode = evidenceGraphExitCode(result);
-  if (options.json) {
+  if (options.html && (result.requirements.length || !result.errors.length)) {
+    const html = renderEvidenceGraphHtml(result);
+    if (options.output) {
+      const output = path.resolve(cwd, options.output);
+      fs.writeFileSync(output, html);
+      process.stdout.write(`${output}\n`);
+    } else process.stdout.write(html);
+  } else if (options.json) {
     process.stdout.write(`${JSON.stringify({ ...result, exitCode })}\n`);
   } else {
     process.stdout.write(`${formatEvidenceGraph(result)}\n`);

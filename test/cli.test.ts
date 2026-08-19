@@ -165,6 +165,61 @@ test('doctor --json shape stays field-stable; help Useful when blocks exist', ()
   assert.notEqual(run(['help', 'migrate']).status, 0);
 });
 
+test('doctor --harness projects only harness readiness checks', () => {
+  const report = JSON.parse(run(['doctor', '--harness', '--json']).stdout);
+  assert.notEqual(report.status, 'FAIL');
+  assert.ok(report.checks.some((check: DoctorCheck) => check.name === 'config'));
+  assert.ok(report.checks.some((check: DoctorCheck) => check.name === 'project_instructions'));
+  assert.ok(report.checks.every((check: DoctorCheck) => !check.name.startsWith('platform_')));
+  assert.ok(report.checks.every((check: DoctorCheck) => !Object.hasOwn(check, 'section')));
+  const standard = JSON.parse(run(['doctor', '--json']).stdout);
+  assert.ok(
+    standard.checks.every(
+      (check: DoctorCheck) =>
+        !['project_instructions', 'specs_root', 'ci_present'].includes(check.name),
+    ),
+  );
+  assert.match(run(['doctor', '--harness', '--verbose']).stdout, /Checks:/);
+});
+
+test('Evidence Graph HTML is stdout-only unless --output is explicit', () => {
+  const output = path.join(os.tmpdir(), `sdd-agentic-flow-graph-${Date.now()}.html`);
+  const stdout = run(
+    ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--html'],
+    packageRoot,
+  );
+  assert.match(stdout.stdout, /^<!doctype html>/i);
+  assert.equal(fs.existsSync(output), false);
+  const written = run(
+    [
+      'doctor',
+      '--evidence-graph',
+      'engineering-control-plane-coherence',
+      '--html',
+      '--output',
+      output,
+    ],
+    packageRoot,
+  );
+  assert.match(written.stdout, new RegExp(output.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(fs.existsSync(output));
+  assert.equal(
+    run(
+      ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--json', '--html'],
+      packageRoot,
+    ).status,
+    1,
+  );
+  assert.equal(
+    run(
+      ['doctor', '--evidence-graph', 'engineering-control-plane-coherence', '--output', output],
+      packageRoot,
+    ).status,
+    1,
+  );
+  fs.rmSync(output, { force: true });
+});
+
 test('uninstall with neither --plan nor --apply points at --plan as the safe first step', () => {
   const result = run(['uninstall']);
   assert.equal(result.status, 1);

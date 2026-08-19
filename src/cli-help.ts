@@ -12,7 +12,7 @@ export const USAGE = {
   configure:
     'usage: configure [--scope user|project] [--pack <pack>] [--target agents|cursor|claude|copilot] [--sharing shared|local] [--plan]',
   doctor:
-    'usage: doctor [--json] [--smoke] [--contracts] [--autonomy] [--evidence-graph <feature-slug>] [--verbose] [--check-updates]',
+    'usage: doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--evidence-graph <feature-slug> [--html [--output <path>]]] [--verbose] [--check-updates]',
   uninstall:
     'usage: uninstall --plan | uninstall --apply [--include-config] [--full] [--purge] [--yes] [--scope user|project] [--agent codex|cursor|claude-code|vscode-copilot] [--verbose] [--quiet]',
   discover: 'usage: discover [--force] [--quiet]',
@@ -181,12 +181,14 @@ Validate local setup: configuration, installed skills (project and user scope),
 baselines, language profile, safety defaults, and platform/environment.
 
 USAGE
-  sdd-agentic-flow doctor [--json] [--smoke] [--contracts] [--autonomy]
-                          [--evidence-graph <feature-slug>] [--verbose]
+  sdd-agentic-flow doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy]
+                          [--evidence-graph <feature-slug> [--html [--output <path>]]] [--verbose]
                           [--check-updates] [--ascii]
 
 OPTIONS
   --json           Print machine-readable JSON only (no human-readable report).
+  --harness        Show repository/project harness readiness from a curated projection
+                   of canonical doctor checks; it does not detect the running host.
   --smoke          Also run an isolated init/install/doctor smoke test in a temp dir.
   --contracts      Also validate installed skills' capability contracts.
   --autonomy       Also validate workflow.execution_mode/autonomy_level, the
@@ -196,6 +198,8 @@ OPTIONS
   --evidence-graph <feature-slug>
                    Read-only v4 evidence graph for one feature under .specs/features/.
                    Recurses only .sdd-agentic-flow/reports for feature-scoped task checks.
+  --html           With --evidence-graph, render safe self-contained HTML to stdout.
+  --output <path>  With --evidence-graph --html, write HTML only to this explicit path.
   --verbose        With --autonomy, also list all 7 guardrails and what each one gates.
   --check-updates  Make one request to the npm registry to check for a newer version
                    as part of the doctor diagnostic report (read-only). Prefer

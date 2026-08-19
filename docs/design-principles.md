@@ -9,3 +9,5 @@
 - Concrete claims over broad compatibility, security, or autonomy promises.
 - Session handoffs via `handoff.md` when work spans agents or sessions (see [handoff standard](../shared/references/handoff-standard.md)).
 - Language-agnostic engineering principles as a shared contract, not a skill (see [engineering principles](engineering-principles.md)).
+- The [engineering model](engineering-model.md) explains the repository-native
+  control layer: SAF defines admissible transitions while the host executes.

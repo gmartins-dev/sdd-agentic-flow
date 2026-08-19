@@ -16,3 +16,9 @@ session, or serial work. `Tool` and `Hook` are runtime mechanics, not skills.
 `Action` is one bounded operation and is not a synonym for a skill. `Stage` is
 a macro workflow phase; `Status` is one value within state. Governance names
 the control layer collectively, not another runtime object.
+
+`DependencyGraph` is the SAF task DAG; `ExecutionGraph` is host-owned worker or
+turn selection; `EvidenceGraph` is a read-only SAF traceability projection.
+Skills are capabilities, not persistent agents or workers. A host may supply a
+fresh worker for independent verification, but SAF falls back to re-grounding
+the oracle from canonical artifacts when it cannot.

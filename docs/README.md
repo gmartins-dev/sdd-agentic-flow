@@ -22,7 +22,8 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 
 | Doc | When to read |
 | --- | --- |
-| [sdd-agentic-flow-model.md](sdd-agentic-flow-model.md) | One-page mental model: 4 layers + SDD, glossary, control map |
+| [sdd-agentic-flow-model.md](sdd-agentic-flow-model.md) | One-page mental model, graphs, glossary, and control map |
+| [engineering-model.md](engineering-model.md) | Control-plane principles and host boundary |
 | [sdd-methodology.md](sdd-methodology.md) | What SDD means in this toolkit and why specs help agents |
 | [saf-skills-usage-guide.md](saf-skills-usage-guide.md) | Running the full SDD chain with coding agents |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
@@ -58,6 +59,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | Doc | When to read |
 | --- | --- |
 | [agent-compatibility.md](agent-compatibility.md) | Validated agent workflows and limits |
+| [host-capabilities.md](host-capabilities.md) | Optional host capabilities and enforcement levels |
 | [using-with-cursor.md](using-with-cursor.md) | Cursor setup |
 | [using-with-claude-code.md](using-with-claude-code.md) | Claude Code setup |
 | [using-with-codex.md](using-with-codex.md) | Codex CLI setup |

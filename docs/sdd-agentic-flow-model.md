@@ -4,20 +4,35 @@ One-page map of how this toolkit fits together. Commands, paths, and skill names
 
 ## Positioning
 
-**sdd-agentic-flow** is a spec-driven **agent harness**: Markdown skills, local CLI, evidence-first gates—not an agent runtime or scheduler. Skills are the **execution layer**, not the whole harness. The **workflow contract is portable** across capable agents; this toolkit does not copy an IDE/CLI/sub-agent runtime (Kiro is adjacent market evidence, not a product to clone).
+**sdd-agentic-flow** is a repository-native **engineering control plane for
+Spec-Driven coding-agent workflows**: Markdown skills, local CLI, and
+evidence-first gates—not an agent runtime or scheduler. Skills are
+capabilities; host workers and loops are execution mechanics.
 
-> Prompts tell AI what to do. Context tells it what to know. Harnesses tell it how to operate. Loops help it finish. **SDD tells it what "done" means.**
+> The model proposes. The host executes. SAF defines constraints and admissible
+> transitions. Sensors observe. Evidence records. Verification evaluates.
+> Humans govern.
 
-## Four layers + SDD
+## Canonical architecture
 
-| Layer | Question it answers | Where it lives |
+```text
+Intent → Specification → Bounded work → Policy/gates → Admissible action
+                                                   ↓
+                                      Host/human chooses execution
+                                                   ↓
+                                      Tools/environment → Sensors → Evidence
+                                                                      ↙       ↘
+                                                           Verification   Evidence Graph
+                                                                            (projection)
+```
+
+| Graph | Owner | Question it answers |
 | --- | --- | --- |
-| **Prompt** | What should the agent do next? | Skill `SKILL.md` bodies, task prompts from `saf-create-prompts` |
-| **Context** | What does the project already know? | Packages under `.specs/features/` (resolve one, then load narrowly), `.sdd-agentic-flow/context/`, `.sdd-agentic-flow/config.yml` |
-| **Harness** | How may the agent operate safely? | `execution_mode`, safety defaults, capability contracts, evidence standard |
-| **Loop** | How does work continue across steps/sessions? | `autonomy_level`, 7 guardrails, `.sdd-agentic-flow/autonomy/loop-state.md`, handoffs |
+| Dependency graph | SAF tasks DAG | What can run in parallel? |
+| Execution graph | Host | Who executes the next turn or worker? |
+| Evidence graph | SAF projection | Why is REQ-X believed satisfied? |
 
-**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Sensors produce evidence. Validation and release skills evaluate that evidence against the contract—not chat confidence. A passing sensor is not a correctness verdict; the human remains the gate. The [evidence standard](../shared/references/evidence-standard.md) names false-positive classes and an evidence strength ladder so self-report and ungrounded agent tests cannot outrank spec and contracts.
+**SDD (Spec-Driven Development)** is the completion contract: behavior, scope, and acceptance criteria are written in `.specs/features/` before production code changes. Loop, sessions, and subagents are host execution strategies, not SAF layers. Evidence Graph is a read-only traceability projection, never an orchestration graph or verification authority. A passing sensor is not a correctness verdict; the human remains the gate.
 
 ## Instruction precedence
 
@@ -80,6 +95,7 @@ terms most useful when operating this toolkit.
 
 ## Related docs
 
+- [Engineering model](engineering-model.md) — principles and control boundary
 - [SDD methodology](sdd-methodology.md) — phase table and flow
 - [Architecture](architecture.md) — layers and file layout
 - [Autonomy levels](autonomy-levels.md) · [Autonomy guardrails](autonomy-guardrails.md)

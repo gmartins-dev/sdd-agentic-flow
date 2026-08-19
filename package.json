@@ -1,7 +1,7 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "4.2.0",
-  "description": "A local-first, zero-dependency Spec Driven Development skill toolkit with capability-contracted skills, condensed TLC/TDD baselines, and adaptive feature sizing for coding agents.",
+  "version": "4.3.0",
+  "description": "A local-first, zero-dependency engineering control plane for Spec-Driven Development coding-agent workflows.",
   "type": "commonjs",
   "engines": {
     "node": ">=22"

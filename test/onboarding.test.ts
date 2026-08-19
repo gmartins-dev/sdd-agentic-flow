@@ -10,6 +10,9 @@ import { resolveSelection, select } from '../src/selector';
 // Simulated raw-capable fixtures are intentionally not TERM=dumb; TERM=dumb is
 // a documented numbered-readline mode in the v5 terminal contract.
 process.env.TERM = 'xterm';
+// Raw-selector cases intentionally simulate a real interactive TTY even when
+// the test runner exports CI=1; production still disables raw interaction in CI.
+process.env.CI = '';
 
 function setTty(stream) {
   Object.defineProperty(stream, 'isTTY', { value: true, configurable: true });

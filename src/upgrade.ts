@@ -17,12 +17,14 @@ type ExecutionMode = 'npx' | 'global' | 'local';
 type InstallProvenance = {
   package: string | null;
   packageVersion: string | null;
-  schema: number;
+  schema: string;
   skillIdentity: string | null;
   scope?: string;
   target?: string;
   packs?: string[];
   managedSkills?: string[];
+  managedPaths?: string[];
+  applyState?: 'applying' | 'complete';
 };
 
 type ProvenanceInput =
@@ -34,6 +36,8 @@ type ProvenanceInput =
       skillIdentity?: string;
       packs?: string[];
       managedSkills?: string[];
+      managedPaths?: string[];
+      applyState?: 'applying' | 'complete';
     };
 
 type ManagedPair = {
@@ -106,7 +110,8 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
   const lines = [
     'package: sdd-agentic-flow',
     `package_version: ${value.packageVersion}`,
-    'schema: 2',
+    'schema: saf-install-provenance/v1',
+    `apply_state: ${value.applyState || 'complete'}`,
     `scope: ${value.scope || 'user'}`,
     `target: ${value.target || 'unknown'}`,
     `skill_identity: ${value.skillIdentity || 'saf'}`,
@@ -114,6 +119,8 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
     ...(value.packs || []).map((pack) => `  - ${pack}`),
     'managed_skills:',
     ...(value.managedSkills || []).map((skill) => `  - ${skill}`),
+    'managed_paths:',
+    ...(value.managedPaths || value.managedSkills || []).map((managedPath) => `  - ${managedPath}`),
     '',
   ];
   const temporary = `${dest}.tmp`;
@@ -128,7 +135,8 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
     const text = fs.readFileSync(dest, 'utf8');
     const versionMatch = text.match(/package_version:\s*(\S+)/);
     const packageMatch = text.match(/^package:\s*(\S+)/m);
-    const schemaMatch = text.match(/^schema:\s*(\d+)/m);
+    const schemaMatch = text.match(/^schema:\s*(\S+)/m);
+    const applyStateMatch = text.match(/^apply_state:\s*(\S+)/m);
     const skillIdentityMatch = text.match(/^skill_identity:\s*(\S+)/m);
     const list = (name: string): string[] => {
       const match = text.match(new RegExp(`^${name}:\\s*\\n((?:\\s+-\\s+[^\\n]+\\n?)*)`, 'm'));
@@ -139,13 +147,18 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
     const provenance: InstallProvenance = {
       package: packageMatch?.[1] ?? null,
       packageVersion: versionMatch?.[1] ?? null,
-      schema: schemaMatch ? Number(schemaMatch[1]) : 1,
+      schema: schemaMatch?.[1] ?? 'unsupported',
       skillIdentity: skillIdentityMatch?.[1] ?? null,
+      ...(applyStateMatch?.[1] === 'applying' || applyStateMatch?.[1] === 'complete'
+        ? { applyState: applyStateMatch[1] }
+        : {}),
     };
     const packs = list('packs');
     const managedSkills = list('managed_skills');
+    const managedPaths = list('managed_paths');
     if (packs.length) provenance.packs = packs;
     if (managedSkills.length) provenance.managedSkills = managedSkills;
+    if (managedPaths.length) provenance.managedPaths = managedPaths;
     return provenance;
   } catch {
     return null;
@@ -275,7 +288,10 @@ function detectInstalledPacks(skillsRoot: string, presetsDir: string): string[] 
       found.push(name);
   }
   const provenance = readInstallProvenance(skillsRoot);
-  if (provenance?.package === 'sdd-agentic-flow' && provenance.schema === 2) {
+  if (
+    provenance?.package === 'sdd-agentic-flow' &&
+    provenance.schema === 'saf-install-provenance/v1'
+  ) {
     const recorded = (provenance.packs || []).filter((pack) => names.includes(pack));
     if (recorded.length) return recorded;
   }

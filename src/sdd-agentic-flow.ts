@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
 import { COMMAND_HELP, KNOWN_COMMANDS, USAGE, writeCommandHelp } from './cli-help';
+import { completionFor, isRemovedCommand, lexicalConflict } from './command-registry';
 import { renderPolicySummary, runConfigCommand } from './config';
 import { EXECUTION_MODES, readConfig } from './config-domain';
 import { configureIntent } from './configure';
@@ -57,7 +58,6 @@ import {
   autonomyStateReport,
   contextRefresh,
   contextStatus,
-  discoverProject,
 } from './project-context';
 import { select } from './selector';
 import {
@@ -290,6 +290,13 @@ function learnSdd(cwd: string) {
 
 function help(command?: string): boolean | undefined {
   if (command) {
+    if (isRemovedCommand(command)) {
+      fail(`unknown command: ${command}.`, {
+        reason: 'This command was removed from the v5 canonical interface.',
+        try: ['sdd-agentic-flow help'],
+      });
+      return false;
+    }
     const topic = COMMAND_HELP[command];
     if (!topic) {
       const hint = didYouMeanTry(command, KNOWN_COMMANDS);
@@ -314,16 +321,13 @@ QUICK START
   npx sdd-agentic-flow doctor
 
 START
-  init [--interactive|--non-interactive] [--language en-US|pt-BR | --en | --br] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Guided setup or local configuration
-  configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
-  discover [--force] [--quiet]           Refresh auto-discovered project context
-  install <pack> [--scope user|project] [--agent ...] [--plan] [--interactive] [--quiet]  Install a pack (default: user scope, zero project footprint)
+  init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Guided setup or local configuration
+  install <pack> [--scope user|project] [--target agents|cursor|claude|copilot] [--plan] [--interactive] [--quiet]  Install a pack
   doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 
 OPERATE
-  config [show|policy]                   Inspect or change operating policy
+  config [show|policy|installation]       Inspect policy or saved installation intent
   context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
-  discover [--force] [--quiet]           Refresh auto-discovered project context
   upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
   autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 
@@ -332,9 +336,10 @@ INSPECT / LEARN
   learn-sdd                              One-screen SDD summary
   help [command]                         Show this reference, or detailed help for one command
   version                                Show CLI version
+  completion bash|zsh|fish               Print deterministic shell completion
 
 REMOVE
-  uninstall --plan | --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--quiet]  Remove installed toolkit assets
+  uninstall --plan | --yes [--purge] [--scope user|project|all] [--target agents|cursor|claude|copilot] [--quiet]  Remove managed assets
 
 MORE HELP
   npx sdd-agentic-flow help <command>
@@ -439,7 +444,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
         (!configFound
           ? '  npx sdd-agentic-flow init              Create local configuration\n  npx sdd-agentic-flow learn-sdd         Learn the workflow\n'
           : !skillsInstalled
-            ? '  npx sdd-agentic-flow install core       Install the core skill pack\n  npx sdd-agentic-flow configure          Change installation intent\n  npx sdd-agentic-flow doctor             Validate local setup\n'
+            ? '  npx sdd-agentic-flow install core       Install the core skill pack\n  npx sdd-agentic-flow config installation  Change installation intent\n  npx sdd-agentic-flow doctor             Validate local setup\n'
             : '  npx sdd-agentic-flow doctor             Validate local setup\n  npx sdd-agentic-flow config policy      Change operating policy\n  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n') +
         '\n' +
         `${t(locale, 'welcome.help')}\n\n` +
@@ -454,7 +459,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
         ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow learn-sdd\n  npx sdd-agentic-flow help\n`
         : !skillsInstalled
           ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install core --plan\n  npx sdd-agentic-flow configure\n  npx sdd-agentic-flow doctor\n`
-          : `\n${t(locale, 'welcome.optionalMaintenance')}\n  npx sdd-agentic-flow doctor\n  npx sdd-agentic-flow config policy\n  npx sdd-agentic-flow discover --force\n  npx sdd-agentic-flow upgrade\n  npx sdd-agentic-flow uninstall --plan\n`,
+          : `\n${t(locale, 'welcome.optionalMaintenance')}\n  npx sdd-agentic-flow doctor\n  npx sdd-agentic-flow config policy\n  npx sdd-agentic-flow context refresh\n  npx sdd-agentic-flow upgrade\n  npx sdd-agentic-flow uninstall --plan\n`,
     );
     process.stdout.write(
       `\n${t(locale, 'welcome.update')}\n` +
@@ -716,6 +721,37 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
 async function runCommand(command: string, rawArgs: string[], cwd: string) {
   const args = stripAsciiFlag(rawArgs);
   const ascii = rawArgs.includes('--ascii') || process.env.SDD_ASCII === '1';
+  const conflict = lexicalConflict(rawArgs);
+  if (conflict) {
+    fail(`usage error: ${conflict}`, {
+      reason: 'Flags conflict lexically and are rejected before preflight.',
+    });
+    return;
+  }
+  const removedOption =
+    command === 'init'
+      ? rawArgs.find((arg) => ['--en', '--br', '--non-interactive'].includes(arg))
+      : command === 'install'
+        ? rawArgs.find((arg) => ['--agent', '--non-interactive'].includes(arg))
+        : command === 'uninstall'
+          ? rawArgs.find((arg) =>
+              ['--apply', '--include-config', '--full', '--agent'].includes(arg),
+            )
+          : undefined;
+  if (removedOption) {
+    fail(`usage error: removed option ${removedOption}`, {
+      reason: 'The v5 command grammar does not accept this legacy option.',
+      try: ['sdd-agentic-flow help'],
+    });
+    return;
+  }
+  if (isRemovedCommand(command)) {
+    fail(`unknown command: ${command}.`, {
+      reason: 'This command was removed from the v5 canonical interface.',
+      try: ['sdd-agentic-flow help'],
+    });
+    return;
+  }
   if (command === 'list') {
     if (args.includes('--help')) writeCommandHelp('list');
     else list();
@@ -865,22 +901,6 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           ...(presetName ? { presetName, presetAlias } : {}),
         });
     }
-  } else if (command === 'discover') {
-    if (args.includes('--help')) writeCommandHelp('discover');
-    else if (!args.every((arg: string) => arg === '--force' || arg === '--quiet')) {
-      const bad = args.find((arg: string) => arg !== '--force' && arg !== '--quiet');
-      const hint = didYouMeanTry(asString(bad), ['--force', '--quiet']);
-      fail(USAGE.discover, {
-        reason: bad ? `Unknown argument: ${bad}` : 'Invalid arguments.',
-        try: ['sdd-agentic-flow discover --force', ...(hint ? [hint] : [])],
-      });
-      return;
-    } else
-      discoverProject(cwd, {
-        force: args.includes('--force'),
-        quiet: args.includes('--quiet'),
-        ascii,
-      });
   } else if (command === 'context') {
     if (args.includes('--help')) writeCommandHelp('context');
     else {
@@ -902,6 +922,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       else autonomyStateReport(cwd);
     }
   } else if (command === 'config') {
+    if (args[0] === 'installation') {
+      await runCommand('__config-installation', args.slice(1), cwd);
+      return;
+    }
     const configPath = sddJoin(cwd, 'config.yml');
     if (args.includes('--help')) {
       writeCommandHelp('config');
@@ -916,9 +940,9 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         ],
       });
     }
-  } else if (command === 'configure') {
+  } else if (command === '__config-installation') {
     if (args.includes('--help')) {
-      writeCommandHelp('configure');
+      writeCommandHelp('config');
       return;
     }
     let scope = 'user';
@@ -938,7 +962,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         targets.push(asString(args[++index]));
       else if (arg === '--sharing' && ['shared', 'local'].includes(asString(args[index + 1])))
         sharing = asString(args[++index]);
-      else fail(USAGE.configure);
+      else fail(USAGE.config);
     }
     if (!packs.every((pack: string) => readPreset(pack))) fail('unknown pack in configure');
     if (interactive && plan) fail('configure --interactive cannot combine with --plan');
@@ -1023,7 +1047,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     }
     let pack = null;
     let scope = null;
-    let agent = null;
+    const targets: string[] = [];
     let plan = false;
     let quiet = false;
     let interactive = false;
@@ -1038,11 +1062,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       else if (arg === '--scope' && ['user', 'project'].includes(asString(args[index + 1]))) {
         scope = asString(args[index + 1]);
         index += 1;
-      } else if (arg === '--agent' && args[index + 1] !== undefined) {
-        // Deferred to install() itself (like `pack`) so an invalid value produces the more
-        // specific, did-you-mean-enabled "unknown agent" message instead of the generic usage
-        // failure below.
-        agent = asString(args[index + 1]);
+      } else if (arg === '--target' && args[index + 1] !== undefined) {
+        const target = asString(args[index + 1]);
+        if (!['agents', 'cursor', 'claude', 'copilot'].includes(target)) valid = false;
+        else targets.push(target);
         index += 1;
       } else if (!arg.startsWith('--') && pack === null) pack = arg;
       else valid = false;
@@ -1064,14 +1087,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     if (interactive || automaticInteractive)
       await installInteractive(packName, cwd, {
         ...(scope ? { scope } : {}),
-        ...(agent ? { agent } : {}),
+        ...(targets.length ? { targets } : {}),
         quiet,
         ascii,
       });
     else
       install(packName, cwd, {
         ...(scope ? { scope } : {}),
-        ...(agent ? { agent } : {}),
+        ...(targets.length ? { targets } : {}),
         plan,
         quiet,
         ascii,
@@ -1127,7 +1150,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     ) {
       if (doctorFlags.includes('--json')) {
         process.stdout.write(
-          `${JSON.stringify({ status: 'FAIL', version: VERSION, checks: [{ name: 'arguments', status: 'FAIL', message: USAGE.doctor }] })}\n`,
+          `${JSON.stringify({ schema_version: 1, cli_version: VERSION, command: 'doctor', ok: false, error: { code: 'usage_error', details: {}, message: USAGE.doctor } })}\n`,
         );
         process.exitCode = 1;
       } else fail(USAGE.doctor);
@@ -1215,6 +1238,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
   } else if (command === 'uninstall') {
     if (args.includes('--help')) writeCommandHelp('uninstall');
     else uninstall(args, cwd);
+  } else if (command === 'completion') {
+    const shell = args[0];
+    const completion = shell ? completionFor(shell) : undefined;
+    if (!completion || args.length !== 1) {
+      fail('usage: completion bash|zsh|fish');
+      return;
+    }
+    process.stdout.write(completion);
   } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
   else if (command === 'version' || command === '--version' || command === '-v')
     process.stdout.write(`${VERSION}\n`);

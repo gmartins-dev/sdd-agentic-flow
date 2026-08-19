@@ -22,7 +22,7 @@ function writeConfig(name: string, body: string): string {
   return file;
 }
 
-const SAMPLE = `version: 1
+const SAMPLE = `schema: saf-config/v1
 workflow:
   execution_mode: guided
   autonomy_level: manual
@@ -39,6 +39,20 @@ test('readConfig parses policy and preset equivalent', () => {
   assert.equal(config.policy.executionMode, 'guided');
   assert.equal(config.policy.autonomyLevel, 'manual');
   assert.equal(config.presetEquivalent, 'manual');
+});
+
+test('readConfig rejects unsupported v5 schema before policy mutation', () => {
+  const file = writeConfig('old.yml', SAMPLE.replace('saf-config/v1', 'saf-config/v0'));
+  const config = readConfig(file);
+  assert.equal(config.ok, false);
+  assert.match(config.errors.join('; '), /unsupported config schema/);
+  const before = fs.readFileSync(file, 'utf8');
+  const mutation = applyPolicyMutation(file, {
+    executionMode: 'full',
+    autonomyLevel: 'autonomous',
+  });
+  assert.equal(mutation.ok, false);
+  assert.equal(fs.readFileSync(file, 'utf8'), before);
 });
 
 test('validatePolicyMutation rejects invalid combos', () => {

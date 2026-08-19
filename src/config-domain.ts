@@ -98,6 +98,8 @@ function readConfig(configPath: string): ReadConfigResult {
   const featureProfile = configValue(content, 'feature_profile');
   const languageProfile = configValue(content, 'profile');
   const errors: string[] = [];
+  const schema = content.match(/^schema:\s*(\S+)$/m)?.[1];
+  if (schema !== 'saf-config/v1') errors.push('unsupported config schema');
   if (!executionMode) errors.push('workflow.execution_mode missing');
   if (!autonomyLevel) errors.push('workflow.autonomy_level missing');
   if (executionMode && !isExecutionMode(executionMode)) {
@@ -184,7 +186,7 @@ function applyPolicyMutation(
     return { ok: false, errors: validation.errors, wrote: false };
   }
   const current = readConfig(configPath);
-  if (!current.content) {
+  if (!current.ok || !current.content) {
     return {
       ok: false,
       errors: current.errors?.length ? current.errors : ['config not readable'],

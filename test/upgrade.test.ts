@@ -37,8 +37,9 @@ test('install provenance round-trips', () => {
   assert.deepEqual(readInstallProvenance(root), {
     package: 'sdd-agentic-flow',
     packageVersion: '1.13.0',
-    schema: 2,
+    schema: 'saf-install-provenance/v1',
     skillIdentity: 'saf',
+    applyState: 'complete',
   });
   fs.rmSync(root, { recursive: true, force: true });
 });

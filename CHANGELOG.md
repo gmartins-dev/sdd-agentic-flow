@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 5.0.0
+
+Clean-slate CLI grammar and terminal/machine contracts. Removes legacy `discover`,
+`configure`, agent aliases, and uninstall apply aliases; adds canonical completions,
+strict v1 state schemas, transactional provenance, and v5 terminal capability semantics.
+
 ## 4.4.0
 
 Agentic Workflow Harness identity and developer lifecycle — compatible minor release.

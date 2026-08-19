@@ -14,7 +14,7 @@ Installation and configuration are explicit local writes. By default (`install`'
 scope), skills are written only to per-agent global directories outside the project. See
 [installation scope](installation-scope.md) for the two scopes and their ownership boundary.
 `.sdd-agentic-flow/config.yml` and `.sdd-agentic-flow/context/project-context.md` always live in the project, created
-explicitly by `init`/`discover`. The CLI does not automatically commit, push, merge, deploy, or
+explicitly by `init`/`context refresh`. The CLI does not automatically commit, push, merge, deploy, or
 publish. `doctor`, `doctor --json`, and `doctor --smoke` provide local evidence; publishable
 files are scanned for blocked private-context markers.
 

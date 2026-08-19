@@ -4,8 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-# Legacy `.sdd/` is allowed only where breaking-notes or historical record require it
-# (see docs/v2-breaking-changes.md). Uses git grep (available in CI) instead of ripgrep.
+# Legacy `.sdd/` is allowed only in historical records and the active v5 compatibility contract.
 matches="$(git grep -n --fixed-strings '.sdd/' -- \
   ':(exclude)CHANGELOG.md' \
   ':(exclude)scripts/check-sdd-paths.sh' \
@@ -14,7 +13,7 @@ matches="$(git grep -n --fixed-strings '.sdd/' -- \
   ':(exclude)src/paths.ts' \
   ':(exclude)test/cli.test.ts' \
   ':(exclude).gitignore' \
-  ':(exclude)docs/v2-breaking-changes.md' \
+  ':(exclude)docs/compatibility-promise.md' \
   ':(exclude)docs/sdd-agentic-flow-model.md' \
   ':(exclude)README.md' \
   ':(exclude)README.pt-BR.md' \

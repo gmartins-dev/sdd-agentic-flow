@@ -259,7 +259,7 @@ function installApplyCommand(plan: InstallPlan) {
 }
 
 function configureCommand(scope: string, profile: InstallConfig['user'] | InstallProjectProfile) {
-  const parts = ['sdd-agentic-flow configure', '--scope', scope];
+  const parts = ['sdd-agentic-flow config', 'installation', '--scope', scope];
   for (const pack of profile.packs || []) parts.push('--pack', pack);
   if (scope === 'user' && isUserInstallProfile(profile)) {
     for (const target of profile.targets || DEFAULT_USER_TARGETS) parts.push('--target', target);
@@ -392,7 +392,7 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
     const hint = didYouMeanTry(agentName, KNOWN_AGENTS);
     return fail(`unknown agent: ${agentName}.`, {
       reason: `Supported agents: ${KNOWN_AGENTS.join(', ')}.`,
-      try: hint ? [hint] : [`sdd-agentic-flow install ${pack} --agent ${KNOWN_AGENTS[0]}`],
+      try: hint ? [hint] : [`sdd-agentic-flow install ${pack} --target agents`],
     });
   }
   if (options.targets && options.targets.length === 0) {
@@ -497,6 +497,15 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
 
   const totals = { installed: 0, updated: 0, preserved: 0, removed: 0 };
   for (const targetRoot of targets) {
+    writeInstallProvenance(targetRoot, {
+      packageVersion: VERSION,
+      scope,
+      target: scope === 'project' ? 'project-agents' : targetLabelFor(targetRoot),
+      packs: desiredPacks,
+      managedSkills: desiredSkills,
+      managedPaths: desiredSkills,
+      applyState: 'applying',
+    });
     const result = applyInstallPlan(PACKAGE_ROOT, effectivePreset, targetRoot, {
       officialSkills: OFFICIAL_SKILLS,
     });
@@ -516,6 +525,8 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
       target: scope === 'project' ? 'project-agents' : targetLabelFor(targetRoot),
       packs: desiredPacks,
       managedSkills: desiredSkills,
+      managedPaths: desiredSkills,
+      applyState: 'complete',
     });
   }
 

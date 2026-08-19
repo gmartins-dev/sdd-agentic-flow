@@ -34,7 +34,7 @@ welcome ask on human-rich TTY only (default **N**). See [trust model](trust-mode
 
 ## Can it remove its files?
 
-Use `uninstall --plan` first. `uninstall --apply` removes only known toolkit assets and preserves project work.
+Use `uninstall --plan` first. `uninstall --yes` removes only known toolkit assets and preserves project work.
 
 ## Does it work with every agent?
 
@@ -48,7 +48,7 @@ a factual revision comparison.
 
 ## How do I refresh it?
 
-Run `sdd-agentic-flow context refresh` (or `discover --force`, which does the same thing). Both
+Run `sdd-agentic-flow context refresh`. It regenerates the project context safely. Both
 fully regenerate `project-context.md`, so copy out any manual notes first. Reading the current
 revision/branch is a local, read-only `git rev-parse` call; outside a Git repository, or without
 `git` installed, this degrades gracefully instead of failing.

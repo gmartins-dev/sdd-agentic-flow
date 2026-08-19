@@ -2,7 +2,7 @@
 name: saf-brainstorm
 description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for saf-create-spec — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
 metadata:
-  version: 4.4.0
+  version: 5.0.0
   pack: planning
 extends: null
 requires: [config]

@@ -10,6 +10,7 @@ import {
   styleBrand,
   styleStatus,
   symbol,
+  terminalCapabilities,
 } from '../src/ui';
 import { brandStream, outputStreams } from './helpers';
 
@@ -60,6 +61,19 @@ test('CLI-015: outputMode covers human-rich / human-plain / machine cells', () =
   assert.equal(isRich('machine'), false);
 });
 
+test('CLI-016: terminal capabilities keep raw navigation under NO_COLOR and ASCII', () => {
+  const input = { isTTY: true, setRawMode: () => undefined } as never;
+  const output = { isTTY: true, columns: 100 } as never;
+  const noColor = terminalCapabilities({ stdin: input, stdout: output }, { NO_COLOR: '1' });
+  assert.equal(noColor.interactive, true);
+  assert.equal(noColor.rawInput, true);
+  assert.equal(noColor.cursor, true);
+  assert.equal(noColor.color, false);
+  const dumb = terminalCapabilities({ stdin: input, stdout: output }, { TERM: 'dumb' });
+  assert.equal(dumb.cursor, false);
+  assert.equal(dumb.rawInput, true);
+});
+
 test('CLI-012: symbols are ASCII outside human-rich; welcome brand is the full embedded art', () => {
   assert.equal(symbol('success', 'human-rich'), '✓');
   assert.equal(symbol('brand', 'human-rich'), '›››');
@@ -86,7 +100,7 @@ test('doctorFooterLines covers Fix/Next rules for human-rich footer content', ()
       { name: 'config', status: 'WARN', message: '.sdd-agentic-flow/config.yml not found' },
       { name: 'project_context', status: 'WARN', message: 'project-context.md not found' },
     ]),
-    ['Fix: npx sdd-agentic-flow init', 'Fix: npx sdd-agentic-flow discover --force'],
+    ['Fix: npx sdd-agentic-flow init', 'Fix: npx sdd-agentic-flow context refresh'],
   );
   assert.deepEqual(
     doctorFooterLines([
@@ -96,7 +110,7 @@ test('doctorFooterLines covers Fix/Next rules for human-rich footer content', ()
         message: 'found (repository has changed since generation)',
       },
     ]),
-    ['Fix: npx sdd-agentic-flow discover --force'],
+    ['Fix: npx sdd-agentic-flow context refresh'],
   );
   assert.deepEqual(doctorFooterLines([{ name: 'safety', status: 'PASS', message: 'ok' }]), [
     'Next: use your coding agent with the installed SDD workflow',
@@ -109,7 +123,7 @@ test('didYouMean returns the closest known candidate for a small typo', () => {
   const candidates = [
     'list',
     'init',
-    'discover',
+    'context',
     'context',
     'install',
     'doctor',
@@ -126,7 +140,7 @@ test('didYouMean returns null when nothing is close enough, or for empty input',
   const candidates = [
     'list',
     'init',
-    'discover',
+    'context',
     'context',
     'install',
     'doctor',

@@ -37,12 +37,12 @@ const MENU_ACTIONS: MenuAction[] = [
   { label: 'Create local configuration', command: ['init'] },
   { label: 'Install the core skill pack', command: ['install', 'core'] },
   { label: 'Preview install plan (read-only)', command: ['install', 'core', '--plan'] },
-  { label: 'Configure installation intent', command: ['configure'] },
+  { label: 'Configure installation intent', command: ['config', 'installation'] },
   { label: 'Validate local setup', command: ['doctor'] },
   { label: 'Change operating policy', command: ['config', 'policy'] },
   { label: 'Learn about SDD', command: ['learn-sdd'] },
   { label: 'Check for updates / upgrade', command: ['upgrade'] },
-  { label: 'Refresh auto-discovered project context', command: ['discover', '--force'] },
+  { label: 'Refresh project context', command: ['context', 'refresh'] },
   { label: 'Preview what uninstall would remove (read-only)', command: ['uninstall', '--plan'] },
   { label: 'Show full command reference', command: ['help'] },
 ];
@@ -59,7 +59,7 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
     return [
       { label: 'Keep current setup', command: [] },
       { label: 'Check for updates', command: ['upgrade'] },
-      { label: 'Change setup', command: ['configure', '--interactive'] },
+      { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
       { label: 'Validate setup', command: ['doctor'] },
       { label: 'Commands and advanced options', command: ['help'] },
     ];
@@ -76,7 +76,7 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
       ['install', 'core'],
       ['install', 'core', '--plan'],
       ['doctor'],
-      ['configure'],
+      ['config', 'installation'],
       ['help'],
     );
   }
@@ -84,7 +84,7 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
     ['doctor'],
     ['config', 'policy'],
     ['upgrade'],
-    ['discover', '--force'],
+    ['context', 'refresh'],
     ['uninstall', '--plan'],
     ['help'],
   );

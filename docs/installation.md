@@ -1,51 +1,26 @@
 # Installation
 
-Requires Node.js >= 22 to run the CLI (see [environment compatibility](environment-compatibility.md)
-for the full matrix). That requirement applies to the CLI only. The project you're installing
-into can be written in any language; the CLI never adds a dependency to it.
-
-For a new project, run one command. In a real terminal it guides configuration,
-installs the `full` pack, prepares project context, and runs `doctor`.
+Requires Node.js >= 22. The CLI is local-first and adds no runtime dependency to the consumer.
 
 ```bash
 npx sdd-agentic-flow init
+npx sdd-agentic-flow install core
+npx sdd-agentic-flow doctor
 ```
 
-Use `init --non-interactive` for scripts and CI. `--interactive` remains an explicit
-alias for guided onboarding. `init` always writes
-project-local configuration (`.sdd-agentic-flow/config.yml`, `.sdd-agentic-flow/context/project-context.md`)
-and a regenerable usage stub (`.sdd-agentic-flow/usage.md`) with the workflow diagram and a
-local copy of the [skills usage guide](saf-skills-usage-guide.md). That part is unaffected by
-install scope.
+`init` creates `.sdd-agentic-flow/config.yml`, project context, and regenerable usage guidance.
+Use `--language en-US|pt-BR`, `--preset manual|supervised|autonomous`, and explicit policy flags
+when automation needs deterministic setup. `--interactive` requires a real TTY and unset `CI`.
 
-Interactive setup is an inline terminal flow, not a full-screen TUI. The recommended path uses
-safe defaults; **Customize setup** exposes pack, scope, targets, and project sharing. It shows one
-review before writing. Before that review, **Back** changes only draft choices. After files are
-written, use **Change operating policy** or **Change installation setup** for a deliberate
-change rather than a rollback.
+`install <pack>` defaults to user scope. Use `--scope project` for `.agents/skills/` in the
+repository. User targets are selected with repeatable `--target agents|cursor|claude|copilot`.
+Use `--plan` for a read-only preview; local non-TTY mutation requires `--yes`.
 
-Pass `init --local-git-exclude` to append `.sdd-agentic-flow/` to `.git/info/exclude` when
-using project scope but still wanting toolkit state hidden locally. With the default user scope,
-`init` applies that exclude automatically so toolkit state stays out of `git status` without
-editing the team's `.gitignore`. Specs under `.specs/` are not excluded. See
-[installation scope](installation-scope.md).
+Use `config installation` to save desired packs, targets, and sharing intent. It never installs
+skills. Use `config policy` for workflow execution/autonomy policy.
 
-`install <pack>` defaults to `--scope user`: it writes only to global, per-agent skill
-directories (e.g. `~/.claude/skills`) and creates **zero files in the project**. Pass
-`--scope project` to install into `.agents/skills/` inside the project instead. That matches the
-pre-v0.9.0 behavior. See [installation scope](installation-scope.md) for the full two-scope
-model, the supported agents, and `--plan`/`--agent`.
+Use `context refresh` to regenerate project context after repository changes. It is the only
+public context mutation command; `context status` is read-only.
 
-Use `init --language en-US` or `init --language pt-BR` (or the `--en`/`--br` shorthands) to
-select a profile without the interactive prompts. The default is `en-US`.
-
-Run `npx sdd-agentic-flow list` before installation to inspect pack membership. Installation
-stores desired packs and user targets in `~/.sdd-agentic-flow/install.yml`; subsequent installs
-reconcile that intent. Use `configure` to edit packs, targets, or project sharing, and
-`install <pack> --plan` to preview CREATE, UPDATE, REMOVE, and collision actions. Managed SAF
-assets may be updated or removed after confirmation; foreign and legacy `sdd-*` installations are
-blocked without migration. `--non-interactive` never prompts, and cannot be combined with
-`--interactive`.
-
-Add `--quiet` to `init` or `install` to suppress the "Suggested next step" line printed on
-success.
+See [installation scope](installation-scope.md), [configuration](configuration.md), and
+[environment compatibility](environment-compatibility.md).

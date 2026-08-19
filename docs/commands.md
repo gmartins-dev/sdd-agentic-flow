@@ -8,7 +8,7 @@ for full usage text.
 | Command | Summary |
 | --- | --- |
 | `(no command)` | Welcome screen with status, policy, installation summary when configured |
-| `configure` | Save installation intent; does not install skills |
+| `config installation` | Save installation intent; does not install skills |
 | `help [command]` | Command reference |
 | `version` | Package version |
 | `list` | Available skill packs |
@@ -18,7 +18,7 @@ for full usage text.
 | Command | Summary |
 | --- | --- |
 | `init` | Create `.sdd-agentic-flow/config.yml` and regenerable toolkit state |
-| `init` | Guided 0 → Ready onboarding in a real TTY (includes operating policy); `--non-interactive` for automation |
+| `init` | Guided 0 → Ready onboarding in a real TTY; explicit flags for automation |
 | `config` / `config show` | Read-only operating policy summary |
 | `config policy` | Change `execution_mode` and `autonomy_level` |
 | `config policy --plan` | Preview policy change; never writes |
@@ -37,9 +37,10 @@ for full usage text.
 | `doctor --evidence-graph <slug>` | Read-only v4 requirement traceability graph |
 | `doctor --evidence-graph <slug> --html [--output <path>]` | HTML evidence-graph projection; stdout by default, explicit output path to write |
 | `upgrade` | Interactive CLI/skill upgrade |
-| `uninstall --plan` / `--apply` | Preview or remove installed assets |
-| `uninstall --plan --purge` / `--apply --purge --yes` | Cross-scope clean reset for v4 reinstall |
-| `discover` | Refresh auto-discovered project context |
+| `uninstall --plan` / `--yes` | Preview or remove installed assets |
+| `uninstall --plan --purge` / `--yes --purge` | Cross-scope clean reset for v5 |
+| `context refresh` | Refresh project context |
+| `completion bash\|zsh\|fish` | Print deterministic shell completion |
 
 ## Education
 

@@ -20,17 +20,9 @@ rename or deprecate the key. See [TDD baseline](tdd-baseline.md) and
 
 ## Installation intent
 
-`configure` is separate from `config`: it edits the user-local installation intent at
-`~/.sdd-agentic-flow/install.yml`, while `config` edits project workflow policy. The intent keeps
-user packs and target IDs, plus per-repository project packs and `shared`/`local` sharing. It does
-not install skills; run `install <pack>` to reconcile. For project-local sharing, SAF owns only
-its exact `.git/info/exclude` block for `.agents/skills/` and removes only that block when sharing
-changes back to shared.
-
-Use `configure --plan` to preview both the saved intent and its later reconciliation. Its
-`Save intent:` command reproduces the selected packs, targets, or sharing; run it before the
-shown `Reconcile:` command. `install --plan` is human-readable when piped or run in CI; only
-explicit `--json` output is machine structured.
+Use `config installation --plan` to preview installation intent and target paths. It does not
+install skills; run `install <pack>` to reconcile. `install --plan` is human-readable when piped
+or run in CI; only explicit `--json` output is machine structured.
 
 `init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub with the workflow
 diagram and an internal link to the bundled full guide (`.sdd-agentic-flow/saf-skills-usage-guide.md`
@@ -85,8 +77,7 @@ Signals detected (all presence-only checks; no file content is parsed beyond `pa
 - **Platform** — ORM config (`prisma/schema.prisma`, `drizzle.config.ts`/`.js`) and feature-flag
   config (`.launchdarkly.yml`, `unleash.yml`).
 
-Run `sdd-agentic-flow discover` any time to refresh it after the project changes, or
-`sdd-agentic-flow discover --force` to fully regenerate it (this rewrites the whole file, so copy
+Run `sdd-agentic-flow context refresh` any time to refresh it after the project changes (this rewrites the whole file, so copy
 out any manual notes first). Skills that consult project context read it only when it exists and
 treat it as optional context, the same way they treat `.sdd-agentic-flow/context/domain-glossary.md`.
 
@@ -114,8 +105,7 @@ Two commands read and act on this provenance:
   recorded revision, it states that fact plainly (never a heuristic "stale" verdict) and suggests
   a refresh.
 - `sdd-agentic-flow context refresh`: regenerates `project-context.md` unconditionally, whether
-  or not it already exists. It is equivalent to `discover --force` but does not require
-  remembering the flag, and is the recommended way to refresh context going forward; `discover
+  or not it already exists. It is the recommended way to refresh context going forward; `context refresh`
   [--force]` keeps working exactly as before for existing scripts and CI.
 - `sdd-agentic-flow context autonomy-state`: read-only report of `workflow.execution_mode`/
   `autonomy_level` plus the last recorded `.sdd-agentic-flow/autonomy/loop-state.md`, if any. See

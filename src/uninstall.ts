@@ -159,11 +159,10 @@ function verifyPurge(cwd: string, homeDir: string): string[] {
 export function uninstall(args: string[], cwd: string): boolean | undefined {
   const usage = USAGE.uninstall;
   const plan = args.includes('--plan');
-  const apply = args.includes('--apply');
+  const apply = args.includes('--yes');
   const full = args.includes('--full');
   const purge = args.includes('--purge');
   const includeConfig = args.includes('--include-config') || full;
-  const yes = args.includes('--yes');
   const quiet = args.includes('--quiet');
   const verbose = args.includes('--verbose');
   let scope: string | null = null;
@@ -199,9 +198,6 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
         `${usage} — --purge cannot combine with --scope, --agent, --full, or --include-config`,
       );
     }
-    if (apply && !yes) {
-      return fail(`${usage} — --apply --purge requires --yes`);
-    }
     if (plan === apply) {
       return fail(`${usage} — specify exactly one of --plan or --apply with --purge`);
     }
@@ -222,7 +218,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
         );
       }
       process.stdout.write(
-        `\n${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, foreign skills, unrecognized paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --apply --purge --yes\n`,
+        `\n${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, foreign skills, unrecognized paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --yes --purge\n`,
       );
       return;
     }
@@ -313,7 +309,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     );
     if (!existing.length) process.stdout.write(`  ${t(locale, 'uninstall.nothing')}\n\n`);
     process.stdout.write(
-      `${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, unknown/unmanaged paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --apply\n`,
+      `${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, unknown/unmanaged paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --yes\n`,
     );
     return;
   }

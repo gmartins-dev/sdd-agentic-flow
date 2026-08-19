@@ -1,5 +1,8 @@
 # Roadmap
 
+- **v5.0.0 (2026-08-19):** Clean-slate CLI grammar, strict state schemas, transactional
+  ownership/provenance, terminal capability separation, and deterministic shell completions.
+
 - **v4.4.0 (2026-08-19):** Agentic Workflow Harness identity and developer lifecycle. Audited A1–A4: root lock metadata is stamped and checked, architecture documents the npm wrapper chain, optional companion tooling is scoped, and active documentation distinguishes skills/capabilities from host runtime execution. Added a practical lifecycle guide and narrow positioning sensor; no runtime, scheduler, dependency, or remote automation was added.
 - **v4.3.0 (2026-08-19):** Engineering control-plane coherence. Qualified public model and host-capability matrix; `doctor --harness` projects canonical readiness checks; Evidence Graph gains a safe deterministic HTML projection that writes only with explicit `--output`. No runtime, scheduler, new skill, telemetry, or implicit file write.
 - **v4.2.0 (2026-08-17):** Init and local artifact polish. Enriched `usage.md` generation
@@ -61,7 +64,7 @@
   methodology, one canonical workflow path, three operating presets
   (`init --preset`), one router. `migrate` removed; leftover `.sdd/` is a
   `doctor` WARN and a manual rename. Breaking notes in
-  `docs/v2-breaking-changes.md`. Autonomous does not mean unattended; no
+  the active v5+ compatibility contract. Autonomous does not mean unattended; no
   config value overrides safety. 13 skills; no public `auto-sdd` / `sdd-run`;
   no third stored axis. `baseline_version` stays `0.7.0`.
 - **v1.19.0 (2026-08-13):** Spec package lifecycle and scoped context. Path

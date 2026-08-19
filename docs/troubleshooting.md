@@ -12,21 +12,19 @@ first; it names the failing check.
 
 **Diagnose:** `sdd-agentic-flow doctor`. Look for `WARN .sdd-agentic-flow/config.yml not found`.
 
-**Fix:** `sdd-agentic-flow init` (or `init --non-interactive` for scripts and CI).
+**Fix:** `sdd-agentic-flow init`.
 
 ### `.sdd-agentic-flow/` or `.agents/skills/` visible in Git after setup
 
 **Cause:** user-scope `init` hides `.sdd-agentic-flow/` only via `.git/info/exclude` (not
 `.gitignore`). Project-scope install writes `.agents/skills/` into the repo (Git-visible unless
-you chose **Local to this repository** in customize setup or `configure --sharing local`).
+you chose project scope during setup).
 
-**Diagnose:** `git status --short` and `sdd-agentic-flow configure --plan`. Confirm intent scope
-(`user` vs `project`) and project sharing (`shared` vs `local`).
+**Diagnose:** `git status --short` and `sdd-agentic-flow config installation --plan`. Confirm intent scope
+(`user` vs `project`).
 
-**Fix:** For user-local toolkit state, save user scope with `configure --scope user` and re-run
-`init`, or pass `init --local-git-exclude` when using project scope. To hide project skills
-locally, run `configure --scope project --sharing local` then
-`install <pack> --scope project`.
+**Fix:** Re-run `init` with user scope, or pass `init --local-git-exclude` when using project
+scope. Then run `install <pack> --scope project` when project-local skills are intended.
 
 ### `skills` / `shared_layer`: core skills or shared layer not fully installed
 
@@ -62,12 +60,12 @@ Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) sur
 
 ### `project_context`: `.sdd-agentic-flow/context/project-context.md` not found
 
-**Cause:** `discover` (or `init`, which calls it) was never run, or the file was manually
+**Cause:** `context refresh` (or `init`, which calls it) was never run, or the file was manually
 deleted.
 
 **Diagnose:** `sdd-agentic-flow context status`.
 
-**Fix:** `sdd-agentic-flow discover` (or `init`, which does this automatically for a new
+**Fix:** `sdd-agentic-flow context refresh` (or `init`, which does this automatically for a new
 project).
 
 ### `project_context`: "repository has changed since generation"
@@ -186,7 +184,7 @@ validate against; otherwise this `WARN` is expected under the default `user` sco
 field.
 
 **Fix:** re-run `install <pack> --scope project`; if the file already exists, remove it first
-(or use `uninstall --apply --scope project` then reinstall) so the clean version is copied
+(or use `uninstall --yes --scope project` then reinstall) so the clean version is copied
 back in.
 
 ### `capability_contracts`: `FAIL` "depends_on references unknown skill" / "conflicts references unknown skill" / "baseline references unknown baseline id"
@@ -280,7 +278,7 @@ installed from a pre-v1.8.0 package version.
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 
 **Fix:** re-run `install <pack> --scope project`; if the file already exists, remove it first (or
-use `uninstall --apply --scope project` then reinstall) so the clean version is copied back in —
+use `uninstall --yes --scope project` then reinstall) so the clean version is copied back in —
 same caveat as the `capability_contracts` "missing required field" entry above, since `install`
 never overwrites an existing file.
 

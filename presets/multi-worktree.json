@@ -1,6 +1,6 @@
 {
   "name": "multi-worktree",
-  "version": "4.4.0",
+  "version": "5.0.0",
   "description": "Multi-task orchestration guidance.",
   "skills": ["saf-route", "saf-implement-multi"],
   "shared": true,

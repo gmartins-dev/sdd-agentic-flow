@@ -6,6 +6,9 @@
     { "pattern": "^https://www.npmjs.com" },
     { "pattern": "^https://github.com" },
     { "pattern": "^https://openai.com" },
+    { "pattern": "^https://npm.pkg.github.com" },
+    { "pattern": "^https://martinfowler.com" },
+    { "pattern": "^https://agent-skills.techleads.club" },
     { "pattern": "^\\.\\./sdd-agentic-flow-shared/" }
   ]
 }

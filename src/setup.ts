@@ -217,7 +217,7 @@ function presetNames(): string[] {
 function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const inferred = inferInitDefaults(cwd);
   const profile = options.profile || options.language || 'en-US';
-  return `version: 1
+  return `schema: saf-config/v1
 
 project:
   name: ${options.name || inferred.name}
@@ -802,7 +802,8 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (action.cancelled || action.value === 'keep') return;
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: Boolean(options.ascii) });
     if (action.value === 'changePolicy') return runCommand('config', ['policy'], cwd);
-    if (action.value === 'changeInstall') return runCommand('configure', ['--interactive'], cwd);
+    if (action.value === 'changeInstall')
+      return runCommand('config', ['installation', '--interactive'], cwd);
     if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii) });
     return runInteractiveMenu(cwd, { showSummary: false });
   }

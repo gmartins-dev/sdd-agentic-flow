@@ -341,7 +341,7 @@ for skill in saf-create-spec saf-create-prompts saf-implement saf-implement-mult
   grep -F -q 'domain-glossary.md' "skills/$skill/SKILL.md"
   grep -F -q 'project-context.md' "skills/$skill/SKILL.md"
 done
-grep -F -q 'discover' dist/sdd-agentic-flow.js
+grep -F -q 'context refresh' dist/sdd-agentic-flow.js
 grep -F -q 'project-context.md' skills/saf-setup/SKILL.md
 for template in task-prompt tasks check-report validation-report; do
   grep -F -q 'TDD' "shared/templates/$template.template.md"
@@ -356,7 +356,7 @@ grep -F -q 'canonical-vocabulary.md' shared/references/action-vocabulary.md
 for preset in core planning execution pr multi-worktree full local-files github; do
   node -e 'const p=require("./presets/'"$preset"'.json"); if (!Array.isArray(p.skills) || !p.skills.includes("saf-route")) process.exit(1);'
 done
-for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/engineering-principles.md docs/spec-lifecycle.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/baselines.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/v2-breaking-changes.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
+for file in README.md README.pt-BR.md LICENSE NOTICE LICENSING.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md docs/agent-compatibility.md docs/design-principles.md docs/trust-model.md docs/uninstall.md docs/execution-modes.md docs/autonomy-levels.md docs/autonomy-guardrails.md docs/inspirations.md docs/recommended-harness.md docs/using-with-codex.md docs/using-with-cursor.md docs/using-with-claude-code.md docs/using-with-vscode-copilot.md docs/prompt-recipes.md docs/i18n.md docs/language-profiles.md docs/language-profiles.pt-BR.md docs/tdd-baseline.md docs/engineering-principles.md docs/spec-lifecycle.md docs/invocation-model.md docs/why-this-exists.md docs/domain-vocabulary.md docs/architecture.md docs/compatibility-promise.md docs/baselines.md docs/tlc-integration.md docs/installation-scope.md docs/environment-compatibility.md docs/skills-catalog.md docs/troubleshooting.md examples/golden/invoice-approval/source-item.md examples/golden/task-management/source-item.md examples/language-profiles/en-US-config.yml examples/language-profiles/pt-BR-config.yml; do
   test -f "$file"
 done
 grep -F -q 'no telemetry' README.md

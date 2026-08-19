@@ -105,9 +105,14 @@ function classifyTargetRoot(
   const pairs = collectManagedPairs(packageRoot, preset, targetRoot);
   const classified = classifyManagedPairs(pairs);
   const provenance = readInstallProvenance(targetRoot);
-  const managed = Boolean(provenance?.package === 'sdd-agentic-flow' && provenance.schema === 2);
+  const managed = Boolean(
+    provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v1',
+  );
   const legacy =
-    Boolean(provenance?.package === 'sdd-agentic-flow' && provenance.schema !== 2) ||
+    Boolean(
+      provenance?.package === 'sdd-agentic-flow' &&
+        provenance.schema !== 'saf-install-provenance/v1',
+    ) ||
     (fs.existsSync(targetRoot) &&
       fs
         .readdirSync(targetRoot)

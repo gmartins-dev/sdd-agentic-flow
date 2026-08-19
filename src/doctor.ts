@@ -75,7 +75,7 @@ function setDoctorSmokeDeps(deps: SmokeCheckDeps): void {
 }
 
 function defaultConfigYaml(): string {
-  return `version: 1
+  return `schema: saf-config/v1
 
 project:
   name: example-project
@@ -288,7 +288,10 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       if (!fs.existsSync(root)) continue;
       const provenance = readInstallProvenance(root);
       const legacy =
-        Boolean(provenance?.package === 'sdd-agentic-flow' && provenance.schema !== 2) ||
+        Boolean(
+          provenance?.package === 'sdd-agentic-flow' &&
+            provenance.schema !== 'saf-install-provenance/v1',
+        ) ||
         fs
           .readdirSync(root)
           .some((name: string) => name !== 'sdd-agentic-flow-shared' && isLegacySkillName(name));
@@ -445,7 +448,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       const contextArtifactExists = fs.existsSync(contextArtifactPath);
       let contextMessage = contextArtifactExists
         ? `${SDD_PATHS.projectContext} found`
-        : `${SDD_PATHS.projectContext} not found; run \`discover\``;
+        : `${SDD_PATHS.projectContext} not found; run \`context refresh\``;
       if (contextArtifactExists) {
         const provenance = parseProvenance(fs.readFileSync(contextArtifactPath, 'utf8'));
         const current = gitInfo(cwd);
@@ -1047,7 +1050,10 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
     checks: projectedChecks.map(({ section: _section, ...check }) => check),
     language: languageReport(cwd),
   };
-  if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
+  if (options.json)
+    process.stdout.write(
+      `${JSON.stringify({ schema_version: 1, cli_version: VERSION, command: 'doctor', ok: true, data: result })}\n`,
+    );
   else
     renderDoctor(projectedChecks, {
       verbose: options.verbose,
@@ -1083,7 +1089,9 @@ function evidenceGraphDoctor(
       process.stdout.write(`${output}\n`);
     } else process.stdout.write(html);
   } else if (options.json) {
-    process.stdout.write(`${JSON.stringify({ ...result, exitCode })}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ schema_version: 1, cli_version: VERSION, command: 'doctor --evidence-graph', ok: exitCode === 0, data: { ...result, exitCode } })}\n`,
+    );
   } else {
     process.stdout.write(`${formatEvidenceGraph(result)}\n`);
   }

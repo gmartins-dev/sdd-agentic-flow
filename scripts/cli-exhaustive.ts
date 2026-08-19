@@ -171,7 +171,7 @@ function runJourneys() {
     assert.deepEqual(entries(fresh.cwd), before);
   });
   record('J02', 'new user', 'init', () => {
-    const result = run(['init', '--preset', 'supervised', '--br'], fresh);
+    const result = run(['init', '--preset', 'supervised', '--language', 'pt-BR'], fresh);
     expect(result, 0, /initialized|inicializados/);
     assert.match(
       fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
@@ -190,13 +190,14 @@ function runJourneys() {
     const result = run(['doctor', '--json', '--contracts', '--autonomy'], fresh);
     expect(result, 0);
     const report = JSON.parse(result.stdout);
-    assert.ok(Array.isArray(report.checks));
-    assert.notEqual(report.status, 'FAIL');
+    assert.equal(report.schema_version, 1);
+    assert.ok(Array.isArray(report.data.checks));
+    assert.notEqual(report.data.status, 'FAIL');
   });
 
   const greenfield = project('02-project-user');
-  record('J05', 'project setup', 'discover -> context status', () => {
-    expect(run(['discover'], greenfield), 0);
+  record('J05', 'project setup', 'context refresh -> context status', () => {
+    expect(run(['context', 'refresh'], greenfield), 0);
     const result = run(['context', 'status'], greenfield);
     expect(result, 0, /available|project-context/);
   });
@@ -231,18 +232,32 @@ function runJourneys() {
   record('J12', 'policy configuration', 'config policy --yes --preset supervised', () => {
     expect(run(['config', 'policy', '--yes', '--preset', 'supervised'], policy), 0, /PASS|saved/);
   });
-  record('J13', 'policy configuration', 'configure --plan', () => {
+  record('J13', 'policy configuration', 'config installation --plan', () => {
     expect(
       run(
-        ['configure', '--plan', '--scope', 'project', '--pack', 'core', '--sharing', 'local'],
+        [
+          'config',
+          'installation',
+          '--plan',
+          '--scope',
+          'project',
+          '--pack',
+          'core',
+          '--sharing',
+          'local',
+        ],
         policy,
       ),
       0,
       /Intent preview|would save/,
     );
   });
-  record('J14', 'policy configuration', 'configure --scope project --pack core', () => {
-    expect(run(['configure', '--scope', 'project', '--pack', 'core'], policy), 0, /saved/);
+  record('J14', 'policy configuration', 'config installation --scope project --pack core', () => {
+    expect(
+      run(['config', 'installation', '--scope', 'project', '--pack', 'core'], policy),
+      0,
+      /saved/,
+    );
   });
 
   const userInstall = project('04-user-install');
@@ -253,12 +268,8 @@ function runJourneys() {
     assert.deepEqual(entries(userInstall.cwd).sort(), before);
     assert.deepEqual(entries(userInstall.home), []);
   });
-  record('J16', 'global installation', 'install core --agent claude-code', () => {
-    expect(
-      run(['install', 'core', '--agent', 'claude-code'], userInstall),
-      0,
-      /installed|preserved/,
-    );
+  record('J16', 'global installation', 'install core --target claude', () => {
+    expect(run(['install', 'core', '--target', 'claude'], userInstall), 0, /installed|preserved/);
     assert.ok(
       fs.existsSync(path.join(userInstall.home, '.claude/skills/saf-create-spec/SKILL.md')),
     );
@@ -321,13 +332,13 @@ function runJourneys() {
     expect(run(['uninstall', '--plan'], removal), 0, /Uninstall plan|No changes made/);
     assert.ok(fs.existsSync(path.join(removal.cwd, '.agents/skills/saf-create-spec/SKILL.md')));
   });
-  record('J25', 'uninstall workflow', 'uninstall --apply', () => {
-    expect(run(['uninstall', '--apply'], removal), 0, /removed/);
+  record('J25', 'uninstall workflow', 'uninstall --yes', () => {
+    expect(run(['uninstall', '--yes'], removal), 0, /removed/);
     assert.ok(fs.existsSync(path.join(removal.cwd, '.specs/features/keep.md')));
     assert.ok(fs.existsSync(path.join(removal.cwd, 'user-file.txt')));
   });
-  record('J26', 'uninstall workflow', 'uninstall --apply --full', () => {
-    expect(run(['uninstall', '--apply', '--full'], removal), 0, /preserved/);
+  record('J26', 'uninstall workflow', 'uninstall --yes --purge', () => {
+    expect(run(['uninstall', '--yes', '--purge'], removal), 0, /preserved/);
     assert.equal(fs.existsSync(path.join(removal.cwd, '.sdd-agentic-flow/config.yml')), false);
   });
 
@@ -337,7 +348,7 @@ function runJourneys() {
     ['E02', 'install missing-pack', /unknown pack/],
     ['E03', 'doctor --unknown', /usage:/],
     ['E04', 'uninstall', /uninstall --plan/],
-    ['E05', 'configure --interactive --plan', /cannot combine/],
+    ['E05', 'config installation --interactive --plan', /cannot be combined/],
     ['E06', 'upgrade --check --skills-only', /cannot be combined/],
     ['E07', 'autonomous-resume --override-guard=8', /Invalid arguments/],
   ];
@@ -350,18 +361,10 @@ function runJourneys() {
   record('E08', 'output contract', 'doctor --json invalid flag', () => {
     const result = run(['doctor', '--json', '--unknown'], invalid);
     expect(result, 1);
-    assert.equal(JSON.parse(result.stdout).status, 'FAIL');
+    assert.equal(JSON.parse(result.stdout).ok, false);
   });
   record('E09', 'output contract', 'help aliases', () => {
-    for (const command of [
-      'init',
-      'install',
-      'doctor',
-      'upgrade',
-      'uninstall',
-      'discover',
-      'context',
-    ]) {
+    for (const command of ['init', 'install', 'doctor', 'upgrade', 'uninstall', 'context']) {
       assert.equal(
         run(['help', command], invalid).stdout,
         run([command, '--help'], invalid).stdout,
@@ -381,7 +384,10 @@ function runJourneys() {
   const packedPlain = project('10-packed-plain-br');
   record('J28', 'packaged plain Portuguese consumer', 'NO_COLOR + init/install/doctor', () => {
     const env = { NO_COLOR: '1' };
-    assert.equal(runPacked(['init', '--br'], packedPlain, tarball, cacheDir, env).status, 0);
+    assert.equal(
+      runPacked(['init', '--language', 'pt-BR'], packedPlain, tarball, cacheDir, env).status,
+      0,
+    );
     assert.equal(
       runPacked(['install', 'full', '--scope', 'project'], packedPlain, tarball, cacheDir, env)
         .status,

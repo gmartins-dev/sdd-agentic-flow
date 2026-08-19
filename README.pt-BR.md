@@ -102,8 +102,8 @@ Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-u
 
 Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
 recomendado ao pressionar Enter), instala o pack `full`, prepara o contexto e valida o resultado.
-Altere a política com `config policy`; altere a instalação com `configure --interactive`.
-Use `init --non-interactive` em scripts e CI. Veja [início rápido](docs/getting-started.md).
+Altere a política com `config policy`; altere a instalação com `config installation`.
+Use `init` em scripts e CI. Veja [início rápido](docs/getting-started.md).
 
 Ao escolher `pt-BR`, a saída humana da CLI — prompts, planos, doctor, menu e `learn-sdd` —
 passa a usar português brasileiro. Commands, paths, statuses, IDs e JSON permanecem em inglês
@@ -142,7 +142,7 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 | --- | --- | --- |
 | Greenfield | Source item até validação | [task-management](examples/golden/task-management/walkthrough.md) |
 | Código existente | Specs a partir de código sem docs | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
-| Project context | Ciclo `discover` / `context` | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
+| Project context | Ciclo `context refresh` / `context status` | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | Loop de PR | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
 | Autonomia AUTO-001 | Idea → spec com config autônoma | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
 | Autonomia AUTO-002 | Cadeia spec → validate | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
@@ -188,9 +188,9 @@ Desinstalação:
 
 ```bash
 npx sdd-agentic-flow uninstall --plan
-npx sdd-agentic-flow uninstall --apply
+npx sdd-agentic-flow uninstall --yes
 ```
 
-Veja [desinstalação](docs/uninstall.md) e [mudanças incompatíveis da v2](docs/v2-breaking-changes.md).
+Veja [desinstalação](docs/uninstall.md) e o [contrato de compatibilidade v5+](docs/compatibility-promise.md).
 
 </details>

@@ -114,8 +114,8 @@ Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-
 Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup and
 operating policy (Supervised recommended), optional customization, then configures, installs
 the `full` pack by default, prepares context, and validates the result. Change policy later
-with `config policy`; change installation with `configure --interactive`. Scripts and CI stay
-deterministic with `init --non-interactive`. See [getting started](docs/getting-started.md).
+with `config policy`; change installation with `config installation`. Scripts and CI use explicit
+flags and `--yes` for local mutations. See [getting started](docs/getting-started.md).
 
 ## How it works
 
@@ -150,7 +150,7 @@ These walkthroughs are not slide-deck claims—they run as integration tests in 
 | --- | --- | --- |
 | Greenfield feature | Source item through validation | [task-management](examples/golden/task-management/walkthrough.md) |
 | Existing code | Specs from undocumented code | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
-| Project context | `discover` / `context` lifecycle | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
+| Project context | `context status` / `context refresh` lifecycle | [project-context lifecycle](examples/golden/project-context-lifecycle/walkthrough.md) |
 | PR loop | Create → review → fix → review | [pr-flow](examples/golden/pr-flow/walkthrough.md) |
 | Autonomy AUTO-001 | Idea → spec under autonomous config | [autonomy-idea-to-spec](examples/golden/autonomy-idea-to-spec/walkthrough.md) |
 | Autonomy AUTO-002 | Spec → validate chain | [autonomy-spec-to-validate](examples/golden/autonomy-spec-to-validate/walkthrough.md) |
@@ -203,25 +203,25 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive|--non-interactive] [--language ...|--en|--br] [--feature-profile ...] [--execution-mode ...] [--autonomy-level ...] [--quiet]  Guided setup or local configuration
-configure [--scope user|project] [--pack ...] [--target ...] [--plan]  Save installation intent
-discover [--force] [--quiet]          Refresh auto-discovered project context
+init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...]  Guided setup
+config installation [--scope user|project] [--pack ...] [--target ...] [--plan]  Save intent
+context refresh                       Refresh project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
-install <pack> [--scope user|project] [--agent ...] [--plan] [--quiet]  Install a pack (default: user scope, zero project footprint)
+install <pack> [--scope user|project] [--target ...] [--plan] [--quiet]  Install a pack (default: user scope)
 doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
 autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
-uninstall --apply [--include-config] [--full] [--scope user|project] [--agent ...] [--verbose] [--quiet]  Remove installed toolkit assets
+uninstall --yes [--purge] [--scope user|project|all] [--target ...] [--verbose] [--quiet]  Remove managed assets
 list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md), [v4 breaking changes](docs/v4-breaking-changes.md), and [v2 breaking changes](docs/v2-breaking-changes.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the v5+ compatibility promise](docs/compatibility-promise.md).
 
-`install` defaults to `--scope user` (writes only to global per-agent skill directories, e.g. `~/.claude/skills`). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Pass `--agent codex|cursor|claude-code|vscode-copilot` to restrict which global directories are written. See [installation scope](docs/installation-scope.md).
+`install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
 
-If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall`/`discover` to suppress decorative success output.
+If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall` to suppress decorative success output.
 
 Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already set up, and one suggested next command) instead of the full reference. It never runs anything on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also offers a numbered menu below the status screen; selecting an entry runs the exact same command the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`), never applies. Piped output, scripts, CI, and agent invocations always see just the status screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` / `<command> --help` for one command's usage and examples.
 
@@ -268,14 +268,14 @@ The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `re
 
 ```bash
 npx sdd-agentic-flow uninstall --plan
-npx sdd-agentic-flow uninstall --apply
+npx sdd-agentic-flow uninstall --yes
 ```
 
-Uninstall removes only known installed toolkit skill directories, from both scopes by default. It preserves specs, reports, snapshots, source code, and unknown paths. Add `--include-config` only when you also want to remove `.sdd-agentic-flow/config.yml`, or `--scope`/`--agent` to target one installation. For a full reset before a clean reinstall, use `uninstall --apply --full` or v4 cross-scope
-`uninstall --apply --purge --yes`. It also removes regenerable toolkit state;
+Uninstall removes only recognized v5 managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
+`uninstall --yes --purge`. It also removes regenerable toolkit state;
 `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing
 "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and
-[v4 breaking changes](docs/v4-breaking-changes.md).
+[v5+ compatibility promise](docs/compatibility-promise.md).
 
 ## Skill map
 

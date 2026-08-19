@@ -44,6 +44,18 @@ type OutputFlags = {
   ascii?: boolean;
 };
 
+type OutputFormat = 'human' | 'machine';
+type HumanPresentation = 'rich' | 'plain';
+type TerminalCapabilities = {
+  interactive: boolean;
+  color: boolean;
+  unicode: boolean;
+  cursor: boolean;
+  rawInput: boolean;
+  animation: boolean;
+  width: number;
+};
+
 type ShortenPathOptions = {
   homeDir?: string;
   cwd?: string;
@@ -65,6 +77,30 @@ function colorEnabled(
   return true;
 }
 
+function terminalCapabilities(
+  streams: OutputStreams = {},
+  env: NodeJS.ProcessEnv = process.env,
+  flags: OutputFlags = {},
+): TerminalCapabilities {
+  const interactive = Boolean(streams.stdin?.isTTY && streams.stdout?.isTTY && !env.CI);
+  const rawInput =
+    interactive &&
+    typeof (streams.stdin as (NodeJS.ReadStream & { setRawMode?: unknown }) | undefined)
+      ?.setRawMode === 'function';
+  const dumb = env.TERM === 'dumb';
+  const color = !flags.json && !flags.machine && colorEnabled(streams.stdout, env);
+  const plain = Boolean(flags.ascii || env.SDD_ASCII === '1' || dumb);
+  return {
+    interactive,
+    color: color && !plain,
+    unicode: !plain,
+    cursor: interactive && !dumb,
+    rawInput,
+    animation: interactive && !plain && env.SDD_BRAND_ANIMATE !== '0',
+    width: terminalColumns(streams.stdout || process.stdout),
+  };
+}
+
 function styleStatus(
   status: string,
   stream: BrandStream | undefined,
@@ -80,14 +116,11 @@ function outputMode(
   env: NodeJS.ProcessEnv = {},
   flags: OutputFlags = {},
 ): DisplayMode {
-  const stdinTty = Boolean(streams.stdin?.isTTY);
   // A pipe changes presentation, not the semantic contract. JSON is the only
   // public machine protocol; ordinary CI and redirected output stay readable.
   if (flags.json || flags.machine) return 'machine';
-  if (flags.quiet || env.CI) return 'human-plain';
-  const asciiForced = Boolean(flags.ascii) || env.SDD_ASCII === '1';
-  const colored = colorEnabled(streams.stdout, env);
-  if (asciiForced || !colored || !stdinTty) return 'human-plain';
+  const capabilities = terminalCapabilities(streams, env, flags);
+  if (flags.quiet || !capabilities.interactive || !capabilities.color) return 'human-plain';
   return 'human-rich';
 }
 
@@ -140,7 +173,7 @@ function doctorFooterLines(checks: DoctorCheck[] = []): string[] {
     (/changed since generation/i.test(context.message ?? '') ||
       /not found/i.test(context.message ?? ''))
   ) {
-    lines.push('Fix: npx sdd-agentic-flow discover --force');
+    lines.push('Fix: npx sdd-agentic-flow context refresh');
   }
   if (!problems.length) {
     lines.push('Next: use your coding agent with the installed SDD workflow');
@@ -243,7 +276,15 @@ function didYouMean(input: unknown, candidates: string[]): string | null {
   return bestDistance <= DID_YOU_MEAN_MAX_DISTANCE ? best : null;
 }
 
-export type { BrandOptions, DisplayMode, OutputFlags, OutputStreams };
+export type {
+  BrandOptions,
+  DisplayMode,
+  HumanPresentation,
+  OutputFlags,
+  OutputFormat,
+  OutputStreams,
+  TerminalCapabilities,
+};
 export {
   colorEnabled,
   didYouMean,
@@ -259,6 +300,7 @@ export {
   styleBrand,
   styleStatus,
   symbol,
+  terminalCapabilities,
   terminalColumns,
   writeBrand,
 };

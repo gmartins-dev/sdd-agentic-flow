@@ -1,9 +1,12 @@
 import readline from 'node:readline';
 import { t } from './messages';
+import { terminalCapabilities } from './ui';
 
 type SelectOption = {
   value: unknown;
   label: string;
+  description?: string;
+  recommended?: boolean;
   selected?: boolean;
 };
 
@@ -94,7 +97,9 @@ function renderSelector(
     const state = multiple
       ? ` ${selectedValues.has(optionValueKey(option.value)) ? '[x]' : '[ ]'}`
       : '';
-    lines.push(` ${marker}${state} ${index + 1}. ${option.label}`);
+    const suffix = option.recommended ? ' (recommended)' : '';
+    lines.push(` ${marker}${state} ${index + 1}. ${option.label}${suffix}`);
+    if (option.description) lines.push(`      ${option.description}`);
   });
   lines.push(
     multiple
@@ -113,12 +118,12 @@ async function select(
   const output = settings.output || process.stdout;
   const multiple = Boolean(settings.multiple);
   const cancelValues = (settings.cancelValues || []).map((entry) => String(entry).toLowerCase());
-  const plain =
-    settings.ascii ||
-    process.env.NO_COLOR !== undefined ||
-    !input.isTTY ||
-    !output.isTTY ||
-    typeof input.setRawMode !== 'function';
+  const capabilities = terminalCapabilities(
+    { stdin: input, stdout: output },
+    process.env,
+    settings.ascii === undefined ? {} : { ascii: settings.ascii },
+  );
+  const plain = !capabilities.interactive || !capabilities.rawInput || process.env.TERM === 'dumb';
   output.write(`${renderSelector(question, options, { multiple, locale: settings.locale })}\n`);
   if (plain) {
     const rl = readline.createInterface({ input, output, terminal: false });

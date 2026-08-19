@@ -17,7 +17,7 @@ npx sdd-agentic-flow doctor
 ```
 
 Guided `init` in a real terminal includes pack/scope choices and an operating-policy step
-(Supervised recommended). Use `init --non-interactive` or `init --preset` in automation. The CLI
+(Supervised recommended). Use `init` and explicit `config` commands in automation. The CLI
 writes `.sdd-agentic-flow/config.yml` and keeps an existing configuration unchanged.
 
 Use `npx sdd-agentic-flow list` to inspect available packs:
@@ -189,14 +189,12 @@ Preview cleanup first:
 
 ```bash
 npx sdd-agentic-flow uninstall --plan
-npx sdd-agentic-flow uninstall --apply
-npx sdd-agentic-flow uninstall --apply --include-config
-npx sdd-agentic-flow uninstall --apply --full
+npx sdd-agentic-flow uninstall --yes
 ```
 
 Uninstall removes known toolkit skills. It preserves source code, specs,
 reports, snapshots, and unknown paths. `--include-config` also removes
-`.sdd-agentic-flow/config.yml`. `--full` is a complete reset for a clean reinstall: it also
+`.sdd-agentic-flow/config.yml`. Re-run `init` for a clean reinstall: it also
 removes `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots`, and `.sdd-agentic-flow/reports`
 (never `.specs/features`). See [uninstall](uninstall.md).
 

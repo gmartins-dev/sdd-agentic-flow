@@ -1,6 +1,6 @@
 # Adopting in a brownfield repo
 
-`init` and `discover` are read-only with respect to your source code. They only write
+`init` and `context refresh` are read-only with respect to your source code. They only write
 `.sdd-agentic-flow/config.yml` and `.sdd-agentic-flow/context/project-context.md`. Follow these steps to adopt
 `sdd-agentic-flow` in a repository that already has code, tests, and conventions.
 
@@ -11,15 +11,15 @@ npx sdd-agentic-flow init
 ```
 
 This writes `.sdd-agentic-flow/config.yml` (your declared policy — project name, source type, workflow
-defaults, quality gates, safety defaults) and auto-runs discovery, writing
+defaults, quality gates, safety defaults) and refreshes project context, writing
 `.sdd-agentic-flow/context/project-context.md`. Existing `.sdd-agentic-flow/config.yml` files are preserved, never
 overwritten — safe to re-run.
 
 Use guided `init` in a real terminal to set agent target, language profile, operating policy,
-and related options. For automation, use `init --non-interactive` or explicit flags. See
+and related options. For automation, use `init` and explicit config commands. See
 [configuration](../configuration.md).
 
-## 2. Read what `discover` found
+## 2. Read what `context refresh` found
 
 `.sdd-agentic-flow/context/project-context.md` records signals it found in the repository — see
 [configuration](../configuration.md#project-context) for the full signal list. Sections worth
@@ -36,7 +36,7 @@ checking for a brownfield adoption:
 - **Platform signals** — ORM (`prisma/schema.prisma`, `drizzle.config.*`) and feature-flag
   config presence.
 
-If a signal you expected is missing, that's not an error — `discover` only checks a small,
+If a signal you expected is missing, that's not an error — `context refresh` only checks a small,
 explicit list of well-known filenames and folder names (see
 [configuration](../configuration.md#project-context)); it does not parse code. Add anything it
 missed to the `## Notes` section by hand.
@@ -44,12 +44,10 @@ missed to the `## Notes` section by hand.
 ## 3. Refresh after the project changes
 
 ```bash
-npx sdd-agentic-flow discover --force
+npx sdd-agentic-flow context refresh
 ```
 
-`--force` fully regenerates `project-context.md`, so copy out any manual notes first. Without
-`--force`, `discover` is a no-op if the file already exists — safe to run in CI or a pre-commit
-hook without side effects.
+`context refresh` fully regenerates `project-context.md`, so copy out any manual notes first.
 
 The friendlier equivalent is:
 
@@ -60,9 +58,7 @@ npx sdd-agentic-flow context refresh   # regenerate it unconditionally
 
 `context status` reads the provenance recorded in the file (generated-at timestamp, repository
 revision, branch) and tells you plainly whether the repository has moved on since generation —
-useful after a brownfield repo has had significant changes since you last ran `init`/`discover`.
-`context refresh` does the same full regeneration as `discover --force`, without needing to
-remember the flag.
+useful after a brownfield repo has had significant changes since you last ran `init`/`context refresh`.
 
 ## 4. Install a pack and start the loop
 

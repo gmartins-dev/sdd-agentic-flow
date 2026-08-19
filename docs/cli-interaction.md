@@ -73,7 +73,7 @@ does not suggest nonexistent flags such as `init --force`.
 
 ## Next steps
 
-After a mutating command succeeds (`init`, `install`, `discover`,
+After a mutating command succeeds (`init`, `install`, `context refresh`,
 `context refresh`, `autonomous-resume`), the CLI may print a short, copy-pasteable
 `Suggested next step` in human-rich / human-plain only. It is omitted under `--quiet`
 and in **machine** mode (`--json`). Welcome (bare invocation) still
@@ -97,7 +97,7 @@ optional customization path, including an operating-policy step (Supervised reco
 single review before the first write. It derives first-use, partial, and ready state from
 configuration, installation intent, context, and `doctor`; it does not store a separate onboarding
 marker. Before apply, **Back** only changes in-memory choices. After apply, **Change operating
-policy** runs `config policy`; **Change installation setup** runs `configure --interactive` —
+policy** runs `config policy`; **Change installation setup** runs `config installation` —
 each is a deliberate change, not a rollback. A handled failure keeps the human in the flow with
 retry, validation, change, or exit.
 

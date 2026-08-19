@@ -7,6 +7,10 @@ import { test } from 'node:test';
 import { resolveOnboardingState } from '../src/onboarding';
 import { resolveSelection, select } from '../src/selector';
 
+// Simulated raw-capable fixtures are intentionally not TERM=dumb; TERM=dumb is
+// a documented numbered-readline mode in the v5 terminal contract.
+process.env.TERM = 'xterm';
+
 function setTty(stream) {
   Object.defineProperty(stream, 'isTTY', { value: true, configurable: true });
   return stream;
@@ -72,7 +76,9 @@ test('selector falls back to numbered input when a TTY cannot enter raw mode', a
 
 test('NO_COLOR keeps the complete numbered selector without ANSI output', async () => {
   const prior = process.env.NO_COLOR;
+  const priorTerm = process.env.TERM;
   process.env.NO_COLOR = '1';
+  process.env.TERM = 'dumb';
   const input = Readable.from(['2\n']);
   setTty(input);
   input.setRawMode = () => {};
@@ -84,13 +90,15 @@ test('NO_COLOR keeps the complete numbered selector without ANSI output', async 
         { value: 'one', label: 'One' },
         { value: 'two', label: 'Two' },
       ],
-      { input, output },
+      { input, output, locale: 'en-US' },
     );
     assert.deepEqual(result, { value: 'two' });
     assert.equal(output.read().toString().includes(String.fromCharCode(27)), false);
   } finally {
     if (prior === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = prior;
+    if (priorTerm === undefined) delete process.env.TERM;
+    else process.env.TERM = priorTerm;
   }
 });
 

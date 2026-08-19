@@ -18,7 +18,7 @@ npx sdd-agentic-flow install core --plan                 # dry run: show what wo
 
 The scope only applies to what `install` copies (skills). It never applies to `.sdd-agentic-flow/config.yml`
 or `.sdd-agentic-flow/context/project-context.md`, which are project policy, always created by
-`init`/`discover`, and always live in the project regardless of scope.
+`init`/`context refresh`, and always live in the project regardless of scope.
 
 | Category | Lives in | Owner |
 | --- | --- | --- |
@@ -63,23 +63,9 @@ verified against that agent's own documentation:
 | Claude Code               | `~/.claude/skills/<name>/SKILL.md`           | `.claude/skills/<name>/SKILL.md` | [code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills)                            |
 | VS Code + GitHub Copilot  | `~/.copilot/skills/`                         | `.agents/skills/`, `.github/skills/`, `.claude/skills/` | [code.visualstudio.com/docs/agent-customization/agent-skills](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
 
-Without `--agent`, `install` writes to 3 fixed global targets by default: `~/.agents/skills/`
-(Codex CLI + Cursor, and Copilot's fallback path), `~/.claude/skills/` (Claude Code), and
-`~/.copilot/skills/` (GitHub Copilot). Writing to all 3 by default costs a few extra KB and
-avoids any need to detect "which agent is installed." Detection is out of scope for this
-release (see the [v0.9.0 non-scope list](compatibility-promise.md)).
-
-Restrict to a single agent with `--agent`:
-
-```bash
-npx sdd-agentic-flow install core --agent claude-code
-```
-
-If `.sdd-agentic-flow/config.yml` declares a recognized `agent.target` (`codex`, `cursor`, `claude-code`, or
-`vscode-copilot`), `install` uses it as the default `--agent` value when the flag is omitted.
-
-**Agents not covered:** if `--agent` names something the CLI does not recognize, `install`
-fails and states the limitation. It never falls back to writing into the project silently.
+Targets are selected by the canonical installation configuration. Use
+`config installation --plan` to preview the exact paths before writing; no agent-specific
+flag is required.
 
 ## `--plan`
 
@@ -108,6 +94,5 @@ project target and at each of the 3 default user-scope targets, plus an explicit
 
 ## `uninstall --scope`
 
-`uninstall` also accepts `--scope user|project` (default: both) and `--agent` to restrict the
-user-scope targets it touches. Defaulting to both is the safer choice: it removes skills from
-every location the CLI recognizes as installed by it.
+`uninstall --plan` previews cleanup and `uninstall --yes` applies it. Only known toolkit-managed
+files are removed; user files and project specs are preserved.

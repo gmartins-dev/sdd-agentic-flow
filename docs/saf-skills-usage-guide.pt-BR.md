@@ -28,9 +28,9 @@ Use `npx sdd-agentic-flow list` para consultar os packs:
 | `planning`               | Specs e prompts de tarefas                                       |
 | `execution`              | Execução de uma ou várias tarefas                                |
 | `pr`                     | Preparação, review e correção de findings de PR                  |
-| `multi-worktree`         | Trabalho paralelo planejado                                      |
+| `multi-task`             | Trabalho paralelo planejado com ownership isolado                |
 | `full`                   | Todas as skills públicas                                         |
-| `local-files` / `github` | Complementos para contextos de origem                            |
+| `local-files`             | Orientação para source items locais                                |
 
 ## 2. Leia a configuração do projeto
 

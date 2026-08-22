@@ -58,7 +58,11 @@ type DoctorCommandOptions = {
 
 type SmokeCheckDeps = {
   init: (cwd: string, options: { profile?: string; quiet?: boolean }) => boolean | undefined;
-  install: (pack: string, cwd: string, options: { scope?: string; quiet?: boolean }) => unknown;
+  install: (
+    pack: string,
+    cwd: string,
+    options: { scope?: string; quiet?: boolean; homeDir?: string },
+  ) => unknown;
 };
 
 let resolveInstallProfilePlan: ((input: PlanForInstallProfileInput) => InstallPlan) | null = null;
@@ -991,21 +995,28 @@ function smokeCheck(): InternalDoctorCheck {
   try {
     for (const profile of LANGUAGE_PROFILES) {
       temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
-      init(temporary, { profile, quiet: true });
-      install('core', temporary, { scope: 'project', quiet: true });
-      init(temporary, { profile, quiet: true });
-      install('core', temporary, { scope: 'project', quiet: true });
-      const required = [
-        SDD_PATHS.config,
-        SDD_PATHS.projectContext,
-        '.agents/skills',
-        '.agents/skills/sdd-agentic-flow-shared',
-        `.agents/skills/sdd-agentic-flow-shared/language-profiles/${profile}.md`,
-        '.specs/features',
-      ].every((relative) => temporary && fs.existsSync(path.join(temporary, relative)));
-      const state = severity(doctorChecks(temporary));
-      if (!required || state === 'FAIL' || languageReport(temporary).profile !== profile)
-        throw new Error(`expected ${profile} files or project checks are missing`);
+      const originalHome = process.env.HOME;
+      process.env.HOME = temporary;
+      try {
+        init(temporary, { profile, quiet: true });
+        install('core', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        init(temporary, { profile, quiet: true });
+        install('core', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        const required = [
+          SDD_PATHS.config,
+          SDD_PATHS.projectContext,
+          '.agents/skills',
+          '.agents/skills/sdd-agentic-flow-shared',
+          `.agents/skills/sdd-agentic-flow-shared/language-profiles/${profile}.md`,
+          '.specs/features',
+        ].every((relative) => temporary && fs.existsSync(path.join(temporary, relative)));
+        const state = severity(doctorChecks(temporary));
+        if (!required || state === 'FAIL' || languageReport(temporary).profile !== profile)
+          throw new Error(`expected ${profile} files or project checks are missing`);
+      } finally {
+        if (originalHome === undefined) delete process.env.HOME;
+        else process.env.HOME = originalHome;
+      }
       fs.rmSync(temporary, { recursive: true, force: true });
       temporary = undefined;
     }

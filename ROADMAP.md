@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v6.0.0 (2026-08-22):** Provider-neutral skills and packs, local change-review contracts,
+  durable pre-spec discovery, minimum-sufficient prompts, generic multi-task isolation, and
+  deterministic skill-contract lint. Breaking clean boundary; no provider adapter, runtime,
+  scheduler, telemetry, or automatic remote mutation.
+
 - **v5.0.0 (2026-08-19):** Clean-slate CLI grammar, strict state schemas, transactional
   ownership/provenance, terminal capability separation, and deterministic shell completions.
 

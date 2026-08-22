@@ -21,6 +21,14 @@ task-scoped. The working directory layout does not change.
 
 Existence is not relevance. Resolve broadly; load narrowly.
 
+## Feature workspace and spec package
+
+`.specs/features/<slug>/` is a feature workspace. It may contain a discovery-only
+`discovery.md`; that workspace is resumable by `saf-brainstorm` but is not a spec package and
+cannot be used by prompt, implementation, check, or validation skills. A spec package exists
+only after its profile-required normative artifacts are present. `discovery.md` is working
+knowledge; `brief.md` is a reduced handoff; `spec.md` remains normative requirements authority.
+
 ## Layout (unchanged)
 
 Canonical path remains:

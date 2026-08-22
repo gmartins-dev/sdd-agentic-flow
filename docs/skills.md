@@ -12,7 +12,7 @@ also use the [TDD baseline](tdd-baseline.md) for code tasks. Skills are
 authored/normalized with `$skill-creator`; users do not need that development-time tool.
 
 Every skill declares a capability contract in its frontmatter (`extends`, `requires`,
-`consumes`, `produces`, `baseline`, `compatible_with`). See [architecture](architecture.md)
+`consumes`, `produces`, `baseline`, `packs`). See [architecture](architecture.md)
 for the full contract table and how skills, the shared layer, and project context fit
 together.
 

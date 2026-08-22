@@ -2,14 +2,13 @@
 name: saf-explain
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
 metadata:
-  version: 5.0.0
-  pack: planning
+  version: 6.0.0
 extends: saf-create-spec
 requires: [config, spec-package]
 consumes: [domain-glossary, project-context]
 produces: [explanation]
 baseline: []
-compatible_with: [full, planning]
+packs: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
@@ -60,6 +59,6 @@ Return the explanation's file path and a short summary, plus:
 - Next recommended skill: `none` (this is a terminal, on-demand step)
 - Reason: one line tying the status to the recommendation
 
-## Autonomy
+### Autonomy
 
 Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. It produces an explanation for a human reader, not a step in the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

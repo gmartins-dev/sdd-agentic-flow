@@ -88,7 +88,7 @@ function repositoryKey(root: string): string {
 }
 
 function defaultInstallConfig(): InstallConfig {
-  return { schema: 'saf-install-intent/v1', user: { packs: [], targets: [] }, projects: {} };
+  return { schema: 'saf-install-intent/v2', user: { packs: [], targets: [] }, projects: {} };
 }
 
 function yamlList(lines: string[], indent: number, values: string[]): void {
@@ -96,7 +96,7 @@ function yamlList(lines: string[], indent: number, values: string[]): void {
 }
 
 function serializeInstallConfig(config: InstallConfig): string {
-  const lines = ['schema: saf-install-intent/v1', '', 'user:', '  packs:'];
+  const lines = ['schema: saf-install-intent/v2', '', 'user:', '  packs:'];
   yamlList(lines, 4, config.user?.packs || []);
   lines.push('  targets:');
   yamlList(lines, 4, config.user?.targets || []);
@@ -129,7 +129,10 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
   const file = installConfigPath(homeDir);
   if (!fs.existsSync(file)) return null;
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
-  if (lines[0] !== 'schema: saf-install-intent/v1') return null;
+  if (lines[0] !== 'schema: saf-install-intent/v2')
+    throw new Error(
+      'unsupported installation intent; reinstall v6 skills to create saf-install-intent/v2',
+    );
   const config = defaultInstallConfig();
   let section: 'user' | 'projects' | null = null;
   for (let index = 0; index < lines.length; index += 1) {

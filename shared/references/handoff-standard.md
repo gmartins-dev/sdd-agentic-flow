@@ -21,7 +21,7 @@ decision:
   [autonomy-guardrails.md](autonomy-guardrails.md)) that only a human can resolve.
 
 Do not write `handoff.md` when a skill completes with a terminal `Status:` and no open blocker.
-The produced artifact (`check-report`, `validation-report`, `pr-package`) is sufficient
+The produced artifact (`check-report`, `validation-report`, `change-review-package`) is sufficient
 continuity on its own. A redundant `handoff.md` would only drift out of sync with it.
 
 ## Named feedback loop (not auto-run)

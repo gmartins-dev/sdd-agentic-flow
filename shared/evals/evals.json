@@ -1,21 +1,51 @@
 {
-  "version": "0.7.0",
-  "purpose": "Representative public skill-authoring prompts",
-  "evals": [
+  "version": "6.0.0",
+  "purpose": "Curated expected-behavior corpus for SAF skills. These cases document intended routing and prompt behavior; they are not evidence of a host model's behavior without a separately configured runner.",
+  "routing_cases": [
     {
-      "id": "spec-local",
-      "prompt": "Create specs from a local source item.",
-      "expected_output": "Four traceable SDD files without implementation."
+      "id": "route-discovery-durable",
+      "prompt": "The desired direction is known, but architecture, feasibility, and product decisions remain unresolved across sessions.",
+      "expected_skill": "saf-brainstorm",
+      "expected_mode": "durable discovery"
     },
     {
-      "id": "task-single",
-      "prompt": "Implement one approved Task.",
-      "expected_output": "One Task scope, tests, and evidence handoff."
+      "id": "route-spec-ready",
+      "prompt": "The brief is converged and the feature needs observable requirements and design decisions.",
+      "expected_skill": "saf-create-spec"
     },
     {
-      "id": "review-readonly",
-      "prompt": "Review a proposed change.",
-      "expected_output": "Evidence-based findings without code changes."
+      "id": "route-single-task",
+      "prompt": "Implement approved task T3 from the named specification package.",
+      "expected_skill": "saf-implement"
+    },
+    {
+      "id": "route-multi-task",
+      "prompt": "Implement several approved tasks with declared dependencies and isolated ownership.",
+      "expected_skill": "saf-implement-multi"
+    }
+  ],
+  "prompt_cases": [
+    {
+      "id": "prompt-minimum-sufficient",
+      "expected": "The prompt contains objective, requirement anchors, scope boundary, expected touchpoints, verification, and completion without provider mechanics or prescribed hidden reasoning."
+    },
+    {
+      "id": "prompt-provider-neutral",
+      "expected": "The prompt uses repository and host capabilities generically and does not require a tracker, hosted SCM, or named coding agent."
+    }
+  ],
+  "behavior_cases": [
+    {
+      "id": "discovery-only-rejected-by-downstream",
+      "expected": "Brainstorming may resume a discovery-only workspace; prompt, implementation, task-check, and validation capabilities reject it as a spec package."
+    },
+    {
+      "id": "discovery-is-not-spec-authority",
+      "expected": "A discovery finding informs specification authoring but is not a normative requirement until represented in spec.md."
+    },
+    {
+      "id": "evidence-before-completion",
+      "expected": "Implementation completion requires current sensors and requirement coverage, not a claim that code was changed."
     }
   ]
 }

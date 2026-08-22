@@ -2,14 +2,13 @@
 name: saf-fix-pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 5.0.0
-  pack: pr
+  version: 6.0.0
 extends: saf-review-pr
-requires: [config, pr-reference, review-findings]
+requires: [config, review-findings]
 consumes: []
 produces: [fix-evidence]
 baseline: [tlc-spec-driven]
-compatible_with: [full, github, pr]
+packs: [full, pr]
 depends_on: []
 conflicts: []
 requires_cli: null
@@ -24,7 +23,7 @@ autonomy_profile:
 
 ## When to use
 
-Use for explicitly requested repairs to verified findings on one task-scoped PR. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use for explicitly requested repairs to verified findings from one task-scoped local change review. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -48,8 +47,8 @@ Preserve unrelated changes. Stop for SDD reconciliation, sibling scope, unsafe e
 
 ## Output
 
-Return the findings ledger, changes and checks, unresolved items, re-review scope, and next step. When actionable findings remain unresolved across a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`, referencing the findings ledger rather than duplicating it.
+Return the findings ledger, changes and checks, unresolved items, re-review scope, and next step. Include `Status`, `Next recommended skill`, and `Reason`. When actionable findings remain unresolved across a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`, referencing the findings ledger rather than duplicating it.
 
-## Autonomy
+### Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing back to `saf-review-pr` requires fix-evidence present and every actionable finding on the ledger resolved or explicitly deferred with a reason; an unresolved finding or a scope violation blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

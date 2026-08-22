@@ -24,7 +24,7 @@ TLC condensed stages (Specify → Discuss → Design → Tasks → Execute → V
 **methodology**. The skill sequence below is how this toolkit **implements** that
 methodology. They are not two products. After this paragraph, this toolkit calls that
 skill sequence the **canonical workflow path** (not a “linear chain” — review, fix, and
-multi-worktree are controlled branches). Operating **presets** (`init --preset`) only
+multi-task are controlled workflow selections). Operating **presets** (`init --preset`) only
 choose how much human interaction that path asks for. `saf-route` discovers the next
 operation; it does not run the path.
 

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 6.0.0
+
+Breaking skill-contract consolidation: `packs` replaces `compatible_with`; the `github`
+pack is removed; `multi-worktree` is renamed to `multi-task`; installation intent is now
+`saf-install-intent/v2` and v1 requires reinstalling. Core change review is local-only,
+durable discovery is pre-spec working knowledge, prompts are provider-neutral, and multi-task
+guidance is isolation-neutral. No new skill, runtime dependency, scheduler, telemetry, or
+automatic remote action was added.
+
 ## 5.0.0
 
 Clean-slate CLI grammar and terminal/machine contracts. Removes legacy `discover`,

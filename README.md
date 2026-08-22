@@ -175,7 +175,7 @@ The generic [task-management example](examples/golden/task-management/) shows on
 
 ## Who is this for?
 
-You are a good fit if you adopt Spec-Driven Development, run sprint delivery with review gates, split work into specs and tasks as a tech lead, delegate traceable slices to agents, practice TDD-first delivery, or coordinate multi-agent or multi-worktree work under human control.
+You are a good fit if you adopt Spec-Driven Development, run sprint delivery with review gates, split work into specs and tasks as a tech lead, delegate traceable slices to agents, practice TDD-first delivery, or coordinate multi-agent or multi-task work under human control.
 
 ## Not optimized for
 
@@ -247,10 +247,10 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 | `planning` | Specs and task prompts. |
 | `execution` | Single-task and multi-task execution guidance. |
 | `pr` | PR preparation, review, and finding repair. |
-| `multi-worktree` | Multi-task orchestration guidance. |
+| `multi-task` | Multi-task orchestration with isolated ownership. |
 | `full` | All public skills. |
 
-`local-files` and `github` compose packs for those source contexts.
+`local-files` adds local source-item guidance. Hosted SCM, tracker, and coding-agent providers are optional external integrations, never core pack dependencies.
 
 ## Execution modes
 

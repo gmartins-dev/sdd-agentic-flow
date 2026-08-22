@@ -15,7 +15,7 @@ Pack registry (presets/*.json)
   |  installable groupings of skills + shared layer + optional adapter doc
   v
 Skills (skills/*/SKILL.md)
-  |  capability-contracted: extends, requires, consumes, produces, baseline, compatible_with
+  |  capability-contracted: extends, requires, consumes, produces, baseline, packs
   v
 Shared layer (shared/)
   |  references/ (TLC baseline, TDD baseline, feature profiles, safety, routing, ...)
@@ -82,8 +82,8 @@ Every skill's frontmatter declares:
 - `produces` — the artifact kind it hands off (for example `spec-package`, `check-report`).
 - `baseline` — which canonical baseline(s) govern its work (`tlc-spec-driven`, `tdd`, or
   both).
-- `compatible_with` — which packs install it; mechanically cross-checked against
-  `presets/*.json` by `scripts/check-skills.sh` so this field cannot silently drift.
+- `packs` — which packs install it; mechanically cross-checked against `presets/*.json` by
+  `npm run skills:lint` so this field cannot silently drift.
 - `depends_on` — optional, non-linear complements to `extends` (which is strictly a single
   upstream chain link). Empty by default; a skill declares one here only when it needs another
   skill's output alongside its `extends` parent.
@@ -104,7 +104,7 @@ Every skill's frontmatter declares:
 | `conflicts` | "Which skills must never be installed alongside this one?" | `depends_on`. `conflicts` names an incompatibility, not a needed output. |
 | `requires` | "What input kinds must exist before this skill can act?" | `consumes`. A missing `requires` input blocks the skill; a missing `consumes` artifact does not. |
 | `consumes` | "What optional context artifacts does this skill read when present?" | `requires`. `consumes` is best-effort context, never a precondition. |
-| `produces` | "What artifact kind does this skill hand off when it finishes?" | `compatible_with`. `produces` is workflow output; `compatible_with` is pack membership. |
+| `produces` | "What artifact kind does this skill hand off when it finishes?" | `packs`. `produces` is workflow output; `packs` is pack membership. |
 | `requires_cli` | "What is the minimum CLI version this skill needs?" | `baseline`. `requires_cli` gates on the CLI's own version, not a methodology baseline. |
 
 `doctor --contracts` validates that every skill installed in a **consumer** repository
@@ -113,16 +113,16 @@ ones (`depends_on`, `conflicts`, `requires_cli`). It returns `FAIL` if a require
 missing (signals a corrupted or hand-edited installed skill), `WARN` if an optional field is
 absent, and a separate deterministic `FAIL` if a declared `requires_cli` range is not satisfied
 by the installed CLI's version. This complements
-`scripts/check-skills.sh`, which validates the same fields **at the source** (this repository)
+`npm run skills:lint`, which validates the same fields **at the source** (this repository)
 before anything is packed or installed.
 
 `doctor --contracts` also validates that `depends_on`/`conflicts` reference real skill names
 (and, for `conflicts`, that referenced skills are not actually co-installed), that `baseline`
 entries exist in `shared/baselines/registry.yml`, and that `depends_on`/`extends` form no cycle.
 Any of these failures surface as a `FAIL` inside this same check rather than a new status value.
-It does not re-verify `compatible_with` against pack membership: a consumer repository has no
+It does not re-verify `packs` against pack membership: a consumer repository has no
 local `presets/` directory to check against (`install` only copies `shared/`, never `presets/`).
-That exact-match check only runs at the source, in `scripts/check-skills.sh`.
+That exact-match check only runs at the source, in `npm run skills:lint`.
 
 | Skill | extends | requires | produces | baseline |
 | --- | --- | --- | --- | --- |
@@ -135,9 +135,9 @@ That exact-match check only runs at the source, in `scripts/check-skills.sh`.
 | `saf-implement`      | saf-create-prompts  | config, task-identity                  | code-change+tdd-evidence    | tlc-spec-driven, tdd |
 | `saf-implement-multi`     | saf-create-prompts  | config, spec-package                   | execution-plan              | tlc-spec-driven, tdd |
 | `saf-check-task`          | saf-implement  | config, task-evidence                  | check-report                | tlc-spec-driven, tdd |
-| `saf-create-pr`           | saf-check-task      | config, task-evidence                  | pr-package                   | tlc-spec-driven       |
-| `saf-review-pr`           | saf-create-pr       | config, pr-reference                   | review-findings               | tlc-spec-driven       |
-| `saf-fix-pr`              | saf-review-pr       | config, pr-reference, review-findings  | fix-evidence                   | tlc-spec-driven       |
+| `saf-create-pr`           | saf-check-task      | config, task-evidence                  | change-review-package         | tlc-spec-driven       |
+| `saf-review-pr`           | saf-create-pr       | config, change-review-package          | review-findings               | tlc-spec-driven       |
+| `saf-fix-pr`              | saf-review-pr       | config, review-findings                | fix-evidence                 | tlc-spec-driven       |
 | `saf-validate`          | saf-check-task      | config, spec-package, task-evidence    | validation-report              | tlc-spec-driven, tdd |
 
 ## Canonical baselines
@@ -186,9 +186,8 @@ contract.
 
 ## Extensions and adapters
 
-Language profiles, multi-worktree orchestration, and feature profiles are extensions: they
+Language profiles, multi-task isolation guidance, and feature profiles are extensions: they
 enrich the TLC/TDD baselines but never weaken or replace them (see the "Extensions" section of
-`shared/references/tlc-baseline.md`). `local-files` and `github` are adapters:
-documentation-level only; see [adapters](adapters.md). Jira, Linear, and Azure DevOps adapters,
-along with skill-cards/playbooks/decision-guide documentation, are deferred beyond v0.6; see
-[ROADMAP.md](../ROADMAP.md).
+`shared/references/tlc-baseline.md`). `local-files` is a local-source pack. Hosted SCM,
+tracker, and coding-agent integrations are optional future adapters; repository-local SAF
+artifacts remain authoritative. See [adapters](adapters.md).

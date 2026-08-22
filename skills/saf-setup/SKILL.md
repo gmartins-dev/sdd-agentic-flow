@@ -2,14 +2,13 @@
 name: saf-setup
 description: Initialize the public SDD Agentic Flow structure in a repository. Use when a user asks to set up, bootstrap, or configure this SDD workflow; create only the requested repository-local planning files and start from .sdd-agentic-flow/config.yml.
 metadata:
-  version: 5.0.0
-  pack: core
+  version: 6.0.0
 extends: null
 requires: [config]
 consumes: []
 produces: [project-config, project-context]
 baseline: [tlc-spec-driven]
-compatible_with: [core, full, github, local-files, planning]
+packs: [core, full, local-files, planning]
 depends_on: []
 conflicts: []
 requires_cli: null
@@ -61,8 +60,9 @@ Return a short setup summary containing:
 
 - the configuration path and effective artifact locations;
 - files created or intentionally left unchanged;
-- the next local command or skill to use.
+- the next local command or skill to use;
+- `Status`, `Next recommended skill`, and `Reason`.
 
-## Autonomy
+### Autonomy
 
 Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. Project bootstrap is a one-time, human-confirmed step outside the auto-advancing chain. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

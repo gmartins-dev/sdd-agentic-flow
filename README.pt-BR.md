@@ -171,7 +171,7 @@ O toolkit usa um baseline TLC para planejamento e um baseline TDD para implement
 
 ## Para quem é indicado?
 
-Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates de revisão, fatia specs e tarefas como tech lead, delega fatias rastreáveis a agentes, exige evidência comportamental (TDD e test-first continuam estratégias válidas) ou coordena trabalho multi-agente ou multi-worktree com controle humano.
+Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates de revisão, fatia specs e tarefas como tech lead, delega fatias rastreáveis a agentes, exige evidência comportamental (TDD e test-first continuam estratégias válidas) ou coordena trabalho multi-agente ou multi-task com controle humano.
 
 ## Não é otimizado para
 

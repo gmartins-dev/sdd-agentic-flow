@@ -34,7 +34,7 @@ These sources inform the design of `sdd-agentic-flow`; they are not normative sp
 
 - multi-skill workflow and installable packs
 - local CLI, doctor, smoke validation, uninstall model, safety model, and agent-client-agnostic documentation
-- optional multi-worktree planning guidance
+- optional multi-task isolation guidance
 
 ## Curated sources by role
 

@@ -1,12 +1,11 @@
 # Adapters
 
-`local-files` uses local source items. `github` is guidance for agents that already
-have authorized GitHub tooling; the CLI never contacts GitHub. Other tracker adapters
-are outside v0.1.
+`local-files` uses local source items. No hosted SCM, tracker, or coding-agent provider is a
+core SAF dependency; the CLI never contacts one.
 
 No adapter is required for the core workflow. Source selection stays project-local
 and controlled by `.sdd-agentic-flow/config.yml`.
 
-As of v0.7.0 this scope is unchanged: adapters stay documentation-level only, with no
-network calls, tracker API integrations, or methodological logic. See the
-[compatibility promise](compatibility-promise.md).
+Future adapters may publish or consume repository-local SAF artifacts, but they remain optional
+edges: no network calls, tracker API integrations, or provider methodology are required by the
+core. See the [compatibility promise](compatibility-promise.md).

@@ -1,6 +1,8 @@
 # Task prompt — {{task_id}}
 
-Implement only this task. Preserve spec/design traceability and provide evidence.
+## Objective
+
+{{objective}}
 
 ## Task slice
 
@@ -12,7 +14,28 @@ Implement only this task. Preserve spec/design traceability and provide evidence
 - Horizontal-slice justification: {{justification_or_na}}
 - Expand-contract strategy: {{strategy_or_na}}
 
-## TDD baseline
+## Repository context
+
+{{repository_context}}
+
+## Scope and authority
+
+- Review boundary: {{review_boundary}}
+- Expected touchpoints: {{expected_touchpoints}}
+- Non-goals: {{non_goals}}
+- Re-ground repository facts before editing. Expected touchpoints guide inspection; they are not authority to expand scope.
+
+## Verification
+
+{{verification}}
+
+## Completion
+
+{{completion_criteria}}
+
+{{handoff_when_needed}}
+
+## TDD baseline (when applicable)
 
 - Behavior under test: {{behavior_under_test}}
 - Public seam: {{public_seam}}

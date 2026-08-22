@@ -3,7 +3,7 @@
 A product-level view of the 13 public skills, one section each, ordered like the
 [main SDD flow](../README.md#main-sdd-flow) rather than alphabetically. Each entry restates
 its skill's capability contract (`extends`/`requires`/`consumes`/`produces`/`baseline`/
-`compatible_with`/`depends_on`/`conflicts`/`requires_cli`) in prose. See
+`packs`/`depends_on`/`conflicts`/`requires_cli`) in prose. See
 [architecture](architecture.md#capability-contracts) for the full contract table and
 [compatibility matrix](compatibility-matrix.md) for exactly which pack installs which skill.
 `scripts/check-skills.sh` mechanically checks that every skill below has an entry, so this
@@ -30,7 +30,7 @@ glossary request with explicit authorization. Required input kind: `config`.
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `core`, `planning`, `full`, `local-files`, `github`.
+**Pack(s):** `core`, `planning`, `full`, `local-files`.
 
 **Typical flow position:** first — before `saf-route`.
 
@@ -57,8 +57,7 @@ automatically.
 
 **Baseline:** none (`baseline: []`) — routing is navigation, not methodology work.
 
-**Pack(s):** `core`, `planning`, `execution`, `pr`, `multi-worktree`, `full`, `local-files`,
-`github`.
+**Pack(s):** `core`, `planning`, `execution`, `pr`, `multi-task`, `full`, `local-files`.
 
 **Typical flow position:** between any two steps — recommends the next skill whenever the
 phase is unclear; not itself a step in the linear chain.
@@ -126,7 +125,7 @@ Observed/Inferred/Unknown in existing-code mode).
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `core`, `planning`, `full`, `local-files`, `github`.
+**Pack(s):** `core`, `planning`, `full`, `local-files`.
 
 **Typical flow position:** between `saf-route` and `saf-create-prompts`.
 
@@ -213,7 +212,7 @@ supporting evidence only. Required input kinds: `config`, `task-identity`.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `execution`, `full`, `local-files`, `github`.
+**Pack(s):** `core`, `execution`, `full`, `local-files`.
 
 **Typical flow position:** between `saf-create-prompts` and `saf-check-task`. For multiple
 dependency-aware tasks, use `saf-implement-multi` instead to plan the execution order first.
@@ -244,7 +243,7 @@ when implementation orchestration is requested. Required input kinds: `config`,
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `execution`, `multi-worktree`, `full`.
+**Pack(s):** `execution`, `multi-task`, `full`.
 
 **Typical flow position:** alternative to `saf-implement`, between `saf-create-prompts`
 and `saf-check-task`, when tasks have cross-dependencies.
@@ -272,7 +271,7 @@ disposable test artifacts permitted by configuration.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `execution`, `full`, `local-files`, `github`.
+**Pack(s):** `core`, `execution`, `full`, `local-files`.
 
 **Typical flow position:** between `saf-implement` and `saf-create-pr`.
 
@@ -291,7 +290,7 @@ scope, to fix code, or to publish a PR by default.
 confirmation when an external PR mutation is requested. Required input kinds: `config`,
 `task-evidence`.
 
-**Outputs:** `pr-package`.
+**Outputs:** `change-review-package`.
 
 **Dependencies:** `extends: saf-check-task`; `depends_on: []`.
 
@@ -299,7 +298,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`, `github`.
+**Pack(s):** `pr`, `full`.
 
 **Typical flow position:** between `saf-check-task` and `saf-review-pr`.
 
@@ -313,7 +312,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 review a PR whose task scope cannot be resolved.
 
 **Inputs:** PR URL/number or local branch plus one task reference; `.sdd-agentic-flow/config.yml`, task SDD
-artifacts, diff, and available check evidence. Required input kinds: `config`, `pr-reference`.
+artifacts, diff, and available check evidence. Required input kinds: `config`, `change-review-package`.
 
 **Outputs:** `review-findings`.
 
@@ -323,7 +322,7 @@ artifacts, diff, and available check evidence. Required input kinds: `config`, `
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`, `github`.
+**Pack(s):** `pr`, `full`.
 
 **Typical flow position:** after `saf-create-pr`; loops with `saf-fix-pr` (review → fix →
 review) until findings are accepted, then proceeds to `saf-validate`.
@@ -340,7 +339,7 @@ sibling tasks, or automatic commits and pushes.
 
 **Inputs:** One task reference and a review report, PR findings, or user-supplied evidence;
 `.sdd-agentic-flow/config.yml`, SDD artifacts, current diff, and configured validation commands. Required
-input kinds: `config`, `pr-reference`, `review-findings`.
+input kinds: `config`, `review-findings`.
 
 **Outputs:** `fix-evidence`.
 
@@ -351,7 +350,7 @@ focused re-review.
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`, `github`.
+**Pack(s):** `pr`, `full`.
 
 **Typical flow position:** between `saf-review-pr` and its own re-review loop back into
 `saf-review-pr`.
@@ -381,6 +380,6 @@ permitted local report or disposable test artifacts.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `full`, `local-files`, `github`.
+**Pack(s):** `core`, `full`, `local-files`.
 
 **Typical flow position:** after `saf-review-pr` confirms the PR is ready.

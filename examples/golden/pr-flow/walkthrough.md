@@ -1,4 +1,4 @@
-# Golden flow: PR (create → review → fix → review)
+# Golden flow: change review (create → review → fix → review)
 
 Proved by `test/cli.test.ts` — `golden flow: PR fixtures match the pr-* template presence
 contract from artifact-contracts.md`.
@@ -13,7 +13,8 @@ network by default, same promise as everywhere else in this package.
 
 ## Fixture
 
-- `pr-package.md` — what `saf-create-pr` would produce for task `T1` of the `task-management`
+- `pr-package.md` — a historical filename containing the local change-review package that
+  `saf-create-pr` would produce for task `T1` of the `task-management`
   golden flow.
 - `review-findings.md` — what `saf-review-pr` would produce reviewing it (one non-blocking
   finding).
@@ -23,14 +24,14 @@ network by default, same promise as everywhere else in this package.
 ## Expected result
 
 - `pr-package.md` carries `# task-management — T1`, `## Scope`, `## Evidence` — the required
-  headers `artifact-contracts.md` documents for `pr-package`.
+  headers `artifact-contracts.md` documents for `change-review-package`.
 - `review-findings.md` and `fix-evidence.md` mirror their respective templates' structure
   (`# PR review — T1` / `## Findings`; `# PR fix — T1` / `## Actionable findings`).
 
 ## Agent workflow (illustrative, not run by the test)
 
 ```text
-saf-create-pr  -> pr-package.md
+saf-create-pr  -> local change-review package
 saf-review-pr  -> review-findings.md
 saf-fix-pr     -> fix-evidence.md          (only if findings are accepted and actionable)
 saf-review-pr  -> re-review, until ready

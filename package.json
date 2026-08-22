@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -38,7 +38,8 @@
     "lint:biome:fix": "biome check . --write",
     "lint": "npm run typecheck && npm run lint:biome",
     "test": "npm run build && tsx --test --experimental-test-coverage test/**/*.test.ts",
-    "check": "npm run typecheck && npm run build && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && bash ./scripts/check-skills.sh && bash ./scripts/check-sdd-paths.sh && npm test",
+    "skills:lint": "bash ./scripts/check-skills.sh",
+    "check": "npm run typecheck && npm run build && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && bash ./scripts/check-sdd-paths.sh && npm test",
     "lint:check": "npm run lint:biome",
     "lint:fix": "npm run lint:biome:fix",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",

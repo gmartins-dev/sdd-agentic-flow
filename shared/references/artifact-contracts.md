@@ -6,6 +6,10 @@ Every SDD artifact this package's skills produce has an implicit structure, mirr
 format. This is a presence check, not full-schema validation. It does not verify section
 *content*, only that the required headers exist.
 
+- discovery-state: required `# Discovery — {feature_slug}`, top-line `Status:`, and
+  `## Destination`, `## Current understanding`, `## Open investigations`, `## Findings`,
+  `## Decisions`, `## Deferred uncertainty`, `## Out of scope`. It is not a spec package.
+
 - `spec.md`: required `# Specification — {feature_slug}`, one `## Requirement REQ-{id}` per
   requirement (stable `REQ-*` identifiers), `## Acceptance criteria`. Produced by
   `saf-create-spec`.
@@ -32,8 +36,8 @@ format. This is a presence check, not full-schema validation. It does not verify
 - validation-report: required `# Feature validation — {feature_slug}`, top-line `Status:`,
   `## Validation scope`, evidence table with anchor/sensor/result/freshness, `## Evidence`,
   `## TDD evidence`. Produced by `saf-validate`.
-- pr-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`. Produced by
-  `saf-create-pr`.
+- change-review-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`.
+  Produced by `saf-create-pr`.
 
 ## Requirement identity (v4)
 

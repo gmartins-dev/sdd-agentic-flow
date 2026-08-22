@@ -2,14 +2,13 @@
 name: saf-validate
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 5.0.0
-  pack: core
+  version: 6.0.0
 extends: saf-check-task
 requires: [config, spec-package, task-evidence]
 consumes: [domain-glossary, project-context]
 produces: [validation-report]
 baseline: [tlc-spec-driven, tdd]
-compatible_with: [core, full, github, local-files]
+packs: [core, full, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null
@@ -28,7 +27,7 @@ Use when the user asks whether one implemented feature is ready against its SDD.
 
 ## When not to use
 
-Do not use to implement code, repair findings, validate only one task, create a PR, or infer a feature identity from ambiguous branch names. For a single task before handoff/PR, use `saf-check-task` instead — this skill assumes several already-checked tasks have accumulated.
+Do not use to implement code, repair findings, validate only one task, create a PR, or infer a feature identity from ambiguous branch names. Reject a discovery-only workspace because it is not a spec package and has no normative requirements to validate. For a single task before handoff/PR, use `saf-check-task` instead — this skill assumes several already-checked tasks have accumulated.
 
 ## Inputs
 
@@ -51,8 +50,8 @@ Remain read-only except for permitted local report or disposable test artifacts.
 
 ## Output
 
-Return feature identity, validation scope (impact, obligations, selected and omitted sensors), decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step. When the decision is `not ready`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return feature identity, validation scope (impact, obligations, selected and omitted sensors), decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step. Include `Status`, `Next recommended skill`, and `Reason`. When the decision is `not ready`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
-## Autonomy
+### Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, treating the feature as ready for `saf-create-pr` requires a validation-report with status PASS and every specification requirement satisfied (PASS invalid on a false-positive catalog hit); an unmet requirement or failed gate blocks that advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

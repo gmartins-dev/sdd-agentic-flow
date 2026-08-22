@@ -2,14 +2,13 @@
 name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 5.0.0
-  pack: core
+  version: 6.0.0
 extends: saf-create-prompts
 requires: [config, task-identity]
 consumes: [domain-glossary, project-context]
 produces: [code-change+tdd-evidence]
 baseline: [tlc-spec-driven, tdd]
-compatible_with: [core, execution, full, github, local-files]
+packs: [core, execution, full, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null
@@ -28,7 +27,7 @@ Use for one unambiguous task that is ready to implement or resume. Read [the TLC
 
 ## When not to use
 
-Do not use for specification authoring, several tasks, a feature-wide validation, PR review, or a task whose identity, scope, or dependencies are ambiguous.
+Do not use for specification authoring, several tasks, a feature-wide validation, PR review, or a task whose identity, scope, or dependencies are ambiguous. Reject a discovery-only workspace: it is not a spec package and must first pass through `saf-create-spec`.
 
 ## Inputs
 
@@ -53,8 +52,8 @@ Preserve unrelated and pre-existing changes. Keep credentials, personal data, an
 
 ## Output
 
-Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. Terminal output is an **implementation candidate ready for verification**, never its own final verification verdict. You may report another bounded attempt as admissible only while evidence shows semantic progress and iteration policy permits; the host decides whether that attempt runs. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. Include `Status`, `Next recommended skill`, and `Reason`. Terminal output is an **implementation candidate ready for verification**, never its own final verification verdict. You may report another bounded attempt as admissible only while evidence shows semantic progress and iteration policy permits; the host decides whether that attempt runs. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
-## Autonomy
+### Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-check-task` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

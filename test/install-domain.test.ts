@@ -20,7 +20,7 @@ after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
 test('intent persistence round-trips and pack union derives skills', () => {
   const config: InstallConfig = {
-    schema: 'saf-install-intent/v1',
+    schema: 'saf-install-intent/v2',
     user: { packs: ['core'], targets: [...DEFAULT_USER_TARGETS] },
     projects: {},
   };
@@ -33,6 +33,20 @@ test('intent persistence round-trips and pack union derives skills', () => {
     }),
     ['a', 'b', 'c'],
   );
+});
+
+test('unsupported installation intent is rejected before it can be reused', () => {
+  for (const { name, content } of [
+    { name: 'legacy', content: 'schema: saf-install-intent/v1\n' },
+    { name: 'future', content: 'schema: saf-install-intent/v3\n' },
+    { name: 'malformed', content: 'not an installation intent\n' },
+  ]) {
+    const home = path.join(temporary, `${name}-intent-home`);
+    const file = path.join(home, '.sdd-agentic-flow', 'install.yml');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, content, 'utf8');
+    assert.throws(() => readInstallConfig(home), /unsupported installation intent/);
+  }
 });
 
 test('repository keys and interactive eligibility are deterministic', () => {
@@ -82,7 +96,7 @@ test('configure intent replaces a selected pack instead of retaining a stale lar
   const home = path.join(temporary, 'replace-pack-home');
   writeInstallConfig(
     {
-      schema: 'saf-install-intent/v1',
+      schema: 'saf-install-intent/v2',
       user: { packs: ['full'], targets: [...DEFAULT_USER_TARGETS] },
       projects: {},
     },

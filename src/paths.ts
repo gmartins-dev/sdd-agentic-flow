@@ -63,7 +63,7 @@ export const REQUIRED_CONTRACT_FIELDS = [
   'consumes',
   'produces',
   'baseline',
-  'compatible_with',
+  'packs',
 ];
 export const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts', 'requires_cli'];
 

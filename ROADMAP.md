@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v6.0.1 (2026-08-22):** Documentation coherence and release hardening. Added deterministic
+  documentation contract checks, grounded documentation/change-impact guidance, and finalized
+  post-v6 clean-slate installation and pack validation. No new skill, runtime dependency, or
+  remote automation was added.
+
 - **v6.0.0 (2026-08-22):** Provider-neutral skills and packs, local change-review contracts,
   durable pre-spec discovery, minimum-sufficient prompts, generic multi-task isolation, and
   deterministic skill-contract lint. Breaking clean boundary; no provider adapter, runtime,

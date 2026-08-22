@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 6.0.1
+
+Documentation coherence and v6 installation hardening. Adds deterministic documentation
+contract checks, strengthens grounded documentation and change-impact guidance, and finalizes
+the clean-slate pack/install vocabulary and upgrade validation introduced after v6.0.0.
+
 ## 6.0.0
 
 Breaking skill-contract consolidation: `packs` replaces `compatible_with`; the `github`

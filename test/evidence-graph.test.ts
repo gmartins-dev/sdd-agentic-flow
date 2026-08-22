@@ -142,6 +142,16 @@ test('collectPurgeTargets lists owned SAF skill directories', () => {
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
+test('collectPurgeTargets lists the managed user installation intent', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-purge-intent-'));
+  const intent = path.join(temp, '.sdd-agentic-flow', 'install.yml');
+  fs.mkdirSync(path.dirname(intent), { recursive: true });
+  fs.writeFileSync(intent, 'schema: saf-install-intent/v2\n');
+  const targets = collectPurgeTargets(temp, temp);
+  assert.ok(targets.some((target) => target.path === intent));
+  fs.rmSync(temp, { recursive: true, force: true });
+});
+
 test('parseCheckReport detects stale freshness and summary-only gaps', () => {
   const stale = fs.readFileSync(path.join(fixtureRoot, 'stale-check.md'), 'utf8');
   assert.equal(parseCheckReport(stale).evidenceRows[0]?.freshness, 'stale');

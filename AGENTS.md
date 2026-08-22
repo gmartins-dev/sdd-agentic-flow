@@ -8,7 +8,7 @@ You change the toolkit itself (CLI, skills, docs, tests). Read [CLAUDE.md](CLAUD
 
 ## Install the toolkit in a project
 
-Run `npx sdd-agentic-flow init`, then `install core`, then `doctor`. Start at [docs/installation.md](docs/installation.md) for pack selection and scope. Read [docs/installation-scope.md](docs/installation-scope.md) before choosing `--scope user` (default, no project footprint) or `--scope project`. See [docs/configuration.md](docs/configuration.md) for `.sdd-agentic-flow/config.yml`.
+Run `npx sdd-agentic-flow init`, then `install full`, then `doctor`. Start at [docs/installation.md](docs/installation.md) for pack selection and scope. Read [docs/installation-scope.md](docs/installation-scope.md) before choosing `--scope user` (default, no project footprint) or `--scope project`. See [docs/configuration.md](docs/configuration.md) for `.sdd-agentic-flow/config.yml`.
 
 ## Run an SDD workflow
 

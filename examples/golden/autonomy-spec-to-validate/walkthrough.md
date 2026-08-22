@@ -6,7 +6,7 @@ Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-002 — task-check 
 
 ```bash
 sdd-agentic-flow init --execution-mode full --autonomy-level autonomous
-sdd-agentic-flow install core --scope project
+sdd-agentic-flow install full --scope project
 ```
 
 Copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`.

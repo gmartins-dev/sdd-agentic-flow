@@ -30,7 +30,7 @@ glossary request with explicit authorization. Required input kind: `config`.
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `core`, `planning`, `full`, `local-files`.
+**Pack(s):** `planning`, `full`.
 
 **Typical flow position:** first — before `saf-route`.
 
@@ -57,7 +57,7 @@ automatically.
 
 **Baseline:** none (`baseline: []`) — routing is navigation, not methodology work.
 
-**Pack(s):** `core`, `planning`, `execution`, `pr`, `multi-task`, `full`, `local-files`.
+**Pack(s):** `planning`, `execution`, `review`, `multi-task`, `full`.
 
 **Typical flow position:** between any two steps — recommends the next skill whenever the
 phase is unclear; not itself a step in the linear chain.
@@ -125,7 +125,7 @@ Observed/Inferred/Unknown in existing-code mode).
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `core`, `planning`, `full`, `local-files`.
+**Pack(s):** `planning`, `full`.
 
 **Typical flow position:** between `saf-route` and `saf-create-prompts`.
 
@@ -212,7 +212,7 @@ supporting evidence only. Required input kinds: `config`, `task-identity`.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `execution`, `full`, `local-files`.
+**Pack(s):** `execution`, `full`.
 
 **Typical flow position:** between `saf-create-prompts` and `saf-check-task`. For multiple
 dependency-aware tasks, use `saf-implement-multi` instead to plan the execution order first.
@@ -271,7 +271,7 @@ disposable test artifacts permitted by configuration.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `execution`, `full`, `local-files`.
+**Pack(s):** `execution`, `multi-task`, `full`.
 
 **Typical flow position:** between `saf-implement` and `saf-create-pr`.
 
@@ -298,7 +298,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`.
+**Pack(s):** `review`, `full`.
 
 **Typical flow position:** between `saf-check-task` and `saf-review-pr`.
 
@@ -311,8 +311,8 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 **When not to use:** Do not use to implement fixes, validate a whole feature, create a PR, or
 review a PR whose task scope cannot be resolved.
 
-**Inputs:** PR URL/number or local branch plus one task reference; `.sdd-agentic-flow/config.yml`, task SDD
-artifacts, diff, and available check evidence. Required input kinds: `config`, `change-review-package`.
+**Inputs:** Local change-review package or local diff plus one task reference; `.sdd-agentic-flow/config.yml`, task SDD
+artifacts, and available check evidence. Required input kinds: `config`, `change-review-package`.
 
 **Outputs:** `review-findings`.
 
@@ -322,7 +322,7 @@ artifacts, diff, and available check evidence. Required input kinds: `config`, `
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`.
+**Pack(s):** `review`, `full`.
 
 **Typical flow position:** after `saf-create-pr`; loops with `saf-fix-pr` (review → fix →
 review) until findings are accepted, then proceeds to `saf-validate`.
@@ -350,7 +350,7 @@ focused re-review.
 
 **Baseline:** `tlc-spec-driven`.
 
-**Pack(s):** `pr`, `full`.
+**Pack(s):** `review`, `full`.
 
 **Typical flow position:** between `saf-review-pr` and its own re-review loop back into
 `saf-review-pr`.
@@ -380,6 +380,6 @@ permitted local report or disposable test artifacts.
 
 **Baseline:** `tlc-spec-driven`, `tdd`.
 
-**Pack(s):** `core`, `full`, `local-files`.
+**Pack(s):** `execution`, `multi-task`, `full`.
 
 **Typical flow position:** after `saf-review-pr` confirms the PR is ready.

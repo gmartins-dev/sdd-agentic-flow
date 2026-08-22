@@ -50,6 +50,12 @@ type InstallConfig = {
 
 type ParseTargetResult = { ok: true; targets: string[] } | { ok: false; message: string };
 
+type InstallIntentState =
+  | { kind: 'none'; schema: null }
+  | { kind: 'current'; schema: 'saf-install-intent/v2' }
+  | { kind: 'legacy'; schema: 'saf-install-intent/v1' }
+  | { kind: 'future' | 'unknown'; schema: string };
+
 type InteractiveInstallInput = {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
@@ -81,6 +87,17 @@ function parseTargetSelection(
 
 function installConfigPath(homeDir: string = os.homedir()): string {
   return path.join(homeDir, '.sdd-agentic-flow', 'install.yml');
+}
+
+function classifyInstallIntent(homeDir: string = os.homedir()): InstallIntentState {
+  const file = installConfigPath(homeDir);
+  if (!fs.existsSync(file)) return { kind: 'none', schema: null };
+  const firstLine = fs.readFileSync(file, 'utf8').split(/\r?\n/, 1)[0] || '';
+  const schema = firstLine.replace(/^schema:\s*/, '').trim();
+  if (schema === 'saf-install-intent/v2') return { kind: 'current', schema };
+  if (schema === 'saf-install-intent/v1') return { kind: 'legacy', schema };
+  if (/^saf-install-intent\/v\d+$/.test(schema)) return { kind: 'future', schema };
+  return { kind: 'unknown', schema: schema || '(missing)' };
 }
 
 function repositoryKey(root: string): string {
@@ -174,8 +191,11 @@ function writeInstallConfig(config: InstallConfig, homeDir: string): void {
 
 type PresetLike = { skills?: string[] };
 
-function desiredSkillsForPacks(packs: string[], presets: Record<string, PresetLike>): string[] {
-  return [...new Set(packs.flatMap((pack) => presets[pack]?.skills || []))].sort();
+function desiredSkillsForPacks(
+  packs: string[],
+  packRegistry: Record<string, PresetLike>,
+): string[] {
+  return [...new Set(packs.flatMap((pack) => packRegistry[pack]?.skills || []))].sort();
 }
 
 function shouldUseInteractiveInstall({
@@ -192,9 +212,10 @@ function shouldUseInteractiveInstall({
   );
 }
 
-export type { InstallConfig, InstallProjectProfile, UserTargetId };
+export type { InstallConfig, InstallIntentState, InstallProjectProfile, UserTargetId };
 export {
   AGENT_TO_TARGETS,
+  classifyInstallIntent,
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
   desiredSkillsForPacks,

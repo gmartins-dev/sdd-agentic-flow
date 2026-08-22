@@ -12,7 +12,7 @@ Run these commands from the project root:
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install core
+npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 
@@ -24,13 +24,11 @@ Use `npx sdd-agentic-flow list` to inspect available packs:
 
 | Pack                     | Use it for                                                                |
 | ------------------------ | ------------------------------------------------------------------------- |
-| `core`                   | The standard specification, implementation, checking, and validation flow |
-| `planning`               | Specs and task prompts                                                    |
-| `execution`              | Single-task and multi-task execution                                      |
-| `pr`                     | PR preparation, review, and finding repair                                |
-| `multi-task`             | Planned parallel work with isolated ownership                             |
+| `planning`               | Discovery, specification, explanation, and task prompts                   |
+| `execution`              | Single-task execution and feature validation                              |
+| `review`                 | Local change-review package, review, and finding repair                   |
+| `multi-task`             | Dependency-aware multi-task execution                                     |
 | `full`                   | All public skills                                                         |
-| `local-files`             | Local source-item guidance                                                |
 
 ## 2. Read the project configuration
 

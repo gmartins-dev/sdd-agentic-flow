@@ -12,7 +12,6 @@ import {
   LOCAL_GIT_EXCLUDE_COMMENT,
   LOCAL_GIT_EXCLUDE_ENTRY,
   projectSddRoot,
-  SDD_ROOT,
   sddJoin,
   userInstallConfigPath,
   userSkillsDirsFor,
@@ -81,16 +80,19 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
     targets.push(...collectSkillTargets(root));
   }
   const projectState = projectSddRoot(cwd);
-  if (fs.existsSync(projectState)) {
-    targets.push({ path: projectState, kind: 'project-state' });
+  for (const relative of [
+    'config.yml',
+    'usage.md',
+    'saf-skills-usage-guide.md',
+    'saf-skills-usage-guide.pt-BR.md',
+    path.join('autonomy', 'loop-state.md'),
+  ]) {
+    const file = path.join(projectState, relative);
+    if (fs.existsSync(file)) targets.push({ path: file, kind: 'project-install-state' });
   }
   const userInstall = userInstallConfigPath(homeDir);
   if (fs.existsSync(userInstall)) {
     targets.push({ path: userInstall, kind: 'user-install-intent' });
-  }
-  const userState = path.join(homeDir, SDD_ROOT);
-  if (fs.existsSync(userState) && userState !== projectState) {
-    targets.push({ path: userState, kind: 'user-state' });
   }
   const gitExclude = path.join(cwd, '.git', 'info', 'exclude');
   if (fs.existsSync(gitExclude)) {
@@ -231,7 +233,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       if (!quiet) {
         log('PASS', 'preserved feature specs, source code, Git history, and foreign skills');
         process.stdout.write(
-          '\nNext step: npx sdd-agentic-flow init && npx sdd-agentic-flow install core\n',
+          '\nNext step: npx sdd-agentic-flow init && npx sdd-agentic-flow install full\n',
         );
       }
       return true;
@@ -264,15 +266,13 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     ];
   });
   if (includeConfig) targets.push(sddJoin(cwd, 'config.yml'));
+  if (scopes.includes('user')) targets.push(userInstallConfigPath(os.homedir()));
   if (full) {
     targets.push(
-      sddJoin(cwd, 'context', 'project-context.md'),
-      sddJoin(cwd, 'snapshots'),
-      sddJoin(cwd, 'reports'),
       sddJoin(cwd, 'usage.md'),
       sddJoin(cwd, 'saf-skills-usage-guide.md'),
       sddJoin(cwd, 'saf-skills-usage-guide.pt-BR.md'),
-      sddJoin(cwd, 'explanations'),
+      sddJoin(cwd, 'autonomy', 'loop-state.md'),
     );
   }
   const existing = targets.filter((target: string) => fs.existsSync(target));

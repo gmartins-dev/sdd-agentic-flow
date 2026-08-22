@@ -82,7 +82,7 @@ Requer Node.js >= 22 só para a CLI. Seu projeto não precisa ser Node.js. Veja 
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install core
+npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 

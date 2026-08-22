@@ -11,6 +11,7 @@ import path from 'node:path';
 import { checkForUpdate, type UpdateCheckResult } from './update-check';
 
 const PROVENANCE_REL = path.join('sdd-agentic-flow-shared', 'install-provenance.yml');
+const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v2';
 
 type ExecutionMode = 'npx' | 'global' | 'local';
 
@@ -110,7 +111,7 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
   const lines = [
     'package: sdd-agentic-flow',
     `package_version: ${value.packageVersion}`,
-    'schema: saf-install-provenance/v1',
+    `schema: ${CURRENT_PROVENANCE_SCHEMA}`,
     `apply_state: ${value.applyState || 'complete'}`,
     `scope: ${value.scope || 'user'}`,
     `target: ${value.target || 'unknown'}`,
@@ -265,10 +266,10 @@ function applyManagedPairs(
   return summary;
 }
 
-function detectInstalledPacks(skillsRoot: string, presetsDir: string): string[] {
+function detectInstalledPacks(skillsRoot: string, packsDir: string): string[] {
   if (!fs.existsSync(skillsRoot)) return [];
   const names = fs
-    .readdirSync(presetsDir)
+    .readdirSync(packsDir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => file.replace(/\.json$/, ''))
     .sort();
@@ -277,7 +278,7 @@ function detectInstalledPacks(skillsRoot: string, presetsDir: string): string[] 
     let preset: PresetLike;
     try {
       preset = JSON.parse(
-        fs.readFileSync(path.join(presetsDir, `${name}.json`), 'utf8'),
+        fs.readFileSync(path.join(packsDir, `${name}.json`), 'utf8'),
       ) as PresetLike;
     } catch {
       continue;
@@ -290,20 +291,20 @@ function detectInstalledPacks(skillsRoot: string, presetsDir: string): string[] 
   const provenance = readInstallProvenance(skillsRoot);
   if (
     provenance?.package === 'sdd-agentic-flow' &&
-    provenance.schema === 'saf-install-provenance/v1'
+    provenance.schema === CURRENT_PROVENANCE_SCHEMA
   ) {
     const recorded = (provenance.packs || []).filter((pack) => names.includes(pack));
     if (recorded.length) return recorded;
   }
-  // A larger matching pack subsumes its smaller subsets (for example full includes core).
+  // A larger matching pack subsumes its smaller subsets (for example full includes planning).
   return found.filter((name) => {
     const skills =
-      (JSON.parse(fs.readFileSync(path.join(presetsDir, `${name}.json`), 'utf8')) as PresetLike)
+      (JSON.parse(fs.readFileSync(path.join(packsDir, `${name}.json`), 'utf8')) as PresetLike)
         .skills || [];
     return !found.some((other) => {
       if (other === name) return false;
       const otherSkills =
-        (JSON.parse(fs.readFileSync(path.join(presetsDir, `${other}.json`), 'utf8')) as PresetLike)
+        (JSON.parse(fs.readFileSync(path.join(packsDir, `${other}.json`), 'utf8')) as PresetLike)
           .skills || [];
       return (
         skills.length < otherSkills.length && skills.every((skill) => otherSkills.includes(skill))

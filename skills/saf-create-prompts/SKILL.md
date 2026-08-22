@@ -8,7 +8,6 @@ requires: [config, spec-package]
 consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
 produces: [task-prompts]
 baseline: [tlc-spec-driven, tdd]
-packs: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null

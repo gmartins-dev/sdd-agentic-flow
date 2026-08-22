@@ -8,7 +8,6 @@ requires: [config]
 consumes: [domain-glossary, project-context]
 produces: [discovery-state, spec-ready-brief]
 baseline: []
-packs: [full, planning]
 depends_on: []
 conflicts: []
 requires_cli: null

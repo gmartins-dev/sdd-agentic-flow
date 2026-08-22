@@ -65,7 +65,7 @@ Reason:
 
 Try:
   sdd-agentic-flow list
-  Did you mean `core`?
+  Did you mean `full`?
 ```
 
 Did-you-mean suggestions appear under `Try:` and are never executed automatically. The CLI

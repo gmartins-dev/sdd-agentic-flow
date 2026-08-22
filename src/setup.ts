@@ -19,10 +19,10 @@ import {
 } from './config-domain';
 import { configureIntent } from './configure';
 import {
-  coreSkillsPresence,
   doctor,
   doctorChecks,
   languageReport,
+  officialSkillsPresence,
   resolveSkillsRoot,
   severity,
 } from './doctor';
@@ -46,7 +46,7 @@ import {
   LOCAL_GIT_EXCLUDE_ENTRY,
   OPERATING_PRESETS,
   PACKAGE_ROOT,
-  PRESETS_DIR,
+  PACKS_DIR,
   resolveOperatingPreset,
   SDD_PATHS,
   SDD_ROOT,
@@ -208,7 +208,7 @@ function errorMessage(error: unknown): string {
 
 function presetNames(): string[] {
   return fs
-    .readdirSync(PRESETS_DIR)
+    .readdirSync(PACKS_DIR)
     .filter((file: string) => file.endsWith('.json'))
     .map((file: string) => file.replace(/\.json$/, ''))
     .sort();
@@ -217,7 +217,7 @@ function presetNames(): string[] {
 function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const inferred = inferInitDefaults(cwd);
   const profile = options.profile || options.language || 'en-US';
-  return `schema: saf-config/v1
+  return `schema: saf-config/v2
 
 project:
   name: ${options.name || inferred.name}
@@ -395,6 +395,13 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   applyInitSideEffects(cwd, { ...options, locale });
   const configPath = sddJoin(cwd, 'config.yml');
   if (fs.existsSync(configPath)) {
+    const existing = fs.readFileSync(configPath, 'utf8');
+    const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
+    if (schema !== 'saf-config/v2') {
+      fs.writeFileSync(configPath, configFor(cwd, options), 'utf8');
+      log('INFO', `replaced legacy ${SDD_PATHS.config} with the v6 configuration contract`);
+      return true;
+    }
     log('WARN', `preserved existing ${SDD_PATHS.config}`);
     return false;
   }
@@ -420,7 +427,7 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   }
   discoverProject(cwd, { force: false, quiet: true, ascii: Boolean(options.ascii) });
   if (!options.quiet) {
-    nextStep('npx sdd-agentic-flow install core', { quiet: options.quiet, mode });
+    nextStep('npx sdd-agentic-flow install full', { quiet: options.quiet, mode });
     process.stdout.write(`\n${printUsageGuidePointer(cwd, locale)}`);
   }
   return true;
@@ -434,7 +441,7 @@ function onboardingStateFor(cwd: string) {
   const skillsRoot = resolveSkillsRoot(cwd);
   return resolveOnboardingState({
     hasConfig: fs.existsSync(sddJoin(cwd, 'config.yml')),
-    hasSkills: coreSkillsPresence(skillsRoot).missing.length === 0,
+    hasSkills: officialSkillsPresence(skillsRoot).missing.length === 0,
     hasContext: fs.existsSync(sddJoin(cwd, 'context', 'project-context.md')),
     doctorStatus: severity(doctorChecks(cwd)),
   });
@@ -750,14 +757,14 @@ async function applySetup(
       homeDir: os.homedir(),
       cwd,
       scope: draft.scope === 'project' ? 'project' : 'user',
-      packs: [asString(draft.pack, 'core')],
+      packs: [asString(draft.pack, 'full')],
       ...(draft.scope === 'user' && draft.targets ? { targets: draft.targets } : {}),
       ...(draft.scope === 'project'
         ? { sharing: draft.projectLocalExclude ? 'local' : 'shared' }
         : {}),
     });
     if (
-      !(await install(asString(draft.pack, 'core'), cwd, {
+      !(await install(asString(draft.pack, 'full'), cwd, {
         ...(draft.scope ? { scope: draft.scope } : {}),
         ...(draft.targets ? { targets: draft.targets } : {}),
         ...(draft.projectLocalExclude ? { projectLocalExclude: draft.projectLocalExclude } : {}),
@@ -884,12 +891,23 @@ async function initInteractive(
   const configPath = sddJoin(cwd, 'config.yml');
   const mode = resolveMode({ quiet });
   if (fs.existsSync(configPath)) {
+    const existing = fs.readFileSync(configPath, 'utf8');
+    const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
+    if (schema !== 'saf-config/v2') {
+      fs.writeFileSync(
+        configPath,
+        configFor(cwd, { language: languageDefault, featureProfile: featureProfileDefault }),
+        'utf8',
+      );
+      log('INFO', `${SDD_PATHS.config} replaced with the v6 configuration contract`);
+      return;
+    }
     log('WARN', `${SDD_PATHS.config} already exists; init will not overwrite it`);
     const config = readConfig(configPath);
     if (config.ok) process.stdout.write(`\n${renderPolicySummary(config, mode)}\n`);
     process.stdout.write(
       '\nChange operating policy with: npx sdd-agentic-flow config policy\n' +
-        'Install skills with: npx sdd-agentic-flow install core\n',
+        'Install skills with: npx sdd-agentic-flow install full\n',
     );
     applyInitSideEffects(cwd, {
       localGitExclude: resolveLocalGitExclude(cwd, { localGitExclude }),
@@ -1018,10 +1036,7 @@ async function initInteractive(
     process.stdout.write(
       `\n${renderStep(6, 7, t(locale, 'init.workflow'), mode, t(locale, 'step')).join('\n')}\n`,
     );
-    initOptions.source = await ask(t(locale, 'init.sourcePrompt'), 'local-files', [
-      'local-files',
-      'github-guidance',
-    ]);
+    initOptions.source = await ask(t(locale, 'init.sourcePrompt'), 'local-files', ['local-files']);
     initOptions.flow = await ask(t(locale, 'init.flowPrompt'), 'single', ['single', 'multi']);
     initOptions.multiWorktree =
       (await ask(t(locale, 'init.worktreePrompt'), 'false', ['true', 'false'])) === 'true';

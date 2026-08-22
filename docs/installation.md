@@ -4,7 +4,7 @@ Requires Node.js >= 22. The CLI is local-first and adds no runtime dependency to
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install core
+npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 
@@ -12,7 +12,7 @@ npx sdd-agentic-flow doctor
 Use `--language en-US|pt-BR`, `--preset manual|supervised|autonomous`, and explicit policy flags
 when automation needs deterministic setup. `--interactive` requires a real TTY and unset `CI`.
 
-`install <pack>` defaults to user scope. Use `--scope project` for `.agents/skills/` in the
+`install <pack>` accepts `planning`, `execution`, `review`, `multi-task`, or `full` and defaults to user scope. Use `--scope project` for `.agents/skills/` in the
 repository. User targets are selected with repeatable `--target agents|cursor|claude|copilot`.
 Use `--plan` for a read-only preview; local non-TTY mutation requires `--yes`.
 

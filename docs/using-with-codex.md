@@ -3,10 +3,10 @@
 Install a pack, keep `.sdd-agentic-flow/config.yml` in project context, and select a skill explicitly.
 
 ```bash
-npx sdd-agentic-flow install core
+npx sdd-agentic-flow install full
 ```
 
-`install core` defaults to `--scope user`, writing to `~/.agents/skills/` (Codex CLI's global
+`install full` defaults to `--scope user`, writing to `~/.agents/skills/` (Codex CLI's global
 skill directory, which it discovers by searching parent directories). Add
 `--scope project` to install into `.agents/skills/` inside this repository instead. The
 `--agent` flag only changes which global directories `--scope user` writes to. See

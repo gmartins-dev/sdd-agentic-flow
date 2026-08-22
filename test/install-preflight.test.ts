@@ -14,7 +14,7 @@ import {
 import { writeInstallProvenance } from '../src/upgrade';
 
 const packageRoot = path.resolve(__dirname, '..');
-const preset = JSON.parse(fs.readFileSync(path.join(packageRoot, 'presets/core.json'), 'utf8'));
+const preset = JSON.parse(fs.readFileSync(path.join(packageRoot, 'packs/execution.json'), 'utf8'));
 const officialSkills = preset.skills;
 
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-install-preflight-'));
@@ -43,7 +43,7 @@ test('buildInstallPlan reports CREATE for empty target', () => {
 
 test('classifyTargetRoot detects FOREIGN skill without provenance', () => {
   const target = path.join(temporary, 'foreign-target');
-  const foreignSkill = path.join(target, 'saf-create-spec');
+  const foreignSkill = path.join(target, 'saf-implement');
   fs.mkdirSync(foreignSkill, { recursive: true });
   fs.writeFileSync(path.join(foreignSkill, 'SKILL.md'), '# foreign\n', 'utf8');
   const report = classifyTargetRoot(packageRoot, preset, target, officialSkills);

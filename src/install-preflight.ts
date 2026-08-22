@@ -106,12 +106,12 @@ function classifyTargetRoot(
   const classified = classifyManagedPairs(pairs);
   const provenance = readInstallProvenance(targetRoot);
   const managed = Boolean(
-    provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v1',
+    provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v2',
   );
   const legacy =
     Boolean(
       provenance?.package === 'sdd-agentic-flow' &&
-        provenance.schema !== 'saf-install-provenance/v1',
+        provenance.schema !== 'saf-install-provenance/v2',
     ) ||
     (fs.existsSync(targetRoot) &&
       fs
@@ -147,7 +147,7 @@ function classifyTargetRoot(
     COLLISION: collisions,
     MANAGED_MODIFIED: classified.differs.length,
     PARTIAL: partialWarnings.length,
-    BLOCKED: legacy ? 1 : 0,
+    BLOCKED: 0,
   };
 
   return {
@@ -161,7 +161,7 @@ function classifyTargetRoot(
     partialWarnings,
     foreignSkills: entries.map((entry) => entry.skill),
     staleManagedSkills,
-    blocked: collisions > 0 || legacy,
+    blocked: collisions > 0,
   };
 }
 

@@ -7,8 +7,8 @@
     "saf-route",
     "saf-brainstorm",
     "saf-create-spec",
-    "saf-explain",
-    "saf-create-prompts"
+    "saf-create-prompts",
+    "saf-explain"
   ],
   "shared": true,
   "status": "stable"

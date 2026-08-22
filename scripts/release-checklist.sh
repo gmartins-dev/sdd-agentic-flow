@@ -17,7 +17,7 @@ npm run pack:dry
 echo "-- 3/7: doctor --smoke --"
 node dist/sdd-agentic-flow.js doctor --smoke
 
-echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs presets/*.json vs dist/) --"
+echo "-- 4/7: version consistency (package.json vs skills/*/SKILL.md vs packs/*.json vs dist/) --"
 npx tsx scripts/check-version-consistency.ts
 
 echo "-- 5/7: no pinned sdd-agentic-flow@<version> examples remaining --"

@@ -89,7 +89,7 @@ Requires Node.js >= 22 for the CLI only. Your project does not need Node.js. See
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install core
+npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 
@@ -243,14 +243,15 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 
 | Pack | Purpose |
 | --- | --- |
-| `core` | Safe setup, specification, implementation, checking, and validation baseline. |
-| `planning` | Specs and task prompts. |
-| `execution` | Single-task and multi-task execution guidance. |
-| `pr` | PR preparation, review, and finding repair. |
-| `multi-task` | Multi-task orchestration with isolated ownership. |
+| `planning` | Discovery, specification, explanation, and task prompts. |
+| `execution` | Single-task execution and feature validation. |
+| `review` | Local change-review package, review, and finding repair. |
+| `multi-task` | Dependency-aware multi-task execution. |
 | `full` | All public skills. |
 
-`local-files` adds local source-item guidance. Hosted SCM, tracker, and coding-agent providers are optional external integrations, never core pack dependencies.
+`full` is the recommended capability set. Operating policy is separate: guided onboarding uses
+`supervised`; non-interactive fail-safe operation uses `manual`. Hosted SCM, tracker, and
+coding-agent providers are optional external integrations, never core pack dependencies.
 
 ## Execution modes
 

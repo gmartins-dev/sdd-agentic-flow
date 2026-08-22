@@ -99,7 +99,7 @@ function readConfig(configPath: string): ReadConfigResult {
   const languageProfile = configValue(content, 'profile');
   const errors: string[] = [];
   const schema = content.match(/^schema:\s*(\S+)$/m)?.[1];
-  if (schema !== 'saf-config/v1') errors.push('unsupported config schema');
+  if (schema !== 'saf-config/v2') errors.push('unsupported config schema');
   if (!executionMode) errors.push('workflow.execution_mode missing');
   if (!autonomyLevel) errors.push('workflow.autonomy_level missing');
   if (executionMode && !isExecutionMode(executionMode)) {

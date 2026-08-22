@@ -133,7 +133,7 @@ test('didYouMean returns the closest known candidate for a small typo', () => {
   ];
   assert.equal(didYouMean('doctro', candidates), 'doctor');
   assert.equal(didYouMean('unintsall', candidates), 'uninstall');
-  assert.equal(didYouMean('cor', ['core', 'planning', 'pr']), 'core');
+  assert.equal(didYouMean('ful', ['full', 'planning', 'review']), 'full');
 });
 
 test('didYouMean returns null when nothing is close enough, or for empty input', () => {

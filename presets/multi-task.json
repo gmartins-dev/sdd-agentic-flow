@@ -1,8 +1,0 @@
-{
-  "name": "multi-task",
-  "version": "6.0.0",
-  "description": "Multi-task orchestration guidance.",
-  "skills": ["saf-route", "saf-implement-multi"],
-  "shared": true,
-  "status": "stable"
-}

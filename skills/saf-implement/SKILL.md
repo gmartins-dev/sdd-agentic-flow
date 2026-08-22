@@ -8,7 +8,6 @@ requires: [config, task-identity]
 consumes: [domain-glossary, project-context]
 produces: [code-change+tdd-evidence]
 baseline: [tlc-spec-driven, tdd]
-packs: [core, execution, full, local-files]
 depends_on: []
 conflicts: []
 requires_cli: null

@@ -1,22 +1,31 @@
-# v6+ compatibility promise
+# v6 versioning and upgrade policy
 
-This document defines the compatibility boundary beginning with `6.0.0`. SAF v6 is clean-slate: historical CLI commands, aliases, persisted schemas, skill prefixes, packs, and legacy paths are foreign content, not migration inputs.
+SAF is experimental software. Major releases may replace CLI, installation, skill,
+configuration, artifact, and workflow contracts without backward compatibility.
 
-## Stable contracts
+## Current v6 contracts
 
-- The canonical command hierarchy and option grammar are the source plan and [commands.md](commands.md).
-- JSON-capable commands use the versioned envelope and stable error codes in [machine-interface.md](machine-interface.md).
-- Config and installation provenance retain their current schemas; installation intent uses strict `saf-install-intent/v2`. Missing, malformed, old, or future schemas are unsupported state and stop mutations before writes.
-- Install and uninstall mutate only recognized v5 ownership records and declared managed paths. Unknown and historical paths remain untouched except ordinary same-path collision protection.
-- CLI exit codes remain `0` for success/cancellation, `1` for handled usage/domain/validation failures, `130` for SIGINT, and `2` for unexpected internal failures.
+- Skill capability contracts are defined by each `SKILL.md`; distribution membership lives only in `packs/*.json`.
+- Installation packs are exactly `planning`, `execution`, `review`, `multi-task`, and `full`.
+- Current state schemas are `saf-config/v2`, `saf-install-intent/v2`, and `saf-install-provenance/v2`.
 - SAF remains local-first, zero-runtime-dependency, agent-neutral, and does not commit, push, merge, deploy, publish, or add telemetry automatically.
 
-## Deliberate breaking boundary
+## Clean-slate upgrade
 
-The following are not supported in v6+: v5 `compatible_with`/`metadata.pack` contracts, the `github` and `multi-worktree` packs, installation intent v1, or remote-provider requirements in core skills. Use `packs`, `multi-task`, and a fresh v6 installation intent. Existing v5 command removals and `.sdd/` migration remain unsupported.
+An incompatible upgrade replaces SAF-managed installation assets with the latest release
+contract. It does not translate old configuration, aliases, pack IDs, or skill metadata.
+Recognized older metadata may be inspected only by the cleanup-only ownership recognizer; it is
+never accepted as current operational state.
 
-## What this does not promise
+The cleanup preserves repository source, Git history, `.specs/features/**`, project context,
+reports, snapshots, explanations, evidence, review artifacts, and non-SAF skills. It replaces
+managed SAF skills, the shared installed layer, installation intent, provenance, config, and
+regenerable usage files. Unknown or future state fails closed before deletion.
 
-This contract does not promise rollback across filesystems after the apply boundary, preservation of pre-v5 state, remote registry availability, shell startup-file edits, or post-publication behavior. Human authority remains required for external upgrades and all Git or release actions.
+`core`, `local-files`, `github`, `pr`, and `multi-worktree` have no v6 aliases. Bare CLI
+invocation is read-only; installation requires an explicit install/init operation.
 
-Changes to command-data/error semantics or required fields require the next major release. Additive optional JSON fields remain compatible when they preserve the envelope, canonical tokens, and existing required behavior.
+## Version boundary
+
+Current v6 state is supported. Explicitly recognized previous SAF state is cleanup-only. Future
+or unknown schemas are refused, because an older CLI must not delete state it cannot understand.

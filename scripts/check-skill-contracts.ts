@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseContractArray, validateContractReferences } from '../src/contract-graph';
+import { validateContractReferences } from '../src/contract-graph';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 const root = path.resolve(__dirname, '..');
@@ -10,16 +10,17 @@ const baselineRegistry = fs.readFileSync(path.join(root, 'shared/baselines/regis
 const knownBaselineIds = [...baselineRegistry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)]
   .map((match) => match[1])
   .filter((id): id is string => Boolean(id));
-const presetFiles = fs
-  .readdirSync(path.join(root, 'presets'))
-  .filter((file) => file.endsWith('.json'));
-const presets = presetFiles.map(
+const packFiles = fs.readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json'));
+const packs = packFiles.map(
   (file) =>
-    JSON.parse(fs.readFileSync(path.join(root, 'presets', file), 'utf8')) as {
+    JSON.parse(fs.readFileSync(path.join(root, 'packs', file), 'utf8')) as {
       name: string;
       skills: string[];
     },
 );
+const expectedPacks = ['execution', 'full', 'multi-task', 'planning', 'review'];
+if (JSON.stringify(packs.map((pack) => pack.name).sort()) !== JSON.stringify(expectedPacks))
+  failures.push('packs: expected exactly execution, full, multi-task, planning, review');
 const skills = OFFICIAL_SKILLS.map((name) => {
   const content = fs.readFileSync(path.join(root, 'skills', name, 'SKILL.md'), 'utf8');
   const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1];
@@ -29,10 +30,10 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   if (descriptions.has(description))
     failures.push(`${name}: duplicate description with ${descriptions.get(description)}`);
   descriptions.set(description, name);
-  for (const field of ['extends', 'requires', 'consumes', 'produces', 'baseline', 'packs'])
+  for (const field of ['extends', 'requires', 'consumes', 'produces', 'baseline'])
     if (!new RegExp(`^${field}:`, 'm').test(frontmatter ?? ''))
       failures.push(`${name}: missing ${field}`);
-  for (const removed of ['compatible_with:', '  pack:'])
+  for (const removed of ['compatible_with:', '  pack:', 'packs:'])
     if ((frontmatter ?? '').includes(removed))
       failures.push(`${name}: retired contract token ${removed.trim()}`);
   const headings = [...content.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
@@ -42,15 +43,20 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   const output = content.match(/^## Output\n([\s\S]*?)(?=^### Autonomy)/m)?.[1] ?? '';
   for (const label of ['Status', 'Next recommended skill', 'Reason'])
     if (!output.includes(label)) failures.push(`${name}: output missing ${label}`);
-  const actualPacks = presets
-    .filter((preset) => preset.skills.includes(name))
-    .map((preset) => preset.name)
-    .sort();
-  const declaredPacks = (parseContractArray(frontmatter ?? '', 'packs') ?? []).sort();
-  if (JSON.stringify(actualPacks) !== JSON.stringify(declaredPacks))
-    failures.push(`${name}: packs drift presets=[${actualPacks}] declared=[${declaredPacks}]`);
   return { name, frontmatter: frontmatter ?? '' };
 });
+
+for (const pack of packs) {
+  const unknown = pack.skills.filter(
+    (skill) => !(OFFICIAL_SKILLS as readonly string[]).includes(skill),
+  );
+  if (unknown.length) failures.push(`${pack.name}: unknown skills ${unknown.join(', ')}`);
+}
+const full = packs.find((pack) => pack.name === 'full');
+if (
+  JSON.stringify([...(full?.skills || [])].sort()) !== JSON.stringify([...OFFICIAL_SKILLS].sort())
+)
+  failures.push('full: skills must equal OFFICIAL_SKILLS');
 
 const { failures: referenceFailures, cycles } = validateContractReferences(skills, {
   knownBaselineIds,

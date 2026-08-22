@@ -9,9 +9,9 @@ consumer project. `project` is opt-in and matches the toolkit's pre-v0.9.0 behav
 | `project` (opt-in) | Copies skills into `.agents/skills/` inside the project, same as `install` before v0.9.0 | Real files, appear as untracked in `git status`; the team decides whether to commit |
 
 ```bash
-npx sdd-agentic-flow install core                       # scope: user (default), zero footprint
-npx sdd-agentic-flow install core --scope project        # writes .agents/skills/ in the project
-npx sdd-agentic-flow install core --plan                 # dry run: show what would be written, touch nothing
+npx sdd-agentic-flow install full                       # scope: user (default), zero footprint
+npx sdd-agentic-flow install full --scope project        # writes .agents/skills/ in the project
+npx sdd-agentic-flow install full --plan                 # dry run: show what would be written, touch nothing
 ```
 
 ## Ownership boundary
@@ -75,9 +75,10 @@ it reports `Repository changes: none`; in `project` scope it lists Git-visible p
 `.agents/skills/`. Mutating install with preflight **COLLISION** > 0 exits non-zero.
 
 Use `install <pack> --interactive` for a guided wizard (model, targets, preflight summary,
-confirm). Non-interactive `install core` remains the default backward-compatible path.
+confirm). A clean-slate upgrade replaces SAF-managed installation state with the current v6
+contract; it does not migrate obsolete packs or configuration.
 
-## UX labels (v3.0.0)
+## UX labels (v6.0.0)
 
 | UX label | CLI | Footprint |
 | --- | --- | --- |

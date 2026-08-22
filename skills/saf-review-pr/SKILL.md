@@ -8,7 +8,6 @@ requires: [config, change-review-package]
 consumes: []
 produces: [review-findings]
 baseline: [tlc-spec-driven]
-packs: [full, pr]
 depends_on: []
 conflicts: []
 requires_cli: null

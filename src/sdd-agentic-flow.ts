@@ -4,17 +4,22 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
+import {
+  type CleanUpgradeSession,
+  inspectCleanUpgrade,
+  prepareCleanUpgrade,
+} from './clean-upgrade';
 import { COMMAND_HELP, KNOWN_COMMANDS, USAGE, writeCommandHelp } from './cli-help';
 import { completionFor, isRemovedCommand, lexicalConflict } from './command-registry';
 import { renderPolicySummary, runConfigCommand } from './config';
 import { EXECUTION_MODES, readConfig } from './config-domain';
 import { configureIntent } from './configure';
 import {
-  coreSkillsPresence,
   doctor,
-  hasCoreSkillsAt,
+  hasOfficialSkillsAt,
   installationStatus,
   languageReport,
+  officialSkillsPresence,
   resolveConfiguredAgent,
   resolveSkillsRoot,
 } from './doctor';
@@ -44,7 +49,7 @@ import {
   LANGUAGE_PROFILES,
   OPERATING_PRESET_HELP,
   PACKAGE_ROOT,
-  PRESETS_DIR,
+  PACKS_DIR,
   resolveAutonomyToken,
   resolveOperatingPreset,
   SDD_PATHS,
@@ -68,7 +73,6 @@ import {
   printCurrentSetup,
   setSetupCommandDeps,
 } from './setup';
-import { CORE_SKILLS } from './skill-identity';
 import {
   type DisplayMode,
   didYouMean,
@@ -317,7 +321,7 @@ Spec Driven Development toolkit for AI coding agents.
 QUICK START
   npx sdd-agentic-flow
   npx sdd-agentic-flow init
-  npx sdd-agentic-flow install core
+  npx sdd-agentic-flow install full
   npx sdd-agentic-flow doctor
 
 START
@@ -366,7 +370,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const configFound = fs.existsSync(configPath);
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
   const skillsRoot = resolveSkillsRoot(cwd);
-  const presence = coreSkillsPresence(skillsRoot);
+  const presence = officialSkillsPresence(skillsRoot);
   const skillsInstalled = presence.missing.length === 0;
   const skillsPartial = !skillsInstalled && presence.present.length > 0;
   const contextFound = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'));
@@ -394,7 +398,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const skillsLabel = skillsInstalled
     ? `${t(locale, 'welcome.skillsInstalled')} (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
     : skillsPartial
-      ? `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present) — re-run \`sdd-agentic-flow install core\` to repair`
+      ? `partial skill install detected (${presence.present.length} present) — re-run \`sdd-agentic-flow install full\` to repair`
       : `${t(locale, 'welcome.noSkills')} (project or user scope)`;
   const contextLabel = contextFound
     ? t(locale, 'welcome.contextGenerated')
@@ -433,7 +437,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const suggested = !configFound
     ? 'npx sdd-agentic-flow init'
     : !skillsInstalled
-      ? 'npx sdd-agentic-flow install core'
+      ? 'npx sdd-agentic-flow install full'
       : 'Use your coding agent with the installed SAF workflow.';
   if (mode === 'machine') {
     // Compact status screen (CLI-001): contextual next + quick commands; not nextStep().
@@ -444,7 +448,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
         (!configFound
           ? '  npx sdd-agentic-flow init              Create local configuration\n  npx sdd-agentic-flow learn-sdd         Learn the workflow\n'
           : !skillsInstalled
-            ? '  npx sdd-agentic-flow install core       Install the core skill pack\n  npx sdd-agentic-flow config installation  Change installation intent\n  npx sdd-agentic-flow doctor             Validate local setup\n'
+            ? '  npx sdd-agentic-flow install full       Install the full skill pack\n  npx sdd-agentic-flow config installation  Change installation intent\n  npx sdd-agentic-flow doctor             Validate local setup\n'
             : '  npx sdd-agentic-flow doctor             Validate local setup\n  npx sdd-agentic-flow config policy      Change operating policy\n  npx sdd-agentic-flow uninstall --plan   Preview what would be removed\n') +
         '\n' +
         `${t(locale, 'welcome.help')}\n\n` +
@@ -458,7 +462,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
       !configFound
         ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow learn-sdd\n  npx sdd-agentic-flow help\n`
         : !skillsInstalled
-          ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install core --plan\n  npx sdd-agentic-flow configure\n  npx sdd-agentic-flow doctor\n`
+          ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install full --plan\n  npx sdd-agentic-flow configure\n  npx sdd-agentic-flow doctor\n`
           : `\n${t(locale, 'welcome.optionalMaintenance')}\n  npx sdd-agentic-flow doctor\n  npx sdd-agentic-flow config policy\n  npx sdd-agentic-flow context refresh\n  npx sdd-agentic-flow upgrade\n  npx sdd-agentic-flow uninstall --plan\n`,
     );
     process.stdout.write(
@@ -505,67 +509,89 @@ async function refreshInstalledSkills(cwd: string, options: CommandOptions = {})
   const mode = options.mode ?? resolveMode(options);
   const interactive = Boolean(options.interactive && canPromptInteractively(mode));
   const skillsRoot = resolveSkillsRoot(cwd);
-  const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+  let packs: string[] = [];
+
+  const projectRoot = path.join(cwd, '.agents', 'skills');
+  const targets = [];
+  if (hasOfficialSkillsAt(projectRoot) || installationStatus(projectRoot))
+    targets.push(projectRoot);
+  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd), options.homeDir) ?? []) {
+    if (installationStatus(dir) && !targets.includes(dir)) targets.push(dir);
+  }
+  if (!targets.length) targets.push(skillsRoot);
+
+  const cleanupInspection = inspectCleanUpgrade({
+    cwd,
+    ...(options.homeDir ? { homeDir: options.homeDir } : {}),
+    targetRoots: targets,
+  });
+  if (cleanupInspection.state === 'future' || cleanupInspection.state === 'unknown') {
+    log('FAIL', cleanupInspection.blockedReason || 'clean upgrade blocked before writes');
+    return { ok: false, blocked: true };
+  }
+  packs =
+    cleanupInspection.state === 'legacy' ? ['full'] : detectInstalledPacks(skillsRoot, PACKS_DIR);
   if (!packs.length) {
     log('WARN', 'no installed packs detected to refresh');
     process.stdout.write('No changes were made.\n');
     return { ok: true, skipped: true };
   }
 
-  const projectRoot = path.join(cwd, '.agents', 'skills');
-  const targets = [];
-  if (hasCoreSkillsAt(projectRoot) || installationStatus(projectRoot)) targets.push(projectRoot);
-  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd), options.homeDir) ?? []) {
-    if (installationStatus(dir) && !targets.includes(dir)) targets.push(dir);
-  }
-  if (!targets.length) targets.push(skillsRoot);
+  let cleanUpgrade: CleanUpgradeSession | null = null;
+  try {
+    if (cleanupInspection.state === 'legacy') cleanUpgrade = prepareCleanUpgrade(cleanupInspection);
 
-  let allDiffers: string[] = [];
-  for (const target of targets) {
-    for (const pack of packs) {
-      const preset = readPreset(pack);
-      if (!preset) continue;
-      const classified = classifyManagedPairs(collectManagedPairs(PACKAGE_ROOT, preset, target));
-      allDiffers = allDiffers.concat(
-        classified.differs.map((pair: { rel: string }) => `${target}: ${pair.rel}`),
-      );
-    }
-  }
-
-  let overwriteDiffers = false;
-  if (allDiffers.length) {
-    log('WARN', `${allDiffers.length} managed file(s) differ from the bundled package`);
-    for (const line of allDiffers.slice(0, 20)) process.stdout.write(`  ${line}\n`);
-    if (allDiffers.length > 20) process.stdout.write(`  … and ${allDiffers.length - 20} more\n`);
-    if (interactive) {
-      overwriteDiffers = await askYesNo(
-        'Overwrite differing managed files with the bundled package? [y/N] ',
-      );
-      if (!overwriteDiffers) {
-        log('WARN', 'skipped differing files (no silent overwrite)');
+    let allDiffers: string[] = [];
+    for (const target of targets) {
+      for (const pack of packs) {
+        const preset = readPreset(pack);
+        if (!preset) continue;
+        const classified = classifyManagedPairs(collectManagedPairs(PACKAGE_ROOT, preset, target));
+        allDiffers = allDiffers.concat(
+          classified.differs.map((pair: { rel: string }) => `${target}: ${pair.rel}`),
+        );
       }
-    } else {
-      log('WARN', 'non-interactive: never overwriting differing managed files');
     }
-  }
 
-  let wrote = 0;
-  let skippedDiffers = 0;
-  for (const target of targets) {
-    const summary = refreshSkillsAtTarget(target, packs, { overwriteDiffers });
-    wrote += summary.installed + summary.refreshed;
-    skippedDiffers += summary.skippedDiffers;
-    log(
-      'PASS',
-      `refreshed ${packs.join(', ')} at ${target}: ${summary.installed} new, ${summary.refreshed} updated, ${summary.skippedIdentical} identical, ${summary.skippedDiffers} differed (skipped)`,
-    );
-  }
+    let overwriteDiffers = false;
+    if (allDiffers.length) {
+      log('WARN', `${allDiffers.length} managed file(s) differ from the bundled package`);
+      for (const line of allDiffers.slice(0, 20)) process.stdout.write(`  ${line}\n`);
+      if (allDiffers.length > 20) process.stdout.write(`  … and ${allDiffers.length - 20} more\n`);
+      if (interactive) {
+        overwriteDiffers = await askYesNo(
+          'Overwrite differing managed files with the bundled package? [y/N] ',
+        );
+        if (!overwriteDiffers) {
+          log('WARN', 'skipped differing files (no silent overwrite)');
+        }
+      } else {
+        log('WARN', 'non-interactive: never overwriting differing managed files');
+      }
+    }
 
-  if (!wrote && skippedDiffers) {
-    log('WARN', 'no skill files refreshed (all candidates differed or were identical)');
-    process.stdout.write('Recovery:\n  sdd-agentic-flow upgrade --skills-only\n');
+    let wrote = 0;
+    let skippedDiffers = 0;
+    for (const target of targets) {
+      const summary = refreshSkillsAtTarget(target, packs, { overwriteDiffers });
+      wrote += summary.installed + summary.refreshed;
+      skippedDiffers += summary.skippedDiffers;
+      log(
+        'PASS',
+        `refreshed ${packs.join(', ')} at ${target}: ${summary.installed} new, ${summary.refreshed} updated, ${summary.skippedIdentical} identical, ${summary.skippedDiffers} differed (skipped)`,
+      );
+    }
+
+    if (!wrote && skippedDiffers) {
+      log('WARN', 'no skill files refreshed (all candidates differed or were identical)');
+      process.stdout.write('Recovery:\n  sdd-agentic-flow upgrade --skills-only\n');
+    }
+    cleanUpgrade?.commit();
+    return { ok: true, wrote, skippedDiffers, packs };
+  } catch (error) {
+    cleanUpgrade?.rollback();
+    throw error;
   }
-  return { ok: true, wrote, skippedDiffers, packs };
 }
 
 async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
@@ -576,7 +602,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
   if (options.skillsOnly) {
     if (options.plan) {
       const skillsRoot = resolveSkillsRoot(cwd);
-      const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+      const packs = detectInstalledPacks(skillsRoot, PACKS_DIR);
       process.stdout.write(
         `Execution mode: ${execMode}\n` +
           `Registry check: none (--skills-only)\n` +
@@ -612,7 +638,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
 
   if (options.plan) {
     const skillsRoot = resolveSkillsRoot(cwd);
-    const packs = detectInstalledPacks(skillsRoot, PRESETS_DIR);
+    const packs = detectInstalledPacks(skillsRoot, PACKS_DIR);
     if (!result.reachable) {
       log('WARN', 'unable to check for updates');
       process.stdout.write(
@@ -1267,7 +1293,7 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
   const locale = localeFor(cwd);
   for (;;) {
     const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
-    const skillsInstalled = coreSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
+    const skillsInstalled = officialSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
     const onboardingState = onboardingStateFor(cwd);
     if (options.showSummary !== false && ['READY', 'NEEDS_ATTENTION'].includes(onboardingState))
       printCurrentSetup(cwd, locale);

@@ -1,6 +1,6 @@
 # Adapters
 
-`local-files` uses local source items. No hosted SCM, tracker, or coding-agent provider is a
+The `local-files` source type uses local source items. No hosted SCM, tracker, or coding-agent provider is a
 core SAF dependency; the CLI never contacts one.
 
 No adapter is required for the core workflow. Source selection stays project-local

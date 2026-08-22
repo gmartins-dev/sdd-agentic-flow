@@ -204,12 +204,12 @@ function runJourneys() {
   record('J06', 'project setup', 'context refresh', () => {
     expect(run(['context', 'refresh'], greenfield), 0, /created|refreshed|generated/);
   });
-  record('J07', 'project setup', 'install core --scope project', () => {
-    expect(run(['install', 'core', '--scope', 'project'], greenfield), 0, /installed|preserved/);
+  record('J07', 'project setup', 'install full --scope project', () => {
+    expect(run(['install', 'full', '--scope', 'project'], greenfield), 0, /installed|preserved/);
     assert.ok(fs.existsSync(path.join(greenfield.cwd, '.agents/skills/saf-create-spec/SKILL.md')));
   });
-  record('J08', 'project setup', 'install core --scope project (repeat)', () => {
-    expect(run(['install', 'core', '--scope', 'project'], greenfield), 0, /preserved|unchanged/);
+  record('J08', 'project setup', 'install full --scope project (repeat)', () => {
+    expect(run(['install', 'full', '--scope', 'project'], greenfield), 0, /preserved|unchanged/);
   });
   record('J09', 'project setup', 'doctor --smoke --contracts', () => {
     expect(run(['doctor', '--smoke', '--contracts'], greenfield), 0);
@@ -242,7 +242,7 @@ function runJourneys() {
           '--scope',
           'project',
           '--pack',
-          'core',
+          'full',
           '--sharing',
           'local',
         ],
@@ -252,24 +252,24 @@ function runJourneys() {
       /Intent preview|would save/,
     );
   });
-  record('J14', 'policy configuration', 'config installation --scope project --pack core', () => {
+  record('J14', 'policy configuration', 'config installation --scope project --pack full', () => {
     expect(
-      run(['config', 'installation', '--scope', 'project', '--pack', 'core'], policy),
+      run(['config', 'installation', '--scope', 'project', '--pack', 'full'], policy),
       0,
       /saved/,
     );
   });
 
   const userInstall = project('04-user-install');
-  record('J15', 'global installation', 'install core --plan', () => {
+  record('J15', 'global installation', 'install full --plan', () => {
     const before = entries(userInstall.cwd).sort();
-    const result = run(['install', 'core', '--plan'], userInstall);
+    const result = run(['install', 'full', '--plan'], userInstall);
     expect(result, 0, /Installation plan|Scope +user|Repository footprint/);
     assert.deepEqual(entries(userInstall.cwd).sort(), before);
     assert.deepEqual(entries(userInstall.home), []);
   });
-  record('J16', 'global installation', 'install core --target claude', () => {
-    expect(run(['install', 'core', '--target', 'claude'], userInstall), 0, /installed|preserved/);
+  record('J16', 'global installation', 'install full --target claude', () => {
+    expect(run(['install', 'full', '--target', 'claude'], userInstall), 0, /installed|preserved/);
     assert.ok(
       fs.existsSync(path.join(userInstall.home, '.claude/skills/saf-create-spec/SKILL.md')),
     );
@@ -283,19 +283,20 @@ function runJourneys() {
   });
 
   const safety = project('05-safety');
-  record('J18', 'safe reconciliation', 'install core --plan with foreign skill', () => {
+  record('J18', 'safe reconciliation', 'install full --plan with foreign skill', () => {
     const foreign = path.join(safety.home, '.agents/skills/saf-create-spec');
     fs.mkdirSync(foreign, { recursive: true });
     fs.writeFileSync(path.join(foreign, 'SKILL.md'), '# foreign\n');
-    const result = run(['install', 'core', '--plan'], safety);
+    const result = run(['install', 'full', '--plan'], safety);
     expect(result, 0, /Collisions|COLLISION|BLOCKED|foreign/);
   });
-  record('J19', 'safe reconciliation', 'invalid legacy install is blocked', () => {
+  record('J19', 'safe reconciliation', 'unrecognized legacy skill is preserved', () => {
     const legacy = path.join(safety.cwd, '.agents/skills/sdd-route');
     fs.mkdirSync(legacy, { recursive: true });
     fs.writeFileSync(path.join(legacy, 'SKILL.md'), '# legacy\n');
-    const result = run(['install', 'core', '--scope', 'project'], safety);
-    expect(result, 1, /legacy|BLOCKED|3\.0/);
+    const result = run(['install', 'full', '--scope', 'project'], safety);
+    expect(result, 0, /installed|preserved/);
+    assert.equal(fs.existsSync(path.join(legacy, 'SKILL.md')), true);
   });
 
   const autonomy = project('06-autonomy');
@@ -324,7 +325,7 @@ function runJourneys() {
 
   const removal = project('07-removal');
   expect(run(['init'], removal), 0);
-  expect(run(['install', 'core', '--scope', 'project'], removal), 0);
+  expect(run(['install', 'full', '--scope', 'project'], removal), 0);
   fs.mkdirSync(path.join(removal.cwd, '.specs/features'), { recursive: true });
   fs.writeFileSync(path.join(removal.cwd, '.specs/features/keep.md'), 'keep\n');
   fs.writeFileSync(path.join(removal.cwd, 'user-file.txt'), 'keep\n');
@@ -376,7 +377,7 @@ function runJourneys() {
   const packed = project('09-packed-consumer');
   const { tarball, cacheDir } = packTarball();
   record('J27', 'fresh packaged consumer', 'npm pack -> npx init/install/doctor', () => {
-    for (const args of [['init'], ['install', 'core'], ['doctor', '--json']]) {
+    for (const args of [['init'], ['install', 'full'], ['doctor', '--json']]) {
       const result = runPacked(args, packed, tarball, cacheDir);
       assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}${result.stdout}`);
     }

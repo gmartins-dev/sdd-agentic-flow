@@ -1,6 +1,6 @@
 # Golden flow: greenfield
 
-Proved by `test/cli.test.ts` — `golden flow: greenfield init -> install core -> copy spec
+Proved by `test/cli.test.ts` — `golden flow: greenfield init -> install full -> copy spec
 artifacts -> doctor PASS`. This file describes what that test exercises; it is not a
 promise beyond what the test actually checks (see `docs/environment-compatibility.md` for the
 project's stance on documentation vs. mechanically-proved claims).
@@ -9,7 +9,7 @@ project's stance on documentation vs. mechanically-proved claims).
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install core --scope project
+sdd-agentic-flow install full --scope project
 ```
 
 Then the artifacts a real `saf-create-spec` run in **source-item mode** would produce for

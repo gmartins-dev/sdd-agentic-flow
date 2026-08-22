@@ -65,7 +65,7 @@ a user, without ever running `npm publish`:
 
 - **`npm run cli:dev -- <args>`** — fastest loop. Runs `dist/sdd-agentic-flow.js` (build first
   if needed) against a persistent scratch project + isolated `HOME` under your temp
-  directory, so state (e.g. an `init`, then `install core`, then `doctor`) carries across runs
+  directory, so state (e.g. an `init`, then `install full`, then `doctor`) carries across runs
   like a real evolving project. Pass `--fresh` to wipe both and start over. Use this while
   iterating on a change — "did that wording come out right?"
 

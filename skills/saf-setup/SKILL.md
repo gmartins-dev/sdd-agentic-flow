@@ -8,7 +8,6 @@ requires: [config]
 consumes: []
 produces: [project-config, project-context]
 baseline: [tlc-spec-driven]
-packs: [core, full, local-files, planning]
 depends_on: []
 conflicts: []
 requires_cli: null

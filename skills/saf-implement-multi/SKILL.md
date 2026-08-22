@@ -8,7 +8,6 @@ requires: [config, spec-package]
 consumes: [domain-glossary, project-context]
 produces: [execution-plan, multi-task-evidence]
 baseline: [tlc-spec-driven, tdd]
-packs: [execution, full, multi-task]
 depends_on: []
 conflicts: []
 requires_cli: null

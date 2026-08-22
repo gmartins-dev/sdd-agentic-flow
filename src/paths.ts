@@ -10,7 +10,7 @@ export const PACKAGE_ROOT = path.resolve(__dirname, '..');
 export const VERSION = (
   JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')) as PackageJson
 ).version;
-export const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
+export const PACKS_DIR = path.join(PACKAGE_ROOT, 'packs');
 export const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 export const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'];
 export const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'];
@@ -57,14 +57,7 @@ export function resolveOperatingPreset(token: string) {
   };
 }
 
-export const REQUIRED_CONTRACT_FIELDS = [
-  'extends',
-  'requires',
-  'consumes',
-  'produces',
-  'baseline',
-  'packs',
-];
+export const REQUIRED_CONTRACT_FIELDS = ['extends', 'requires', 'consumes', 'produces', 'baseline'];
 export const OPTIONAL_CONTRACT_FIELDS = ['depends_on', 'conflicts', 'requires_cli'];
 
 // v1.10.0: toolkit state lives under .sdd-agentic-flow/ (not the legacy .sdd/ short name).

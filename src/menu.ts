@@ -35,8 +35,8 @@ function shouldShowInteractiveMenu(
 // literal array entry directly, so a future edit can't accidentally wire a destructive default.
 const MENU_ACTIONS: MenuAction[] = [
   { label: 'Create local configuration', command: ['init'] },
-  { label: 'Install the core skill pack', command: ['install', 'core'] },
-  { label: 'Preview install plan (read-only)', command: ['install', 'core', '--plan'] },
+  { label: 'Install the full skill pack', command: ['install', 'full'] },
+  { label: 'Preview install plan (read-only)', command: ['install', 'full', '--plan'] },
   { label: 'Configure installation intent', command: ['config', 'installation'] },
   { label: 'Validate local setup', command: ['doctor'] },
   { label: 'Change operating policy', command: ['config', 'policy'] },
@@ -73,8 +73,8 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
   if (!hasConfig) return pick(['init'], ['learn-sdd'], ['help']);
   if (!hasSkills) {
     return pick(
-      ['install', 'core'],
-      ['install', 'core', '--plan'],
+      ['install', 'full'],
+      ['install', 'full', '--plan'],
       ['doctor'],
       ['config', 'installation'],
       ['help'],

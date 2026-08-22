@@ -2,7 +2,7 @@
 
 Install a pack, then reference the installed Markdown skill by name.
 
-`install core` defaults to `--scope user` and writes to `~/.claude/skills/<name>/SKILL.md`
+`install full` defaults to `--scope user` and writes to `~/.claude/skills/<name>/SKILL.md`
 (Claude Code's global skill directory). Pass `--scope project` to install into
 `.agents/skills/` inside this repository instead. See
 [installation scope](installation-scope.md).

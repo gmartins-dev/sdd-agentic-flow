@@ -26,7 +26,7 @@ you chose project scope during setup).
 **Fix:** Re-run `init` with user scope, or pass `init --local-git-exclude` when using project
 scope. Then run `install <pack> --scope project` when project-local skills are intended.
 
-### `skills` / `shared_layer`: core skills or shared layer not fully installed
+### `skills` / `shared_layer`: official skills or shared layer not fully installed
 
 **Cause:** `install <pack>` was never run, or was run with `--scope user` (so nothing is in
 the project's `.agents/skills/` — this is expected, not a bug, unless you intended
@@ -35,22 +35,22 @@ the project's `.agents/skills/` — this is expected, not a bug, unless you inte
 **Diagnose:** `sdd-agentic-flow doctor` and check the "Installation" section — it reports
 separately whether a project-scope and each user-scope installation exist.
 
-**Fix:** `sdd-agentic-flow install core` (user scope, global) or
-`sdd-agentic-flow install core --scope project` (writes into this project). See
+**Fix:** `sdd-agentic-flow install full` (user scope, global) or
+`sdd-agentic-flow install full --scope project` (writes into this project). See
 [installation scope](installation-scope.md).
 
-### `skills`: "partial core skill install detected (N/5 present; missing: ...)"
+### `skills`: "partial official skill install detected"
 
-**Cause:** an interrupted or manually-tampered install left some but not all of the five skills in
-`CORE_SKILLS` in place. This differs from "none installed," which means `install` was never run.
+**Cause:** an interrupted or manually-tampered install left only part of the selected pack in
+place. Health is evaluated against the current installation intent, not a fixed core list.
 Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) surface this as a
 `WARN`, distinct from the plain "not fully installed" message.
 
 **Diagnose:** `sdd-agentic-flow doctor` — the message names exactly which skills are missing.
 
-**Fix:** `sdd-agentic-flow install core` again (idempotent; fills in only what's missing).
+**Fix:** `sdd-agentic-flow install full` again (idempotent; fills in only what's missing).
 
-### `project_readiness`: based on config and core skills
+### `project_readiness`: based on config and selected skills
 
 **Cause:** derived from `config` and `skills` above — fix those first.
 
@@ -127,7 +127,7 @@ file isn't installed yet. `FAIL` — `language.profile`/`human_outputs`/`technic
 parsed fields and the exact message.
 
 **Fix:** when the configured profile asset is absent because skills are not installed or are
-partial, run `sdd-agentic-flow install core`. Re-run `init --language en-US` or
+partial, run `sdd-agentic-flow install full`. Re-run `init --language en-US` or
 `init --language pt-BR` (or the `--en`/`--br` shorthands) only for a missing or invalid project
 language configuration; otherwise correct the four `language.*` fields by hand to match one of
 `docs/language-profiles.md`'s supported profiles.
@@ -318,7 +318,7 @@ internally" — both are non-zero failures.
 
 ## For package maintainers (`doctor` run inside this repository)
 
-`package_integrity`, `private_context`, `licensing`, `presets`, `agent_compatibility`, and
+`package_integrity`, `private_context`, `licensing`, `packs`, `agent_compatibility`, and
 `postinstall` only run when `doctor` detects it's running inside the `sdd-agentic-flow`
 package itself (its own `package.json` name). These are safeguards for `npm publish`
 readiness, not consumer-facing — see [publishing](publishing.md) if one of these fails before

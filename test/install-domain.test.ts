@@ -21,15 +21,15 @@ after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 test('intent persistence round-trips and pack union derives skills', () => {
   const config: InstallConfig = {
     schema: 'saf-install-intent/v2',
-    user: { packs: ['core'], targets: [...DEFAULT_USER_TARGETS] },
+    user: { packs: ['planning'], targets: [...DEFAULT_USER_TARGETS] },
     projects: {},
   };
   writeInstallConfig(config, temporary);
   assert.deepEqual(readInstallConfig(temporary), config);
   assert.deepEqual(
-    desiredSkillsForPacks(['core', 'pr'], {
-      core: { skills: ['a', 'b'] },
-      pr: { skills: ['b', 'c'] },
+    desiredSkillsForPacks(['planning', 'review'], {
+      planning: { skills: ['a', 'b'] },
+      review: { skills: ['b', 'c'] },
     }),
     ['a', 'b', 'c'],
   );
@@ -78,7 +78,7 @@ test('project configure persists intent and only manages its owned exclude block
     homeDir: temporary,
     cwd: project,
     scope: 'project',
-    packs: ['core'],
+    packs: ['planning'],
     sharing: 'local',
   });
   assert.match(
@@ -102,10 +102,10 @@ test('configure intent replaces a selected pack instead of retaining a stale lar
     },
     home,
   );
-  configureIntent({ homeDir: home, cwd: temporary, scope: 'user', packs: ['core'] });
+  configureIntent({ homeDir: home, cwd: temporary, scope: 'user', packs: ['planning'] });
   const saved = readInstallConfig(home);
   assert.ok(saved);
-  assert.deepEqual(saved.user.packs, ['core']);
+  assert.deepEqual(saved.user.packs, ['planning']);
 });
 
 test('project sharing leaves an equivalent user exclusion untouched', () => {

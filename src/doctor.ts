@@ -23,7 +23,7 @@ import {
   legacySddJoin,
   OPTIONAL_CONTRACT_FIELDS,
   PACKAGE_ROOT,
-  PRESETS_DIR,
+  PACKS_DIR,
   PRIVATE_PATTERNS,
   REQUIRED_CONTRACT_FIELDS,
   SDD_PATHS,
@@ -33,7 +33,7 @@ import {
   VERSION,
 } from './paths';
 import { gitInfo, parseProvenance, readLoopState } from './project-context';
-import { CORE_SKILLS, isLegacySkillName, OFFICIAL_SKILLS } from './skill-identity';
+import { isLegacySkillName, OFFICIAL_SKILLS } from './skill-identity';
 import { styleStatus } from './ui';
 import { checkForUpdate } from './update-check';
 import { readInstallProvenance } from './upgrade';
@@ -79,7 +79,7 @@ function setDoctorSmokeDeps(deps: SmokeCheckDeps): void {
 }
 
 function defaultConfigYaml(): string {
-  return `schema: saf-config/v1
+  return `schema: saf-config/v2
 
 project:
   name: example-project
@@ -141,15 +141,15 @@ function resolveConfiguredAgent(cwd: string): string | null {
   return target && KNOWN_AGENTS.includes(target) ? target : null;
 }
 
-function hasCoreSkillsAt(root: string): boolean {
-  return CORE_SKILLS.every((skill: string) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
+function hasOfficialSkillsAt(root: string): boolean {
+  return OFFICIAL_SKILLS.some((skill: string) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
 }
 
 function resolveSkillsRoot(cwd: string): string {
   const projectRoot = path.join(cwd, '.agents', 'skills');
-  if (hasCoreSkillsAt(projectRoot)) return projectRoot;
+  if (hasOfficialSkillsAt(projectRoot)) return projectRoot;
   for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd)) ?? [])
-    if (hasCoreSkillsAt(dir)) return dir;
+    if (hasOfficialSkillsAt(dir)) return dir;
   return projectRoot;
 }
 
@@ -235,13 +235,13 @@ function installationStatus(target: string): boolean {
   );
 }
 
-function coreSkillsPresence(root: string) {
-  const present: string[] = CORE_SKILLS.filter((skill: string) =>
+function officialSkillsPresence(root: string) {
+  const present: string[] = OFFICIAL_SKILLS.filter((skill: string) =>
     fs.existsSync(path.join(root, skill, 'SKILL.md')),
   );
   return {
     present,
-    missing: CORE_SKILLS.filter((skill: string) => !present.includes(skill)),
+    missing: present.length ? [] : [...OFFICIAL_SKILLS],
   };
 }
 
@@ -294,7 +294,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       const legacy =
         Boolean(
           provenance?.package === 'sdd-agentic-flow' &&
-            provenance.schema !== 'saf-install-provenance/v1',
+            provenance.schema !== 'saf-install-provenance/v2',
         ) ||
         fs
           .readdirSync(root)
@@ -341,7 +341,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         path.join(cwd, 'src'),
         path.join(cwd, 'skills'),
         path.join(cwd, 'shared'),
-        path.join(cwd, 'presets'),
+        path.join(cwd, 'packs'),
         path.join(cwd, 'examples'),
         path.join(cwd, 'docs'),
       ])
@@ -358,12 +358,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       'NOTICE and licensing map present',
       'Licensing',
     );
-    add(
-      'presets',
-      fs.existsSync(PRESETS_DIR) ? 'PASS' : 'FAIL',
-      'installable presets present',
-      'Presets',
-    );
+    add('packs', fs.existsSync(PACKS_DIR) ? 'PASS' : 'FAIL', 'installable packs present', 'Packs');
     add(
       'agent_compatibility',
       fs.existsSync(path.join(cwd, 'docs', 'agent-compatibility.md')) ? 'PASS' : 'FAIL',
@@ -420,13 +415,11 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       );
     })();
     (() => {
-      const presence = coreSkillsPresence(skillsRoot);
+      const presence = officialSkillsPresence(skillsRoot);
       const skillsMessage =
         presence.missing.length === 0
-          ? 'core skills installed'
-          : presence.present.length === 0
-            ? 'core skills not fully installed'
-            : `partial core skill install detected (${presence.present.length}/${CORE_SKILLS.length} present; missing: ${presence.missing.join(', ')}) — re-run \`sdd-agentic-flow install core\` to repair`;
+          ? `installed skills present (${presence.present.length})`
+          : 'no official skills installed';
       add('skills', presence.missing.length === 0 ? 'PASS' : 'WARN', skillsMessage, 'Skills');
     })();
     add(
@@ -443,8 +436,8 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     );
     add(
       'project_readiness',
-      fs.existsSync(configPath) && hasCoreSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
-      'project readiness is based on config and core skills',
+      fs.existsSync(configPath) && hasOfficialSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
+      'project readiness is based on config and selected official skills',
       'Project readiness',
     );
     {
@@ -798,7 +791,7 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
     add(
       'autonomy_config',
       'WARN',
-      `workflow.execution_mode/autonomy_level not set in ${SDD_PATHS.config}; defaulting to guided/manual (pre-v1.8.0 config, still fully supported)`,
+      `workflow.execution_mode/autonomy_level not set in ${SDD_PATHS.config}; run init to recreate the current v6 configuration`,
     );
   } else if (
     !(EXECUTION_MODES as readonly string[]).includes(executionMode) ||
@@ -999,9 +992,9 @@ function smokeCheck(): InternalDoctorCheck {
       process.env.HOME = temporary;
       try {
         init(temporary, { profile, quiet: true });
-        install('core', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        install('full', temporary, { scope: 'project', quiet: true, homeDir: temporary });
         init(temporary, { profile, quiet: true });
-        install('core', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        install('full', temporary, { scope: 'project', quiet: true, homeDir: temporary });
         const required = [
           SDD_PATHS.config,
           SDD_PATHS.projectContext,
@@ -1112,12 +1105,12 @@ function evidenceGraphDoctor(
 
 export type { InternalDoctorCheck };
 export {
-  coreSkillsPresence,
   doctor,
   doctorChecks,
-  hasCoreSkillsAt,
+  hasOfficialSkillsAt,
   installationStatus,
   languageReport,
+  officialSkillsPresence,
   resolveConfiguredAgent,
   resolveSkillsRoot,
   setDoctorInstallPlanResolver,

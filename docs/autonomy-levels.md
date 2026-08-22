@@ -147,9 +147,8 @@ autonomy_profile:
 `autonomy_level` governs skill-to-skill transitions only. A skill running at `autonomy_level:
 manual` may still call any tool it always could, including an available MCP integration, exactly
 as before. Autonomy only changes whether the agent asks before invoking the *next skill*. MCP
-stays awareness, not a platform: skills may detect and use an available MCP integration (e.g.
-GitHub) the same way they already treat the `local-files`/`github` adapters
-([adapters](adapters.md)); this package hosts no MCP server itself.
+stays awareness, not a platform: optional host integrations may consume local SAF artifacts, but
+the core package hosts no MCP server and does not require a provider adapter.
 
 ## What this does not promise
 

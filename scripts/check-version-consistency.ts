@@ -5,7 +5,7 @@
 // messages so observable script output is unchanged.
 //
 // package.json is the canonical version. `npm run version:stamp` writes that number into
-// every skill frontmatter `metadata.version` and every `presets/*.json` `version` (copies
+// every skill frontmatter `metadata.version` and every `packs/*.json` `version` (copies
 // that must exist on disk after `install`). The CLI reads package.json at runtime — it
 // must not hardcode `const VERSION = 'x.y.z'`.
 
@@ -53,14 +53,14 @@ function listSkillVersions(root = process.cwd()) {
     });
 }
 
-function listPresetVersions(root = process.cwd()) {
+function listPackVersions(root = process.cwd()) {
   return fs
-    .readdirSync(path.join(root, 'presets'))
+    .readdirSync(path.join(root, 'packs'))
     .filter((name) => name.endsWith('.json'))
     .map((name) => {
-      const file = `presets/${name}`;
-      const preset = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
-      return { file, version: preset.version };
+      const file = `packs/${name}`;
+      const pack = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
+      return { file, version: pack.version };
     });
 }
 
@@ -116,11 +116,11 @@ function stampSkillFile(abs: string, file: string, packageVersion: string): bool
   return true;
 }
 
-function stampPresetFile(abs: string, packageVersion: string): boolean {
-  const preset = JSON.parse(fs.readFileSync(abs, 'utf8'));
-  if (preset.version === packageVersion) return false;
-  preset.version = packageVersion;
-  fs.writeFileSync(abs, `${JSON.stringify(preset, null, 2)}\n`);
+function stampPackFile(abs: string, packageVersion: string): boolean {
+  const pack = JSON.parse(fs.readFileSync(abs, 'utf8'));
+  if (pack.version === packageVersion) return false;
+  pack.version = packageVersion;
+  fs.writeFileSync(abs, `${JSON.stringify(pack, null, 2)}\n`);
   return true;
 }
 
@@ -133,9 +133,9 @@ function stampVersions(root = process.cwd()) {
       written.push(skill.file);
     }
   }
-  for (const preset of listPresetVersions(root)) {
-    if (stampPresetFile(path.join(root, preset.file), packageVersion)) {
-      written.push(preset.file);
+  for (const pack of listPackVersions(root)) {
+    if (stampPackFile(path.join(root, pack.file), packageVersion)) {
+      written.push(pack.file);
     }
   }
   if (lockfile.version !== packageVersion || lockfile.rootVersion !== packageVersion) {
@@ -169,7 +169,7 @@ function checkVersionConsistency(root = process.cwd()) {
       ...entry,
       drifted: isDrifted(entry.version),
     })),
-    presets: listPresetVersions(root).map((entry) => ({
+    packs: listPackVersions(root).map((entry) => ({
       ...entry,
       drifted: isDrifted(entry.version),
     })),
@@ -182,13 +182,13 @@ export {
   getLockfileVersions,
   getPackageVersion,
   listCliVersion,
-  listPresetVersions,
+  listPackVersions,
   listSkillVersions,
   stampVersions,
 };
 
 // CLI mode: `tsx scripts/check-version-consistency.ts` prints a human-readable report and
-// exits 1 on drift. `--stamp` writes package.json's version into skills and presets first.
+// exits 1 on drift. `--stamp` writes package.json's version into skills and packs first.
 const isMain =
   process.argv[1] &&
   (process.argv[1].endsWith('check-version-consistency.ts') ||
@@ -203,7 +203,7 @@ if (isMain) {
       for (const file of written) console.log(`  ${file}`);
     }
   }
-  const { packageVersion, lockfile, skills, presets, cli } = checkVersionConsistency();
+  const { packageVersion, lockfile, skills, packs, cli } = checkVersionConsistency();
   const drifted = [
     ...(lockfile.versionDrifted
       ? [`package-lock.json.version (version: ${lockfile.version})`]
@@ -214,7 +214,7 @@ if (isMain) {
     ...skills
       .filter((entry) => entry.drifted)
       .map((entry) => `${entry.file} (version: ${entry.version})`),
-    ...presets
+    ...packs
       .filter((entry) => entry.drifted)
       .map((entry) => `${entry.file} (version: ${entry.version})`),
     ...(cli.drifted
@@ -232,6 +232,6 @@ if (isMain) {
     process.exit(1);
   }
   console.log(
-    `all package-lock root, skill, preset, and CLI versions match package.json (${packageVersion})`,
+    `all package-lock root, skill, pack, and CLI versions match package.json (${packageVersion})`,
   );
 }

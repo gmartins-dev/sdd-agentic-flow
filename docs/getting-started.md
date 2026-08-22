@@ -13,6 +13,7 @@ setup and operating policy, review once, and apply. Choose **Customize setup** w
 you need a different pack, scope, skill targets, project sharing, or policy.
 Use explicit `config` commands and `--yes` for scripted mutations.
 
-Existing `core` installations remain unchanged until you explicitly change setup.
+Existing installations are replaced with the current v6 contract only through an explicit
+clean-slate upgrade or reinstall; repository workflow artifacts are preserved.
 For install scopes, custom packs, and collision handling, see
 [installation](installation.md).

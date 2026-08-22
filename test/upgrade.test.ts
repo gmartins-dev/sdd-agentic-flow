@@ -37,28 +37,30 @@ test('install provenance round-trips', () => {
   assert.deepEqual(readInstallProvenance(root), {
     package: 'sdd-agentic-flow',
     packageVersion: '1.13.0',
-    schema: 'saf-install-provenance/v1',
+    schema: 'saf-install-provenance/v2',
     skillIdentity: 'saf',
     applyState: 'complete',
   });
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('pack detection preserves a full installation instead of collapsing it to core', () => {
+test('pack detection preserves a full installation instead of collapsing it to a subset', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-packs-'));
-  const full = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'presets/full.json'), 'utf8'));
+  const full = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'packs/full.json'), 'utf8'));
   for (const skill of full.skills) {
     const dir = path.join(root, skill);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'SKILL.md'), '# test\n');
   }
-  assert.deepEqual(detectInstalledPacks(root, path.join(PACKAGE_ROOT, 'presets')), ['full']);
+  assert.deepEqual(detectInstalledPacks(root, path.join(PACKAGE_ROOT, 'packs')), ['full']);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('managed refresh never silently overwrites differing files', () => {
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-refresh-'));
-  const preset = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'presets/core.json'), 'utf8'));
+  const preset = JSON.parse(
+    fs.readFileSync(path.join(PACKAGE_ROOT, 'packs/execution.json'), 'utf8'),
+  );
   const pairs = collectManagedPairs(PACKAGE_ROOT, preset, target);
   assert.ok(pairs.length > 0);
   const first = pairs[0];

@@ -62,7 +62,7 @@ useful after a brownfield repo has had significant changes since you last ran `i
 
 ## 4. Install a pack and start the loop
 
-Once config and context exist, install a pack (`core` is the safe default) and follow the main
+Once config and context exist, install a pack (`full` is the safe default) and follow the main
 SDD flow from the [README](../../README.md#main-sdd-flow), starting with `saf-create-spec`.
 
 If the code you're bringing under SDD already exists with no prior spec and no requested

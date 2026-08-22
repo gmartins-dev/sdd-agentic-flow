@@ -1,7 +1,7 @@
 {
-  "name": "pr",
+  "name": "review",
   "version": "6.0.0",
-  "description": "Read-first PR workflow.",
+  "description": "Local change-review workflow.",
   "skills": ["saf-route", "saf-create-pr", "saf-review-pr", "saf-fix-pr"],
   "shared": true,
   "status": "stable"

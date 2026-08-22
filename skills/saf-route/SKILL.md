@@ -8,7 +8,6 @@ requires: [config]
 consumes: [discovery-state]
 produces: [route-recommendation]
 baseline: []
-packs: [core, execution, full, local-files, multi-task, planning, pr]
 depends_on: []
 conflicts: []
 requires_cli: null

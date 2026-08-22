@@ -11,11 +11,11 @@ The sections below show how those pieces fit together.
 CLI (bin/sdd-agentic-flow.js wrapper → dist/sdd-agentic-flow.js, built from src/)
   |  list, init, context, install, doctor, uninstall
   v
-Pack registry (presets/*.json)
+Pack registry (packs/*.json)
   |  installable groupings of skills + shared layer + optional adapter doc
   v
 Skills (skills/*/SKILL.md)
-  |  capability-contracted: extends, requires, consumes, produces, baseline, packs
+  |  capability-contracted: extends, requires, consumes, produces, baseline
   v
 Shared layer (shared/)
   |  references/ (TLC baseline, TDD baseline, feature profiles, safety, routing, ...)
@@ -82,8 +82,6 @@ Every skill's frontmatter declares:
 - `produces` — the artifact kind it hands off (for example `spec-package`, `check-report`).
 - `baseline` — which canonical baseline(s) govern its work (`tlc-spec-driven`, `tdd`, or
   both).
-- `packs` — which packs install it; mechanically cross-checked against `presets/*.json` by
-  `npm run skills:lint` so this field cannot silently drift.
 - `depends_on` — optional, non-linear complements to `extends` (which is strictly a single
   upstream chain link). Empty by default; a skill declares one here only when it needs another
   skill's output alongside its `extends` parent.
@@ -108,7 +106,7 @@ Every skill's frontmatter declares:
 | `requires_cli` | "What is the minimum CLI version this skill needs?" | `baseline`. `requires_cli` gates on the CLI's own version, not a methodology baseline. |
 
 `doctor --contracts` validates that every skill installed in a **consumer** repository
-(`.agents/skills/*/SKILL.md`) still carries all 6 required fields and reports on the 3 optional
+(`.agents/skills/*/SKILL.md`) still carries all 5 required fields and reports on the 3 optional
 ones (`depends_on`, `conflicts`, `requires_cli`). It returns `FAIL` if a required field is
 missing (signals a corrupted or hand-edited installed skill), `WARN` if an optional field is
 absent, and a separate deterministic `FAIL` if a declared `requires_cli` range is not satisfied
@@ -120,9 +118,9 @@ before anything is packed or installed.
 (and, for `conflicts`, that referenced skills are not actually co-installed), that `baseline`
 entries exist in `shared/baselines/registry.yml`, and that `depends_on`/`extends` form no cycle.
 Any of these failures surface as a `FAIL` inside this same check rather than a new status value.
-It does not re-verify `packs` against pack membership: a consumer repository has no
-local `presets/` directory to check against (`install` only copies `shared/`, never `presets/`).
-That exact-match check only runs at the source, in `npm run skills:lint`.
+Pack membership is intentionally absent from installed skill contracts. The source pack registry
+is validated by `npm run skills:lint`; consumer repositories receive only the selected skills
+and shared layer.
 
 | Skill | extends | requires | produces | baseline |
 | --- | --- | --- | --- | --- |
@@ -188,6 +186,6 @@ contract.
 
 Language profiles, multi-task isolation guidance, and feature profiles are extensions: they
 enrich the TLC/TDD baselines but never weaken or replace them (see the "Extensions" section of
-`shared/references/tlc-baseline.md`). `local-files` is a local-source pack. Hosted SCM,
+`shared/references/tlc-baseline.md`). Local files are the repository-native source baseline. Hosted SCM,
 tracker, and coding-agent integrations are optional future adapters; repository-local SAF
 artifacts remain authoritative. See [adapters](adapters.md).

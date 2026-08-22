@@ -46,6 +46,13 @@ a seam- and requirement-based reason. A mock-only or static-only check is not
 adequate evidence for an affected external boundary unless it can actually
 falsify the required behavior.
 
+## Documentation impact
+
+Documentation that describes changed behavior is part of the impact surface.
+Update the affected documentation in the same change, or record the stale
+documentation as an explicit gap. Documentation consistency is a completeness
+obligation, not a sensor or evidence that the implementation is correct.
+
 ## Scope
 
 `saf-check-task` applies this model to one task and its current diff.

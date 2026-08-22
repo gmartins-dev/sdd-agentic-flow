@@ -48,6 +48,12 @@ Do not restate those files here. Point at them.
   interface, factory, or manager that exists only to look formal.
 - **Readable code that matches this repo** — legibility beats cleverness. Follow
   nearby files over a personal style.
+- **Grounded documentation** — base documentation claims on current repository
+  evidence and canonical contracts. If specification, implementation, and docs
+  disagree, surface the drift instead of rewriting docs to rationalize it.
+- **Preserve literals** — treat commands, paths, config keys, schema identifiers,
+  error messages, and code blocks as literal technical material during editorial
+  changes unless changing that product behavior is in scope.
 
 ## Existing project first
 

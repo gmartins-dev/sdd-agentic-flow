@@ -44,6 +44,25 @@ test('install provenance round-trips', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('install provenance uses canonical ordering and atomic-target shape', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-prov-shape-'));
+  writeInstallProvenance(root, {
+    packageVersion: '6.0.1',
+    packs: ['full'],
+    managedSkills: ['saf-route'],
+    managedPaths: ['saf-route/SKILL.md'],
+  });
+  const file = path.join(root, 'sdd-agentic-flow-shared', 'install-provenance.yml');
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(
+    content,
+    /^package: sdd-agentic-flow\npackage_version: 6\.0\.1\nschema: saf-install-provenance\/v2\n/,
+  );
+  assert.match(content, /\nmanaged_paths:\n {2}- saf-route\/SKILL\.md\n$/);
+  assert.equal(fs.existsSync(`${file}.tmp`), false);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('pack detection preserves a full installation instead of collapsing it to a subset', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-packs-'));
   const full = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'packs/full.json'), 'utf8'));

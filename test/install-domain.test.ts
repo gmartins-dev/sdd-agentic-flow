@@ -35,6 +35,22 @@ test('intent persistence round-trips and pack union derives skills', () => {
   );
 });
 
+test('intent serializer keeps canonical sections and a final newline', () => {
+  const home = path.join(temporary, 'serializer-home');
+  writeInstallConfig(
+    {
+      schema: 'saf-install-intent/v2',
+      user: { packs: ['review'], targets: ['agents'] },
+      projects: {},
+    },
+    home,
+  );
+  const content = fs.readFileSync(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'utf8');
+  assert.match(content, /^schema: saf-install-intent\/v2\n\nuser:\n/);
+  assert.match(content, /\nprojects:\n$/);
+  assert.equal(content.endsWith('\n'), true);
+});
+
 test('unsupported installation intent is rejected before it can be reused', () => {
   for (const { name, content } of [
     { name: 'legacy', content: 'schema: saf-install-intent/v1\n' },

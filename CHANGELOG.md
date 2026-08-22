@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 6.1.0
+
+Information representation architecture release. Adds a documented model for
+SAF contract kinds, materializations, authority, persistence, projections, and
+freshness; introduces a narrow registry for official skill capability
+contracts; strengthens artifact and skill closeout ownership guidance; and
+adds focused documentation, configuration, installation-intent, provenance,
+and contract-conformance checks. This is an additive release with no format
+migration, public skill roster change, runtime dependency, telemetry, or
+automatic remote mutation.
+
 ## 6.0.1
 
 Documentation coherence and v6 installation hardening. Adds deterministic documentation

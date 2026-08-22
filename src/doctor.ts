@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { AUTONOMY_LEVELS, configValue, EXECUTION_MODES } from './config-domain';
 import { parseContractArray, validateContractReferences } from './contract-graph';
+import { unknownContractKinds } from './contract-kinds';
 import { buildDoctorView, type DoctorCheck, formatEvidenceGraph } from './doctor-view';
 import { collectEvidenceGraph, type EvidenceGraphResult } from './evidence-graph';
 import { renderEvidenceGraphHtml } from './evidence-graph-html';
@@ -33,7 +34,7 @@ import {
   VERSION,
 } from './paths';
 import { gitInfo, parseProvenance, readLoopState } from './project-context';
-import { isLegacySkillName, OFFICIAL_SKILLS } from './skill-identity';
+import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from './skill-identity';
 import { styleStatus } from './ui';
 import { checkForUpdate } from './update-check';
 import { readInstallProvenance } from './upgrade';
@@ -713,6 +714,16 @@ function contractsCheck(cwd: string): InternalDoctorCheck {
         else if (installedSet.has(target))
           failures.push(`${name} and ${target} declare a conflict but are both installed`);
       }
+    }
+
+    for (const { name, frontmatter } of parsed) {
+      if (!isOfficialSkill(name)) continue;
+      for (const { field, value } of unknownContractKinds({
+        requires: parseContractArray(frontmatter, 'requires') ?? [],
+        consumes: parseContractArray(frontmatter, 'consumes') ?? [],
+        produces: parseContractArray(frontmatter, 'produces') ?? [],
+      }))
+        failures.push(`${name}: unknown ${field} contract kind '${value}'`);
     }
 
     for (const { name, frontmatter } of parsed) {

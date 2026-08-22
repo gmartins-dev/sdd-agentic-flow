@@ -91,6 +91,20 @@ test('applyPolicyMutation writes authorized fields only', () => {
   assert.equal(updated.presetEquivalent, 'autonomous');
 });
 
+test('policy mutation preserves comments and unrelated config content', () => {
+  const file = writeConfig('preserve.yml', `${SAMPLE}# local note\ncustom_extension: retained\n`);
+  const result = applyPolicyMutation(file, {
+    executionMode: 'apply',
+    autonomyLevel: 'supervised',
+  });
+  assert.equal(result.ok, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(content, /# local note/);
+  assert.match(content, /custom_extension: retained/);
+  assert.match(content, /execution_mode: apply/);
+  assert.match(content, /autonomy_level: supervised/);
+});
+
 test('resolvePolicyFromPreset maps manual', () => {
   const resolved = resolvePolicyFromPreset('manual');
   assert.deepEqual(resolved, {

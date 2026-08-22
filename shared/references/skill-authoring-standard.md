@@ -67,6 +67,13 @@ Use [canonical vocabulary](canonical-vocabulary.md): Skill is the public capabil
 Instruction is durable guidance; Prompt is a concrete request. Do not call a Skill a Tool,
 Hook, Agent, or Action.
 
+Closeouts are concise plain-text-compatible Markdown. `Status`, `Next recommended skill`, and
+`Reason` remain the universal labels. `Artifacts`, `Evidence`, `Findings`, `Blocker`, and
+human-judgment details are conditional, capability-specific fields rather than a global response
+schema. A closeout must not replay an execution transcript; reference durable artifacts instead of
+duplicating them. The response is never the sole durable authority for consequential state.
+`Next recommended skill` is a recommendation, not an invocation.
+
 ## Evidence and classification
 
 Any skill whose `## Output` includes a pass/fail/ready-style classification must ground it in

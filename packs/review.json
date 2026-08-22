@@ -1,6 +1,6 @@
 {
   "name": "review",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "description": "Local change-review workflow.",
   "skills": ["saf-route", "saf-create-pr", "saf-review-pr", "saf-fix-pr"],
   "shared": true,

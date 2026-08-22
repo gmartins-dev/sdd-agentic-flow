@@ -1,5 +1,12 @@
 # Roadmap
 
+- **v6.1.0 (2026-08-22):** Information representation architecture. Adds the
+  contract-kind registry and audited representation model, clarifies durable
+  artifact and skill closeout ownership, documents Markdown/YAML/hybrid and
+  projection profiles, and adds focused conformance sensors. Additive; no
+  format migration, public skill roster change, runtime dependency, telemetry,
+  or automatic remote mutation.
+
 - **v6.0.1 (2026-08-22):** Documentation coherence and release hardening. Added deterministic
   documentation contract checks, grounded documentation/change-impact guidance, and finalized
   post-v6 clean-slate installation and pack validation. No new skill, runtime dependency, or

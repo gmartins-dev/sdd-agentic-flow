@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { validateContractReferences } from '../src/contract-graph';
+import { parseContractArray, validateContractReferences } from '../src/contract-graph';
+import { unknownContractKinds } from '../src/contract-kinds';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 const root = path.resolve(__dirname, '..');
@@ -43,6 +44,12 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   const output = content.match(/^## Output\n([\s\S]*?)(?=^### Autonomy)/m)?.[1] ?? '';
   for (const label of ['Status', 'Next recommended skill', 'Reason'])
     if (!output.includes(label)) failures.push(`${name}: output missing ${label}`);
+  for (const { field, value } of unknownContractKinds({
+    requires: parseContractArray(frontmatter ?? '', 'requires') ?? [],
+    consumes: parseContractArray(frontmatter ?? '', 'consumes') ?? [],
+    produces: parseContractArray(frontmatter ?? '', 'produces') ?? [],
+  }))
+    failures.push(`${name}: unknown ${field} contract kind '${value}'`);
   return { name, frontmatter: frontmatter ?? '' };
 });
 

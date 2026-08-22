@@ -1,10 +1,23 @@
 # Artifact contracts
 
+This reference owns persisted SAF/SDD artifact materializations with mechanically recognizable
+landmarks. It is a structural contract and presence check, not a registry of every logical,
+ephemeral, composite, or projection output. The broader logical/materialization model belongs to
+`docs/information-representation-model.md`.
+
 Every SDD artifact this package's skills produce has an implicit structure, mirrored by
 `shared/templates/*.template.md`. This file documents that structure explicitly so skills and
 `doctor` can confirm an artifact's required sections are present without inventing a new schema
 format. This is a presence check, not full-schema validation. It does not verify section
 *content*, only that the required headers exist.
+
+| Materialization | Logical kind | Producer | Consumers | Authority | Representation / landmarks |
+| --- | --- | --- | --- | --- | --- |
+| Feature spec package | `spec-package` | `saf-create-spec` | prompts, implement, check, validate | `spec.md` for requirements; `design.md` for approach; `tasks.md` for execution | Markdown file-set; required headings and stable `REQ-*`/task anchors |
+| Task prompt | `task-prompts` | `saf-create-prompts` | implement | prompt artifact | Markdown; `# Task prompt`, task slice, anchors, and TDD baseline |
+| Task check report | `check-report` | `saf-check-task` | multi, validate, graph | check report for the check result | Markdown; `Feature:`, evidence index with freshness, Evidence, TDD evidence |
+| Feature validation report | `validation-report` | `saf-validate` | release handoff | validation report for the validation decision | Markdown; feature heading, Status, scope, evidence index, Evidence, TDD evidence |
+| Change review package | `change-review-package` | `saf-create-pr` | review | local review package | Markdown; feature/task heading, Scope, Evidence |
 
 - discovery-state: required `# Discovery — {feature_slug}`, top-line `Status:`, and
   `## Destination`, `## Current understanding`, `## Open investigations`, `## Findings`,

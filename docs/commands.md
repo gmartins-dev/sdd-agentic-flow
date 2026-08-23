@@ -38,7 +38,7 @@ for full usage text.
 | `doctor --evidence-graph <slug> --html [--output <path>]` | HTML evidence-graph projection; stdout by default, explicit output path to write |
 | `upgrade` | Interactive CLI/skill upgrade |
 | `uninstall --plan` / `--yes` | Preview or remove installed assets |
-| `uninstall --plan --purge` / `--yes --purge` | Cross-scope clean reset for v5 |
+| `uninstall --plan --purge` / `--yes --purge` | Cross-scope clean reset |
 | `context refresh` | Refresh project context |
 | `completion bash\|zsh\|fish` | Print deterministic shell completion |
 

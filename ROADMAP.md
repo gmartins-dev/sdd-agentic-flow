@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v6.4.0 (2026-08-23):** CLI audit reliability and release certification. Adds normalized
+  black-box evidence, persistent-state snapshots, disposable source materialization,
+  registry-derived read-only command coverage, and bounded documentation corrections. Keeps
+  the runner local-first and network-independent; no new runtime authority, dependency,
+  telemetry, or automatic remote mutation.
+
 - **v6.3.1 (2026-08-22):** Autonomous contract hardening. Clarifies repair
   transition admissibility, evidence authority, invocation guidance, and
   fail-closed loop-state diagnostics without adding runtime orchestration or

@@ -1,6 +1,6 @@
 {
   "name": "full",
-  "version": "6.3.1",
+  "version": "6.4.0",
   "description": "All public skills.",
   "skills": [
     "saf-setup",

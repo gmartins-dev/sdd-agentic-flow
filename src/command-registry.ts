@@ -60,10 +60,11 @@ export function lexicalConflict(args: readonly string[]): string | undefined {
   return conflict ? `${conflict[0]} cannot be combined with ${conflict[1]}` : undefined;
 }
 
-export type CompletionShell = 'bash' | 'zsh' | 'fish';
+export const COMPLETION_SHELLS = ['bash', 'zsh', 'fish'] as const;
+export type CompletionShell = (typeof COMPLETION_SHELLS)[number];
 
 export function completionFor(shell: string): string | undefined {
-  if (!['bash', 'zsh', 'fish'].includes(shell)) return undefined;
+  if (!COMPLETION_SHELLS.includes(shell as CompletionShell)) return undefined;
   const commands = CANONICAL_COMMANDS.join(' ');
   if (shell === 'fish') return `complete -c sdd-agentic-flow -f -a '${commands}'\n`;
   const words = CANONICAL_COMMANDS.join(' ');

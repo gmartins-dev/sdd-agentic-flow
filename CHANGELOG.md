@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 6.4.0
+
+### CLI audit reliability and release certification
+
+Adds normalized black-box audit evidence with independent execution outcomes and coverage,
+content-based persistent-state snapshots, safe disposable source materialization, and
+registry-derived coverage for `learn-sdd` and supported shell completions. Adds a maintainer
+release-certification prompt for stateful journeys, package boundaries, terminal behavior,
+documentation coherence, and bounded findings. No runtime dependency, telemetry, implicit
+network behavior, workflow authority, or automatic remote mutation is introduced.
+
+Corrects stale CLI documentation for the machine-interface version example and the current
+`uninstall --purge` command.
+
 ## 6.3.1
 
 ### Autonomous contract hardening

@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "6.3.1",
+  "version": "6.4.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -52,6 +52,7 @@
     "sanitize": "bash ./scripts/sanitize-private-context.sh",
     "pack:dry": "tsx scripts/pack-dry.ts",
     "cli:dev": "tsx scripts/cli-dev.ts",
+    "cli:audit-source": "tsx scripts/cli-audit-source.ts",
     "cli:exhaustive": "tsx scripts/cli-exhaustive.ts",
     "cli:sandbox": "tsx scripts/cli-sandbox.ts",
     "release:check": "bash scripts/release-checklist.sh",

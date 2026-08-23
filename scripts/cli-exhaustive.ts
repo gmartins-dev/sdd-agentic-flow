@@ -2,18 +2,39 @@
 // project and HOME; expected failures are recorded as passing scenarios, not swallowed errors.
 import assert from 'node:assert/strict';
 import { type SpawnSyncReturns, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { COMMAND_REGISTRY, COMPLETION_SHELLS } from '../src/command-registry.js';
+import {
+  type AuditObservation,
+  assertUniqueScenarioId,
+  type EvidenceCoverage,
+  type ExecutionOutcome,
+  normalizeObservation,
+  summarizeAuditCases,
+} from './cli-audit-model.js';
+import { assertSnapshotUnchanged, snapshotPersistentState } from './cli-audit-snapshot.js';
 
 type ProjectState = { cwd: string; home: string };
 type AuditCase = {
   id: string;
   journey: string;
   command: string;
-  status: string;
+  outcome: ExecutionOutcome;
+  coverage: EvidenceCoverage;
   duration: number;
   note: string;
+  limitation?: string;
+};
+type ArtifactIdentity = {
+  version: string;
+  sourceCommit: string;
+  sourceDirty: boolean;
+  candidateType: string;
+  tarball?: string;
+  tarballSha256?: string;
 };
 
 const repoRoot = path.join(__dirname, '..');
@@ -22,6 +43,28 @@ const version = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 
   .version as string;
 const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-exhaustive-'));
 const cases: AuditCase[] = [];
+const scenarioIds = new Set<string>();
+let artifactIdentity: ArtifactIdentity;
+
+function sourceIdentity(): ArtifactIdentity {
+  const commit =
+    process.env.SAF_CLI_SOURCE_COMMIT ??
+    spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).stdout.trim();
+  const dirty = process.env.SAF_CLI_SOURCE_DIRTY
+    ? process.env.SAF_CLI_SOURCE_DIRTY === 'true'
+    : Boolean(
+        spawnSync('git', ['status', '--porcelain'], {
+          cwd: repoRoot,
+          encoding: 'utf8',
+        }).stdout.trim(),
+      );
+  return {
+    version,
+    sourceCommit: commit || 'unavailable',
+    sourceDirty: dirty,
+    candidateType: process.env.SAF_CLI_CANDIDATE_TYPE ?? (dirty ? 'working-tree' : 'commit'),
+  };
+}
 
 function project(name: string): ProjectState {
   const cwd = path.join(runRoot, name);
@@ -68,7 +111,13 @@ function packTarball() {
   );
   assert.equal(pack.status, 0, pack.stderr);
   const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0];
-  return { tarball: path.join(packDir, metadata.filename), cacheDir };
+  const tarball = path.join(packDir, metadata.filename);
+  artifactIdentity = {
+    ...sourceIdentity(),
+    tarball: metadata.filename,
+    tarballSha256: crypto.createHash('sha256').update(fs.readFileSync(tarball)).digest('hex'),
+  };
+  return { tarball, cacheDir };
 }
 
 function runPacked(
@@ -112,17 +161,19 @@ function runPackedInteractive(
 }
 
 function record(id: string, journey: string, command: string, fn: () => unknown): void {
+  assertUniqueScenarioId(scenarioIds, id);
+  scenarioIds.add(id);
   const started = Date.now();
   try {
-    const result = fn();
-    const note = typeof result === 'string' && result ? result : 'observed expected behavior';
-    cases.push({ id, journey, command, status: 'PASS', duration: Date.now() - started, note });
+    const observation = normalizeObservation(fn());
+    cases.push({ id, journey, command, ...observation, duration: Date.now() - started });
   } catch (error) {
     cases.push({
       id,
       journey,
       command,
-      status: 'FAIL',
+      outcome: 'FAIL',
+      coverage: 'PARTIAL',
       duration: Date.now() - started,
       note: (error instanceof Error ? error.message : String(error))
         .replace(/\s+/g, ' ')
@@ -307,12 +358,12 @@ function runJourneys() {
     expect(run(['config', 'show'], policy), 0, /Execution mode/),
   );
   record('J11', 'policy configuration', 'config policy --plan --preset autonomous', () => {
-    const before = fs.readFileSync(path.join(policy.cwd, '.sdd-agentic-flow/config.yml'), 'utf8');
+    const before = snapshotPersistentState([{ name: 'project', path: policy.cwd }]);
     const result = run(['config', 'policy', '--plan', '--preset', 'autonomous'], policy);
     expect(result, 0, /Policy change preview|PLAN|would/);
-    assert.equal(
-      fs.readFileSync(path.join(policy.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
+    assertSnapshotUnchanged(
       before,
+      snapshotPersistentState([{ name: 'project', path: policy.cwd }]),
     );
   });
   record('J12', 'policy configuration', 'config policy --yes --preset supervised', () => {
@@ -348,11 +399,19 @@ function runJourneys() {
 
   const userInstall = project('04-user-install');
   record('J15', 'global installation', 'install full --plan', () => {
-    const before = entries(userInstall.cwd).sort();
+    const before = snapshotPersistentState([
+      { name: 'project', path: userInstall.cwd },
+      { name: 'home', path: userInstall.home },
+    ]);
     const result = run(['install', 'full', '--plan'], userInstall);
     expect(result, 0, /Installation plan|Scope +user|Repository footprint/);
-    assert.deepEqual(entries(userInstall.cwd).sort(), before);
-    assert.deepEqual(entries(userInstall.home), []);
+    assertSnapshotUnchanged(
+      before,
+      snapshotPersistentState([
+        { name: 'project', path: userInstall.cwd },
+        { name: 'home', path: userInstall.home },
+      ]),
+    );
   });
   record('J16', 'global installation', 'install full --target claude', () => {
     expect(run(['install', 'full', '--target', 'claude'], userInstall), 0, /installed|preserved/);
@@ -439,16 +498,21 @@ function runJourneys() {
   fs.mkdirSync(path.join(removal.cwd, '.specs/features'), { recursive: true });
   fs.writeFileSync(path.join(removal.cwd, '.specs/features/keep.md'), 'keep\n');
   fs.writeFileSync(path.join(removal.cwd, 'user-file.txt'), 'keep\n');
-  record('J24', 'uninstall workflow', 'uninstall --plan', () => {
+  record('J30', 'uninstall workflow', 'uninstall --plan', () => {
+    const before = snapshotPersistentState([{ name: 'project', path: removal.cwd }]);
     expect(run(['uninstall', '--plan'], removal), 0, /Uninstall plan|No changes made/);
     assert.ok(fs.existsSync(path.join(removal.cwd, '.agents/skills/saf-create-spec/SKILL.md')));
+    assertSnapshotUnchanged(
+      before,
+      snapshotPersistentState([{ name: 'project', path: removal.cwd }]),
+    );
   });
-  record('J25', 'uninstall workflow', 'uninstall --yes', () => {
+  record('J31', 'uninstall workflow', 'uninstall --yes', () => {
     expect(run(['uninstall', '--yes'], removal), 0, /removed/);
     assert.ok(fs.existsSync(path.join(removal.cwd, '.specs/features/keep.md')));
     assert.ok(fs.existsSync(path.join(removal.cwd, 'user-file.txt')));
   });
-  record('J26', 'uninstall workflow', 'uninstall --yes --purge', () => {
+  record('J32', 'uninstall workflow', 'uninstall --yes --purge', () => {
     expect(run(['uninstall', '--yes', '--purge'], removal), 0, /preserved/);
     assert.equal(fs.existsSync(path.join(removal.cwd, '.sdd-agentic-flow/config.yml')), false);
   });
@@ -483,17 +547,36 @@ function runJourneys() {
       );
     }
   });
+  const readOnlyCommands = COMMAND_REGISTRY.filter(
+    (definition) => definition.authority === 'read-only',
+  );
+  if (readOnlyCommands.some((definition) => definition.path.join(' ') === 'learn-sdd')) {
+    record('J36', 'read-only command surface', 'learn-sdd', () => {
+      const result = run(['learn-sdd'], invalid);
+      expect(result, 0, /Spec-Driven Development|SDD/);
+    });
+  }
+  if (readOnlyCommands.some((definition) => definition.path.join(' ') === 'completion')) {
+    const patterns = { bash: /complete -F/, zsh: /#compdef/, fish: /complete -c/ } as const;
+    for (const [index, shell] of COMPLETION_SHELLS.entries()) {
+      const id = `J${37 + index}`;
+      record(id, 'read-only command surface', `completion ${shell}`, () => {
+        const result = run(['completion', shell], invalid);
+        expect(result, 0, patterns[shell]);
+      });
+    }
+  }
 
   const packed = project('09-packed-consumer');
   const { tarball, cacheDir } = packTarball();
-  record('J27', 'fresh packaged consumer', 'npm pack -> npx init/install/doctor', () => {
+  record('J33', 'fresh packaged consumer', 'npm pack -> npx init/install/doctor', () => {
     for (const args of [['init'], ['install', 'full'], ['doctor', '--json']]) {
       const result = runPacked(args, packed, tarball, cacheDir);
       assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}${result.stdout}`);
     }
   });
   const packedPlain = project('10-packed-plain-br');
-  record('J28', 'packaged plain Portuguese consumer', 'NO_COLOR + init/install/doctor', () => {
+  record('J34', 'packaged plain Portuguese consumer', 'NO_COLOR + init/install/doctor', () => {
     const env = { NO_COLOR: '1' };
     assert.equal(
       runPacked(['init', '--language', 'pt-BR'], packedPlain, tarball, cacheDir, env).status,
@@ -510,9 +593,16 @@ function runJourneys() {
     assert.equal(doctor.stdout.includes(String.fromCharCode(27)), false);
   });
   const packedInteractive = project('11-packed-interactive');
-  record('J29', 'packaged interactive consumer', 'TTY recommended setup', () => {
+  record('J35', 'packaged interactive consumer', 'TTY recommended setup', () => {
     const result = runPackedInteractive(packedInteractive, tarball, cacheDir);
-    if (!result) return 'interactive TTY helper unavailable on this host';
+    if (!result) {
+      return {
+        outcome: 'SKIPPED',
+        coverage: 'UNAVAILABLE',
+        note: 'interactive TTY helper unavailable on this host',
+        limitation: 'script command is not available or failed its probe',
+      } satisfies AuditObservation;
+    }
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
     assert.match(result.stdout, /Recommended setup|Supervised|Supervisionado/);
     assert.match(result.stdout, /PASS Ready|Pronto/);
@@ -538,8 +628,8 @@ function writeReport() {
       `.local/gmm/sdd-agentic-flow/v${version}-cli-test-report-${executionStamp}.md`,
     );
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  const passed = cases.filter((item) => item.status === 'PASS').length;
-  const failed = cases.length - passed;
+  const summary = summarizeAuditCases(cases);
+  const failed = summary.failed;
   const lines = [
     `# v${version} CLI exhaustive test report`,
     '',
@@ -551,9 +641,15 @@ function writeReport() {
     '## Executive summary',
     '',
     `- Scenarios: **${cases.length}**`,
-    `- Passed: **${passed}**`,
+    `- Passed: **${summary.passed}**`,
+    `- Skipped: **${summary.skipped}**`,
     `- Unexpected failures: **${failed}**`,
-    '- Platform scope: current host only; Windows/macOS behavior remains covered by CI.',
+    `- Evidence coverage: **${summary.complete} complete / ${summary.partial} partial / ${summary.unavailable} unavailable**`,
+    `- Candidate: **${artifactIdentity?.candidateType ?? 'unavailable'}**`,
+    `- Source commit: **${artifactIdentity?.sourceCommit ?? 'unavailable'}**`,
+    `- Source dirty: **${artifactIdentity?.sourceDirty ?? 'unavailable'}**`,
+    `- Tarball SHA-256: **${artifactIdentity?.tarballSha256 ?? 'unavailable'}**`,
+    '- Platform scope: current host only; CI check/package evidence is separate and is not full exploratory certification.',
     '- Network-dependent update checks and registry authentication are not asserted here.',
     '',
     '## Scenario matrix',
@@ -562,14 +658,14 @@ function writeReport() {
     '| --- | --- | --- | --- | --- |',
     ...cases.map(
       (item) =>
-        `| ${item.id} | ${item.journey} | \`${item.command}\` | ${item.status === 'PASS' ? '✅ PASS' : '❌ FAIL'} | ${item.note.replace(/\|/g, '\\|')} (${item.duration} ms) |`,
+        `| ${item.id} | ${item.journey} | \`${item.command}\` | ${item.outcome} / ${item.coverage} | ${item.note.replace(/\|/g, '\\|')} (${item.duration} ms) |`,
     ),
     '',
     '## Findings',
     '',
     failed
       ? cases
-          .filter((item) => item.status === 'FAIL')
+          .filter((item) => item.outcome === 'FAIL')
           .map((item) => `- **${item.id} — ${item.journey}:** ${item.note}`)
           .join('\n')
       : '- No unexpected failures observed.',
@@ -587,7 +683,9 @@ function writeReport() {
     '',
   ];
   fs.writeFileSync(reportPath, `${lines.join('\n')}\n`);
-  console.log(`CLI exhaustive audit: ${passed}/${cases.length} scenarios passed`);
+  console.log(
+    `CLI exhaustive audit: ${summary.passed}/${cases.length} scenarios passed; ${summary.skipped} skipped`,
+  );
   console.log(`Report: ${reportPath}`);
   if (failed) {
     console.error(`${failed} unexpected scenario failure(s)`);

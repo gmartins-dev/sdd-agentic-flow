@@ -65,7 +65,16 @@ export function materializeCleanClone(
   const baseCommit = commit ?? git(source, ['rev-parse', 'HEAD']);
   execFileSync(
     'git',
-    ['clone', '--local', '--no-hardlinks', '--no-checkout', source, destination],
+    [
+      '-c',
+      'core.autocrlf=false',
+      'clone',
+      '--local',
+      '--no-hardlinks',
+      '--no-checkout',
+      source,
+      destination,
+    ],
     {
       stdio: 'pipe',
     },

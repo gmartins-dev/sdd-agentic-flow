@@ -14,7 +14,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [configuration.md](configuration.md) | Editing `.sdd-agentic-flow/config.yml`, project context, autonomy fields |
 | [environment-compatibility.md](environment-compatibility.md) | Node.js version, OS, shell requirements |
 | [uninstall.md](uninstall.md) | Removing installed skills and optional config |
-| [compatibility-promise.md](compatibility-promise.md) | Active v5+ compatibility contract |
+| [compatibility-promise.md](compatibility-promise.md) | Active compatibility contract |
 
 ## SDD workflow
 

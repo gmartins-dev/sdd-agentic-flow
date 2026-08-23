@@ -74,7 +74,7 @@ does not suggest nonexistent flags such as `init --force`.
 ## Next steps
 
 After a mutating command succeeds (`init`, `install`, `context refresh`,
-`context refresh`, `autonomous-resume`), the CLI may print a short, copy-pasteable
+`autonomous-resume`), the CLI may print a short, copy-pasteable
 `Suggested next step` in human-rich / human-plain only. It is omitted under `--quiet`
 and in **machine** mode (`--json`). Welcome (bare invocation) still
 points at one next command in every mode (compact status prose in machine) and, when
@@ -106,7 +106,7 @@ navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes,
 the complete numbered/plain interaction. Progress uses durable stage lines rather than spinners
 or cursor-dependent status.
 
-Bare welcome (v3.0.0) may show **Operating policy** and **Installation** blocks when config
+Bare welcome may show **Operating policy** and **Installation** blocks when config
 and skills are present. Copy does not claim the CLI invokes skills.
 
 ## Related

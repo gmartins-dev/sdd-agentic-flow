@@ -1,6 +1,6 @@
 # Information representation model
 
-Status: active architecture contract for SAF v6.1.0
+Status: active architecture contract for SAF
 
 This document is the broad architecture and audit owner for how SAF information is represented,
 materialized, persisted, communicated, and projected. Narrow structural contracts remain owned by

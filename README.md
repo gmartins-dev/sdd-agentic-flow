@@ -33,7 +33,9 @@ Structured specs, clear boundaries, and human governance:
 - **Human-in-the-loop:** The toolkit structures agent work; you keep final review authority.
 - **Language-agnostic:** The CLI runs on Node.js >= 22; your project does not have to.
 
-For AI-first and AI-driven teams, that split is the point: humans architect and verify; agents execute under this harness. Craftsmanship still matters — agents fail on code humans cannot read. This README does not quote token or speed multipliers.
+For teams that use coding agents, this split keeps reviewable engineering work in view:
+humans define intent and verify results; agents execute within the harness. The project does
+not claim token or speed improvements without measured data.
 
 📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/saf-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
 
@@ -211,7 +213,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 
 ```text
 init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...]  Guided setup
-config installation [--scope user|project] [--pack ...] [--target ...] [--plan]  Save intent
+config installation [--scope user|project] [--pack ...] [--target ...] [--sharing ...] [--plan]  Save intent
 context refresh                       Refresh project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--target ...] [--plan] [--quiet]  Install a pack (default: user scope)
@@ -224,7 +226,7 @@ list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the v6 compatibility policy](docs/compatibility-promise.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the compatibility policy](docs/compatibility-promise.md).
 
 `install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
 
@@ -279,11 +281,11 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --yes
 ```
 
-Uninstall removes only recognized current v6 managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
+Uninstall removes only recognized current managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
 `uninstall --yes --purge`. It also removes regenerable toolkit state;
 `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing
 "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and
-[v6 compatibility policy](docs/compatibility-promise.md).
+[compatibility policy](docs/compatibility-promise.md).
 
 ## Skill map
 

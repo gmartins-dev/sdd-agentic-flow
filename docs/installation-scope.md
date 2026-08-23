@@ -1,7 +1,7 @@
 # Installation scope
 
 `install` supports two explicit scopes. `user` is the default: it never touches the
-consumer project. `project` is opt-in and matches the toolkit's pre-v0.9.0 behavior.
+consumer project. `project` is opt-in and writes the shared project skill directory.
 
 | Scope | What `install <pack>` does | Trace in the project |
 | --- | --- | --- |
@@ -58,10 +58,10 @@ verified against that agent's own documentation:
 
 | Agent | Global (`user` scope) | Project (`project` scope) | Source |
 | --- | --- | --- | --- |
-| Codex CLI                | `$HOME/.agents/skills/`                      | `.agents/skills/`             | [developers.openai.com/codex](https://learn.chatgpt.com/docs/build-skills)                          |
-| Cursor                   | `~/.agents/skills/` and `~/.cursor/skills/`  | `.agents/skills/` and `.cursor/skills/` | [cursor.com/help/customization/skills](https://cursor.com/help/customization/skills)                |
-| Claude Code               | `~/.claude/skills/<name>/SKILL.md`           | `.claude/skills/<name>/SKILL.md` | [code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills)                            |
-| VS Code + GitHub Copilot  | `~/.copilot/skills/`                         | `.agents/skills/`, `.github/skills/`, `.claude/skills/` | [code.visualstudio.com/docs/agent-customization/agent-skills](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
+| Codex CLI | `$HOME/.agents/skills/` | `.agents/skills/` | [developers.openai.com/codex](https://learn.chatgpt.com/docs/build-skills) |
+| Cursor | `~/.agents/skills/` and `~/.cursor/skills/` | `.agents/skills/` | [cursor.com/help/customization/skills](https://cursor.com/help/customization/skills) |
+| Claude Code | `~/.claude/skills/<name>/SKILL.md` | `.agents/skills/` | [code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills) |
+| VS Code + GitHub Copilot | `~/.copilot/skills/` | `.agents/skills/` | [code.visualstudio.com/docs/agent-customization/agent-skills](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
 
 Targets are selected by the canonical installation configuration. Use
 `config installation --plan` to preview the exact paths before writing; no agent-specific
@@ -75,17 +75,18 @@ it reports `Repository changes: none`; in `project` scope it lists Git-visible p
 `.agents/skills/`. Mutating install with preflight **COLLISION** > 0 exits non-zero.
 
 Use `install <pack> --interactive` for a guided wizard (model, targets, preflight summary,
-confirm). A clean-slate upgrade replaces SAF-managed installation state with the current v6
+confirm). A clean-slate upgrade replaces SAF-managed installation state with the current
 contract; it does not migrate obsolete packs or configuration.
 
-## UX labels (v6.0.0)
+## UX labels
 
 | UX label | CLI | Footprint |
 | --- | --- | --- |
 | **Local / User** | `--scope user` (default) | No files in the project |
-| **Project / Team — Shared** | `--scope project` | `.agents/skills/` (Git-visible) |
+| **Project / Team: shared** | `--scope project` | `.agents/skills/` (Git-visible) |
 
-Project scope still writes **only** `.agents/skills/` in v3.0.0 — not multi-path selection.
+Project scope writes only `.agents/skills/`. Agent-specific project directories are not
+selected by this scope.
 
 ## `doctor`
 

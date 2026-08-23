@@ -7,7 +7,7 @@ Keep changes small, documented, and covered by `npm run check` and `npm run sani
 Canonical Node code lives under `src/` (strict TypeScript). The published CLI is compiled
 CommonJS in `dist/`. Tests and maintainer scripts are `test/*.test.ts` and `scripts/*.ts`.
 
-Gate order in `npm run check` matches the v3.5.0 layout:
+Gate order in `npm run check` is:
 
 ```text
 tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell gates → tests

@@ -17,7 +17,7 @@ sdd-agentic-flow uninstall --plan --purge
 sdd-agentic-flow uninstall --yes --purge
 ```
 
-Normal removal touches only current v6 managed assets declared by recognized provenance and
+Normal removal touches only current managed assets declared by recognized provenance and
 reconciles the matching installation intent. `--scope user` selects user installations,
 `--scope project` selects the project installation, and `--scope all` selects both. Supplying
 `--target` selects one or more user targets (`agents`, `cursor`, `claude`, or `copilot`) and
@@ -29,5 +29,5 @@ the cross-scope clean reset and cannot be combined with `--scope` or `--target`;
 recognized project control state: config, generated context, snapshots, reports, explanations,
 autonomy loop state, usage, and localized usage guides.
 
-There is no `--apply`, `--include-config`, `--full`, or `--agent` in the current v6 interface.
-See the [v6 compatibility policy](compatibility-promise.md) for the breaking boundary.
+There is no `--apply`, `--include-config`, `--full`, or `--agent` in the current interface.
+See the [compatibility policy](compatibility-promise.md) for the breaking boundary.

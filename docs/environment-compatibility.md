@@ -50,7 +50,7 @@ and its own transitive dependencies) needs.
 None of these are a requirement. The CLI only uses Node.js APIs (`fs`, `path`, `os`,
 `child_process` with argument arrays). They are illustrative only, for documentation examples
 and for `doctor`'s informational `Shell:` line (`detectShellInfo()` in
-`detectShellInfo()` in `src/paths.ts`, which reads `SHELL`/`PSModulePath`/`ComSpec`, never used to change
+`src/paths.ts`, which reads `SHELL`/`PSModulePath`/`ComSpec`, never used to change
 CLI behavior, and never reported as `FAIL`).
 
 | Shell | Platform | Role |
@@ -68,7 +68,7 @@ binary or a non-Git directory both degrade gracefully rather than blocking the c
 
 ## Interactive menu requirements
 
-The numbered menu offered after bare `npx sdd-agentic-flow`'s status screen (v1.4.0) requires a
+The numbered menu offered after bare `npx sdd-agentic-flow`'s status screen requires a
 genuinely interactive terminal: both stdout and stdin must be a real TTY, and the `CI` env var
 must be unset. It is automatically inert, never shown, under CI runners, piped/redirected
 output, scripts, and agent invocations, all of which keep receiving the exact same read-only

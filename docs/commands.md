@@ -1,6 +1,6 @@
 # CLI commands reference
 
-Gh-style reference for `sdd-agentic-flow` commands. Run `npx sdd-agentic-flow help <command>`
+Reference for `sdd-agentic-flow` commands. Run `npx sdd-agentic-flow help <command>`
 for full usage text.
 
 ## Top-level

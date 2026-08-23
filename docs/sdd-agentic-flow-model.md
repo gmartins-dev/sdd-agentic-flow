@@ -103,4 +103,4 @@ terms most useful when operating this toolkit.
 - [SDD methodology](sdd-methodology.md) — phase table and flow
 - [Architecture](architecture.md) — layers and file layout
 - [Autonomy levels](autonomy-levels.md) · [Autonomy guardrails](autonomy-guardrails.md)
-- [v5+ compatibility promise](compatibility-promise.md) — the active compatibility boundary
+- [Compatibility promise](compatibility-promise.md) — the active compatibility boundary

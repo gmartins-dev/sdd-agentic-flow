@@ -3,7 +3,7 @@
 Operational JSON commands emit exactly one locale-independent document to stdout. The envelope is:
 
 ```json
-{"schema_version":1,"cli_version":"6.4.0","command":"doctor","ok":true,"data":{}}
+{"schema_version":1,"cli_version":"<installed-version>","command":"doctor","ok":true,"data":{}}
 ```
 
 `command` is the complete canonical command path. Keys, enums, status tokens, and error codes are stable English technical tokens; message text is advisory. `ok` describes execution, not health: `doctor` may return `ok: true` with `data.status: "WARN"`.

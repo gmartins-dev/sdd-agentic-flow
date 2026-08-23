@@ -4,7 +4,7 @@ Versão prática em português. Leia o [README principal em inglês](README.md) 
 
 **sdd-agentic-flow** é um **Spec-Driven Agentic Workflow Harness** local-first e zero-dependência para agentes de código.
 
-Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpriu a intenção. Este toolkit fecha esse gap: **spec primeiro, evidência antes de concluir, você aprova o merge.**
+Seu agente pode entregar um diff e ainda deixar dúvida se cumpriu a intenção. Este toolkit mantém a especificação, a evidência e a revisão humana no mesmo fluxo.
 
 ## O que é o sdd-agentic-flow?
 
@@ -29,9 +29,11 @@ Specs estruturadas, limites claros e governança humana:
 - **Humano no loop:** o toolkit estrutura o trabalho do agente; você mantém a autoridade final de revisão.
 - **Agnóstico de linguagem:** a CLI roda em Node.js >= 22; seu projeto não precisa ser Node.
 
-Para times AI-first e AI-driven, essa divisão é o ponto: humanos arquitetam e verificam; agentes executam sob este harness. Craftsmanship continua importando — agentes falham em código que humanos não conseguem ler. Este README não cita multiplicadores de token ou velocidade.
+Para times que usam coding agents, essa divisão mantém o trabalho de engenharia revisável:
+humanos definem a intenção e verificam os resultados; agentes executam dentro do harness. O
+projeto não afirma ganhos de tokens ou velocidade sem dados medidos.
 
-📦 Instale e rode com `npx sdd-agentic-flow` — [início rápido](#início-rápido) · 📖 [Guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md) · 🧭 [Jornada do desenvolvedor](docs/developer-journey.md) · 🏗 [Arquitetura](docs/architecture.md)
+Instale e rode com `npx sdd-agentic-flow`: [início rápido](#início-rápido), [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md), [jornada do desenvolvedor](docs/developer-journey.md) e [arquitetura](docs/architecture.md).
 
 ## O problema
 
@@ -107,7 +109,7 @@ autoridade ilimitada.** Ele resolve falhas e ciclos de reparo ordinários sem pe
 mas commit, push, merge, tag, publish, deploy e outras ações externas ou irreversíveis continuam fora
 da delegação. A CLI não executa skills.
 
-Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
+Depois, invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie uma receita de [prompts](docs/prompt-recipes.md) ao delegar a um agente.
 
 Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
 recomendado ao pressionar Enter), instala o pack `full`, prepara o contexto e valida o resultado.
@@ -191,7 +193,7 @@ Scripts descartáveis, agentes sem revisão humana, pipelines automáticos de re
 
 A referência completa de comandos, packs, modos de execução, níveis de autonomia, mapa de skills, vocabulário de domínio e limites de segurança está no [README em inglês](README.md) (seção colapsável **Technical reference**).
 
-Resumo de confiança: código inspecionável, zero dependências runtime, sem telemetria ou rede por padrão (exceto `doctor --check-updates` quando você passa a flag), sem commit/push/merge/deploy/publish automáticos. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
+Resumo de confiança: código inspecionável, zero dependências runtime, sem telemetria ou rede por padrão. As exceções de rede são `doctor --check-updates`, `upgrade` e a pergunta opcional do welcome interativo. O toolkit não faz commit, push, merge, deploy ou publish automaticamente. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
 
 Desinstalação:
 
@@ -200,6 +202,6 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --yes
 ```
 
-Veja [desinstalação](docs/uninstall.md) e a [política de compatibilidade v6](docs/compatibility-promise.md).
+Veja [desinstalação](docs/uninstall.md) e a [política de compatibilidade](docs/compatibility-promise.md).
 
 </details>

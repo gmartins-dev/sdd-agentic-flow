@@ -46,7 +46,7 @@ same way once the defaults are applied (`WARN`, not `FAIL`, when fields are miss
 step (Supervised recommended). After init, change operating policy with
 `config policy` (interactive TTY, or `--plan` / `--yes` for CI). Only `execution_mode` and
 `autonomy_level` are CLI-editable; other keys remain manual YAML edits. See
-[commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides` —
+[commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides`:
 documented here, not editable via `config policy` yet. `workflow.autonomy_budget`
 (`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an
 `autonomous` run may do before it must stop and hand control back. See
@@ -65,16 +65,16 @@ holds discovered facts and is never written by hand.
 
 Signals detected (all presence-only checks; no file content is parsed beyond `package.json`):
 
-- **Project identity** — `package.json` name/description, README presence.
-- **Documentation** — AI instruction files (`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `GEMINI.md`),
+- **Project identity:** `package.json` name/description, README presence.
+- **Documentation:** AI instruction files (`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `GEMINI.md`),
   `docs/` directory, ADR directories.
-- **Workspace / monorepo** — `package.json` workspaces field, `pnpm-workspace.yaml`,
+- **Workspace / monorepo:** `package.json` workspaces field, `pnpm-workspace.yaml`,
   `turbo.json`, `nx.json`, `lerna.json`.
-- **Testing** — `jest.config.*`, `vitest.config.*`, `pytest.ini`, `pyproject.toml`.
-- **Architecture** — folder naming conventions: `domain/`, `hexagonal/`, `ports/`, `adapters/`
+- **Testing:** `jest.config.*`, `vitest.config.*`, `pytest.ini`, `pyproject.toml`.
+- **Architecture:** folder naming conventions: `domain/`, `hexagonal/`, `ports/`, `adapters/`
   (and their `src/` variants).
-- **CI/CD** — `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/`.
-- **Platform** — ORM config (`prisma/schema.prisma`, `drizzle.config.ts`/`.js`) and feature-flag
+- **CI/CD:** `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/`.
+- **Platform:** ORM config (`prisma/schema.prisma`, `drizzle.config.ts`/`.js`) and feature-flag
   config (`.launchdarkly.yml`, `unleash.yml`).
 
 Run `sdd-agentic-flow context refresh` any time to refresh it after the project changes (this rewrites the whole file, so copy

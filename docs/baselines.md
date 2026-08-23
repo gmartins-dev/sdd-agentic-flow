@@ -33,7 +33,7 @@ never silent:
 
 | Baseline | Upstream source | Pinned version |
 | --- | --- | --- |
-| `tlc-spec-driven`  | [`tech-leads-club/agent-skills`](https://github.com/tech-leads-club/agent-skills/blob/main/packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md) | `metadata.version: 3.3.0` (the upstream skill's own version field) |
+| `tlc-spec-driven`  | [`tech-leads-club/agent-skills`](https://github.com/tech-leads-club/agent-skills/blob/main/packages/skills-catalog/skills/%28development%29/tlc-spec-driven/SKILL.md) | `metadata.version: 3.3.0` (the upstream skill's own version field) |
 | `tdd`               | [`mattpocock/skills`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md) | repository release tag [`v1.2.3`](https://github.com/mattpocock/skills/releases/tag/v1.2.3). The `tdd` skill itself carries no `metadata.version`, so the repository's own release versioning is the closest available signal |
 
 Both pins live machine-readably in `shared/baselines/registry.yml` as `upstream_version` (plus

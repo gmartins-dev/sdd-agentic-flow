@@ -8,7 +8,7 @@
 
 **sdd-agentic-flow** is a local-first, zero-dependency **Spec-Driven Agentic Workflow Harness** for coding agents.
 
-Your agent can ship a diff in minutes—and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
+Your agent can produce a diff and still leave you guessing whether it matched the intent. This toolkit closes that gap: **spec first, evidence before done, you approve the merge.**
 
 ## What is sdd-agentic-flow?
 
@@ -23,7 +23,8 @@ irreversible, and release boundaries.
 *The agent does the work. The specification defines what should be true. Sensors provide evidence.
 Autonomous resolves ordinary engineering work and escalates only at an authority boundary.*
 
-Sources that inform this design — tagged by epistemic role, not as specifications — are listed in [inspirations](docs/inspirations.md).
+Sources that inform this design, tagged by epistemic role rather than treated as
+specifications, are listed in [inspirations](docs/inspirations.md).
 
 Structured specs, clear boundaries, and human governance:
 
@@ -37,14 +38,14 @@ For teams that use coding agents, this split keeps reviewable engineering work i
 humans define intent and verify results; agents execute within the harness. The project does
 not claim token or speed improvements without measured data.
 
-📦 Install and run with `npx sdd-agentic-flow` — [get started](#get-started) · 📖 [Skills usage guide](docs/saf-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
+📦 Install and run with `npx sdd-agentic-flow`: [get started](#get-started) · 📖 [Skills usage guide](docs/saf-skills-usage-guide.md) · 🏗 [Architecture](docs/architecture.md)
 
 ---
 🇧🇷 *[Disponível também em português](README.pt-BR.md)*
 
 ## The problem
 
-You delegate a task. The agent jumps to code, blurs boundaries, and marks work done without executable proof. Review time goes to reconstructing intent from the diff—not validating behavior.
+You delegate a task. The agent jumps to code, blurs boundaries, and marks work done without executable proof. Review time goes to reconstructing intent from the diff instead of validating behavior.
 
 | Common failure | Local response |
 | --- | --- |
@@ -100,11 +101,12 @@ npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 
-That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspect, guide, and maintain — it does not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md), and the [commands reference](docs/commands.md).
+That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspection, guidance, and maintenance. It does not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md), and the [commands reference](docs/commands.md).
 
-In a real terminal, guided `init` includes an operating-policy step (**Supervised** is recommended on Enter-through). Use `init --preset` or `config policy` to set policy explicitly in scripts.
+In a real terminal, guided `init` includes an operating-policy step. **Supervised** is the
+recommended choice. Use `init --preset` or `config policy` to set policy explicitly in scripts.
 
-`init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`) — it is not a third config axis.
+`init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`); it does not add a third config axis.
 
 | Preset | Writes | How the path runs |
 | --- | --- | --- |
@@ -120,12 +122,8 @@ or irreversible actions stay outside the delegation. The CLI does not run skills
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-In a real terminal, `init` offers a recommended setup and operating policy (Supervised
-recommended), optional customization, then configures, installs the `full` pack by default,
-prepares context, and validates the result. Change policy later with `config policy`; change
-installation with `config installation`. Scripts and CI use the explicit flags supported by
-each command; `--yes` is only available on commands that document it, such as `config policy`
-and `uninstall`. See [getting started](docs/getting-started.md).
+For the guided path, customization options, and non-interactive setup rules, see
+[getting started](docs/getting-started.md).
 
 ## How it works
 
@@ -154,7 +152,8 @@ Invoke `saf-route` when the next step is unclear. It recommends a skill and poin
 
 ## Proved in this repository
 
-These walkthroughs are not slide-deck claims—they run as integration tests in `test/cli.test.ts`. Each one lists the commands the test runs and what it checks.
+These walkthroughs are not product claims. They run as integration tests in
+`test/cli.test.ts`. Each one lists the commands the test runs and what it checks.
 
 | Flow | What it proves | Walkthrough |
 | --- | --- | --- |
@@ -168,7 +167,7 @@ These walkthroughs are not slide-deck claims—they run as integration tests in 
 | Autonomy AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
 | Autonomy AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded continuation and repair—not live LLM orchestration.
+The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded continuation and repair, not live LLM orchestration.
 
 ## Learn more
 

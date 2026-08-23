@@ -11,7 +11,7 @@ baselines:
     # Update upstream_version (and re-review shared/references/tlc-baseline.md for divergence)
     # whenever the upstream skill publishes a new version — see docs/baselines.md.
     upstream_version: '3.3.0'
-    upstream_source: https://github.com/tech-leads-club/agent-skills/blob/main/packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md
+    upstream_source: https://github.com/tech-leads-club/agent-skills/blob/main/packages/skills-catalog/skills/%28development%29/tlc-spec-driven/SKILL.md
     upstream_version_checked_at: '2026-08-08'
 
   - id: tdd

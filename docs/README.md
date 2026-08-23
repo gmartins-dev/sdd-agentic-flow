@@ -34,6 +34,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [engineering-principles.md](engineering-principles.md) | How agents change code (shared contract, not a skill) |
 | [spec-lifecycle.md](spec-lifecycle.md) | Resolve one package; load only what the active operation requires |
 | [baselines.md](baselines.md) | What this package ships vs external TLC/TDD skills |
+| [tlc-integration.md](tlc-integration.md) | How the TLC baseline fits the local workflow |
 
 ## Guides
 

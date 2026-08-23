@@ -6,7 +6,7 @@ consumer project. `project` is opt-in and writes the shared project skill direct
 | Scope | What `install <pack>` does | Trace in the project |
 | --- | --- | --- |
 | `user` (default) | Copies skills into the global skill directories of each supported agent | None. No file or directory is created in `cwd` |
-| `project` (opt-in) | Copies skills into `.agents/skills/` inside the project, same as `install` before v0.9.0 | Real files, appear as untracked in `git status`; the team decides whether to commit |
+| `project` (opt-in) | Copies skills into `.agents/skills/` inside the project | Real files, appear as untracked in `git status`; the team decides whether to commit |
 
 ```bash
 npx sdd-agentic-flow install full                       # scope: user (default), zero footprint

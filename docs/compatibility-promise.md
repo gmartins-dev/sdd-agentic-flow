@@ -1,9 +1,9 @@
-# v6 versioning and upgrade policy
+# Compatibility and upgrade policy
 
 SAF is experimental software. Major releases may replace CLI, installation, skill,
 configuration, artifact, and workflow contracts without backward compatibility.
 
-## Current v6 contracts
+## Current contracts
 
 - Skill capability contracts are defined by each `SKILL.md`; distribution membership lives only in `packs/*.json`.
 - Installation packs are exactly `planning`, `execution`, `review`, `multi-task`, and `full`.
@@ -22,10 +22,10 @@ reports, snapshots, explanations, evidence, review artifacts, and non-SAF skills
 managed SAF skills, the shared installed layer, installation intent, provenance, config, and
 regenerable usage files. Unknown or future state fails closed before deletion.
 
-`core`, `local-files`, `github`, `pr`, and `multi-worktree` have no v6 aliases. Bare CLI
-invocation is read-only; installation requires an explicit install/init operation.
+`core`, `local-files`, `github`, `pr`, and `multi-worktree` are not current pack aliases.
+Bare CLI invocation is read-only; installation requires an explicit install/init operation.
 
 ## Version boundary
 
-Current v6 state is supported. Explicitly recognized previous SAF state is cleanup-only. Future
-or unknown schemas are refused, because an older CLI must not delete state it cannot understand.
+Current state is supported. Explicitly recognized previous SAF state is cleanup-only. Future or
+unknown schemas are refused, because the CLI must not delete state it cannot understand.

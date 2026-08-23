@@ -841,7 +841,7 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
     add(
       'autonomy_config',
       'WARN',
-      `workflow.execution_mode/autonomy_level not set in ${SDD_PATHS.config}; run init to recreate the current v6 configuration`,
+      `workflow.execution_mode/autonomy_level not set in ${SDD_PATHS.config}; run init to recreate the current configuration`,
     );
   } else if (
     !(EXECUTION_MODES as readonly string[]).includes(executionMode) ||

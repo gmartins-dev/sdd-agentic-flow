@@ -399,7 +399,7 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
     const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
     if (schema !== 'saf-config/v2') {
       fs.writeFileSync(configPath, configFor(cwd, options), 'utf8');
-      log('INFO', `replaced legacy ${SDD_PATHS.config} with the v6 configuration contract`);
+      log('INFO', `replaced legacy ${SDD_PATHS.config} with the current configuration contract`);
       return true;
     }
     log('WARN', `preserved existing ${SDD_PATHS.config}`);
@@ -899,7 +899,7 @@ async function initInteractive(
         configFor(cwd, { language: languageDefault, featureProfile: featureProfileDefault }),
         'utf8',
       );
-      log('INFO', `${SDD_PATHS.config} replaced with the v6 configuration contract`);
+      log('INFO', `${SDD_PATHS.config} replaced with the current configuration contract`);
       return;
     }
     log('WARN', `${SDD_PATHS.config} already exists; init will not overwrite it`);

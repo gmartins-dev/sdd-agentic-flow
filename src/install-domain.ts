@@ -148,7 +148,7 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
   if (lines[0] !== 'schema: saf-install-intent/v2')
     throw new Error(
-      'unsupported installation intent; reinstall v6 skills to create saf-install-intent/v2',
+      'unsupported installation intent; reinstall the current skills to create saf-install-intent/v2',
     );
   const config = defaultInstallConfig();
   let section: 'user' | 'projects' | null = null;

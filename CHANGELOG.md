@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 6.4.3
+
+### Documentation and CLI guidance consistency
+
+Corrects stale CLI guidance that suggested the removed `configure` command and removes
+unnecessary historical version labels from user-facing help and recovery messages. Aligns
+documentation, onboarding suggestions, and error guidance with the current command surface
+without adding commands, flags, dependencies, runtime authority, telemetry, or network behavior.
+
 ## 6.4.2
 
 ### CLI contract and argument validation fixes

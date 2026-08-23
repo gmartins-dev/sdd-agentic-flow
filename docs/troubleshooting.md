@@ -208,8 +208,8 @@ installed skills.
 
 ### `capability_contracts`: `FAIL` "requires CLI \<range\>, installed CLI is \<version\>"
 
-**Cause:** an installed skill declares `requires_cli` (Milestone 3, v0.9.0) with a minimum CLI
-version your installed `sdd-agentic-flow` doesn't satisfy.
+**Cause:** an installed skill declares `requires_cli` with a minimum CLI version your installed
+`sdd-agentic-flow` doesn't satisfy.
 
 **Diagnose:** `sdd-agentic-flow doctor --contracts --json` — the message names the skill, the
 required range, and your installed CLI version.
@@ -224,11 +224,11 @@ the full model these checks validate.
 
 ### `autonomy_config`: `WARN` "workflow.execution_mode/autonomy_level not set"
 
-**Cause:** `.sdd-agentic-flow/config.yml` predates v1.8.0, or was hand-written without these fields.
+**Cause:** `.sdd-agentic-flow/config.yml` is a legacy file or was hand-written without these fields.
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
 
-**Fix:** none required — behavior defaults to `guided`/`manual`, identical to before v1.8.0. Add
+**Fix:** none required. Behavior defaults to `guided`/`manual`. Add
 `workflow.execution_mode`/`autonomy_level` to `.sdd-agentic-flow/config.yml` explicitly if you want a
 different default, or re-run `init --execution-mode <mode> --autonomy-level <level>` against a
 fresh project.
@@ -273,7 +273,7 @@ guided/manual defaults, so a real misconfiguration is never masked by a misleadi
 ### `autonomy_skills`: `FAIL` "skill(s) missing autonomy_profile"
 
 **Cause:** an installed `SKILL.md` was hand-edited and lost its `autonomy_profile` block, or was
-installed from a pre-v1.8.0 package version.
+installed from an older package that predates this field.
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 

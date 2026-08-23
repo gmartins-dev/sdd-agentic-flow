@@ -1,4 +1,4 @@
-# v6 pack matrix
+# Pack matrix
 
 Skills define intrinsic capabilities. Installation packs define distribution only; pack
 membership is not duplicated in `SKILL.md` frontmatter. `npm run skills:lint` validates the
@@ -15,5 +15,5 @@ pack registry against `OFFICIAL_SKILLS` and verifies that `full` is the complete
 `full` is the recommended capability set. Operating policy is separate: guided onboarding
 defaults to `full + supervised`; non-interactive fail-safe operation uses `full + manual`.
 
-The v6 pack set is clean-slate. `core`, `local-files`, `github`, `pr`, and `multi-worktree` are
-not aliases or supported pack IDs.
+The current pack set is clean-slate. `core`, `local-files`, `github`, `pr`, and `multi-worktree`
+are not aliases or supported pack IDs.

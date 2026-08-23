@@ -120,12 +120,12 @@ or irreversible actions stay outside the delegation. The CLI does not run skills
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
-Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup and
-operating policy (Supervised recommended), optional customization, then configures, installs
-the `full` pack by default, prepares context, and validates the result. Change policy later
-with `config policy`; change installation with `config installation`. Scripts and CI use the
-explicit flags supported by each command; `--yes` is only available on commands that document
-it, such as `config policy` and `uninstall`. See [getting started](docs/getting-started.md).
+In a real terminal, `init` offers a recommended setup and operating policy (Supervised
+recommended), optional customization, then configures, installs the `full` pack by default,
+prepares context, and validates the result. Change policy later with `config policy`; change
+installation with `config installation`. Scripts and CI use the explicit flags supported by
+each command; `--yes` is only available on commands that document it, such as `config policy`
+and `uninstall`. See [getting started](docs/getting-started.md).
 
 ## How it works
 
@@ -218,12 +218,15 @@ config installation [--scope user|project] [--pack ...] [--target ...] [--sharin
 context refresh                       Refresh project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--target ...] [--plan] [--quiet]  Install a pack (default: user scope)
-doctor [--json] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
 autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
 uninstall --yes [--purge] [--scope user|project|all] [--target ...] [--verbose] [--quiet]  Remove managed assets
 list                                  List packs
+learn-sdd                             Show a one-screen SDD summary
+version                               Show the package identity
+completion bash|zsh|fish              Print shell completion
 help [command]                        Show the command reference, or one command's usage
 ```
 
@@ -285,7 +288,8 @@ npx sdd-agentic-flow uninstall --yes
 Uninstall removes only recognized current managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
 `uninstall --yes --purge`. It also removes regenerable toolkit state;
 `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing
-"preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and
+"preserves ..." explanatory line. Add `--include-config` to remove the project config, or
+`--full` to include regenerable usage files and autonomy loop state. See [uninstall](docs/uninstall.md) and
 [compatibility policy](docs/compatibility-promise.md).
 
 ## Skill map

@@ -23,7 +23,7 @@ tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell ga
 | `npm run lint:fix:all` | Biome fix + YAML Prettier + markdown fix |
 
 Biome config: `biome.json` (ignores `dist/`, `.specs/`, `.local/`; TypeScript uses the same
-formatter rules as JavaScript). Do not reintroduce `node --check` lists — retired in v3.5.0.
+formatter rules as JavaScript). Do not reintroduce retired `node --check` file lists.
 
 ### Where new CLI code belongs
 
@@ -36,10 +36,8 @@ extract a new one when a responsibility does not fit an existing owner.
 Proposing a new feature or direction? This project scopes work audit-first: a candidate idea
 becomes real work only once a direct read of the current repository confirms a real gap, not
 from an assumed roadmap slot or an external comparison. Each dated entry in `ROADMAP.md` is the
-decision record for that release — it states the gap found, why, and what was deliberately left
-out. The `v1.9.2` entry is a live example: 2 of 3 candidate items shipped on a confirmed narrow
-gap, the third stayed out because its own stated precondition was not met. Read a few recent
-entries before proposing scope.
+decision record for that release. It states the gap found, why, and what was deliberately left
+out. Read a few recent entries before proposing scope.
 
 Proposing a new skill? Read `shared/references/skill-authoring-standard.md` first — it documents
 the six required `SKILL.md` sections and the `Status`/`Next recommended skill`/`Reason` output

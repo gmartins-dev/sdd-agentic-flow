@@ -3,9 +3,8 @@
 `workflow.autonomy_level` in `.sdd-agentic-flow/config.yml` is a **new axis orthogonal to**
 [execution modes](execution-modes.md) (`plan`/`guided`/`apply`/`review`/`full`). It does not
 replace or duplicate them. `execution_mode` answers "what is a skill authorized to do";
-`autonomy_level` answers "does a skill need a human between it and the next one." Every existing
-skill still behaves exactly as documented before v1.8.0: the default, `manual`, is the same
-fully-supervised behavior the toolkit already had.
+`autonomy_level` answers "does a skill need a human between it and the next one." The default,
+`manual`, keeps the fully supervised behavior.
 
 ## The three levels
 
@@ -79,9 +78,8 @@ workflow:
 `init` runs **guided setup**, which includes an operating-policy step (Supervised recommended,
 Manual, Autonomous, or Advanced). `init --interactive` on a TTY is the same guided flow; the
 legacy piped seven-step wizard remains for non-TTY `--interactive` compatibility only. An
-`.sdd-agentic-flow/config.yml` predating v1.8.0 that has neither field
-is not an error. `doctor --autonomy` reports `WARN` and both default to `guided`/`manual`,
-identical to today's behavior. See [configuration](configuration.md).
+`.sdd-agentic-flow/config.yml` without either field is not an error. `doctor --autonomy`
+reports `WARN`, and both fields default to `guided`/`manual`. See [configuration](configuration.md).
 
 `workflow.skill_overrides` (optional, not written by `init`) pins one skill to a stricter level
 regardless of the workflow default. For example, keep `saf-review-pr` at `manual` even inside an

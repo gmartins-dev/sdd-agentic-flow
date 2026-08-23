@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v6.4.3 (2026-08-23):** Documentation and CLI guidance consistency. Corrects stale
+  onboarding and recovery suggestions, removes unnecessary historical version labels from
+  user-facing CLI messages, and aligns the documentation set with the current command surface.
+  No new command, flag, dependency, workflow authority, telemetry, or automatic remote mutation.
+
 - **v6.4.1 (2026-08-23):** Corrective CLI release after real-user certification findings.
   Adds target/scope-aware uninstall filtering, canonical read-only help parity, preservation and
   validation regression coverage, and current v6 uninstall documentation. No new workflow

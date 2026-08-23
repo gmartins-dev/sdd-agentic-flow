@@ -2,7 +2,7 @@
 name: saf-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 6.4.2
+  version: 6.4.3
 extends: saf-create-spec
 requires: [config, spec-package]
 consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]

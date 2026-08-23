@@ -21,13 +21,18 @@ Normal removal touches only current managed assets declared by recognized proven
 reconciles the matching installation intent. `--scope user` selects user installations,
 `--scope project` selects the project installation, and `--scope all` selects both. Supplying
 `--target` selects one or more user targets (`agents`, `cursor`, `claude`, or `copilot`) and
-implies user scope when no scope is supplied. A target cannot be combined with `--scope project`
-or `--scope all`.
+implies user scope when no scope is supplied. `--agent` is the compatibility form for selecting
+an agent's user targets. A target cannot be combined with `--scope project` or `--scope all`.
 
 Foreign paths, historical paths, source, and `.specs/features` are preserved. `--purge` remains
 the cross-scope clean reset and cannot be combined with `--scope` or `--target`; it removes only
 recognized project control state: config, generated context, snapshots, reports, explanations,
 autonomy loop state, usage, and localized usage guides.
 
-There is no `--apply`, `--include-config`, `--full`, or `--agent` in the current interface.
-See the [compatibility policy](compatibility-promise.md) for the breaking boundary.
+`--include-config` also removes the project configuration. `--full` includes that configuration
+and the regenerable project usage files and autonomy loop state. These options require
+`--yes` and cannot be combined with `--purge`; use `--purge` when you want the documented
+cross-scope reset. `--apply` is not a valid confirmation flag. Use `--yes`.
+
+See the [compatibility policy](compatibility-promise.md) for the current contract and cleanup
+rules.

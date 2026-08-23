@@ -8,7 +8,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | --- | --- |
 | [getting-started.md](getting-started.md) | One-command guided setup |
 | [what-is-sdd.md](what-is-sdd.md) | Plain-language SDD overview and where the CLI fits |
-| [commands.md](commands.md) | Gh-style CLI command reference |
+| [commands.md](commands.md) | CLI command reference |
 | [installation.md](installation.md) | First install, pack selection, re-running install safely |
 | [installation-scope.md](installation-scope.md) | Choosing `--scope user` vs `--scope project` |
 | [configuration.md](configuration.md) | Editing `.sdd-agentic-flow/config.yml`, project context, autonomy fields |
@@ -71,6 +71,9 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | --- | --- |
 | [architecture.md](architecture.md) | CLI, packs, skills, shared layer, consumer project |
 | [cli-interaction.md](cli-interaction.md) | Output modes, stdout/stderr, colors, branding vs protocol |
+| [cli-terminal-behavior.md](cli-terminal-behavior.md) | TTY, plain output, prompts, terminal capabilities, and interruption |
+| [machine-interface.md](machine-interface.md) | JSON envelope, stable tokens, and machine-readable errors |
+| [information-representation-model.md](information-representation-model.md) | Authority, persistence, and derived representations |
 | [compatibility-promise.md](compatibility-promise.md) | Versioning and capability-contract rules |
 | [compatibility-matrix.md](compatibility-matrix.md) | Supported combinations |
 | [design-principles.md](design-principles.md) | Design goals |

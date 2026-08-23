@@ -426,7 +426,7 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
   const unsupportedPack = configuredPacks.find((name) => !readPreset(name));
   if (unsupportedPack) {
     return fail('unsupported installation intent; clean upgrade stopped before writes', {
-      reason: `The current intent references removed pack \`${unsupportedPack}\`. Reinitialize the v6 installation before installing another pack.`,
+      reason: `The current intent references removed pack \`${unsupportedPack}\`. Reinitialize the installation before installing another pack.`,
       try: ['sdd-agentic-flow init', 'sdd-agentic-flow install full --plan'],
     });
   }

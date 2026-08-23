@@ -296,7 +296,7 @@ function help(command?: string): boolean | undefined {
   if (command) {
     if (isRemovedCommand(command)) {
       fail(`unknown command: ${command}.`, {
-        reason: 'This command was removed from the v5 canonical interface.',
+        reason: 'This command is not part of the current canonical interface.',
         try: ['sdd-agentic-flow help'],
       });
       return false;
@@ -462,7 +462,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
       !configFound
         ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow learn-sdd\n  npx sdd-agentic-flow help\n`
         : !skillsInstalled
-          ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install full --plan\n  npx sdd-agentic-flow configure\n  npx sdd-agentic-flow doctor\n`
+          ? `\n${t(locale, 'welcome.quickCommands')}\n  npx sdd-agentic-flow install full --plan\n  npx sdd-agentic-flow config installation\n  npx sdd-agentic-flow doctor\n`
           : `\n${t(locale, 'welcome.optionalMaintenance')}\n  npx sdd-agentic-flow doctor\n  npx sdd-agentic-flow config policy\n  npx sdd-agentic-flow context refresh\n  npx sdd-agentic-flow upgrade\n  npx sdd-agentic-flow uninstall --plan\n`,
     );
     process.stdout.write(
@@ -766,14 +766,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           : undefined;
   if (removedOption) {
     fail(`usage error: removed option ${removedOption}`, {
-      reason: 'The v5 command grammar does not accept this legacy option.',
+      reason: 'The current command grammar does not accept this legacy option.',
       try: ['sdd-agentic-flow help'],
     });
     return;
   }
   if (isRemovedCommand(command)) {
     fail(`unknown command: ${command}.`, {
-      reason: 'This command was removed from the v5 canonical interface.',
+      reason: 'This command is not part of the current canonical interface.',
       try: ['sdd-agentic-flow help'],
     });
     return;
@@ -1001,8 +1001,9 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         sharing = asString(args[++index]);
       else fail(USAGE.config);
     }
-    if (!packs.every((pack: string) => readPreset(pack))) fail('unknown pack in configure');
-    if (interactive && plan) fail('configure --interactive cannot combine with --plan');
+    if (!packs.every((pack: string) => readPreset(pack)))
+      fail('unknown pack in config installation');
+    if (interactive && plan) fail('config installation --interactive cannot combine with --plan');
     const canInteract = shouldUseInteractiveInstall({
       stdinIsTTY: process.stdin.isTTY,
       stdoutIsTTY: process.stdout.isTTY,
@@ -1019,7 +1020,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       if (isConfigureError(result)) {
         fail(result.error, {
           reason: 'Use valid pack and target IDs.',
-          try: ['sdd-agentic-flow configure --interactive'],
+          try: ['sdd-agentic-flow config installation --interactive'],
         });
         return;
       }

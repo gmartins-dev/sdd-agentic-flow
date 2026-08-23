@@ -26,7 +26,7 @@ fail if any stamped copy drifted, and print `npm run version:stamp` as the fix. 
 stamp `CHANGELOG.md`, `ROADMAP.md`, or narrative “vX.Y.Z+” mentions in docs — those are
 history, not pins.
 
-## Tag and GitHub release: automatic (since v1.6.0)
+## Tag and GitHub release: automatic
 
 Once a version-bump commit reaches `main` and `.github/workflows/ci.yml` finishes successfully
 on it, `.github/workflows/release.yml` runs automatically: it compares `package.json`'s version
@@ -37,18 +37,15 @@ to `main` that are not a version bump, or that already have a tag, do nothing. A
 bump with no matching changelog entry is skipped (with a workflow warning) rather than treated
 as an accidental release.
 
-This means the human decision point has moved from "authorize the tag/release" to "authorize the
-push of the version-bump commit to `main`." Once that commit is pushed and CI is green, tag,
+The human decision point is the push of the version-bump commit to `main`. Once that commit is pushed and CI is green, tag,
 release, and both registry publishes follow without a second manual step.
 
 ## `npm publish`: automatic via npm Trusted Publishing (OIDC)
 
 `.github/workflows/release.yml` publishes to npm itself, in the same job, right after it creates
-the tag and GitHub release. Publishing happens in-process rather than via a second,
-event-triggered workflow. That was a deliberate fix after the first real attempt (v1.6.1) used a
-separate workflow listening for `release: published`, which GitHub never fires for a release
-created by another workflow's own `GITHUB_TOKEN` (the same recursion-prevention rule that also
-stops a tag push from re-triggering `ci.yml`), so it silently never ran.
+the tag and GitHub release. Publishing happens in the same workflow rather than through a second
+event-triggered workflow. This avoids relying on a `release: published` event emitted by a release
+created with the workflow's own `GITHUB_TOKEN`, which does not retrigger the release pipeline.
 
 It authenticates using npm's **Trusted Publishing**: `id-token: write` lets the job exchange its
 GitHub Actions OIDC identity for a short-lived npm publish token. **No `NPM_TOKEN` secret is

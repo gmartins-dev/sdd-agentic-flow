@@ -193,10 +193,12 @@ npx sdd-agentic-flow uninstall --yes
 ```
 
 A desinstalação remove as skills conhecidas do toolkit. Ela preserva código,
-specs, reports, snapshots e caminhos desconhecidos. `--include-config` também
-remove `.sdd-agentic-flow/config.yml`. Execute `init` novamente para uma reinstalação limpa
-limpa: remove também `.sdd-agentic-flow/context/project-context.md`, `.sdd-agentic-flow/snapshots` e
-`.sdd-agentic-flow/reports` (nunca `.specs/features`). Veja [uninstall](uninstall.md).
+specs, reports, snapshots e caminhos desconhecidos. Use `--include-config` para
+remover `.sdd-agentic-flow/config.yml`; use `--full` para incluir os arquivos de
+uso regeneráveis e o estado do loop de autonomia. As duas opções exigem
+`--yes`. Use `--purge` para a limpeza entre escopos descrita em
+[uninstall](uninstall.md). Execute `init` novamente para recriar o estado ausente;
+o `init` não remove snapshots, reports nem specs de features existentes.
 
 ## 10. Limites de segurança
 

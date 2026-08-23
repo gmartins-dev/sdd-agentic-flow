@@ -123,8 +123,9 @@ Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-
 Start with `npx sdd-agentic-flow init`. In a real terminal it offers a recommended setup and
 operating policy (Supervised recommended), optional customization, then configures, installs
 the `full` pack by default, prepares context, and validates the result. Change policy later
-with `config policy`; change installation with `config installation`. Scripts and CI use explicit
-flags and `--yes` for local mutations. See [getting started](docs/getting-started.md).
+with `config policy`; change installation with `config installation`. Scripts and CI use the
+explicit flags supported by each command; `--yes` is only available on commands that document
+it, such as `config policy` and `uninstall`. See [getting started](docs/getting-started.md).
 
 ## How it works
 

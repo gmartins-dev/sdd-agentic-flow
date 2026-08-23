@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 6.4.2
+
+### CLI contract and argument validation fixes
+
+Corrects active installation guidance so automation does not use the unsupported
+`install --yes` form, and makes `list` reject unknown arguments with structured
+usage and recovery guidance. Adds focused regression coverage without adding a
+new command, flag, dependency, runtime authority, telemetry, or network behavior.
+
 ## 6.4.1
 
 ### CLI uninstall and help fixes

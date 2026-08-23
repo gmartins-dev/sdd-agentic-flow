@@ -779,8 +779,19 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     return;
   }
   if (command === 'list') {
-    if (args.includes('--help')) writeCommandHelp('list');
-    else list();
+    if (args.includes('--help')) {
+      if (args.length > 1) {
+        fail('usage: list [--help]', {
+          reason: 'The list command accepts no arguments other than --help.',
+          try: ['sdd-agentic-flow list', 'sdd-agentic-flow list --help'],
+        });
+      } else writeCommandHelp('list');
+    } else if (args.length > 0) {
+      fail('usage: list [--help]', {
+        reason: `Unknown list argument: ${args[0]}.`,
+        try: ['sdd-agentic-flow list', 'sdd-agentic-flow list --help'],
+      });
+    } else list();
   } else if (command === 'init') {
     const usage = USAGE.init;
     if (args.includes('--help')) writeCommandHelp('init');

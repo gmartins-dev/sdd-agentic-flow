@@ -14,7 +14,8 @@ when automation needs deterministic setup. `--interactive` requires a real TTY a
 
 `install <pack>` accepts `planning`, `execution`, `review`, `multi-task`, or `full` and defaults to user scope. Use `--scope project` for `.agents/skills/` in the
 repository. User targets are selected with repeatable `--target agents|cursor|claude|copilot`.
-Use `--plan` for a read-only preview; local non-TTY mutation requires `--yes`.
+Use `--plan` for a read-only preview. For non-TTY automation, pass the explicit pack, scope, and
+target options required by the command; `install` does not accept `--yes`.
 
 Use `config installation` to save desired packs, targets, and sharing intent. It never installs
 skills. Use `config policy` for workflow execution/autonomy policy.

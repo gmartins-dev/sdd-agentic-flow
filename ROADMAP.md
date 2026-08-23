@@ -5,6 +5,11 @@
   validation regression coverage, and current v6 uninstall documentation. No new workflow
   authority, runtime dependency, telemetry, or automatic remote mutation.
 
+- **v6.4.2 (2026-08-23):** Corrective CLI contract release after real-NPX certification.
+  Aligns installation automation guidance with the accepted command grammar and rejects unknown
+  `list` arguments with structured recovery guidance. No new command, flag, dependency, workflow
+  authority, telemetry, or automatic remote mutation.
+
 - **v6.4.0 (2026-08-23):** CLI audit reliability and release certification. Adds normalized
   black-box evidence, persistent-state snapshots, disposable source materialization,
   registry-derived read-only command coverage, and bounded documentation corrections. Keeps

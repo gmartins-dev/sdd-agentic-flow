@@ -55,3 +55,17 @@ test('canonical read-only commands expose help topics and direct --help', () => 
     assert.equal(direct.stderr, '', command);
   }
 });
+
+test('list rejects unknown arguments instead of silently ignoring them', () => {
+  const result = run(['list', '--not-a-real-flag']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /usage: list \[--help\]/);
+  assert.match(result.stderr, /Unknown list argument/);
+});
+
+test('install help documents the supported non-interactive grammar', () => {
+  const result = run(['install', '--help']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /--plan/);
+  assert.doesNotMatch(result.stdout, /install .*--yes/);
+});

@@ -2,7 +2,7 @@
 name: saf-implement-multi
 description: Implement multiple SDD tasks using dependency-aware waves and isolated mutable ownership when safe and authorized. Use for multi-task implementation; use saf-implement for exactly one task.
 metadata:
-  version: 6.4.0
+  version: 6.4.1
 extends: saf-create-prompts
 requires: [config, spec-package]
 consumes: [domain-glossary, project-context]

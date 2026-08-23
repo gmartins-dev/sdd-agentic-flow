@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 6.4.1
+
+### CLI uninstall and help fixes
+
+Fixes target- and scope-aware uninstall planning/application, including validation and
+preservation of non-selected and foreign files. Completes canonical help parity for `learn-sdd`,
+`completion`, and `version`, and aligns active uninstall and compatibility documentation with the
+v6 contract. Adds deterministic regression coverage for the corrected CLI behavior.
+
 ## 6.4.0
 
 ### CLI audit reliability and release certification

@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
+import { USER_TARGETS } from './install-domain';
 import { targetLabelFor } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
@@ -15,6 +16,7 @@ import {
   sddJoin,
   userInstallConfigPath,
   userSkillsDirsFor,
+  userSkillsDirsForTargets,
 } from './paths';
 import { listManagedSkillDirNames, OFFICIAL_SKILLS } from './skill-identity';
 import { shortenPath, styleStatus } from './ui';
@@ -169,6 +171,9 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
   const verbose = args.includes('--verbose');
   let scope: string | null = null;
   let agent: string | null = null;
+  const targetIds: string[] = [];
+  let invalidScope: string | null = null;
+  let invalidTarget: string | null = null;
   const rest: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = asString(args[index]);
@@ -185,14 +190,29 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       ].includes(arg)
     )
       continue;
-    if (arg === '--scope' && ['user', 'project'].includes(asString(args[index + 1]))) {
+    if (arg === '--scope' && ['user', 'project', 'all'].includes(asString(args[index + 1]))) {
       scope = asString(args[index + 1]);
       index += 1;
+    } else if (arg === '--scope') {
+      invalidScope = asString(args[index + 1]) || '(missing)';
+      if (args[index + 1] !== undefined) index += 1;
+    } else if (arg === '--target') {
+      const target = asString(args[index + 1]);
+      if (!Object.hasOwn(USER_TARGETS, target)) invalidTarget = target || '(missing)';
+      else targetIds.push(target);
+      if (args[index + 1] !== undefined) index += 1;
     } else if (arg === '--agent' && KNOWN_AGENTS.includes(asString(args[index + 1]))) {
       agent = asString(args[index + 1]);
       index += 1;
     } else rest.push(arg);
   }
+
+  if (invalidScope) return fail(`${usage} — unknown scope: ${invalidScope}`);
+  if (invalidTarget) return fail(`${usage} — unknown target: ${invalidTarget}`);
+  if (targetIds.length && agent) return fail(`${usage} — use either --target or --agent, not both`);
+  if (targetIds.length && (scope === 'project' || scope === 'all'))
+    return fail(`${usage} — --target requires --scope user or no explicit scope`);
+  if (targetIds.length && !scope) scope = 'user';
 
   if (purge) {
     if (scope || agent || full || includeConfig || rest.length) {
@@ -247,11 +267,14 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
         ? `${usage} — run \`sdd-agentic-flow uninstall --plan\` first; it never removes anything.`
         : usage,
     );
-  const scopes = scope ? [scope] : ['project', 'user'];
+  const scopes = scope === 'all' ? ['project', 'user'] : scope ? [scope] : ['project', 'user'];
+  const projectRoot = path.join(cwd, '.agents', 'skills');
   const roots = [];
-  if (scopes.includes('project')) roots.push(path.join(cwd, '.agents', 'skills'));
+  if (scopes.includes('project')) roots.push(projectRoot);
   if (scopes.includes('user')) {
-    const userDirs = userSkillsDirsFor(agent);
+    const userDirs = targetIds.length
+      ? userSkillsDirsForTargets([...new Set(targetIds)], os.homedir())
+      : userSkillsDirsFor(agent);
     if (userDirs) roots.push(...userDirs);
   }
   const targets = roots.flatMap((root: string) => {
@@ -291,7 +314,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     process.stdout.write(`${t(locale, 'uninstall.plan')}\n\n`);
     for (const [root, paths] of grouped) {
       process.stdout.write(
-        `${targetLabelFor(root)} (${shortenPath(root, { homeDir: os.homedir(), cwd })})\n`,
+        `${targetLabelFor(root, root === projectRoot ? 'project' : 'user')} (${shortenPath(root, { homeDir: os.homedir(), cwd })})\n`,
       );
       const skills = paths.filter((entry: string) =>
         path.basename(entry).startsWith('saf-'),

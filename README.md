@@ -224,7 +224,7 @@ list                                  List packs
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the v5+ compatibility promise](docs/compatibility-promise.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the v6 compatibility policy](docs/compatibility-promise.md).
 
 `install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
 
@@ -279,11 +279,11 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --yes
 ```
 
-Uninstall removes only recognized v5 managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
+Uninstall removes only recognized current v6 managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
 `uninstall --yes --purge`. It also removes regenerable toolkit state;
 `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing
 "preserves ..." explanatory line. See [uninstall](docs/uninstall.md) and
-[v5+ compatibility promise](docs/compatibility-promise.md).
+[v6 compatibility policy](docs/compatibility-promise.md).
 
 ## Skill map
 

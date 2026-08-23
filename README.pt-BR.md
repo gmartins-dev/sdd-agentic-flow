@@ -200,6 +200,6 @@ npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --yes
 ```
 
-Veja [desinstalação](docs/uninstall.md) e o [contrato de compatibilidade v5+](docs/compatibility-promise.md).
+Veja [desinstalação](docs/uninstall.md) e a [política de compatibilidade v6](docs/compatibility-promise.md).
 
 </details>

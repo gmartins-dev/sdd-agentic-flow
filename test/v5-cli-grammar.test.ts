@@ -43,3 +43,15 @@ test('v5 uninstall uses --plan for preview and --yes for local apply', () => {
   assert.match(plan.stdout, /Uninstall plan/);
   assert.equal(run(['uninstall', '--apply']).status, 1);
 });
+
+test('canonical read-only commands expose help topics and direct --help', () => {
+  for (const command of ['learn-sdd', 'completion', 'version']) {
+    const topic = run(['help', command]);
+    const direct = run([command, '--help']);
+    assert.equal(topic.status, 0, command);
+    assert.equal(direct.status, 0, command);
+    assert.equal(direct.stdout, topic.stdout, command);
+    assert.equal(topic.stderr, '', command);
+    assert.equal(direct.stderr, '', command);
+  }
+});

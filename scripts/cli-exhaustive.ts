@@ -615,6 +615,82 @@ function runJourneys() {
     assert.match(config, /autonomy_level: supervised/);
     return 'interactive setup completed';
   });
+
+  const targetedRemoval = project('12-targeted-removal');
+  expect(run(['install', 'full', '--target', 'agents'], targetedRemoval), 0);
+  expect(run(['install', 'full', '--target', 'claude'], targetedRemoval), 0);
+  fs.mkdirSync(path.join(targetedRemoval.home, '.agents', 'skills'), { recursive: true });
+  fs.writeFileSync(path.join(targetedRemoval.home, '.agents', 'skills', 'foreign.txt'), 'keep\n');
+  record('J40', 'scoped uninstall', 'uninstall --plan --target agents', () => {
+    const before = snapshotPersistentState([
+      { name: 'project', path: targetedRemoval.cwd },
+      { name: 'home', path: targetedRemoval.home },
+    ]);
+    const result = run(['uninstall', '--plan', '--target', 'agents'], targetedRemoval);
+    expect(result, 0, /Uninstall plan|Shared Agent Skills/);
+    assert.match(result.stdout, /Shared Agent Skills/);
+    assert.doesNotMatch(result.stdout, /Claude Code/);
+    assertSnapshotUnchanged(
+      before,
+      snapshotPersistentState([
+        { name: 'project', path: targetedRemoval.cwd },
+        { name: 'home', path: targetedRemoval.home },
+      ]),
+    );
+  });
+  record('J41', 'scoped uninstall', 'uninstall --yes --target agents', () => {
+    expect(run(['uninstall', '--yes', '--target', 'agents'], targetedRemoval), 0, /removed/);
+    assert.equal(
+      fs.existsSync(path.join(targetedRemoval.home, '.agents', 'skills', 'saf-create-spec')),
+      false,
+    );
+    assert.equal(
+      fs.existsSync(path.join(targetedRemoval.home, '.claude', 'skills', 'saf-create-spec')),
+      true,
+    );
+    assert.equal(
+      fs.existsSync(path.join(targetedRemoval.home, '.agents', 'skills', 'foreign.txt')),
+      true,
+    );
+  });
+
+  const allScopeRemoval = project('13-all-scope-removal');
+  expect(run(['install', 'full', '--scope', 'project'], allScopeRemoval), 0);
+  expect(run(['install', 'full', '--target', 'agents'], allScopeRemoval), 0);
+  record('J42', 'scoped uninstall', 'uninstall --plan --scope all', () => {
+    const before = snapshotPersistentState([
+      { name: 'project', path: allScopeRemoval.cwd },
+      { name: 'home', path: allScopeRemoval.home },
+    ]);
+    const result = run(['uninstall', '--plan', '--scope', 'all'], allScopeRemoval);
+    expect(result, 0, /Uninstall plan/);
+    assert.match(result.stdout, /\.agents[\\/]skills/);
+    assert.match(result.stdout, /managed paths/);
+    assertSnapshotUnchanged(
+      before,
+      snapshotPersistentState([
+        { name: 'project', path: allScopeRemoval.cwd },
+        { name: 'home', path: allScopeRemoval.home },
+      ]),
+    );
+  });
+  record('J43', 'invalid input safety', 'uninstall --plan --scope project --target agents', () => {
+    const result = run(
+      ['uninstall', '--plan', '--scope', 'project', '--target', 'agents'],
+      allScopeRemoval,
+    );
+    expect(result, 1, /--target requires --scope user/);
+  });
+
+  record('J44', 'read-only command help', 'help topics and direct --help parity', () => {
+    for (const command of ['learn-sdd', 'completion', 'version']) {
+      const topic = run(['help', command], invalid);
+      const direct = run([command, '--help'], invalid);
+      assert.equal(topic.status, 0, command);
+      assert.equal(direct.status, 0, command);
+      assert.equal(direct.stdout, topic.stdout, command);
+    }
+  });
 }
 
 function writeReport() {

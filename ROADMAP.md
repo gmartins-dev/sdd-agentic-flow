@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v6.4.1 (2026-08-23):** Corrective CLI release after real-user certification findings.
+  Adds target/scope-aware uninstall filtering, canonical read-only help parity, preservation and
+  validation regression coverage, and current v6 uninstall documentation. No new workflow
+  authority, runtime dependency, telemetry, or automatic remote mutation.
+
 - **v6.4.0 (2026-08-23):** CLI audit reliability and release certification. Adds normalized
   black-box evidence, persistent-state snapshots, disposable source materialization,
   registry-derived read-only command coverage, and bounded documentation corrections. Keeps

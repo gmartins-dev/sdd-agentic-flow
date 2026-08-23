@@ -9,7 +9,7 @@ export const USAGE = {
   doctor:
     'usage: doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]',
   uninstall:
-    'usage: uninstall --plan | uninstall --yes [--purge] [--scope user|project|all] [--target agents|cursor|claude|copilot] [--verbose] [--quiet]',
+    'usage: uninstall --plan|--yes [--purge] [--scope user|project|all] [--target agents|cursor|claude|copilot] [--verbose] [--quiet]',
   context: 'usage: context status | context refresh | context autonomy-state',
   'autonomous-resume':
     'usage: autonomous-resume [--force] | autonomous-resume --override-guard=<1-7> --reason="..."',
@@ -30,6 +30,9 @@ export const COMMAND_HELP: Record<string, string> = {
   context: `sdd-agentic-flow context\n\nInspect or regenerate project context and autonomy state.\n\nUSAGE\n  ${USAGE.context}\n${shared}`,
   upgrade: `sdd-agentic-flow upgrade\n\nCheck or interactively apply CLI/skill updates.\n\nUSAGE\n  ${USAGE.upgrade}\n\nUpgrade apply is human-authority only and has no JSON/--yes form.\n${shared}`,
   uninstall: `sdd-agentic-flow uninstall\n\nRemove only recognized SAF-managed installation assets.\n\nUSAGE\n  ${USAGE.uninstall}\n\nUse --plan first; --yes authorizes local apply outside a TTY.\n${shared}`,
+  'learn-sdd': `sdd-agentic-flow learn-sdd\n\nShow a concise explanation of Spec-Driven Development and the SAF workflow.\n\nUSAGE\n  sdd-agentic-flow learn-sdd\n${shared}`,
+  completion: `sdd-agentic-flow completion\n\nPrint deterministic shell completion for the selected shell.\n\nUSAGE\n  sdd-agentic-flow completion bash|zsh|fish\n${shared}`,
+  version: `sdd-agentic-flow version\n\nPrint the installed package version.\n\nUSAGE\n  sdd-agentic-flow version\n${shared}`,
   'autonomous-resume': `sdd-agentic-flow autonomous-resume\n\nResume a recorded autonomy workflow guardrail.\n\nUSAGE\n  ${USAGE['autonomous-resume']}\n${shared}`,
   list: 'sdd-agentic-flow list\n\nList available skill packs.\n',
 };

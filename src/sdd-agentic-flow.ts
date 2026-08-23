@@ -1064,7 +1064,8 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         `${t(localeFor(cwd), 'configure.savedOnly')} Run \`${installApplyCommand(reconcilePlan)}\`.`,
       );
   } else if (command === 'learn-sdd') {
-    learnSdd(cwd);
+    if (args.includes('--help')) writeCommandHelp('learn-sdd');
+    else learnSdd(cwd);
   } else if (command === 'install') {
     const usage = USAGE.install;
     if (args.includes('--help')) {
@@ -1265,6 +1266,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     if (args.includes('--help')) writeCommandHelp('uninstall');
     else uninstall(args, cwd);
   } else if (command === 'completion') {
+    if (args.includes('--help')) {
+      writeCommandHelp('completion');
+      return;
+    }
     const shell = args[0];
     const completion = shell ? completionFor(shell) : undefined;
     if (!completion || args.length !== 1) {
@@ -1273,9 +1278,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     }
     process.stdout.write(completion);
   } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
-  else if (command === 'version' || command === '--version' || command === '-v')
-    process.stdout.write(`${VERSION}\n`);
-  else {
+  else if (command === 'version' || command === '--version' || command === '-v') {
+    if (args.includes('--help')) writeCommandHelp('version');
+    else process.stdout.write(`${VERSION}\n`);
+  } else {
     const hint = didYouMeanTry(command, KNOWN_COMMANDS);
     fail(`unknown command: ${command}.`, {
       reason: 'That name is not a CLI command.',

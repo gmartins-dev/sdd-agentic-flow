@@ -39,6 +39,15 @@ and the [developer journey](developer-journey.md).
 6. **Evidence before verdict** — sensors observe; evidence records; verification evaluates against requirements.
 7. **Conditional autonomy** — guardrails permit a next admissible action only while humans retain consequential authority.
 
+## Authority boundaries
+
+The effective contract remains the current canonical specification, applicable repository
+contracts, and configured gates. An agent may propose a consequential contract change when the
+current contract cannot safely be followed, but the proposal is not authority or evidence. The
+existing human Decision Gate and canonical authoring path decide whether the effective contract
+changes. This keeps proposal, implementation, verification, and human authority distinct without
+adding a second lifecycle or runtime admission system.
+
 ## Control boundary
 
 ```text

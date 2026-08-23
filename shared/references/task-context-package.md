@@ -26,4 +26,17 @@ Every consumer classifies each item as:
 
 Unrelated feature packages, PR history and prior conversation are not default context.
 
+## Selection dimensions
+
+The active operation selects minimum-sufficient context using five dimensions:
+
+- **Active workflow role** — what the next activity must produce or decide.
+- **Authority** — which canonical source wins when artifacts disagree.
+- **Relevance** — which bounded repository and project knowledge applies.
+- **Freshness** — whether prior context or evidence remains usable for the current state.
+- **Provenance** — where supporting context originated and who owns its meaning.
+
+These are selection lenses, not required metadata fields. They do not create a second per-Skill
+input matrix; each Skill's `Inputs` and `Workflow` remain the file-selection owner.
+
 See [bounded-execution.md](bounded-execution.md) and [system-invariants.md](system-invariants.md).

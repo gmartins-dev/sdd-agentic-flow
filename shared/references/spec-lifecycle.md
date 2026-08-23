@@ -142,6 +142,10 @@ code + tests   → observed implementation behavior (evidence, not oracle)
 Lifecycle:     → never overrides the above
 ```
 
+The effective contract is the current canonical `spec.md` and acceptance criteria together with
+applicable normative repository contracts and configured gates. A proposed consequential change
+is not effective until the existing human Decision Gate and canonical authoring path reconcile it.
+
 Preserve spec/AC → task requirements → repo contracts → observed behavior as
 evidence. See [evidence-standard.md](evidence-standard.md).
 

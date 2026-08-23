@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 6.2.0
+
+### Harness contract integrity
+
+Strengthens effective-contract authority, consequential contract-change
+proposals, minimum-sufficient context selection, independent verification,
+multi-task parallel-admission guidance, and repository-level harness
+diagnostics. No new lifecycle, admission status, runtime scheduler, public
+Skill, machine schema, provider integration, telemetry, or automatic remote
+mutation is introduced.
+
 ## 6.1.0
 
 Information representation architecture release. Adds a documented model for

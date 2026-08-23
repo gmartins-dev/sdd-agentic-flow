@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v6.2.0 (2026-08-22):** Harness contract integrity,
+  consequential contract-change admission, context-selection discipline,
+  independent verification freshness, and repository-level readiness guidance.
+  No runtime, scheduler, new public Skill, machine-schema change, provider,
+  telemetry, or automatic remote mutation.
+
 - **v6.1.0 (2026-08-22):** Information representation architecture. Adds the
   contract-kind registry and audited representation model, clarifies durable
   artifact and skill closeout ownership, documents Markdown/YAML/hybrid and

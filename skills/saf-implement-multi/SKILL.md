@@ -2,7 +2,7 @@
 name: saf-implement-multi
 description: Implement multiple SDD tasks using dependency-aware waves and isolated mutable ownership when safe and authorized. Use for multi-task implementation; use saf-implement for exactly one task.
 metadata:
-  version: 6.1.0
+  version: 6.2.0
 extends: saf-create-prompts
 requires: [config, spec-package]
 consumes: [domain-glossary, project-context]
@@ -44,7 +44,7 @@ Do not use for one task, vague feature requests, specification creation, PR work
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Resolve one feature, enumerate tasks, and build a candidate dependency-wave grouping from SDD evidence. Mark ambiguous or externally blocked tasks instead of guessing. The documented chain is: tasks → dependencies → **DAG** (must be **acyclic**) → **waves** → isolated concurrent work only with explicit user authorization. See `../sdd-agentic-flow-shared/references/execution-isolation.md`. Do not add a runtime scheduler.
-3. Before recommending parallel work, analyze mutable paths, shared contracts/types, runtime/test state, and evidence ordering. Keep tasks sequential unless real independence and an isolation boundary are established.
+3. Before recommending parallel work, analyze mutable paths, shared contracts/types, runtime/test state, and evidence ordering. Keep tasks sequential unless real independence and an isolation boundary are established. DAG-unblocked is not parallel-admissible by itself: require isolated mutable ownership, no conflicting shared contract mutation, compatible runtime/test state, and independently attributable evidence; otherwise use the existing sequential fallback.
 4. Write `execution-plan.md` with waves, ownership, paths, sensors, and integration boundary. In `plan`/`guided` mode stop before mutations. In `apply`/`full`, require explicit authorization before creating an isolated workspace or changing code.
 5. Plan each ready task as an independently verifiable vertical slice with a contractual seam (field label: `Public seam`), targeted sensor command, and evidence owner. Justify horizontal work explicitly. Expected RED is a diagnostic sensor hint (`n/a — not used as proof` is valid); do not instruct faking RED.
 6. Execute every ready wave through `saf-implement`, once per task. Prefer host isolation, use an authorized Git worktree when suitable, or execute sequentially. Run `saf-check-task` for each completed task before allowing dependent work to proceed. After each wave barrier: collect task evidence, evaluate completion criteria and semantic progress, re-check affected stale evidence, resolve decision gates, and unlock only legitimate dependent work. Record per-task ownership, isolation boundary, state (`implemented-isolated` before integration, then `integrated` only after authorized integration), check evidence, freshness, integration requirement, blocker/gate, and next admissible action. Stop at blockers. Do not treat orchestration completion as feature validation or merge readiness.

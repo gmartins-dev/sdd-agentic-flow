@@ -79,6 +79,10 @@ export function materializeCleanClone(
       stdio: 'pipe',
     },
   );
+  execFileSync('git', ['config', 'core.autocrlf', 'false'], {
+    cwd: destination,
+    stdio: 'pipe',
+  });
   execFileSync('git', ['checkout', '--detach', baseCommit], { cwd: destination, stdio: 'pipe' });
   return { baseCommit, dirty: false, candidateType: 'commit-clone' };
 }

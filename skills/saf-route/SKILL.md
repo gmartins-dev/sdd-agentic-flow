@@ -2,7 +2,7 @@
 name: saf-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: null
 requires: [config]
 consumes: [discovery-state]
@@ -12,8 +12,8 @@ depends_on: []
 conflicts: []
 requires_cli: null
 autonomy_profile:
-  supported_levels: [manual, supervised]
-  auto_continue_condition: 'not applicable — this skill never auto-advances; it only recommends a next skill for a human or the invoking agent to run'
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'route recommendation present and one on-path next Skill is admissible; this Skill remains read-only'
   blocking_conditions: [ambiguous_state]
   evidence_required: [route-recommendation]
 ---
@@ -40,7 +40,7 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/spec-lifecycle.md`.
 3. Inspect the candidate local `SKILL.md` before stating what it does. Its instructions are the source of truth.
 4. Match the request against the routing table in `../sdd-agentic-flow-shared/references/workflow-routing.md` — it is the single source of truth for routing situations and recommended skills; do not reproduce or re-derive the table here, and never let this step's wording diverge from it.
-5. Identify missing packs, prerequisites, unresolved uncertainty, and any human decision required. Treat workflow/artifact state as the primary router: use uncertainty only to distinguish conversational brainstorming from durable discovery or a human gate. A discovery-only feature workspace is resumable with `saf-brainstorm`, but is not a spec-ready package. If the request needs a feature package and does not name one, listing directory names under `specs.root` and skimming `context.md` or discovery status is allowed. 0 matches → ask; 1 unique → name it in the recommendation; >1 plausible → human decision required; never “probably this one.” Do not read every `spec.md` to make the recommendation. Listing ≠ loading bodies. This skill remains a skill router, not a package registry. If config `autonomy_level` is `autonomous`, include the invocation policy: the invoking agent may follow the next on-path `SKILL.md` while guardrails pass; this skill never invokes it. Stop after the recommendation.
+5. Identify missing packs, prerequisites, unresolved uncertainty, and any human decision required. Treat workflow/artifact state as the primary router: use uncertainty only to distinguish conversational brainstorming from durable discovery or a human gate. A discovery-only feature workspace is resumable with `saf-brainstorm`, but is not a spec-ready package. If the request needs a feature package and does not name one, listing directory names under `specs.root` and skimming `context.md` or discovery status is allowed. 0 matches → ask; 1 unique → name it in the recommendation; >1 plausible → human decision required; never “probably this one.” Do not read every `spec.md` to make the recommendation. Listing ≠ loading bodies. This remains a read-only router, not a package registry. If config `autonomy_level` is `autonomous`, the invoking agent may follow one admissible on-path recommendation without a new confirmation; this Skill never invokes the next Skill.
 
 ## Safety
 
@@ -65,4 +65,7 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 
 ### Autonomy
 
-Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. It recommends a next skill; it never invokes one itself, so there is nothing for it to auto-advance into. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, the
+invoking agent may follow one admissible recommendation without a new human confirmation, while
+this Skill remains read-only and never invokes another Skill itself. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

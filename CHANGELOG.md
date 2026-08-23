@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 6.3.0
+
+### Autonomous end-to-end completion
+
+Adds bounded end-to-end autonomous completion for delegated local work.
+Recoverable checks, review findings, validation findings, re-planning, and
+intent-preserving reconciliation now route through authorized repair
+transitions without unnecessary human interruption. Execution-mode limits,
+read-only verification, host-owned turns, safety boundaries, and the existing
+13-Skill public roster remain unchanged. No scheduler, provider integration,
+remote mutation, or automatic release authority is introduced.
+
 ## 6.2.0
 
 ### Harness contract integrity

@@ -13,12 +13,13 @@ fully-supervised behavior the toolkit already had.
 | --- | --- | --- |
 | `manual` (default) | Returns control completely. Nothing advances automatically. | `stop` |
 | `supervised` | Reports evidence and asks "continue to `<next skill>`?"; a human decides. | `confirm` |
-| `autonomous` | Advances on its own, but only when every one of the 7 guardrails passes. | `continue`, gated |
+| `autonomous` | Owns local progression, repair, and validation until verified completion within delegated authority. | `continue`, bounded by recovery |
 
-**Autonomous does not mean unattended.** Oversight moves from every transition to the guardrail
-definitions themselves, checked mechanically before each one. Any guardrail failure produces the
-exact same outcome as `manual`: control returns to a human. Commit, push, merge, tag, and
-publish stay human on every preset.
+**Autonomous does not mean unlimited authority.** The agent resolves ordinary failures, repair
+cycles, and evidence-backed technical ambiguity before escalating. Human intervention remains
+required for safety, external or irreversible authority, underdetermined intent, delegated-goal
+expansion, exhaustion, no meaningful progress, or explicit override. Commit, push, merge, tag, and
+publish stay outside the delegation.
 
 Daily use can set both axes with `init --preset` (`manual` / `supervised` / `autonomous`;
 aliases `man` / `assist`|`assisted` / `auto`). That is UX over the two fields below, not a
@@ -51,7 +52,7 @@ it before writing `.sdd-agentic-flow/config.yml`.
 | Local PR **package** (`saf-create-pr`) | yes | yes | yes |
 | Open GitHub/Git PR, commit, push | **human** | **human** | **human** |
 | Tag / npm publish / deploy | **human** | **human** | **human** |
-| Advance to next skill without asking | no | confirm | yes, if 7 guardrails pass |
+| Advance or repair without asking | no | confirm | yes, when the transition is admissible and bounded |
 
 ## The 7 guardrails
 
@@ -127,8 +128,9 @@ autonomy_profile:
 ```
 
 - `supported_levels`: a skill whose output is always a recommendation or explanation for a human
-  to act on, never itself a link in the auto-advancing chain (`saf-brainstorm`, `saf-explain`,
-  `saf-route`, `saf-setup`), omits `autonomous`.
+  to act on, never itself a link in the autonomous chain (`saf-brainstorm`, `saf-explain`,
+  `saf-setup`), omits `autonomous`. `saf-route` remains read-only but may provide the next
+  autonomous intake recommendation.
 - `auto_continue_condition`: one human-readable line describing "safe to advance automatically"
   for this skill. Informational; the actual gate is guardrails 1–3.
 - `blocking_conditions` / `evidence_required`: the specific failure modes and required artifacts
@@ -157,7 +159,6 @@ orchestration engine. The CLI validates policy and loop state; it never invokes 
 workflows for you.
 
 Same posture as [what this does not promise](compatibility-promise.md#what-this-does-not-promise):
-`autonomous` is not a guarantee of correctness, a substitute for review, or a claim that a
-workflow needs no human ever. It is a mechanical, auditable rule for when a human is asked versus
-when a documented guardrail set stands in for that ask. Any guardrail failure returns to
-asking.
+`autonomous` is not a guarantee of correctness, permission to perform external actions, or a
+claim that a workflow can ignore safety and budgets. It is a mechanical, auditable rule for when a
+human is asked versus when bounded repair continues under the documented contracts.

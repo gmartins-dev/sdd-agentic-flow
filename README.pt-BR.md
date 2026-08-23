@@ -12,9 +12,12 @@ Seu agente pode entregar um diff em minutos — e ainda deixar dúvida se cumpri
 
 Não é só um pacote de Agent Skills. As skills são a camada pública de **capacidade**; o host de agentes de código é dono da execução em runtime. Em volta delas: metodologia, contratos de artefato, baselines, modelo de evidência, configuração, CLI e lifecycle.
 
-O objetivo não é autonomia do agente. O objetivo é engenharia assistida por agentes, estruturada, rastreável e verificável, com humanos como o gate.
+O objetivo é engenharia assistida por agentes, estruturada, rastreável e verificável. O modo
+autonomous assume a entrega local dentro da autoridade delegada; humanos mantêm autoridade nas
+fronteiras de segurança, ações externas, irreversíveis e release.
 
-*O agente faz o trabalho. A especificação define o que deve ser verdadeiro. Sensores fornecem evidência. O humano permanece o gate.*
+*O agente faz o trabalho. A especificação define o que deve ser verdadeiro. Sensores fornecem
+evidência. O modo autonomous resolve o trabalho ordinário e escala apenas na fronteira de autoridade.*
 
 Fontes que informam este desenho — com papéis epistêmicos, não como specs — estão em [inspirations](docs/inspirations.md).
 
@@ -60,7 +63,10 @@ A maioria das ferramentas para agentes para em prompts melhores. O **sdd-agentic
 
 Escreva a spec primeiro. A spec é o contrato entre você e o agente: comportamento, escopo e critérios de aceite ficam em `.specs/features/` antes de alterar código de produção.
 
-Você continua no comando; o toolkit segura os gates. Ele oferece um fluxo linear com checkpoints de revisão — não um chat aberto. Cada fase tem uma skill Markdown, defaults de segurança locais e artefatos de evidência que você inspeciona. Leia a [metodologia SDD](docs/sdd-methodology.md) (em inglês) para o panorama completo.
+Você delega um resultado limitado; o toolkit mantém os contratos de workflow e os gates de evidência.
+Manual, supervised e autonomous definem quanto da progressão fica com o agente. Cada fase tem uma
+skill Markdown, defaults de segurança locais e artefatos de evidência que você inspeciona. Leia a
+[metodologia SDD](docs/sdd-methodology.md) (em inglês) para o panorama completo.
 
 ## O que muda para você
 
@@ -94,9 +100,12 @@ Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. A CLI
 | --- | --- | --- |
 | `supervised` (recomendado no TTY; aliases `assist`, `assisted`) | `apply` + `supervised` | Propõe a próxima skill; você confirma |
 | `manual` (padrão fail-safe sem flags; alias `man`) | `guided` + `manual` | Para depois de cada skill |
-| `autonomous` (alias `auto`) | `full` + `autonomous` | A mesma sessão pode seguir o próximo `SKILL.md` no caminho enquanto os 7 guardrails passam |
+| `autonomous` (alias `auto`) | `full` + `autonomous` | Assume planejamento, reparo e validação local até a conclusão verificada dentro da autoridade delegada |
 
-Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous does not mean unattended.** Commit, push, merge, tag e publish continuam humanos em todo preset. A CLI não executa skills.
+Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous não significa
+autoridade ilimitada.** Ele resolve falhas e ciclos de reparo ordinários sem perguntas intermediárias,
+mas commit, push, merge, tag, publish, deploy e outras ações externas ou irreversíveis continuam fora
+da delegação. A CLI não executa skills.
 
 Depois: invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie um prompt de [prompt recipes](docs/prompt-recipes.md) (em inglês) ao delegar a um agente.
 
@@ -150,7 +159,7 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 | Autonomia AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
 | Autonomia AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. Os fluxos de autonomia comprovam contratos estáticos do CLI — não orquestração LLM ao vivo.
+O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. Os fluxos de autonomia comprovam contratos estáticos de continuidade e reparo — não orquestração LLM ao vivo.
 
 ## TDD baseline
 

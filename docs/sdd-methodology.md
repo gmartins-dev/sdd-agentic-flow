@@ -53,14 +53,17 @@ IMPLEMENT
     ↓
 CHECK  (saf-check-task)
     ↓
-NEEDS_CHANGES ──► IMPLEMENT   (bounded; human-gated)
+NEEDS_CHANGES ──► IMPLEMENT   (bounded; autonomous repair when delegated)
     ↓
 VALIDATION
     ↓
-HUMAN GATE
+REVALIDATE OR ESCALATE
 ```
 
-PR path remains `saf-create-pr` → `saf-review-pr` → `saf-fix-pr`. Suggest a bound (for example three check→implement cycles, then escalate) as **guidance**, not a CLI `max_iterations`. This package does not auto-run the loop.
+PR path remains `saf-create-pr` → `saf-review-pr` → `saf-fix-pr`. In autonomous mode, review and
+validation findings authorize the owning repair path without a new confirmation; safety, authority,
+underdetermined intent, budget, and no-progress boundaries still escalate. Suggest a bound as
+guidance, not a CLI `max_iterations`. This package does not auto-run the loop.
 
 ## Why specs help agents
 

@@ -13,9 +13,10 @@ behavior every skill already had before this file existed.
   automatically, even when a skill reports success. Transition policy: `stop`.
 - **`supervised`**: a skill executes, reports its evidence, and offers an explicit
   "continue to `<next skill>`?" recommendation; the human decides. Transition policy: `confirm`.
-- **`autonomous`**: a skill executes and advances to the next skill on its own, but only when
-  every guardrail below passes. Any guardrail failure blocks the advance and hands control back
-  to the human, the same as `manual` would. Transition policy: `continue`, gated.
+- **`autonomous`**: a skill executes and continues toward a verified outcome on its own. A
+  positive result advances on the normal path; a recoverable negative result may take an
+  authorized repair transition. Only an exceptional authority, safety, budget, or no-progress
+  failure returns control to the human. Transition policy: `continue`, bounded by recovery.
 
 ## `execution_mode` × `autonomy_level` compatibility
 
@@ -33,21 +34,23 @@ unattended advance contradicts `guided`. `doctor --autonomy` flags either combin
 
 ## The 7 guardrails
 
-Every one of the seven is deterministic and auditable; a single failure blocks the advance. An
-agent operating in `autonomy_level: autonomous` re-checks all seven before treating a skill's
-completion as license to invoke the next skill.
+Every one of the seven is deterministic and auditable. An agent operating in
+`autonomy_level: autonomous` re-checks them before treating a Skill result as permission for a
+normal advance or an authorized repair transition.
 
-1. **Completion status** — the skill reports `PASS`/`DONE`, not `IN_PROGRESS`, `UNKNOWN`, or
-   `FAIL`.
+1. **Outcome classification** — the Skill's native status is classified as satisfied, recoverable,
+   exceptional, or exhausted. `needs changes` and attributable `not ready` outcomes may authorize
+   repair; a status label alone does not force human escalation.
 2. **Evidence validation** — every artifact the skill's `autonomy_profile.evidence_required` lists
    actually exists and is non-empty.
 3. **Verification gates** — the skill's own required checks (tests, linter, spec consistency, no
    blocking findings) all pass; a skill never reports `PASS` while a required check failed.
-4. **Scope boundary** — the work stayed inside the task's declared scope (files touched, lines
-   changed); it did not silently expand into unrelated files or new features.
-5. **Skill transition validity** — the proposed next skill is on the workflow's authorized path
-   (see the main SDD flow diagram in `README.md`); a guardrail failure here blocks skipping or
-   reversing a step, e.g. advancing straight from `saf-create-spec` to `saf-review-pr`.
+4. **Scope boundary** — the delegated semantic outcome remains bounded. Required implementation
+   touchpoints may expand when repository evidence requires more files or modules; unrelated
+   behavior and product scope may not be added silently.
+5. **Skill transition validity** — the proposed next Skill is an authorized normal or repair path
+   (see the main SDD flow diagram in `README.md`). Repair transitions such as check → implement
+   → check are allowed when their owner and evidence conditions are explicit.
 6. **Resource sufficiency** — the configured budget (`workflow.autonomy_budget` in
    `.sdd-agentic-flow/config.yml`: `max_iterations`, `max_tokens`, `max_runtime_hours`) is not exhausted, and
    `pause_on_warning` triggers a stop, not just a warning, once remaining budget drops below 20%.
@@ -56,9 +59,11 @@ completion as license to invoke the next skill.
    construction — it exists specifically so a human can halt an in-flight autonomous run by
    editing state, without needing to kill a process.
 
-If any guardrail fails, the agent stops, records the failing guardrail and its reason in
-`.sdd-agentic-flow/autonomy/loop-state.md`, and waits for a human to resolve it. The human fixes the underlying
-cause and re-runs the skill, or runs `sdd-agentic-flow autonomous-resume`.
+If a guardrail identifies an exceptional blocker or exhausted execution, the agent stops, records
+the reason in `.sdd-agentic-flow/autonomy/loop-state.md`, and waits for a human to resolve it. A
+recoverable result records its native status, the authorized repair `Next`, and `Guardrails: PASS`,
+then the invoking host/agent continues without a new human confirmation. SAF never starts the
+next host turn itself.
 
 ## `autonomy_profile` frontmatter
 
@@ -76,8 +81,9 @@ autonomy_profile:
 - `supported_levels` — which of the three levels this skill can run under. A skill whose output is
   always a recommendation or explanation for a human to act on (never itself a link in the
   auto-advancing chain) omits `autonomous`.
-- `auto_continue_condition` — one-line, human-readable statement of what "safe to advance
-  automatically" means for this skill. Informational; the actual gate is guardrails 1–3 above.
+- `auto_continue_condition` — one-line, human-readable statement of what "safe to continue
+  automatically" means for this skill. Informational; the actual gate is the outcome
+  classification and guardrails above.
 - `blocking_conditions` — the specific failure modes that stop this skill from reporting `PASS`.
 - `evidence_required` — the artifact(s) guardrail 2 checks for.
 

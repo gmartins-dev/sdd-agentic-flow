@@ -2,7 +2,7 @@
 name: saf-create-prompts
 description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: saf-create-spec
 requires: [config, spec-package]
 consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
@@ -44,7 +44,7 @@ Do not use to create a specification from scratch, execute implementation, make 
 5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
 6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
 7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy, Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations. Copy **Requirement anchors** from `tasks.md` into each task prompt; never conflate anchors with task-order Dependencies.
-8. Write a minimum-sufficient execution contract: objective, requirement anchors, acceptance criteria, repository context, known constraints, review boundary, expected touchpoints, public seam, non-goals, authority boundary, verification, completion criteria, and a compact handoff only when another workflow step needs it. Expected touchpoints guide inspection; they neither authorize scope expansion nor prohibit necessary re-grounding. Copy spec-derived expected outcomes into each prompt. When work intent is **bugfix**, also copy **unchanged behavior** and the regression / reproduction sensors from the spec. Do not invite the implementer to derive expected from the implementation. Require the implementer to inspect current patterns, prefer the smallest solution that satisfies the task, and keep the complexity budget. Do not prescribe provider tools, hidden reasoning, status cadence, subagents, or an implementation recipe unless the specification requires it. Do not dump `engineering-principles.md` into every prompt.
+8. Write a minimum-sufficient execution contract: objective, requirement anchors, acceptance criteria, repository context, known constraints, review boundary, expected touchpoints, public seam, non-goals, authority boundary, verification, completion criteria, and a compact handoff only when another workflow step needs it. Expected touchpoints guide inspection; they neither authorize scope expansion nor prohibit necessary re-grounding. Copy spec-derived expected outcomes into each prompt. When work intent is **bugfix**, also copy **unchanged behavior** and the regression / reproduction sensors from the spec. Do not invite the implementer to derive expected from the implementation. Require the implementer to inspect current patterns, prefer the smallest solution that satisfies the task, and keep the complexity budget. Do not prescribe provider tools, hidden reasoning, status cadence, subagents, or an implementation recipe unless the specification requires it. Do not dump `engineering-principles.md` into every prompt. In autonomous mode, refresh affected prompts after an authorized intent-preserving canonical reconciliation without a new confirmation.
 9. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
 
 ## Safety
@@ -61,4 +61,7 @@ Return the prompt artifact paths plus a compact mapping of prompt to requirement
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-implement` or `saf-implement-multi` requires prompts.md present with a paste-ready prompt for every task and no ambiguous task boundary; missing evidence blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In `autonomous` mode, advancing
+to `saf-implement` or `saf-implement-multi` requires `prompts.md` with a paste-ready prompt for
+every task and no ambiguous task boundary. A prompt refresh after an authorized reconciliation is
+an on-path repair, not a new human gate. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

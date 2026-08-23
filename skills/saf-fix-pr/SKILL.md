@@ -2,7 +2,7 @@
 name: saf-fix-pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: saf-review-pr
 requires: [config, review-findings]
 consumes: []
@@ -22,7 +22,9 @@ autonomy_profile:
 
 ## When to use
 
-Use for explicitly requested repairs to verified findings from one task-scoped local change review. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use for repairs to verified findings from one task-scoped local change review. In `manual` and
+`supervised`, the user explicitly requests the repair. In `autonomous`, the original bounded
+delegation is standing authorization for verified local findings only. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -36,7 +38,7 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
-2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. Do not close findings by reclassifying missing evidence as preference. Do not close spec drift by pretending the spec changed; stop and reconcile with the human.
+2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. In autonomous mode, reconcile intent-preserving spec drift through `saf-create-spec` rather than editing the contract here. Do not close findings by reclassifying missing evidence as preference or by silently changing delegated intent.
 3. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md`. Apply the smallest patch per actionable finding and add or update focused regression evidence. No opportunistic cleanup.
 4. Run configured targeted checks, update the ledger, and hand off to `saf-review-pr` for focused re-review.
 
@@ -50,4 +52,8 @@ Return the findings ledger, changes and checks, unresolved items, re-review scop
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing back to `saf-review-pr` requires fix-evidence present and every actionable finding on the ledger resolved or explicitly deferred with a reason; an unresolved finding or a scope violation blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, advancing
+back to `saf-review-pr` requires `fix-evidence` and every actionable finding resolved or explicitly
+deferred with a reason. An unresolved authority boundary or scope violation blocks the transition;
+verified local findings do not require a new human confirmation. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

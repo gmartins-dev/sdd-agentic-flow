@@ -24,7 +24,9 @@ the multi-task ledger.
 
 ## Host boundary
 
-A SAF skill never autonomously starts another host turn. It reports whether another bounded attempt
-is admissible, blocked or requires human judgment; the host or human decides whether to run it.
+A SAF Skill never autonomously starts another host turn. It reports whether another bounded attempt
+or Skill transition is admissible, blocked, or requires human judgment. In autonomous mode, the
+invoking host/agent is expected to continue an admissible repair or normal transition when budget
+and host capability permit it; SAF remains the contract, not the runtime.
 
 See [task-context-package.md](task-context-package.md) and [system-invariants.md](system-invariants.md).

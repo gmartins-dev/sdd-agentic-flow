@@ -162,6 +162,29 @@ function writeLoopState(cwd: string): void {
   );
 }
 
+function writeRecoverableLoopState(cwd: string): void {
+  const directory = path.join(cwd, '.sdd-agentic-flow/autonomy');
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(
+    path.join(directory, 'loop-state.md'),
+    [
+      '# Loop State',
+      '',
+      'Execution mode: full',
+      'Autonomy level: autonomous',
+      '',
+      '## Current State',
+      '',
+      '- Skill: saf-check-task (completed)',
+      '- Status: needs changes',
+      '- Next: saf-implement',
+      '- Guardrails: PASS',
+      '- Human override: pause=false, stop=false',
+      '',
+    ].join('\n'),
+  );
+}
+
 function runJourneys() {
   const fresh = project('01-new-user');
   const before = entries(fresh.cwd);
@@ -321,6 +344,12 @@ function runJourneys() {
       fs.readFileSync(path.join(autonomy.cwd, '.sdd-agentic-flow/autonomy/loop-state.md'), 'utf8'),
       /stop=false/,
     );
+  });
+  writeRecoverableLoopState(autonomy.cwd);
+  record('J24', 'autonomy workflow', 'recoverable repair state remains autonomous', () => {
+    const result = run(['doctor', '--json', '--autonomy'], autonomy);
+    expect(result, 0, /"name":"autonomy_loop_state","status":"PASS"/);
+    assert.match(result.stdout, /needs changes; next: saf-implement/);
   });
 
   const removal = project('07-removal');

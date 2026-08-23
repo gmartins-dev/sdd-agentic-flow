@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v6.3.0 (2026-08-22):** Autonomous end-to-end completion for bounded local
+  delegations. Recoverable failures, review findings, validation findings,
+  re-planning, and intent-preserving reconciliation now use authorized repair
+  transitions before exceptional escalation. No scheduler, provider, new
+  public Skill, remote mutation, or automatic release authority.
+
 - **v6.2.0 (2026-08-22):** Harness contract integrity,
   consequential contract-change admission, context-selection discipline,
   independent verification freshness, and repository-level readiness guidance.

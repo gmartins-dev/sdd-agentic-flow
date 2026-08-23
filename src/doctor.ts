@@ -755,13 +755,19 @@ function contractsCheck(cwd: string): InternalDoctorCheck {
 }
 
 const AUTONOMY_GUARDRAILS = [
-  ['guardrail_1_completion', 'Completion status — skill reports PASS/DONE, not IN_PROGRESS/FAIL'],
+  [
+    'guardrail_1_completion',
+    'Outcome classification — positive results advance and recoverable results route to repair',
+  ],
   [
     'guardrail_2_evidence',
     'Evidence validation — every autonomy_profile.evidence_required artifact exists',
   ],
   ['guardrail_3_verification', "Verification gates — the skill's own required checks all pass"],
-  ['guardrail_4_scope', 'Scope boundary — work stays within the declared task scope'],
+  [
+    'guardrail_4_scope',
+    'Scope boundary — semantic scope stays bounded while evidence may expand touchpoints',
+  ],
   [
     'guardrail_5_transition',
     'Skill transition validity — next skill is on the authorized workflow path',

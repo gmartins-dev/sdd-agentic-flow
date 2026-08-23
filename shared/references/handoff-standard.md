@@ -27,10 +27,11 @@ continuity on its own. A redundant `handoff.md` would only drift out of sync wit
 ## Named feedback loop (not auto-run)
 
 The portable cycle is implement → check (`saf-check-task`) → needs-changes back to implement
-(bounded; human-gated) → validation → **human gate**. PR path remains `saf-create-pr` →
-`saf-review-pr` → `saf-fix-pr`. A suggested bound (for example three check→implement cycles
-then escalate) is **guidance**, not a CLI flag. This package does not auto-run that loop.
-`handoff.md` is for pausing inside it, not for executing it.
+(bounded; autonomous repair when delegated) → validation → revalidation. PR path remains
+`saf-create-pr` → `saf-review-pr` → `saf-fix-pr`, with the same autonomous repair rule. A
+suggested bound (for example three check→implement cycles then escalate) is guidance, not a CLI
+flag. This package does not auto-run that loop. `handoff.md` is for pausing inside it, not for
+executing it.
 
 ## Relationship to `.sdd-agentic-flow/autonomy/loop-state.md`
 

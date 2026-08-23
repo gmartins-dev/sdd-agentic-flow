@@ -16,9 +16,12 @@ Your agent can ship a diff in minutes—and still leave you guessing whether it 
 
 It is not just a collection of Agent Skills. Skills are the public **capability layer**; the coding-agent host owns runtime execution. Around them sit the methodology, artifact contracts, condensed TLC and TDD baselines, evidence model, configuration, CLI, and lifecycle.
 
-The goal is not agent autonomy. The goal is structured, traceable, verifiable agent-assisted engineering, with humans as the gate.
+The goal is bounded, structured, traceable, verifiable agent-assisted engineering. Autonomous mode
+owns local completion inside delegated authority; humans retain authority at safety, external,
+irreversible, and release boundaries.
 
-*The agent does the work. The specification defines what should be true. Sensors provide evidence. The human remains the gate.*
+*The agent does the work. The specification defines what should be true. Sensors provide evidence.
+Autonomous resolves ordinary engineering work and escalates only at an authority boundary.*
 
 Sources that inform this design — tagged by epistemic role, not as specifications — are listed in [inspirations](docs/inspirations.md).
 
@@ -67,7 +70,9 @@ Most agent tooling stops at better prompts. **sdd-agentic-flow** makes the engin
 
 Write the spec first. The spec is the contract between you and the agent: behavior, scope, and acceptance criteria live in `.specs/features/` before anyone edits production code.
 
-You stay the decision-maker; the toolkit holds the gates. It gives you a linear workflow with review checkpoints—not an open-ended chat loop. Each phase has a Markdown skill, local safety defaults, and evidence artifacts you can inspect. Read [SDD methodology](docs/sdd-methodology.md) for the full picture.
+You delegate a bounded outcome; the toolkit holds the workflow contracts and evidence gates. Manual,
+supervised, and autonomous modes determine how much progression the agent owns. Each phase has a
+Markdown skill, local safety defaults, and evidence artifacts you can inspect. Read [SDD methodology](docs/sdd-methodology.md) for the full picture.
 
 ## What changes for you
 
@@ -103,11 +108,13 @@ In a real terminal, guided `init` includes an operating-policy step (**Supervise
 | --- | --- | --- |
 | `supervised` (recommended in guided TTY; aliases `assist`, `assisted`) | `apply` + `supervised` | Propose next skill; you confirm |
 | `manual` (fail-safe non-interactive default; alias `man`) | `guided` + `manual` | Stop after each skill |
-| `autonomous` (alias `auto`) | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` while all 7 guardrails pass |
+| `autonomous` (alias `auto`) | `full` + `autonomous` | Owns local planning, repair, and validation until verified completion within delegated authority |
 
 Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users can still set those two flags without `--preset`. See [configuration](docs/configuration.md).
 
-**Autonomous does not mean unattended.** Commit, push, merge, tag, and publish stay human on every preset. The CLI does not run skills.
+**Autonomous does not mean unlimited authority.** It resolves ordinary failures and repair cycles
+without intermediate questions, while commit, push, merge, tag, publish, deploy, and other external
+or irreversible actions stay outside the delegation. The CLI does not run skills.
 
 Next: invoke `saf-route` or open the [skills usage guide](docs/saf-skills-usage-guide.md). Copy a prompt from [prompt recipes](docs/prompt-recipes.md) when you delegate to an agent.
 
@@ -158,7 +165,7 @@ These walkthroughs are not slide-deck claims—they run as integration tests in 
 | Autonomy AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
 | Autonomy AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded auto-advance—not live LLM orchestration.
+The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded continuation and repair—not live LLM orchestration.
 
 ## Learn more
 

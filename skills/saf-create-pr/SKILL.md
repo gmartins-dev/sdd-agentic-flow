@@ -2,7 +2,7 @@
 name: saf-create-pr
 description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: saf-check-task
 requires: [config, task-evidence]
 consumes: []
@@ -22,7 +22,10 @@ autonomy_profile:
 
 ## When to use
 
-Use after a single task passes its checks and the user explicitly requests a local change-review package. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md) and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after a single task passes its checks and a local change-review package is part of the delegated
+workflow. In `manual` and `supervised`, the user explicitly requests the package. In `autonomous`,
+the original bounded delegation is standing authorization for this local artifact only. Read [the
+TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md) and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -50,4 +53,7 @@ Return the change-review package, task scope, validation summary, and blockers. 
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-review-pr` requires pr-description.md present, linked to complete task evidence, with no required template section missing; a gap blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, advancing
+to `saf-review-pr` requires `pr-description.md` linked to complete task evidence with no required
+template section missing. This local package does not authorize remote PR mutation. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

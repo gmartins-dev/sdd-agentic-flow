@@ -1,9 +1,11 @@
 # Decision Gates
 
-Use a Decision Gate only for ambiguity that materially affects architecture, scope, data, external
-contracts, security, irreversible mutation, human authority, or subjective product/architecture
-judgment not resolved by the specification. Local choices may follow established repository
-conventions.
+Use a Decision Gate only after the agent has attempted resolution with the delegated intent,
+canonical repository evidence, applicable contracts, and bounded re-planning, and continuing would
+exceed delegated authority. This includes material changes to scope, business semantics, external
+contracts, security, irreversible mutation, human authority, or genuinely underdetermined product
+preference. Technical architecture choices that preserve intent and follow repository evidence
+remain autonomous choices.
 
 ## Required fields
 
@@ -16,8 +18,9 @@ Blocked transition or task
 Safe independent work (when any)
 ```
 
-Decision gates block autonomous completion authority. They do not authorize the agent to choose
-among consequential options without human input.
+Decision gates block autonomous completion authority only when the agent cannot preserve the
+delegated intent and boundaries. They do not replace ordinary engineering recovery or authorize an
+agent to invent a materially underdetermined preference.
 
 See [system-invariants.md](system-invariants.md) (AMBIGUITY-001, JUDGMENT-001) and
 [bounded-execution.md](bounded-execution.md).

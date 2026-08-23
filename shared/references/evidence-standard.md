@@ -290,24 +290,22 @@ principle above.
 ## `Status:` field and the guardrail 1 mapping
 
 `shared/templates/check-report.template.md` and `shared/templates/validation-report.template.md`
-carry a top-line `Status: {{status}}` field, filled with the producing skill's own local
+carry a top-line `Status: {{status}}` field, filled with the producing Skill's own local
 vocabulary (`saf-check-task`: `pass`/`needs changes`/`blocked`/`inconclusive`; `saf-validate`:
 `ready`/`not ready`/`blocked`/`inconclusive`). This does not introduce a new, universal status
 enum; `skill-authoring-standard.md`'s existing per-skill vocabulary rule is unchanged.
 
-[Guardrail 1](autonomy-guardrails.md) ("the skill reports `PASS`/`DONE`, not `IN_PROGRESS`,
-`UNKNOWN`, or `FAIL`") reads this field, not the surrounding prose, and maps each skill's own
-positive value to a pass: `pass` (`saf-check-task`) and `ready` (`saf-validate`) count as
-`PASS`; every other local value (`needs changes`, `not ready`, `blocked`, `inconclusive`) counts
-as not-`PASS` and blocks an `autonomous` advance the same way a literal `FAIL` would. A skill
-must never write `Status: pass`/`Status: ready` while a required check in `## Evidence` recorded
-a failure. A skill must never write `Status: pass`/`Status: ready` on a
+[Guardrail 1](autonomy-guardrails.md) reads this field, not the surrounding prose, and maps each
+Skill's own positive value to a satisfied outcome: `pass` (`saf-check-task`) and `ready`
+(`saf-validate`). A recoverable `needs changes` or attributable `not ready` result can authorize
+an autonomous repair transition; `blocked` and `inconclusive` require cause classification before
+continuation or escalation. A Skill must never write `Status: pass`/`Status: ready` while a required
+check in `## Evidence` recorded a failure. A Skill must never write `Status: pass`/`Status: ready` on a
 [False-positive classes](#false-positive-classes) hit. The same "missing evidence is never
 silently upgraded to a pass" rule above applies to this field specifically.
 
-This same field is also what [handoff-standard.md](handoff-standard.md) keys off to decide
-whether a skill needs to write `handoff.md`: a terminal `Status:` (`pass`/`ready`) with no open
-blocker means the produced artifact is sufficient continuity on its own; any non-terminal
-`Status:` (`needs changes`, `not ready`, `blocked`, `inconclusive`) paired with work that is
-pausing before completion is a signal to write or update `handoff.md`. One field, two consumers
-(guardrail 1 and the handoff decision) — not a second completion taxonomy.
+This same field is also what [handoff-standard.md](handoff-standard.md) keys off when work pauses.
+A recoverable non-positive status that immediately continues through an authorized repair is not
+an open human blocker and does not require a handoff. Any status paired with work that is actually
+pausing before completion remains a signal to write or update `handoff.md`. One field, two
+consumers, with cause classification rather than a second completion taxonomy.

@@ -2,7 +2,7 @@
 name: saf-check-task
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: saf-implement
 requires: [config, task-evidence]
 consumes: [domain-glossary, project-context]
@@ -41,7 +41,7 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS an implementation of one interpretation. On spec drift, write `needs changes` with a reconciliation note — do not rewrite the spec to match the code.
 5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as **evidence** (command, exit status, observed result, requirement mapping). Emit the v4 check-report contract: top-line `Feature: <feature-slug>` and an evidence index table (`| Requirement anchor | Sensor | Result | Freshness |`) plus the detailed current evidence record required by evidence-standard — a summary-only row cannot establish adequacy. Distinguish current vs historical vs not-run. Record missing or inadequate sensors as explicit gaps. Never turn missing evidence into a pass. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence. This skill must not inherit author narrative. Re-ground goal, completion criteria, and oracle from canonical artifacts per [task-context-package.md](../sdd-agentic-flow-shared/references/task-context-package.md) and [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). If the effective contract changed, re-evaluate affected evidence freshness before classifying the task; a pending proposal is not an effective contract.
 6. Independently judge **engineering fit** against `../sdd-agentic-flow-shared/references/engineering-principles.md` (project conventions, extra abstraction, unnecessary files). Keep that judgment separate from spec/correctness. Engineering-fit issues are findings; they do not flip PASS unless they hit an AC, a safety rule, or an explicit human bar. `PASS` stays owned by evidence-standard and the false-positive catalog.
-7. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
+7. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. In autonomous mode, an attributable `needs changes` result identifies the owning `saf-implement` repair transition; it does not authorize this Skill to mutate code. Classify `blocked` and `inconclusive` by cause before routing. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
 
 ## Safety
 
@@ -53,4 +53,8 @@ Return task identity, validation scope (impact, obligations, selected and omitte
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-create-pr` or `saf-validate` requires a check-report with status PASS and every configured gate satisfied (PASS invalid on a false-positive catalog hit); an unmet acceptance criterion or failed gate blocks the advance. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, a `pass`
+report with satisfied gates advances normally. An attributable `needs changes` report authorizes
+`saf-implement` followed by a fresh check; `blocked` and `inconclusive` require cause
+classification. This Skill remains read-only and never repairs its own findings. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

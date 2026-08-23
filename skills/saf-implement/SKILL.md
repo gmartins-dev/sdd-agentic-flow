@@ -2,7 +2,7 @@
 name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: saf-create-prompts
 requires: [config, task-identity]
 consumes: [domain-glossary, project-context]
@@ -38,12 +38,12 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 
 1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load the [Task Context Package](../sdd-agentic-flow-shared/references/task-context-package.md) minimum context. Resolve bounded goal, completion criteria, constraints and applicable [decision gates](../sdd-agentic-flow-shared/references/decision-gates.md) before mutation per [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, requirement anchors, dependencies, allowed scope, and current implementation state.
-3. Inspect callers and existing patterns before editing. Stop if the work requires a spec change, sibling task, unsafe environment, or unresolved conflict. Specifications are **living** control artifacts: if you find spec drift, stop and reconcile the spec with the human. Do not silently implement a “better” requirement. Do not silently rewrite the spec to match the code. A contract-change proposal is non-authoritative: it records a blocked Decision Gate but does not change the effective contract or authorize implementation of proposed semantics.
-4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. Do not add a competing architecture, new dependency, or new convention without confirmation (decision path step 5).
+3. Inspect callers and existing patterns before editing. Stop if the work requires a sibling task, unsafe environment, or unresolved authority conflict. Specifications are **living** control artifacts: if you find drift, first determine whether repository evidence supports an intent-preserving reconciliation. In autonomous mode, route that reconciliation to `saf-create-spec`, refresh affected prompts, and resume without asking when acceptance semantics and delegated scope remain unchanged. Do not silently implement a different requirement, silently rewrite the spec from implementation preference, or proceed when the change expands authority. A contract-change proposal is non-authoritative and never authorizes its own semantics.
+4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. In autonomous mode, choose an evidence-backed technical design that preserves the effective contract; do not add a competing architecture, new dependency, or new convention when the decision would expand delegated authority.
 5. Identify the required behavior from the spec, the contractual seam (field label: `Public seam`; prefer public/observable when practical), the sensor, and the oracle/acceptance condition from spec, repo contracts, or configured gates — never solely from the implementation. Stop when the seam is unclear. Stay inside the fix boundary; do not expand into **unchanged behavior**. For bugfix or refactor intent, record regression sensors. Do not complete an **investigation** as a fix (`Status: pass` on findings is forbidden).
 6. Use one vertical slice at a time: name the behavior, place a sensor at the contractual seam, implement the smallest change, and record executed **current** evidence. Test-first is recommended when it sharpens the spec. Full RED → GREEN → REFACTOR is optional and is never harness proof. Do not fabricate RED. Do not weaken required behavioral coverage because the ritual is optional. Do not complete on self-assessment. Do not achieve green by suite weakening (deleting, skipping, or narrowing tests that encoded the AC). The oracle stays the spec-derived expected outcomes.
 7. Apply `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands, results, limitations, and untested risks. A passing sensor is evidence, not a correctness verdict. Do not claim done because the conversation feels finished.
-8. Report TDD evidence, changed files, checks, remaining risks, and the next SDD step. Do not commit, push, open a PR, or update external trackers unless the user separately asks.
+8. Report TDD evidence, changed files, checks, remaining risks, and the next SDD step. Do not commit, push, open a remote PR, or update external trackers unless the user separately asks.
 
 ## Safety
 
@@ -51,8 +51,12 @@ Preserve unrelated and pre-existing changes. Keep credentials, personal data, an
 
 ## Output
 
-Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. Include `Status`, `Next recommended skill`, and `Reason`. Terminal output is an **implementation candidate ready for verification**, never its own final verification verdict. You may report another bounded attempt as admissible only while evidence shows semantic progress and iteration policy permits; the host decides whether that attempt runs. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return the resolved task, outcome (`implemented`, `partial`, `blocked`, or `no changes required`), concise evidence, validation results, and recommended next step. Include `Status`, `Next recommended skill`, and `Reason`. Terminal output is an **implementation candidate ready for verification**, never its own final verification verdict. In autonomous mode, continue through another bounded attempt when evidence shows semantic progress and the transition is admissible; return control only for an exceptional authority or safety boundary, exhaustion, or no progress. When work pauses before a terminal outcome — session end, an agent swap, or a blocker only a human can resolve — write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`). In `autonomous` mode, advancing to `saf-check-task` requires tests passing, the configured linter clean, and modified files staying within the declared task scope; a failure or a scope violation blocks the advance and returns control to the human. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In `autonomous` mode, tests,
+configured lint, and semantic scope remain required before a normal check transition. A recoverable
+failure authorizes an owning repair or retry when semantic progress remains; an authority or safety
+boundary, exhaustion, or no-progress result returns control to the human. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

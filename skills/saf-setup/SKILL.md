@@ -2,7 +2,7 @@
 name: saf-setup
 description: Initialize the public SDD Agentic Flow structure in a repository. Use when a user asks to set up, bootstrap, or configure this SDD workflow; create only the requested repository-local planning files and start from .sdd-agentic-flow/config.yml.
 metadata:
-  version: 6.2.0
+  version: 6.3.0
 extends: null
 requires: [config]
 consumes: []

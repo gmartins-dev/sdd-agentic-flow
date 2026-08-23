@@ -2,7 +2,7 @@
 name: saf-validate
 description: Independently validate an accumulated SDD feature implementation against its specification and configured gates. Use for feature readiness after task work; not for implementing fixes or reviewing one task PR.
 metadata:
-  version: 6.3.0
+  version: 6.3.1
 extends: saf-check-task
 requires: [config, spec-package, task-evidence]
 consumes: [domain-glossary, project-context]
@@ -22,7 +22,7 @@ autonomy_profile:
 
 ## When to use
 
-Use when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use when accumulated feature work is ready for feature-level validation, or when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
@@ -53,8 +53,10 @@ Return feature identity, validation scope (impact, obligations, selected and omi
 
 ### Autonomy
 
-Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, treating the
-feature as ready for `saf-create-pr` requires a `ready` validation report with every specification
-requirement satisfied. An attributable `not ready` result routes to repair and revalidation; a
-false-positive hit, authority boundary, or exhausted evidence path blocks readiness. See
+Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, a `ready`
+validation report with every specification requirement satisfied establishes verified local
+feature completion and the final local workflow boundary; it does not route back to the
+task-scoped `saf-create-pr` step. An attributable `not ready` result routes to repair and
+revalidation; a false-positive hit, authority boundary, or exhausted evidence path blocks
+readiness. See
 `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

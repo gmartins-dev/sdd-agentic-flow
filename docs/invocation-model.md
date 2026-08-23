@@ -14,11 +14,14 @@ Operating presets (`init --preset`) write `execution_mode` and `autonomy_level` 
 | --- | --- | --- |
 | `manual` (default) | `guided` + `manual` | Stop after each skill |
 | `supervised` | `apply` + `supervised` | Propose next skill; human confirms |
-| `autonomous` | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` while all 7 guardrails pass |
+| `autonomous` | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` for admissible normal or repair transitions while the seven guardrails remain satisfied |
 
-Autonomous does not mean unattended. If the preset is `autonomous` and the guardrails pass,
-the **invoking agent** may read each next on-path `SKILL.md` in order. The CLI still does
-not invoke skills. Commit, push, merge, tag, and publish stay human on every preset.
+Autonomous does not mean unlimited authority. If the preset is `autonomous`, the **invoking
+agent** may read the next on-path `SKILL.md` for a normal or authorized repair transition when
+the guardrails admit that transition. A recoverable negative result may route to its owning
+repair Skill; exceptional authority, safety, budget, no-progress, or human-override conditions
+return control to a human. The CLI still does not invoke Skills. Commit, push, merge, tag, and
+publish stay human on every preset.
 
 ## User-invoked orchestrators
 

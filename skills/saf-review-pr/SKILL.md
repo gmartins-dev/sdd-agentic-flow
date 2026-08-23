@@ -2,7 +2,7 @@
 name: saf-review-pr
 description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
 metadata:
-  version: 6.3.0
+  version: 6.3.1
 extends: saf-create-pr
 requires: [config, change-review-package]
 consumes: []
@@ -22,7 +22,7 @@ autonomy_profile:
 
 ## When to use
 
-Use when the user asks to review a PR associated with one SDD task. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after a task-scoped local change-review package is ready, or when the user asks to review a PR associated with one SDD task. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 

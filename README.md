@@ -266,7 +266,7 @@ The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `re
 
 ## Autonomy levels
 
-`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) is a second, orthogonal axis: `execution_mode` says what a skill may do, `autonomy_level` says whether it needs a human before the next one runs. `autonomous` only advances when all 7 deterministic guardrails pass (completion, evidence, verification, scope, transition validity, resource budget, no human override); any failure hands control back to a human. Set it with `init --autonomy-level`, audit it with `doctor --autonomy`, and inspect an in-flight run with `context autonomy-state` / `autonomous-resume`. See [autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) is a second, orthogonal axis: `execution_mode` says what a skill may do, `autonomy_level` says whether it needs a human before the next one runs. `autonomous` advances through normal work and bounded repair when the transition is admissible; only exceptional authority, safety, budget, no-progress, or human-override conditions return control to a human. Set it with `init --autonomy-level`, audit it with `doctor --autonomy`, and inspect an in-flight run with `context autonomy-state` / `autonomous-resume`. See [autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
 
 ## TDD baseline
 

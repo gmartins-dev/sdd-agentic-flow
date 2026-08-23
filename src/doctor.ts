@@ -782,6 +782,39 @@ function skillOverrideLevel(content: string, skill: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
+function autonomyLoopStateCoherence(loopState: NonNullable<ReturnType<typeof readLoopState>>): {
+  status: DoctorCheck['status'];
+  message: string;
+} {
+  const missing = ['skill', 'status', 'next', 'guardrails'].filter(
+    (field) => !loopState[field as keyof typeof loopState],
+  );
+  if (missing.length)
+    return {
+      status: 'WARN',
+      message: `loop state is incomplete; missing ${missing.join(', ')}`,
+    };
+
+  const guardrails = loopState.guardrails?.trim() ?? '';
+  if (/^FAIL(?:\s|$)/i.test(guardrails))
+    return {
+      status: 'FAIL',
+      message: `loop state claims Guardrails: FAIL at skill '${loopState.skill}' without pause=true or stop=true`,
+    };
+
+  const next = loopState.next?.trim() ?? '';
+  if (next !== 'human' && next !== 'none' && !isOfficialSkill(next))
+    return {
+      status: 'FAIL',
+      message: `loop state names unknown next skill '${next}'`,
+    };
+
+  return {
+    status: 'PASS',
+    message: `last recorded skill '${loopState.skill}' → ${loopState.status}; next: ${next}`,
+  };
+}
+
 function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): InternalDoctorCheck[] {
   const checks: InternalDoctorCheck[] = [];
   const add = (
@@ -942,11 +975,8 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
       `loop state recorded pause=true at skill '${loopState.skill}'; run \`autonomous-resume\` to continue`,
     );
   } else {
-    add(
-      'autonomy_loop_state',
-      'PASS',
-      `last recorded skill '${loopState.skill}' → ${loopState.status || 'unknown'}; next: ${loopState.next || 'none'}`,
-    );
+    const coherence = autonomyLoopStateCoherence(loopState);
+    add('autonomy_loop_state', coherence.status, coherence.message);
   }
 
   if (options.verbose)

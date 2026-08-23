@@ -185,6 +185,69 @@ function writeRecoverableLoopState(cwd: string): void {
   );
 }
 
+function writeContradictoryLoopState(cwd: string): void {
+  const directory = path.join(cwd, '.sdd-agentic-flow/autonomy');
+  fs.writeFileSync(
+    path.join(directory, 'loop-state.md'),
+    [
+      '# Loop State',
+      '',
+      'Execution mode: full',
+      'Autonomy level: autonomous',
+      '',
+      '## Current State',
+      '',
+      '- Skill: saf-check-task (completed)',
+      '- Status: needs changes',
+      '- Next: saf-implement',
+      '- Guardrails: FAIL (guardrail 3: tests_fail)',
+      '- Human override: pause=false, stop=false',
+      '',
+    ].join('\n'),
+  );
+}
+
+function writeUnknownNextLoopState(cwd: string): void {
+  const directory = path.join(cwd, '.sdd-agentic-flow/autonomy');
+  fs.writeFileSync(
+    path.join(directory, 'loop-state.md'),
+    [
+      '# Loop State',
+      '',
+      'Execution mode: full',
+      'Autonomy level: autonomous',
+      '',
+      '## Current State',
+      '',
+      '- Skill: saf-check-task (completed)',
+      '- Status: needs changes',
+      '- Next: saf-unknown',
+      '- Guardrails: PASS',
+      '- Human override: pause=false, stop=false',
+      '',
+    ].join('\n'),
+  );
+}
+
+function writeIncompleteLoopState(cwd: string): void {
+  const directory = path.join(cwd, '.sdd-agentic-flow/autonomy');
+  fs.writeFileSync(
+    path.join(directory, 'loop-state.md'),
+    [
+      '# Loop State',
+      '',
+      'Execution mode: full',
+      'Autonomy level: autonomous',
+      '',
+      '## Current State',
+      '',
+      '- Skill: saf-check-task (completed)',
+      '- Human override: pause=false, stop=false',
+      '',
+    ].join('\n'),
+  );
+}
+
 function runJourneys() {
   const fresh = project('01-new-user');
   const before = entries(fresh.cwd);
@@ -350,6 +413,24 @@ function runJourneys() {
     const result = run(['doctor', '--json', '--autonomy'], autonomy);
     expect(result, 0, /"name":"autonomy_loop_state","status":"PASS"/);
     assert.match(result.stdout, /needs changes; next: saf-implement/);
+  });
+  writeContradictoryLoopState(autonomy.cwd);
+  record('J25', 'autonomy workflow', 'contradictory guardrails fail closed', () => {
+    const result = run(['doctor', '--json', '--autonomy'], autonomy);
+    expect(result, 1, /"name":"autonomy_loop_state","status":"FAIL"/);
+    assert.match(result.stdout, /Guardrails: FAIL/);
+  });
+  writeUnknownNextLoopState(autonomy.cwd);
+  record('J26', 'autonomy workflow', 'unknown next skill fails closed', () => {
+    const result = run(['doctor', '--json', '--autonomy'], autonomy);
+    expect(result, 1, /"name":"autonomy_loop_state","status":"FAIL"/);
+    assert.match(result.stdout, /unknown next skill/);
+  });
+  writeIncompleteLoopState(autonomy.cwd);
+  record('J27', 'autonomy workflow', 'incomplete loop state is warned', () => {
+    const result = run(['doctor', '--json', '--autonomy'], autonomy);
+    expect(result, 0, /"name":"autonomy_loop_state","status":"WARN"/);
+    assert.match(result.stdout, /loop state is incomplete/);
   });
 
   const removal = project('07-removal');

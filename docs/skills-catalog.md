@@ -306,7 +306,7 @@ confirmation when an external PR mutation is requested. Required input kinds: `c
 
 **Purpose:** Review one task-scoped pull request against its SDD, diff, and configured checks.
 
-**When to use:** Use when the user asks to review a PR associated with one SDD task.
+**When to use:** Use after a task-scoped local change-review package is ready, or when the user asks to review a PR associated with one SDD task.
 
 **When not to use:** Do not use to implement fixes, validate a whole feature, create a PR, or
 review a PR whose task scope cannot be resolved.
@@ -361,8 +361,8 @@ focused re-review.
 specification and configured gates. Re-read spec and repo contracts; reject stale results
 as current proof; record explicit evidence gaps.
 
-**When to use:** Use when the user asks whether one implemented feature is ready against its
-SDD, after task work is accumulated.
+**When to use:** Use when accumulated feature work is ready for feature-level validation, or
+when the user asks whether one implemented feature is ready against its SDD.
 
 **When not to use:** Do not use to implement code, repair findings, validate only one task,
 create a PR, or infer a feature identity from ambiguous branch names.

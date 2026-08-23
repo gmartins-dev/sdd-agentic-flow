@@ -13,7 +13,10 @@ For level definitions and configuration, see [autonomy levels](autonomy-levels.m
 1. **Outcome classification** — the Skill reports a native status that can be classified as
    satisfied, recoverable, exceptional, or exhausted.
 2. **Evidence validation** — every artifact in `autonomy_profile.evidence_required` exists and is non-empty.
-3. **Verification gates** — required checks (tests, linter, spec consistency, no blocking findings) all pass.
+3. **Verification integrity** — required checks are executed or explicitly accounted for. Normal
+   forward progression requires applicable checks to pass; an observed attributable failure may
+   instead authorize a repair transition. A positive completion status is forbidden while a
+   required check fails.
 4. **Scope boundary** — delegated semantic scope remains bounded; evidence may require additional
    implementation touchpoints.
 5. **Skill transition validity** — the proposed next Skill is an authorized normal or repair path

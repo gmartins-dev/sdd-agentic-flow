@@ -2,7 +2,7 @@
 name: saf-create-spec
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd-agentic-flow/config.yml before producing artifacts.
 metadata:
-  version: 6.3.0
+  version: 6.3.1
 extends: null
 requires: [config, source-item]
 consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
@@ -57,7 +57,7 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
 
 - Do not use private conversation context as specification evidence or copy secrets into artifacts.
 - Do not access networks, install dependencies, or modify application code, infrastructure, or defaults.
-- Preserve existing artifacts unless the user explicitly requests an update; identify any overwrite before it occurs.
+- Preserve existing artifacts unless the user explicitly requests an update or an authorized autonomous intent-preserving reconciliation permits the update; identify any overwrite before it occurs.
 - In existing-code mode, never present Inferred or Unknown findings as Observed, confirmed requirements; label every finding Observed, Inferred, or Unknown.
 - Apply `../sdd-agentic-flow-shared/references/workflow-safety.md` for data handling and confirmation requirements.
 

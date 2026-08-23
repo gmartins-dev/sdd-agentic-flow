@@ -1,5 +1,10 @@
 # Roadmap
 
+- **v6.3.1 (2026-08-22):** Autonomous contract hardening. Clarifies repair
+  transition admissibility, evidence authority, invocation guidance, and
+  fail-closed loop-state diagnostics without adding runtime orchestration or
+  changing the public Skill roster.
+
 - **v6.3.0 (2026-08-22):** Autonomous end-to-end completion for bounded local
   delegations. Recoverable failures, review findings, validation findings,
   re-planning, and intent-preserving reconciliation now use authorized repair

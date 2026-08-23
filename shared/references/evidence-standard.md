@@ -20,8 +20,9 @@ without changing the four terms or the Status enum.
 - When evidence is missing, incomplete, or contradictory, the classification reflects that gap
   (`blocked`, `inconclusive`, `needs changes`). Missing evidence is never silently upgraded to a
   pass.
-- A passing sensor result is **evidence**, not a correctness verdict. The human decision uses
-  the existing Status values. Evidence establishes confidence about specified properties. It
+- A passing sensor result is **evidence**, not a correctness verdict. The conclusion uses the
+  existing Status values under the applicable authority boundary. Human judgment remains required
+  where the contract explicitly reserves it. Evidence establishes confidence about specified properties. It
   does not establish complete correctness unless the specification and verification boundary
   justify that conclusion.
 
@@ -32,7 +33,7 @@ without changing the four terms or the Status enum.
 | **Sensor** | The verification mechanism | test, typecheck, lint, schema validator, recorded command |
 | **Evidence** | The observable result the sensor produced | `pnpm test` / exit 0 / 37 passed |
 | **Verification** | Interpreting evidence against a requirement | R-12 → sensor S-03 → current PASS → adequate |
-| **Decision** | Human conclusion using existing Status values | `ready` / `not ready` / `blocked` / `inconclusive` |
+| **Decision** | Conclusion under the applicable authority boundary using existing Status values | `ready` / `not ready` / `blocked` / `inconclusive` |
 
 A passing sensor is not a decision. A decision without current adequate evidence is invalid.
 
@@ -218,8 +219,9 @@ RED is an observable event, not proof the test discriminates the right failure.
 `n/a — not used as proof` is valid. Do not fake RED to fill a ledger.
 
 A passing sensor result is evidence, not a correctness verdict. This includes test GREEN,
-typecheck, lint, build, schema validation, command exit status, integration checks. The human
-decision uses existing Status values.
+typecheck, lint, build, schema validation, command exit status, integration checks. The conclusion
+uses existing Status values under the applicable authority boundary; human judgment remains
+required where the contract explicitly reserves it.
 
 Mutation testing may be named as a later, costlier sensor class. It is not implemented in this
 package.

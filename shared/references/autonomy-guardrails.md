@@ -36,15 +36,19 @@ unattended advance contradicts `guided`. `doctor --autonomy` flags either combin
 
 Every one of the seven is deterministic and auditable. An agent operating in
 `autonomy_level: autonomous` re-checks them before treating a Skill result as permission for a
-normal advance or an authorized repair transition.
+normal advance or an authorized repair transition. The checks govern transition admissibility;
+they do not turn a recoverable negative result into a claim of completed work.
 
 1. **Outcome classification** — the Skill's native status is classified as satisfied, recoverable,
    exceptional, or exhausted. `needs changes` and attributable `not ready` outcomes may authorize
    repair; a status label alone does not force human escalation.
 2. **Evidence validation** — every artifact the skill's `autonomy_profile.evidence_required` lists
    actually exists and is non-empty.
-3. **Verification gates** — the skill's own required checks (tests, linter, spec consistency, no
-   blocking findings) all pass; a skill never reports `PASS` while a required check failed.
+3. **Verification integrity** — the skill's own required checks (tests, linter, spec consistency,
+   and blocking findings) are executed or explicitly accounted for. Normal forward progression
+   requires applicable checks to pass; an observed, attributable failure may instead authorize a
+   repair transition. A skill never reports a positive completion status while a required check
+   failed.
 4. **Scope boundary** — the delegated semantic outcome remains bounded. Required implementation
    touchpoints may expand when repository evidence requires more files or modules; unrelated
    behavior and product scope may not be added silently.

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 6.3.1
+
+### Autonomous contract hardening
+
+Hardens autonomous repair-transition semantics, evidence authority, and
+loop-state diagnostics without changing the public Skill roster, lifecycle or
+execution/runtime boundary. Aligns public invocation guidance with normal and
+authorized repair transitions, and adds deterministic fail-closed diagnostics
+for contradictory autonomy state.
+
 ## 6.3.0
 
 ### Autonomous end-to-end completion

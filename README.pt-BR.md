@@ -89,12 +89,16 @@ skill Markdown, defaults de segurança locais e artefatos de evidência que voc�
 Requer Node.js >= 22 só para a CLI. Seu projeto não precisa ser Node.js. Veja [compatibilidade de ambiente](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init
-npx sdd-agentic-flow install full
-npx sdd-agentic-flow doctor
+npx sdd-agentic-flow
 ```
 
-Isso cria `.sdd-agentic-flow/config.yml`, instala skills e valida o setup. A CLI é um **plano de controle** para setup, inspeção e manutenção — não invoca skills. Veja [O que é SDD?](docs/what-is-sdd.md) e a [referência de comandos](docs/commands.md).
+Esse é o ponto de entrada humano canônico: ele encaminha primeiro uso, setup existente, setup
+parcial e recuperação. O onboarding guiado cria `.sdd-agentic-flow/config.yml`, instala skills e
+valida o setup. A CLI é um **plano de controle** para setup, inspeção e manutenção — não invoca
+skills. Veja [O que é SDD?](docs/what-is-sdd.md) e a [referência de comandos](docs/commands.md).
+
+Para automação ou uso avançado, use comandos explícitos como `npx sdd-agentic-flow init`,
+`npx sdd-agentic-flow install full` e `npx sdd-agentic-flow doctor`.
 
 `init --preset` grava os dois campos existentes (`execution_mode`, `autonomy_level`) — não é um terceiro eixo de config.
 

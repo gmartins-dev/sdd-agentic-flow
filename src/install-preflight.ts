@@ -52,6 +52,9 @@ type InstallPlan = {
   targets: TargetReport[];
   totals: ActionTotals;
   blocked: boolean;
+  applicability: 'applicable' | 'blocked';
+  blockerReason?: string;
+  requestedScope?: InstallScope | 'unresolved';
   repositoryChanges: string[];
 };
 
@@ -196,6 +199,7 @@ function buildInstallPlan({
       totals[key] += report.summary[key] || 0;
     }
   }
+  const blocked = totals.COLLISION > 0 || totals.BLOCKED > 0;
   return {
     modeLabel,
     scope,
@@ -203,7 +207,9 @@ function buildInstallPlan({
     targetIds,
     targets: targetReports,
     totals,
-    blocked: totals.COLLISION > 0 || totals.BLOCKED > 0,
+    blocked,
+    applicability: blocked ? 'blocked' : 'applicable',
+    requestedScope: scope,
     repositoryChanges: scope === 'project' ? ['.agents/skills/'] : [],
   };
 }

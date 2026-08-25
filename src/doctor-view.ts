@@ -32,16 +32,17 @@ function summarizeChecks(checks: DoctorCheck[] = []): StatusCounts {
 
 function primaryRemediation(checks: DoctorCheck[] = []): string | null {
   const byName = new Map(checks.map((check) => [check.name, check]));
-  if (['WARN', 'FAIL'].includes(byName.get('config')?.status ?? '')) return 'sdd-agentic-flow init';
-  if (['WARN', 'FAIL'].includes(byName.get('skills')?.status ?? ''))
-    return 'sdd-agentic-flow install full';
+  if (['WARN', 'FAIL'].includes(byName.get('config')?.status ?? '')) return 'npx sdd-agentic-flow';
+  if (['WARN', 'FAIL'].includes(byName.get('skills')?.status ?? '')) return 'npx sdd-agentic-flow';
   if (['WARN', 'FAIL'].includes(byName.get('installation_intent')?.status ?? ''))
-    return 'sdd-agentic-flow install full';
+    return 'npx sdd-agentic-flow';
+  if (['WARN', 'FAIL'].includes(byName.get('installation_provenance')?.status ?? ''))
+    return 'npx sdd-agentic-flow';
   if (['WARN', 'FAIL'].includes(byName.get('language_profile')?.status ?? '')) {
     const language = byName.get('language_profile');
     return /not installed/i.test(language?.message ?? '')
-      ? 'sdd-agentic-flow install full'
-      : 'sdd-agentic-flow init --language <profile>';
+      ? 'npx sdd-agentic-flow'
+      : 'npx sdd-agentic-flow init --language <profile>';
   }
   return null;
 }

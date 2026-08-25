@@ -91,3 +91,19 @@ test('ready menu uses the explicit advanced-options label', () => {
   assert.ok(last);
   assert.equal(last.label, 'Commands and advanced options');
 });
+
+test('needs-attention menu is repair-first and keeps current setup non-default', () => {
+  const actions = menuActionsFor({ onboardingState: 'NEEDS_ATTENTION' });
+  assert.deepEqual(actions[0]?.command, ['install', 'full', '--plan']);
+  assert.deepEqual(actions[1]?.command, ['doctor']);
+  assert.deepEqual(actions[2]?.command, ['uninstall', '--plan', '--purge']);
+  assert.deepEqual(actions[4]?.command, []);
+});
+
+test('future or unknown installation routes to read-only diagnostics', () => {
+  const actions = menuActionsFor({ onboardingState: 'READY', installationBlocker: 'future' });
+  assert.deepEqual(
+    actions.map((action) => action.command),
+    [['install', 'full', '--plan'], ['doctor'], ['uninstall', '--plan', '--purge'], [], ['help']],
+  );
+});

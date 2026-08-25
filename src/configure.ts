@@ -9,6 +9,7 @@ import {
   repositoryKey,
   writeInstallConfig,
 } from './install-domain';
+import { gitInfoExcludePath } from './paths';
 
 const EXCLUDE_BLOCK = '# sdd-agentic-flow project-local skills\n.agents/skills/\n';
 
@@ -38,15 +39,8 @@ type ConfigureIntentResult = {
 };
 
 function applyProjectSharing(cwd: string, sharing: string): SharingResult {
-  const dotGit = path.join(cwd, '.git');
-  if (!fs.existsSync(dotGit)) return { changed: false, warning: 'Git unavailable' };
-  let gitDir = dotGit;
-  if (fs.statSync(dotGit).isFile()) {
-    const match = fs.readFileSync(dotGit, 'utf8').match(/^gitdir:\s*(.+)\s*$/m);
-    if (!match) return { changed: false, warning: 'Git directory unavailable' };
-    gitDir = path.resolve(cwd, match[1] ?? '.');
-  }
-  const exclude = path.join(gitDir, 'info', 'exclude');
+  const exclude = gitInfoExcludePath(cwd);
+  if (!exclude) return { changed: false, warning: 'Git directory unavailable' };
   const current = fs.existsSync(exclude) ? fs.readFileSync(exclude, 'utf8') : '';
   const next =
     sharing === 'local'

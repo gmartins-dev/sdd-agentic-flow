@@ -10,7 +10,12 @@ import { collectEvidenceGraph, type EvidenceGraphResult } from './evidence-graph
 import { renderEvidenceGraphHtml } from './evidence-graph-html';
 import { harnessReadinessChecks } from './harness-readiness';
 import type { PlanForInstallProfileInput } from './install';
-import { readInstallConfig, repositoryKey, USER_TARGETS } from './install-domain';
+import {
+  classifyProvenanceVersion,
+  readInstallConfig,
+  repositoryKey,
+  USER_TARGETS,
+} from './install-domain';
 import { type InstallPlan, isPlanEmpty } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
@@ -240,10 +245,19 @@ function officialSkillsPresence(root: string) {
   const present: string[] = OFFICIAL_SKILLS.filter((skill: string) =>
     fs.existsSync(path.join(root, skill, 'SKILL.md')),
   );
+  const missing = OFFICIAL_SKILLS.filter((skill: string) => !present.includes(skill));
   return {
     present,
-    missing: present.length ? [] : [...OFFICIAL_SKILLS],
+    missing,
+    complete: missing.length === 0,
+    partial: present.length > 0 && missing.length > 0,
+    empty: present.length === 0,
   };
+}
+
+function officialSkillsPresenceForTargets(roots: string[]) {
+  const uniqueRoots = [...new Set(roots)];
+  return uniqueRoots.map((root) => ({ root, ...officialSkillsPresence(root) }));
 }
 
 function filesIn(directory: string): string[] {
@@ -415,13 +429,14 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         'Installation',
       );
     })();
+    const presence = officialSkillsPresence(skillsRoot);
     (() => {
-      const presence = officialSkillsPresence(skillsRoot);
-      const skillsMessage =
-        presence.missing.length === 0
-          ? `installed skills present (${presence.present.length})`
+      const skillsMessage = presence.complete
+        ? `installed skills present (${presence.present.length})`
+        : presence.partial
+          ? `partial official skills installation (${presence.present.length}/${OFFICIAL_SKILLS.length})`
           : 'no official skills installed';
-      add('skills', presence.missing.length === 0 ? 'PASS' : 'WARN', skillsMessage, 'Skills');
+      add('skills', presence.complete ? 'PASS' : 'WARN', skillsMessage, 'Skills');
     })();
     add(
       'shared_layer',
@@ -437,7 +452,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     );
     add(
       'project_readiness',
-      fs.existsSync(configPath) && hasOfficialSkillsAt(skillsRoot) ? 'PASS' : 'WARN',
+      fs.existsSync(configPath) && presence.complete ? 'PASS' : 'WARN',
       'project readiness is based on config and selected official skills',
       'Project readiness',
     );
@@ -624,15 +639,17 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     if (!isPackage && skillsRoot) {
       const provenance = readInstallProvenance(skillsRoot);
       if (provenance?.packageVersion) {
-        const stale = provenance.packageVersion !== VERSION;
-        add(
-          'installation_provenance',
-          stale ? 'WARN' : 'PASS',
-          stale
-            ? `skills provenance ${provenance.packageVersion} (running CLI ${VERSION}) — run \`sdd-agentic-flow upgrade --skills-only\` after upgrading the CLI`
-            : `skills provenance ${provenance.packageVersion} matches running CLI`,
-          'Installation',
-        );
+        const relation = classifyProvenanceVersion(provenance.packageVersion, VERSION);
+        const stale = relation !== 'current';
+        const message =
+          relation === 'older'
+            ? `skills provenance ${provenance.packageVersion} is older than running CLI ${VERSION} — run \`npx sdd-agentic-flow upgrade --skills-only\``
+            : relation === 'newer'
+              ? `skills provenance ${provenance.packageVersion} is newer than running CLI ${VERSION} — use a compatible SAF CLI`
+              : relation === 'unknown'
+                ? `skills provenance ${provenance.packageVersion} could not be compared with running CLI ${VERSION}`
+                : `skills provenance ${provenance.packageVersion} matches running CLI`;
+        add('installation_provenance', stale ? 'WARN' : 'PASS', message, 'Installation');
       }
     }
   }
@@ -1158,6 +1175,7 @@ export {
   installationStatus,
   languageReport,
   officialSkillsPresence,
+  officialSkillsPresenceForTargets,
   resolveConfiguredAgent,
   resolveSkillsRoot,
   setDoctorInstallPlanResolver,

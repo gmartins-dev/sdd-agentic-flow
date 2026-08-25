@@ -96,12 +96,17 @@ Markdown skill, local safety defaults, and evidence artifacts you can inspect. R
 Requires Node.js >= 22 for the CLI only. Your project does not need Node.js. See [environment compatibility](docs/environment-compatibility.md).
 
 ```bash
-npx sdd-agentic-flow init
-npx sdd-agentic-flow install full
-npx sdd-agentic-flow doctor
+npx sdd-agentic-flow
 ```
 
-That creates `.sdd-agentic-flow/config.yml`, installs skills, and validates setup. The CLI is a **control plane** for setup, inspection, guidance, and maintenance. It does not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md), and the [commands reference](docs/commands.md).
+That is the canonical human entry point: it routes first use, existing setup, partial setup, and
+recovery. Guided onboarding creates `.sdd-agentic-flow/config.yml`, installs skills, and validates
+setup. The CLI is a **control plane** for setup, inspection, guidance, and maintenance. It does
+not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md),
+and the [commands reference](docs/commands.md).
+
+For scripted or advanced flows, use explicit commands such as `npx sdd-agentic-flow init`,
+`npx sdd-agentic-flow install full`, and `npx sdd-agentic-flow doctor`.
 
 In a real terminal, guided `init` includes an operating-policy step. **Supervised** is the
 recommended choice. Use `init --preset` or `config policy` to set policy explicitly in scripts.

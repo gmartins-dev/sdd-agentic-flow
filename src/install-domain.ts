@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { compareVersions } from './version-compat';
+
 const USER_TARGETS = Object.freeze({
   agents: ['.agents', 'skills'],
   cursor: ['.cursor', 'skills'],
@@ -56,6 +58,23 @@ type InstallIntentState =
   | { kind: 'legacy'; schema: 'saf-install-intent/v1' }
   | { kind: 'future' | 'unknown'; schema: string };
 
+type InstallationKind = 'none' | 'current' | 'legacy' | 'future' | 'unknown';
+type ReconciliationState =
+  | 'in_sync'
+  | 'needs_apply'
+  | 'safe_migration'
+  | 'blocked_collision'
+  | 'blocked_future_contract'
+  | 'blocked_unknown_ownership';
+type FailureClass = 'none' | 'retryable' | 'fatal';
+type ProvenanceVersionRelation = 'older' | 'current' | 'newer' | 'unknown';
+
+type InstallationState = {
+  installationKind: InstallationKind;
+  reconciliationState: ReconciliationState;
+  failureClass: FailureClass;
+};
+
 type InteractiveInstallInput = {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
@@ -98,6 +117,48 @@ function classifyInstallIntent(homeDir: string = os.homedir()): InstallIntentSta
   if (schema === 'saf-install-intent/v1') return { kind: 'legacy', schema };
   if (/^saf-install-intent\/v\d+$/.test(schema)) return { kind: 'future', schema };
   return { kind: 'unknown', schema: schema || '(missing)' };
+}
+
+function schemaGenerationFor(schema: string | null, prefix: string): number | null {
+  if (!schema?.startsWith(`${prefix}/v`)) return null;
+  const generation = Number(schema.slice(`${prefix}/v`.length));
+  return Number.isInteger(generation) && generation > 0 ? generation : null;
+}
+
+function classifyProvenanceVersion(
+  installed: string | null | undefined,
+  running: string,
+): ProvenanceVersionRelation {
+  if (!installed) return 'unknown';
+  const comparison = compareVersions(installed, running);
+  if (comparison === null) return 'unknown';
+  if (comparison < 0) return 'older';
+  if (comparison > 0) return 'newer';
+  return 'current';
+}
+
+function classifyInstallationState({
+  intentKind,
+  targetKinds = [],
+  reconciliationState,
+  failureClass = 'none',
+}: {
+  intentKind: InstallationKind;
+  targetKinds?: readonly InstallationKind[];
+  reconciliationState: ReconciliationState;
+  failureClass?: FailureClass;
+}): InstallationState {
+  const kinds = [intentKind, ...targetKinds];
+  const installationKind = kinds.includes('future')
+    ? 'future'
+    : kinds.includes('unknown')
+      ? 'unknown'
+      : kinds.includes('legacy')
+        ? 'legacy'
+        : kinds.includes('current')
+          ? 'current'
+          : 'none';
+  return { installationKind, reconciliationState, failureClass };
 }
 
 function repositoryKey(root: string): string {
@@ -212,10 +273,22 @@ function shouldUseInteractiveInstall({
   );
 }
 
-export type { InstallConfig, InstallIntentState, InstallProjectProfile, UserTargetId };
+export type {
+  FailureClass,
+  InstallationKind,
+  InstallationState,
+  InstallConfig,
+  InstallIntentState,
+  InstallProjectProfile,
+  ProvenanceVersionRelation,
+  ReconciliationState,
+  UserTargetId,
+};
 export {
   AGENT_TO_TARGETS,
+  classifyInstallationState,
   classifyInstallIntent,
+  classifyProvenanceVersion,
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
   desiredSkillsForPacks,
@@ -223,6 +296,7 @@ export {
   parseTargetSelection,
   readInstallConfig,
   repositoryKey,
+  schemaGenerationFor,
   serializeInstallConfig,
   shouldUseInteractiveInstall,
   USER_TARGETS,

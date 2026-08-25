@@ -3,6 +3,17 @@
 Requires Node.js >= 22. The CLI is local-first and adds no runtime dependency to the consumer.
 
 ```bash
+npx sdd-agentic-flow
+```
+
+The bare command is the canonical human entry point: it detects first use, partial setup,
+healthy setup, and recovery needs, then guides the admissible next action. Guided setup creates
+`.sdd-agentic-flow/config.yml`, project context, usage guidance, installs the selected pack, and
+validates the result.
+
+For explicit automation or advanced control, use:
+
+```bash
 npx sdd-agentic-flow init
 npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor

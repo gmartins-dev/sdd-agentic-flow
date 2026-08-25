@@ -20,6 +20,7 @@ type MenuState = {
   onboardingState?: string;
   hasConfig?: boolean;
   hasSkills?: boolean;
+  installationBlocker?: 'future' | 'unknown' | null;
 };
 
 function shouldShowInteractiveMenu(
@@ -55,12 +56,31 @@ function menuActionByCommand(...command: string[]): MenuAction | undefined {
 // Filter the static catalog by toolkit state. Welcome already points at one next command;
 // the menu shows only the actions that make sense for that state (plus help).
 function menuActionsFor(state: MenuState = {}): MenuAction[] {
-  if (state.onboardingState === 'READY' || state.onboardingState === 'NEEDS_ATTENTION') {
+  if (state.installationBlocker) {
+    return [
+      { label: 'Review installation plan (read-only)', command: ['install', 'full', '--plan'] },
+      { label: 'Validate current state', command: ['doctor'] },
+      { label: 'Review full SAF purge', command: ['uninstall', '--plan', '--purge'] },
+      { label: 'Keep installation unchanged', command: [] },
+      { label: 'Commands and advanced options', command: ['help'] },
+    ];
+  }
+  if (state.onboardingState === 'READY') {
     return [
       { label: 'Keep current setup', command: [] },
       { label: 'Check for updates', command: ['upgrade'] },
       { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
       { label: 'Validate setup', command: ['doctor'] },
+      { label: 'Commands and advanced options', command: ['help'] },
+    ];
+  }
+  if (state.onboardingState === 'NEEDS_ATTENTION') {
+    return [
+      { label: 'Resolve installation issue', command: ['install', 'full', '--plan'] },
+      { label: 'Review diagnostics', command: ['doctor'] },
+      { label: 'Review full SAF purge', command: ['uninstall', '--plan', '--purge'] },
+      { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
+      { label: 'Keep current setup', command: [] },
       { label: 'Commands and advanced options', command: ['help'] },
     ];
   }

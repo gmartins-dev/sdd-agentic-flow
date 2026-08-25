@@ -24,6 +24,7 @@ import {
   resolveSkillsRoot,
 } from './doctor';
 import {
+  changeInstallationInteractive,
   configureCommand,
   configureInteractive,
   install,
@@ -39,7 +40,12 @@ import {
   readPreset,
   wireDoctorInstallSmokeDeps,
 } from './install';
-import { DEFAULT_USER_TARGETS, shouldUseInteractiveInstall, USER_TARGETS } from './install-domain';
+import {
+  classifyInstallIntent,
+  DEFAULT_USER_TARGETS,
+  shouldUseInteractiveInstall,
+  USER_TARGETS,
+} from './install-domain';
 import { targetLabelFor } from './install-preflight';
 import { menuActionsFor, shouldShowInteractiveMenu } from './menu';
 import { resolveLocale, t, translateText } from './messages';
@@ -132,6 +138,7 @@ type CommandOptions = {
   locale?: string | undefined;
   language?: string | undefined;
   featureProfile?: string | undefined;
+  installationBlocker?: 'future' | 'unknown' | null;
   interactive?: boolean | undefined;
   profile?: string | undefined;
   overwriteDiffers?: boolean | undefined;
@@ -371,8 +378,8 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const projectScopeRoot = path.join(cwd, '.agents', 'skills');
   const skillsRoot = resolveSkillsRoot(cwd);
   const presence = officialSkillsPresence(skillsRoot);
-  const skillsInstalled = presence.missing.length === 0;
-  const skillsPartial = !skillsInstalled && presence.present.length > 0;
+  const skillsInstalled = presence.complete;
+  const skillsPartial = presence.partial;
   const contextFound = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'));
 
   if (mode === 'human-rich') {
@@ -398,7 +405,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const skillsLabel = skillsInstalled
     ? `${t(locale, 'welcome.skillsInstalled')} (${skillsRoot === projectScopeRoot ? 'project' : 'user'} scope: ${skillsRoot})`
     : skillsPartial
-      ? `partial skill install detected (${presence.present.length} present) — re-run \`sdd-agentic-flow install full\` to repair`
+      ? `partial skill install detected (${presence.present.length} present) — re-run \`npx sdd-agentic-flow install full\` to repair`
       : `${t(locale, 'welcome.noSkills')} (project or user scope)`;
   const contextLabel = contextFound
     ? t(locale, 'welcome.contextGenerated')
@@ -1311,7 +1318,7 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
   const locale = localeFor(cwd);
   for (;;) {
     const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
-    const skillsInstalled = officialSkillsPresence(resolveSkillsRoot(cwd)).missing.length === 0;
+    const skillsInstalled = officialSkillsPresence(resolveSkillsRoot(cwd)).complete;
     const onboardingState = onboardingStateFor(cwd);
     if (options.showSummary !== false && ['READY', 'NEEDS_ATTENTION'].includes(onboardingState))
       printCurrentSetup(cwd, locale);
@@ -1319,6 +1326,7 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
       hasConfig: configFound,
       hasSkills: skillsInstalled,
       onboardingState,
+      installationBlocker: options.installationBlocker || null,
     });
     process.stdout.write(`\n${t(locale, 'menu.question')}\n`);
     const choice = await select(
@@ -1348,7 +1356,21 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
     );
     const menuCommand = selection.command[0];
     if (!menuCommand) return;
+    if (selection.command.join(' ') === 'config installation --interactive') {
+      await changeInstallationInteractive(cwd, os.homedir());
+      continue;
+    }
     await runCommand(menuCommand, selection.command.slice(1), cwd);
+    if (menuCommand === 'uninstall' && selection.command.includes('--purge')) {
+      const confirmation = await select('Purge all recognized SAF assets? [Y/n]', [
+        { value: 'apply', label: 'Continue' },
+        { value: 'cancel', label: 'Cancel' },
+      ]);
+      if (!confirmation.cancelled && confirmation.value === 'apply')
+        uninstall(['--yes', '--purge'], cwd);
+      else process.stdout.write('INFO purge cancelled\n');
+      continue;
+    }
     if (menuCommand === 'uninstall')
       process.stdout.write(
         '\nTo actually remove these, run `sdd-agentic-flow uninstall --apply` explicitly.\n',
@@ -1356,11 +1378,23 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
   }
 }
 
+function installationBlockerFor(cwd: string): 'future' | 'unknown' | null {
+  const intent = classifyInstallIntent();
+  if (intent.kind === 'future' || intent.kind === 'unknown') return intent.kind;
+  const roots = [
+    path.join(cwd, '.agents', 'skills'),
+    ...(userSkillsDirsFor(resolveConfiguredAgent(cwd)) || []),
+  ];
+  const inspection = inspectCleanUpgrade({ cwd, targetRoots: [...new Set(roots)] });
+  return inspection.state === 'future' || inspection.state === 'unknown' ? inspection.state : null;
+}
+
 setSetupCommandDeps({
   install,
   upgradeCommand,
   runCommand,
   runInteractiveMenu,
+  changeInstallation: (cwd) => changeInstallationInteractive(cwd, os.homedir()),
 });
 
 async function main() {
@@ -1374,24 +1408,16 @@ async function main() {
     }
     const welcomeAscii = process.argv.includes('--ascii') || process.env.SDD_ASCII === '1';
     await welcome(cwd, { ascii: welcomeAscii });
-    const mode = resolveMode({ ascii: welcomeAscii });
     const interactive = shouldShowInteractiveMenu(
       { stdout: process.stdout, stdin: process.stdin },
       process.env,
     );
     const onboardingState = onboardingStateFor(cwd);
+    const installationBlocker = installationBlockerFor(cwd);
+    if (interactive && installationBlocker)
+      return runInteractiveMenu(cwd, { installationBlocker, showSummary: true });
     if (interactive && ['FIRST_USE', 'NEW_PROJECT', 'PARTIAL'].includes(onboardingState))
       return guidedInit(cwd, { ascii: welcomeAscii });
-    // Trust-model exception: human-rich TTY only — ask before any registry request (default N).
-    if (
-      mode === 'human-rich' &&
-      interactive &&
-      process.env.SDD_NO_UPDATE_PROMPT !== '1' &&
-      !process.env.CI
-    ) {
-      const wantsCheck = await askYesNo('Check for updates? [y/N] ');
-      if (wantsCheck) await upgradeCommand(cwd, { ascii: welcomeAscii });
-    }
     if (interactive) return runInteractiveMenu(cwd);
     return;
   }

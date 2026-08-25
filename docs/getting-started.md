@@ -1,9 +1,9 @@
 # Getting started
 
-Run one command in the project you want to prepare:
+Run the canonical human entry point in the project you want to prepare:
 
 ```bash
-npx sdd-agentic-flow init
+npx sdd-agentic-flow
 ```
 
 In a real terminal, guided onboarding configures the project, installs the `full`
@@ -12,6 +12,9 @@ creates project context, and runs `doctor`. Press Enter to choose the recommende
 setup and operating policy, review once, and apply. Choose **Customize setup** when
 you need a different pack, scope, skill targets, project sharing, or policy.
 Use explicit `config` commands and `--yes` for scripted mutations.
+
+The bare command is also the entry point for existing, partial, and attention-needed setups;
+it routes to maintenance or recovery instead of restarting setup.
 
 ## Use a scripted setup
 

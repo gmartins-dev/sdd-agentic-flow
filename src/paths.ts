@@ -192,6 +192,26 @@ export function gitAvailable() {
   }
 }
 
+export function gitMetadataDir(cwd: string): string | null {
+  const dotGit = path.join(cwd, '.git');
+  if (!fs.existsSync(dotGit)) return null;
+  try {
+    if (fs.statSync(dotGit).isDirectory()) return dotGit;
+    if (!fs.statSync(dotGit).isFile()) return null;
+    const match = fs.readFileSync(dotGit, 'utf8').match(/^gitdir:\s*(.+)\s*$/m);
+    if (!match?.[1]) return null;
+    const resolved = path.resolve(cwd, match[1]);
+    return fs.existsSync(resolved) && fs.statSync(resolved).isDirectory() ? resolved : null;
+  } catch {
+    return null;
+  }
+}
+
+export function gitInfoExcludePath(cwd: string): string | null {
+  const metadataDir = gitMetadataDir(cwd);
+  return metadataDir ? path.join(metadataDir, 'info', 'exclude') : null;
+}
+
 export const PRIVATE_PATTERNS = [
   'QmVyZXNoaXQ=',
   'QmFtYXE=',

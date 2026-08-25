@@ -9,6 +9,7 @@ import { targetLabelFor } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
   DEFAULT_USER_DIR_SEGMENTS,
+  gitInfoExcludePath,
   KNOWN_AGENTS,
   LOCAL_GIT_EXCLUDE_COMMENT,
   LOCAL_GIT_EXCLUDE_ENTRY,
@@ -96,8 +97,8 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
   if (fs.existsSync(userInstall)) {
     targets.push({ path: userInstall, kind: 'user-install-intent' });
   }
-  const gitExclude = path.join(cwd, '.git', 'info', 'exclude');
-  if (fs.existsSync(gitExclude)) {
+  const gitExclude = gitInfoExcludePath(cwd);
+  if (gitExclude && fs.existsSync(gitExclude)) {
     const content = fs.readFileSync(gitExclude, 'utf8');
     if (content.includes(LOCAL_GIT_EXCLUDE_COMMENT) && content.includes(LOCAL_GIT_EXCLUDE_ENTRY)) {
       targets.push({ path: gitExclude, kind: 'git-exclude-block' });
@@ -252,9 +253,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       } else if (!quiet) log('PASS', 'purge verification complete — no recognized targets remain');
       if (!quiet) {
         log('PASS', 'preserved feature specs, source code, Git history, and foreign skills');
-        process.stdout.write(
-          '\nNext step: npx sdd-agentic-flow init && npx sdd-agentic-flow install full\n',
-        );
+        process.stdout.write('\nNext step: npx sdd-agentic-flow\n');
       }
       return true;
     }

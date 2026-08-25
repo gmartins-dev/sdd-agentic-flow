@@ -8,7 +8,7 @@ import {
   prepareCleanUpgrade,
 } from './clean-upgrade';
 import { applyProjectSharing, type ConfigureIntentResult, configureIntent } from './configure';
-import { languageReport, setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
+import { doctor, languageReport, setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
   AGENT_TO_TARGETS,
@@ -285,9 +285,16 @@ function printInstallPlanReport(
   const lines = [];
   lines.push(`${t(locale, 'plan.title')}\n`);
   lines.push(t(locale, 'plan.intent'));
-  lines.push(`  ${t(locale, 'plan.scope')}       ${plan.scope} (${plan.modeLabel})`);
+  lines.push(
+    `  ${t(locale, 'plan.scope')}       ${plan.requestedScope || plan.scope} (${plan.modeLabel})`,
+  );
   lines.push(`  ${t(locale, 'plan.packs')}       ${plan.desiredPacks.join(', ') || '(none)'}`);
-  lines.push(`  ${t(locale, 'plan.targets')}     ${plan.targetIds.join(', ') || '(none)'}`);
+  lines.push(`  ${t(locale, 'plan.targets')}     ${plan.targetIds.join(', ') || '(unresolved)'}`);
+  if (plan.applicability === 'blocked') {
+    lines.push('\nApplicability');
+    lines.push('  blocked');
+    if (plan.blockerReason) lines.push(`\nReason\n  ${plan.blockerReason}`);
+  }
   lines.push(`\n${t(locale, 'plan.selectedTargets')}`);
   for (const [index, target] of plan.targets.entries()) {
     lines.push(`  ${target.label} (${plan.targetIds[index] || 'project-agents'})`);
@@ -297,9 +304,13 @@ function printInstallPlanReport(
         `    ${t(locale, 'plan.blocked', {
           details: target.foreignSkills.length
             ? target.foreignSkills.join(', ')
-            : locale === 'pt-BR'
-              ? 'instalação legada'
-              : 'legacy installation',
+            : plan.applicability === 'blocked'
+              ? locale === 'pt-BR'
+                ? 'estado de instalação não interpretado'
+                : 'installation state not interpreted'
+              : locale === 'pt-BR'
+                ? 'instalação legada'
+                : 'legacy installation',
           path: target.targetRoot,
         })}`,
       );
@@ -335,7 +346,9 @@ function printInstallPlanReport(
       : `  ${t(locale, 'plan.userFootprint')}`,
   );
   lines.push(`\n${t(locale, 'plan.noChanges')}`);
-  lines.push(`${t(locale, 'plan.apply')}: ${applyCommand || installApplyCommand(plan)}`);
+  if (plan.applicability === 'applicable')
+    lines.push(`${t(locale, 'plan.apply')}: ${applyCommand || installApplyCommand(plan)}`);
+  else lines.push('Recovery: npx sdd-agentic-flow');
   process.stdout.write(`${lines.join('\n')}\n`);
   if (plan.totals.MANAGED_MODIFIED)
     log('INFO', 'Managed skills differ from package and will be updated after confirmation.');
@@ -345,10 +358,36 @@ function printInstallPlanReport(
       'Partial skill tree detected — re-run install full or upgrade --skills-only to repair',
     );
   }
-  if (plan.totals.BLOCKED) {
+  if (plan.totals.BLOCKED && plan.applicability === 'applicable') {
     log('WARN', 'BLOCKED — legacy installation detected (< 3.0). Remove it, then reinstall.');
   }
-  if (isPlanEmpty(plan)) log('PASS', 'Already up to date.');
+  if (plan.applicability === 'applicable' && isPlanEmpty(plan)) log('PASS', 'Already up to date.');
+}
+
+function blockedIntentPlan(pack: string, schema: string): InstallPlan {
+  const totals = {
+    CREATE: 0,
+    UPDATE: 0,
+    PRESERVE: 0,
+    REMOVE: 0,
+    COLLISION: 0,
+    MANAGED_MODIFIED: 0,
+    PARTIAL: 0,
+    BLOCKED: 1,
+  };
+  return {
+    modeLabel: 'Persisted installation not interpreted',
+    scope: 'user',
+    requestedScope: 'unresolved',
+    desiredPacks: [pack],
+    targetIds: [],
+    targets: [],
+    totals,
+    blocked: true,
+    applicability: 'blocked',
+    blockerReason: `The persisted installation intent schema is ${schema}; it was not interpreted as saf-install-intent/v2.`,
+    repositoryChanges: [],
+  };
 }
 
 function printInstallNextSteps(cwd: string, options: InstallCommandOptions = {}) {
@@ -383,12 +422,13 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
   const homeDir = options.homeDir || os.homedir();
   const intentState = classifyInstallIntent(homeDir);
   if (intentState.kind === 'future' || intentState.kind === 'unknown') {
+    if (options.plan) {
+      printInstallPlanReport(blockedIntentPlan(pack, intentState.schema), mode, cwd);
+      return false;
+    }
     return fail('unsupported installation state; clean upgrade stopped before writes', {
       reason: `The installation intent schema is ${intentState.schema}. This CLI only understands saf-install-intent/v2.`,
-      try: [
-        'sdd-agentic-flow install full --plan',
-        'Use the latest SAF CLI to manage this installation',
-      ],
+      try: ['npx sdd-agentic-flow', 'Use the latest SAF CLI to manage this installation'],
     });
   }
   const installConfig =
@@ -456,12 +496,8 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
   }
 
   const cleanupInspection = inspectCleanUpgrade({ cwd, homeDir, targetRoots: targets });
-  if (cleanupInspection.state === 'future' || cleanupInspection.state === 'unknown') {
-    return fail('clean upgrade blocked before writes', {
-      reason: cleanupInspection.blockedReason || 'unknown installation ownership state',
-      try: ['sdd-agentic-flow install full --plan'],
-    });
-  }
+  const cleanupBlocked =
+    cleanupInspection.state === 'future' || cleanupInspection.state === 'unknown';
 
   const plan = buildInstallPlan({
     packageRoot: PACKAGE_ROOT,
@@ -480,10 +516,25 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
   });
 
   if (options.plan) {
-    printInstallPlanReport(plan, mode, cwd);
+    const report = cleanupBlocked
+      ? {
+          ...plan,
+          blocked: true,
+          applicability: 'blocked' as const,
+          blockerReason: cleanupInspection.blockedReason || 'unknown installation ownership state',
+        }
+      : plan;
+    printInstallPlanReport(report, mode, cwd);
     if (cleanupInspection.state === 'legacy')
       log('INFO', 'A recognized older SAF installation will be replaced after confirmation.');
-    return true;
+    return report.applicability === 'applicable';
+  }
+
+  if (cleanupBlocked) {
+    return fail('clean upgrade blocked before writes', {
+      reason: cleanupInspection.blockedReason || 'unknown installation ownership state',
+      try: ['npx sdd-agentic-flow'],
+    });
   }
 
   if (plan.blocked) {
@@ -687,13 +738,14 @@ async function installInteractive(pack: string, cwd: string, options: InstallCom
   process.stdout.write(
     `\n${renderStep(3, 4, t(locale, 'install.preflight'), mode, t(locale, 'step')).join('\n')}\n`,
   );
-  install(pack, cwd, {
+  const preflight = install(pack, cwd, {
     ...options,
     scope,
     plan: true,
     ...(selectedTargets ? { targets: selectedTargets } : {}),
     projectLocalExclude,
   });
+  if (!preflight) return;
   process.stdout.write(
     `\n${renderStep(4, 4, t(locale, 'install.confirm'), mode, t(locale, 'step')).join('\n')}\n`,
   );
@@ -720,15 +772,27 @@ async function installInteractive(pack: string, cwd: string, options: InstallCom
 async function configureInteractive(
   cwd: string,
   homeDir: string,
+  { persist = true }: { persist?: boolean } = {},
 ): Promise<ConfigureInteractiveResult> {
   const locale = localeFor(cwd);
+  const existing = readInstallConfig(homeDir) || defaultInstallConfig();
+  const projectProfile = existing.projects[repositoryKey(cwd)];
+  const initialScope = projectProfile?.packs?.length ? 'project' : 'user';
   let rl = null;
   try {
     const scopeChoice = process.stdin.isTTY
-      ? await select('Installation model', [
-          { value: 'user', label: 'Local / User' },
-          { value: 'project', label: 'Project / Team' },
-        ])
+      ? await select(
+          'Installation model',
+          initialScope === 'project'
+            ? [
+                { value: 'project', label: 'Project / Team' },
+                { value: 'user', label: 'Local / User' },
+              ]
+            : [
+                { value: 'user', label: 'Local / User' },
+                { value: 'project', label: 'Project / Team' },
+              ],
+        )
       : null;
     if (scopeChoice?.cancelled) return { cancelled: true };
     if (!rl) rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -736,7 +800,6 @@ async function configureInteractive(
       ? (selectionString(scopeChoice) ?? 'user')
       : await rl?.question('Installation model [Local / User]: ');
     const scope: 'user' | 'project' = /project/i.test(scopeAnswer.trim()) ? 'project' : 'user';
-    const existing = readInstallConfig(homeDir) || defaultInstallConfig();
     const profile =
       scope === 'project'
         ? existing.projects[repositoryKey(cwd)] || { packs: [], sharing: 'shared' }
@@ -777,7 +840,9 @@ async function configureInteractive(
     process.stdout.write(
       scope === 'user' ? `  Targets: ${targets.join(', ')}\n` : `  Sharing: ${sharing}\n`,
     );
-    process.stdout.write(`  ${t(locale, 'configure.savesIntent')}\n`);
+    process.stdout.write(
+      `  ${persist ? t(locale, 'configure.savesIntent') : '  Draft only; no changes are saved yet.\n'}`,
+    );
     const save = await rl.question(t(locale, 'configure.save'));
     if (/^n(o)?$/i.test(save.trim())) return { cancelled: true };
     return configureIntent({
@@ -787,10 +852,50 @@ async function configureInteractive(
       packs,
       targets,
       ...(sharing ? { sharing } : {}),
+      plan: !persist,
     });
   } finally {
     if (rl) rl.close();
   }
+}
+
+async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()) {
+  const draft = await configureInteractive(cwd, homeDir, { persist: false });
+  if (isConfigureCancelled(draft) || isConfigureError(draft)) return draft;
+  const profile = draft.after;
+  const scope = isProjectInstallProfile(profile) ? 'project' : 'user';
+  const plan = planForInstallProfile({ cwd, homeDir, scope, profile });
+  printInstallPlanReport(plan, resolveMode({}), cwd);
+  if (plan.applicability === 'blocked')
+    return { error: plan.blockerReason || 'installation blocked' };
+  const confirmation = await select('Apply installation?', [
+    { value: 'apply', label: 'Continue' },
+    { value: 'cancel', label: 'Cancel' },
+  ]);
+  if (confirmation.cancelled || confirmation.value !== 'apply') {
+    log('INFO', t(localeFor(cwd), 'configure.cancelled'));
+    return { cancelled: true };
+  }
+  const configured = configureIntent({
+    homeDir,
+    cwd,
+    scope,
+    packs: profile.packs,
+    ...(isUserInstallProfile(profile) ? { targets: profile.targets } : {}),
+    ...(isProjectInstallProfile(profile) ? { sharing: profile.sharing } : {}),
+  });
+  const applied = await install(profile.packs?.[0] || 'full', cwd, {
+    scope,
+    ...(isUserInstallProfile(profile) ? { targets: profile.targets } : {}),
+    ...(isProjectInstallProfile(profile) && profile.sharing === 'local'
+      ? { projectLocalExclude: true }
+      : {}),
+  });
+  if (!applied) return { error: 'installation apply failed' };
+  const validation = await doctor(cwd);
+  return 'status' in validation && validation.status === 'PASS'
+    ? { ...configured, wrote: true }
+    : { error: 'installation requires attention after apply' };
 }
 
 function wireDoctorInstallSmokeDeps(init: SmokeInit): void {
@@ -800,6 +905,7 @@ function wireDoctorInstallSmokeDeps(init: SmokeInit): void {
 
 export type { ConfigureInteractiveResult, PlanForInstallProfileInput };
 export {
+  changeInstallationInteractive,
   configureCommand,
   configureInteractive,
   install,

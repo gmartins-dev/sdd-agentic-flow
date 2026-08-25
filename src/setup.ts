@@ -41,6 +41,7 @@ import { resolveOnboardingState } from './onboarding';
 import {
   autonomyComboValid,
   FEATURE_PROFILES,
+  gitInfoExcludePath,
   LANGUAGE_PROFILES,
   LOCAL_GIT_EXCLUDE_COMMENT,
   LOCAL_GIT_EXCLUDE_ENTRY,
@@ -134,6 +135,7 @@ type SetupCommandDeps = {
   upgradeCommand: (cwd: string, options: SetupCommandOptions) => Promise<unknown>;
   runCommand: (command: string, args: string[], cwd: string) => Promise<unknown>;
   runInteractiveMenu: (cwd: string, options: SetupCommandOptions) => Promise<unknown>;
+  changeInstallation: (cwd: string) => Promise<unknown>;
 };
 
 let commandDeps: SetupCommandDeps | null = null;
@@ -332,14 +334,12 @@ function resolveLocalGitExclude(cwd: string, options: SetupCommandOptions = {}):
 }
 
 function applyLocalGitExclude(cwd: string, locale: string) {
-  const gitDir = path.join(cwd, '.git');
-  if (!fs.existsSync(gitDir) || !fs.statSync(gitDir).isDirectory()) {
+  const excludePath = gitInfoExcludePath(cwd);
+  if (!excludePath) {
     log('WARN', 'init --local-git-exclude: no .git directory; skipped (Git is optional)', locale);
     return;
   }
-  const infoDir = path.join(gitDir, 'info');
-  const excludePath = path.join(infoDir, 'exclude');
-  fs.mkdirSync(infoDir, { recursive: true });
+  fs.mkdirSync(path.dirname(excludePath), { recursive: true });
   const existing = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const alreadyListed = existing.split(/\r?\n/).some((line: string) => {
     const trimmed = line.trim();
@@ -441,7 +441,7 @@ function onboardingStateFor(cwd: string) {
   const skillsRoot = resolveSkillsRoot(cwd);
   return resolveOnboardingState({
     hasConfig: fs.existsSync(sddJoin(cwd, 'config.yml')),
-    hasSkills: officialSkillsPresence(skillsRoot).missing.length === 0,
+    hasSkills: officialSkillsPresence(skillsRoot).complete,
     hasContext: fs.existsSync(sddJoin(cwd, 'context', 'project-context.md')),
     doctorStatus: severity(doctorChecks(cwd)),
   });
@@ -736,6 +736,7 @@ async function applySetup(
 ) {
   const { install } = requireCommandDeps();
   process.exitCode = undefined;
+  if (draft.install && !(await preflightSetup(cwd, draft, options))) return false;
   printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
   process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
   const policy =
@@ -788,8 +789,24 @@ async function applySetup(
   return false;
 }
 
+async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupCommandOptions) {
+  if (!draft.install) return true;
+  const { install } = requireCommandDeps();
+  return Boolean(
+    await install(asString(draft.pack, 'full'), cwd, {
+      ...options,
+      scope: draft.scope,
+      ...(draft.targets ? { targets: draft.targets } : {}),
+      ...(draft.projectLocalExclude ? { projectLocalExclude: draft.projectLocalExclude } : {}),
+      plan: true,
+      quiet: true,
+    }),
+  );
+}
+
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
-  const { upgradeCommand, runCommand, runInteractiveMenu } = requireCommandDeps();
+  const { upgradeCommand, runCommand, runInteractiveMenu, changeInstallation } =
+    requireCommandDeps();
   const state = onboardingStateFor(cwd);
   const locale = localeFor(cwd, options.language);
   if (state === 'READY' || state === 'NEEDS_ATTENTION') {
@@ -809,8 +826,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (action.cancelled || action.value === 'keep') return;
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: Boolean(options.ascii) });
     if (action.value === 'changePolicy') return runCommand('config', ['policy'], cwd);
-    if (action.value === 'changeInstall')
-      return runCommand('config', ['installation', '--interactive'], cwd);
+    if (action.value === 'changeInstall') return changeInstallation(cwd);
     if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii) });
     return runInteractiveMenu(cwd, { showSummary: false });
   }
@@ -845,8 +861,23 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       if (!selected) return log('INFO', t(locale, 'setup.cancelled'), locale);
       draft = { ...draft, policy: selected };
     }
-    printSetupStages(locale, 'skills', ['project'], options);
     printSetupReview(draft, locale, options);
+    if (!(await preflightSetup(cwd, draft, options))) {
+      process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
+      const recovery = await select(
+        t(locale, 'menu.question'),
+        [
+          { value: 'change', label: t(locale, 'setup.changeChoices') },
+          { value: 'validate', label: t(locale, 'menu.validate') },
+          { value: 'exit', label: t(locale, 'setup.exit') },
+        ],
+        { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+      );
+      if (recovery.cancelled || recovery.value === 'exit') return;
+      if (recovery.value === 'validate') await doctor(cwd, { ascii: Boolean(options.ascii) });
+      continue;
+    }
+    printSetupStages(locale, 'skills', ['project'], options);
     const review = await select(
       t(locale, 'setup.review'),
       [
@@ -865,7 +896,6 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       const recovery = await select(
         t(locale, 'menu.question'),
         [
-          { value: 'retry', label: t(locale, 'setup.retry') },
           { value: 'change', label: t(locale, 'setup.changeChoices') },
           { value: 'validate', label: t(locale, 'menu.validate') },
           { value: 'exit', label: t(locale, 'setup.exit') },
@@ -874,7 +904,10 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       );
       if (recovery.cancelled || recovery.value === 'exit') return;
       if (recovery.value === 'change') break;
-      if (recovery.value === 'validate') await doctor(cwd, { ascii: Boolean(options.ascii) });
+      if (recovery.value === 'validate') {
+        await doctor(cwd, { ascii: Boolean(options.ascii) });
+        break;
+      }
     }
   }
 }
@@ -1094,6 +1127,7 @@ export {
   onboardingStateFor,
   policyFromConfig,
   policyReviewTitle,
+  preflightSetup,
   printCurrentSetup,
   printPolicyLines,
   printUsageGuidePointer,

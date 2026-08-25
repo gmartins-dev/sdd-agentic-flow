@@ -210,7 +210,13 @@ function buildInstallPlan({
     blocked,
     applicability: blocked ? 'blocked' : 'applicable',
     requestedScope: scope,
-    repositoryChanges: scope === 'project' ? ['.agents/skills/'] : [],
+    repositoryChanges:
+      scope === 'project'
+        ? [
+            ...officialSkills.map((skill) => `.agents/skills/${skill}/`),
+            '.agents/skills/sdd-agentic-flow-shared/',
+          ]
+        : [],
   };
 }
 

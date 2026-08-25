@@ -1,12 +1,13 @@
 # Installation scope
 
-`install` supports two explicit scopes. `user` is the default: it never touches the
-consumer project. `project` is opt-in and writes the shared project skill directory.
+`install` supports two explicit skill scopes. `user` is the default: it never installs skills in
+the consumer project. `project` is opt-in and writes the official project skill directory.
+Project adoption is a separate choice and does not redefine `scope`.
 
 | Scope | What `install <pack>` does | Trace in the project |
 | --- | --- | --- |
-| `user` (default) | Copies skills into the global skill directories of each supported agent | None. No file or directory is created in `cwd` |
-| `project` (opt-in) | Copies skills into `.agents/skills/` inside the project | Real files, appear as untracked in `git status`; the team decides whether to commit |
+| `user` (default) | Copies skills into the global skill directories of each supported agent | None from skill installation |
+| `project` (opt-in) | Copies official SAF skills into `.agents/skills/` inside the project | SAF-owned files can be shared; foreign skills remain untouched |
 
 ```bash
 npx sdd-agentic-flow install full                       # scope: user (default), zero footprint
@@ -35,19 +36,27 @@ or `.sdd-agentic-flow/context/project-context.md`, which are project policy, alw
 
 | Command | Writes in the project | Typical git status |
 | --- | --- | --- |
-| `init` | `.sdd-agentic-flow/` (config, context, usage stub, snapshots, reports) and `.specs/features/` | Untracked until the team decides what to commit |
+| `init` | `.sdd-agentic-flow/` (config, context, usage stub, snapshots, reports) and `.specs/features/` | Visibility follows the selected adoption preset |
 | `install --scope user` (default) | Nothing | Unchanged |
 | `install --scope project` | `.agents/skills/` | Untracked skill files |
 
 `.specs/features/` is project work and should normally be versioned. This toolkit repository gitignores `.specs/` for local dogfooding only — that exception is not the consumer default. `.sdd-agentic-flow/config.yml` is project policy; teams that want shared defaults commit it. `usage.md` is regenerable — re-run `init` to refresh it.
 
-## Local git exclude (user scope)
+## Adoption presets and local Git excludes
 
-When the saved installation intent uses `scope: user` (the default), `init` automatically
-appends `.sdd-agentic-flow/` to `.git/info/exclude` in a Git repository (idempotent). That hides
-toolkit state from `git status` **without** editing the team's `.gitignore`. It does **not**
-exclude `.specs/`. Pass `init --local-git-exclude` explicitly when using `scope: project` but
-still wanting toolkit state hidden locally.
+Guided setup asks how SAF will be used: **Personal**, **Specs shared**, or **Team**. Personal
+manages separate SAF blocks for `.sdd-agentic-flow/` and the exact `specs.root`. Specs shared
+manages only the local SAF state block. Team manages only explicitly listed derived paths, such
+as `context/project-context.md`, reports, snapshots, autonomy state, explanations, and generated
+usage guides. Team leaves `config.yml`, `context/domain-glossary.md`, official skills, and
+`sdd-agentic-flow-shared` visible.
+
+SAF preserves foreign `info/exclude` lines, `.gitignore`, and global excludes. It never hides the
+whole `.agents/skills/` directory or foreign skills. Tracked files remain tracked in every
+preset. Missing or malformed Git metadata is a non-fatal warning.
+
+Existing 6.4.x installations without `adoption_mode` are unclassified. Their current visibility
+is preserved until you explicitly choose a preset or **Keep current visibility**.
 
 If Git is absent, the command continues with a `WARN`. The CLI never auto-edits `.gitignore`.
 
@@ -82,8 +91,8 @@ contract; it does not migrate obsolete packs or configuration.
 
 | UX label | CLI | Footprint |
 | --- | --- | --- |
-| **Local / User** | `--scope user` (default) | No files in the project |
-| **Project / Team: shared** | `--scope project` | `.agents/skills/` (Git-visible) |
+| **User skills** | `--scope user` (default) | No files from skill installation |
+| **Project skills** | `--scope project` | Official `.agents/skills/` files |
 
 Project scope writes only `.agents/skills/`. Agent-specific project directories are not
 selected by this scope.

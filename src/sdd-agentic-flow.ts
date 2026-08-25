@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
+import { type AdoptionMode, adoptionModeForScope, isAdoptionMode } from './adoption';
 import {
   type CleanUpgradeSession,
   inspectCleanUpgrade,
@@ -132,6 +133,7 @@ type CommandOptions = {
   pack?: string | undefined;
   targets?: string[] | undefined;
   sharing?: string | undefined;
+  adoptionMode?: AdoptionMode | undefined;
   projectLocalExclude?: boolean | undefined;
   saved?: Record<string, unknown> | null | undefined;
   applyCommand?: string | undefined;
@@ -925,6 +927,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         localGitExclude,
         ascii,
       };
+      if (interactive && !canOnboard) {
+        fail('init --interactive requires a real TTY and unset CI');
+        return;
+      }
       if (canOnboard) await guidedInit(cwd, initOptions);
       else if (interactive)
         await initInteractive(
@@ -989,15 +995,18 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       writeCommandHelp('config');
       return;
     }
-    let scope = 'user';
+    let scope: string | null = null;
     let sharing = null;
+    let adoptionMode: AdoptionMode | null = null;
     let plan = false;
+    let yes = false;
     let interactive = false;
     const packs: string[] = [];
     const targets: string[] = [];
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
       if (arg === '--plan') plan = true;
+      else if (arg === '--yes') yes = true;
       else if (arg === '--interactive') interactive = true;
       else if (arg === '--scope' && ['user', 'project'].includes(asString(args[index + 1])))
         scope = asString(args[++index]);
@@ -1006,10 +1015,16 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         targets.push(asString(args[++index]));
       else if (arg === '--sharing' && ['shared', 'local'].includes(asString(args[index + 1])))
         sharing = asString(args[++index]);
+      else if (arg === '--adoption-mode' && isAdoptionMode(args[index + 1]))
+        adoptionMode = args[++index] as AdoptionMode;
       else fail(USAGE.config);
     }
     if (!packs.every((pack: string) => readPreset(pack)))
       fail('unknown pack in config installation');
+    if (scope && adoptionMode && adoptionModeForScope(adoptionMode) !== scope) {
+      fail(`adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`);
+      return;
+    }
     if (interactive && plan) fail('config installation --interactive cannot combine with --plan');
     const canInteract = shouldUseInteractiveInstall({
       stdinIsTTY: process.stdin.isTTY,
@@ -1020,6 +1035,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       nonInteractive: false,
       machine: false,
     });
+    if (interactive && !canInteract) {
+      fail('config installation --interactive requires a real TTY and unset CI');
+      return;
+    }
+    if (!plan && !interactive && !yes) {
+      fail('config installation outside a TTY requires --yes or --plan');
+      return;
+    }
     if (interactive || (args.length === 0 && canInteract)) {
       const result = await configureInteractive(cwd, os.homedir());
       if (isConfigureCancelled(result))
@@ -1047,19 +1070,23 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     const result = configureIntent({
       homeDir: os.homedir(),
       cwd,
-      scope: scope as 'user' | 'project',
+      scope: (adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user') as
+        | 'user'
+        | 'project',
       packs,
       ...(targets.length ? { targets } : {}),
       ...(sharing ? { sharing } : {}),
+      ...(adoptionMode ? { adoptionMode } : {}),
       plan,
     });
     if (plan) {
+      const effectiveScope = adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user';
       process.stdout.write(
-        `${t(localeFor(cwd), 'configure.intentPreview')}\n  Scope       ${scope}\n  Packs       ${(result.after.packs || []).join(', ') || '(none)'}\n` +
-          (scope === 'user' && isUserInstallProfile(result.after)
+        `${t(localeFor(cwd), 'configure.intentPreview')}\n  Scope       ${effectiveScope}\n  Packs       ${(result.after.packs || []).join(', ') || '(none)'}\n` +
+          (effectiveScope === 'user' && isUserInstallProfile(result.after)
             ? `  Targets     ${(result.after.targets || DEFAULT_USER_TARGETS).join(', ')}\n`
             : isProjectInstallProfile(result.after)
-              ? `  Sharing     ${result.after.sharing || 'shared'}\n`
+              ? `  Adoption    ${result.after.adoption_mode || 'unclassified'}\n`
               : '') +
           `\n${t(localeFor(cwd), 'configure.reconciliationPreview')}\n`,
       );
@@ -1067,7 +1094,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     const reconcilePlan = planForInstallProfile({
       cwd,
       homeDir: os.homedir(),
-      scope,
+      scope: adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user',
       profile: result.after,
     });
     printInstallPlanReport(reconcilePlan, resolveMode({}), cwd, {
@@ -1075,7 +1102,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     });
     if (plan)
       process.stdout.write(
-        `${t(localeFor(cwd), 'configure.saveIntent')}: ${configureCommand(scope, result.after)}\n${t(localeFor(cwd), 'configure.reconcile')}:   ${installApplyCommand(reconcilePlan)}\n`,
+        `${t(localeFor(cwd), 'configure.saveIntent')}: ${configureCommand(adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user', result.after)}\n${t(localeFor(cwd), 'configure.reconcile')}:   ${installApplyCommand(reconcilePlan)}\n`,
       );
     else
       log(
@@ -1098,6 +1125,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     let quiet = false;
     let interactive = false;
     let nonInteractive = false;
+    let adoptionMode: AdoptionMode | undefined;
     let valid = true;
     for (let index = 0; index < args.length; index += 1) {
       const arg = asString(args[index]);
@@ -1112,6 +1140,9 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         const target = asString(args[index + 1]);
         if (!['agents', 'cursor', 'claude', 'copilot'].includes(target)) valid = false;
         else targets.push(target);
+        index += 1;
+      } else if (arg === '--adoption-mode' && isAdoptionMode(args[index + 1])) {
+        adoptionMode = args[index + 1] as AdoptionMode;
         index += 1;
       } else if (!arg.startsWith('--') && pack === null) pack = arg;
       else valid = false;
@@ -1134,6 +1165,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       await installInteractive(packName, cwd, {
         ...(scope ? { scope } : {}),
         ...(targets.length ? { targets } : {}),
+        ...(adoptionMode ? { adoptionMode } : {}),
         quiet,
         ascii,
       });
@@ -1141,6 +1173,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       install(packName, cwd, {
         ...(scope ? { scope } : {}),
         ...(targets.length ? { targets } : {}),
+        ...(adoptionMode ? { adoptionMode } : {}),
         plan,
         quiet,
         ascii,

@@ -1,5 +1,12 @@
 # Roadmap
 
+- **v6.5.0 (2026-08-25):** Local-first adoption and explicit sharing. Adds
+  personal, specs-shared, and team presets, optional installation-intent
+  adoption state, scoped SAF-owned Git exclude blocks, foreign-skill
+  preservation, and doctor/purge reconciliation. No new intent schema,
+  automatic Git history mutation, `.gitignore` changes, telemetry, or remote
+  automation.
+
 - **v6.4.3 (2026-08-23):** Documentation and CLI guidance consistency. Corrects stale
   onboarding and recovery suggestions, removes unnecessary historical version labels from
   user-facing CLI messages, and aligns the documentation set with the current command surface.

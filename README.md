@@ -218,7 +218,7 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 
 ```text
 init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...]  Guided setup
-config installation [--scope user|project] [--pack ...] [--target ...] [--sharing ...] [--plan]  Save intent
+config installation [--scope user|project] [--pack ...] [--target ...] [--adoption-mode personal|specs-shared|team] [--plan]  Save intent
 context refresh                       Refresh project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
 install <pack> [--scope user|project] [--target ...] [--plan] [--quiet]  Install a pack (default: user scope)

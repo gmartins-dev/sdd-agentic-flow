@@ -389,13 +389,18 @@ function runJourneys() {
       /Intent preview|would save/,
     );
   });
-  record('J14', 'policy configuration', 'config installation --scope project --pack full', () => {
-    expect(
-      run(['config', 'installation', '--scope', 'project', '--pack', 'full'], policy),
-      0,
-      /saved/,
-    );
-  });
+  record(
+    'J14',
+    'policy configuration',
+    'config installation --yes --scope project --pack full',
+    () => {
+      expect(
+        run(['config', 'installation', '--yes', '--scope', 'project', '--pack', 'full'], policy),
+        0,
+        /saved/,
+      );
+    },
+  );
 
   const userInstall = project('04-user-install');
   record('J15', 'global installation', 'install full --plan', () => {

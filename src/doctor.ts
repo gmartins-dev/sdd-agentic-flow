@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { inspectAdoption } from './adoption';
 import { AUTONOMY_LEVELS, configValue, EXECUTION_MODES } from './config-domain';
 import { parseContractArray, validateContractReferences } from './contract-graph';
 import { unknownContractKinds } from './contract-kinds';
@@ -392,6 +393,17 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       fs.existsSync(configPath) ? 'PASS' : 'WARN',
       fs.existsSync(configPath) ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`,
       'Config',
+    );
+    const adoption = inspectAdoption(cwd, os.homedir());
+    add(
+      'adoption',
+      adoption.mode === 'unclassified' ? 'INFO' : adoption.drift.length ? 'WARN' : 'PASS',
+      adoption.mode === 'unclassified'
+        ? 'adoption visibility is unclassified; existing visibility was preserved'
+        : adoption.drift.length
+          ? `adoption ${adoption.mode} has visibility drift: ${adoption.drift.join('; ')}`
+          : `adoption ${adoption.mode} visibility is synchronized`,
+      'Adoption',
     );
     (() => {
       const legacyPath = legacySddJoin(cwd);

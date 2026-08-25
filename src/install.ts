@@ -3,11 +3,19 @@ import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
 import {
+  type AdoptionMode,
+  adoptionModeForScope,
+  applyAdoption,
+  inspectAdoption,
+  isAdoptionMode,
+  removeUntrackedProjectAssets,
+} from './adoption';
+import {
   type CleanUpgradeSession,
   inspectCleanUpgrade,
   prepareCleanUpgrade,
 } from './clean-upgrade';
-import { applyProjectSharing, type ConfigureIntentResult, configureIntent } from './configure';
+import { type ConfigureIntentResult, configureIntent } from './configure';
 import { doctor, languageReport, setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
@@ -63,6 +71,7 @@ type InstallCommandOptions = {
   agent?: string | undefined;
   targets?: string[] | undefined;
   projectLocalExclude?: boolean | undefined;
+  adoptionMode?: AdoptionMode | undefined;
   [key: string]: unknown;
 };
 
@@ -225,7 +234,7 @@ function isUserInstallProfile(
 function isProjectInstallProfile(
   profile: InstallConfig['user'] | InstallProjectProfile,
 ): profile is InstallProjectProfile {
-  return 'root' in profile || 'sharing' in profile;
+  return 'root' in profile || 'sharing' in profile || 'adoption_mode' in profile;
 }
 
 function planForInstallProfile({
@@ -270,7 +279,7 @@ function configureCommand(scope: string, profile: InstallConfig['user'] | Instal
   if (scope === 'user' && isUserInstallProfile(profile)) {
     for (const target of profile.targets || DEFAULT_USER_TARGETS) parts.push('--target', target);
   } else if (isProjectInstallProfile(profile)) {
-    parts.push('--sharing', profile.sharing || 'shared');
+    if (profile.adoption_mode) parts.push('--adoption-mode', profile.adoption_mode);
   }
   return parts.join(' ');
 }
@@ -437,7 +446,29 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
       : defaultInstallConfig();
   const projectKey = repositoryKey(cwd);
   const storedProject = installConfig.projects[projectKey];
-  const scope = options.scope || (storedProject ? 'project' : 'user');
+  const requestedAdoption = options.adoptionMode;
+  if (requestedAdoption && !isAdoptionMode(requestedAdoption))
+    return fail('unknown adoption mode: use personal, specs-shared, or team');
+  const adoptionMode = requestedAdoption || storedProject?.adoption_mode;
+  const requestedScope = options.scope;
+  const scope =
+    requestedScope ||
+    (requestedAdoption
+      ? adoptionModeForScope(requestedAdoption)
+      : storedProject?.adoption_mode
+        ? adoptionModeForScope(storedProject.adoption_mode)
+        : storedProject?.packs?.length
+          ? 'project'
+          : 'user');
+  if (adoptionMode && adoptionModeForScope(adoptionMode) !== scope) {
+    return fail(
+      `adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`,
+    );
+  }
+  const adoptionInspection = adoptionMode ? inspectAdoption(cwd, homeDir) : null;
+  if (adoptionInspection?.specsRoot === '(invalid)') {
+    return fail(adoptionInspection.warning || 'invalid specs.root');
+  }
   if (scope !== 'user' && scope !== 'project')
     return fail('unknown scope: use --scope user or --scope project', {
       reason: 'Only user and project scopes are supported.',
@@ -516,6 +547,13 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
   });
 
   if (options.plan) {
+    if (adoptionMode) {
+      process.stdout.write(
+        `Adoption: ${adoptionMode}\n` +
+          `  managed excludes: ${adoptionInspection?.managed.join(', ') || '(none)'}\n` +
+          `  drift: ${adoptionInspection?.drift.join('; ') || 'none'}\n\n`,
+      );
+    }
     const report = cleanupBlocked
       ? {
           ...plan,
@@ -558,12 +596,16 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
     );
   }
 
-  if (isPlanEmpty(plan) && cleanupInspection.state !== 'legacy') {
+  const adoptionNeedsApply = Boolean(
+    adoptionMode &&
+      (adoptionInspection?.mode !== adoptionMode || Boolean(adoptionInspection?.drift.length)),
+  );
+  if (isPlanEmpty(plan) && cleanupInspection.state !== 'legacy' && !adoptionNeedsApply) {
     if (scope === 'project') {
       installConfig.projects[projectKey] = {
         root: cwd,
         packs: desiredPacks,
-        sharing: storedProject?.sharing || 'shared',
+        ...(adoptionMode ? { adoption_mode: adoptionMode } : {}),
       };
     } else {
       installConfig.user = {
@@ -628,14 +670,13 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
       });
     }
 
-    const projectSharing = options.projectLocalExclude
-      ? 'local'
-      : scope === 'project'
-        ? storedProject?.sharing || 'shared'
-        : 'shared';
-    if (scope === 'project') {
-      const sharingResult = applyProjectSharing(cwd, projectSharing);
-      if (sharingResult.warning) log('WARN', sharingResult.warning);
+    if (adoptionMode) {
+      const adoptionResult = applyAdoption(cwd, adoptionMode, homeDir);
+      if (adoptionResult.warning) log('WARN', adoptionResult.warning);
+      if (storedProject?.adoption_mode === 'team' && adoptionMode !== 'team' && scope === 'user') {
+        for (const removed of removeUntrackedProjectAssets(cwd))
+          log('PASS', `removed untracked SAF project asset ${removed}`);
+      }
     }
 
     if (!options.plan) {
@@ -643,7 +684,7 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
         installConfig.projects[projectKey] = {
           root: cwd,
           packs: desiredPacks,
-          sharing: projectSharing,
+          ...(adoptionMode ? { adoption_mode: adoptionMode } : {}),
         };
       } else {
         installConfig.user = {
@@ -651,6 +692,14 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
           packs: desiredPacks,
           targets: selectedTargetIds || DEFAULT_USER_TARGETS,
         };
+        if (adoptionMode) {
+          installConfig.projects[projectKey] = {
+            ...(installConfig.projects[projectKey] || { packs: [] }),
+            root: cwd,
+            packs: adoptionMode === 'team' ? installConfig.projects[projectKey]?.packs || [] : [],
+            adoption_mode: adoptionMode,
+          };
+        }
       }
       try {
         writeInstallConfig(installConfig, homeDir);
@@ -690,36 +739,35 @@ function install(pack: string, cwd: string, options: InstallCommandOptions = {})
 async function installInteractive(pack: string, cwd: string, options: InstallCommandOptions = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: Boolean(options.ascii) });
   const locale = localeFor(cwd);
+  const homeDir = options.homeDir || os.homedir();
+  const currentAdoption = inspectAdoption(cwd, homeDir).mode;
+  const keepCurrent = currentAdoption === 'unclassified';
   process.stdout.write(
     `${renderStep(1, 4, t(locale, 'install.scope'), mode, t(locale, 'step')).join('\n')}\n`,
   );
-  const model = await select(
-    t(locale, 'install.model'),
-    [
-      { value: 'user', label: t(locale, 'install.localUser') },
-      { value: 'project', label: t(locale, 'install.projectRepository') },
-    ],
-    { ascii: Boolean(options.ascii) },
-  );
-  if (model.cancelled) return log('INFO', t(locale, 'install.cancelled'));
-  const scope = selectionString(model);
-  if (!scope) return log('INFO', t(locale, 'install.cancelled'));
-  let projectLocalExclude = false;
+  let adoptionMode: AdoptionMode | undefined;
   process.stdout.write(
     `\n${renderStep(2, 4, t(locale, 'install.details'), mode, t(locale, 'step')).join('\n')}\n`,
   );
-  if (scope === 'project') {
-    const sharing = await select(
-      t(locale, 'install.projectSharing'),
-      [
-        { value: 'shared', label: t(locale, 'install.sharedTeam') },
-        { value: 'local', label: t(locale, 'install.localRepository') },
-      ],
-      { ascii: Boolean(options.ascii) },
-    );
-    if (sharing.cancelled) return log('INFO', t(locale, 'install.cancelled'));
-    projectLocalExclude = selectionString(sharing) === 'local';
-  }
+  const adoption = await select(
+    'How will SAF be used in this project?',
+    [
+      ...(keepCurrent ? [{ value: 'keep', label: 'Keep current visibility' }] : []),
+      { value: 'personal', label: 'Just for me — recommended' },
+      { value: 'specs-shared', label: 'Share specs with the team' },
+      { value: 'team', label: 'Use SAF with the team' },
+    ],
+    { ascii: Boolean(options.ascii) },
+  );
+  if (adoption.cancelled) return log('INFO', t(locale, 'install.cancelled'));
+  const selectedAdoption = selectionString(adoption);
+  if (isAdoptionMode(selectedAdoption)) adoptionMode = selectedAdoption;
+  const storedProject = (readInstallConfig(homeDir) || defaultInstallConfig()).projects[
+    repositoryKey(cwd)
+  ];
+  const scope = adoptionMode
+    ? adoptionModeForScope(adoptionMode)
+    : options.scope || (storedProject?.packs?.length ? 'project' : 'user');
   let selectedTargets: string[] | undefined;
   if (scope === 'user') {
     const targets = await select(
@@ -743,7 +791,7 @@ async function installInteractive(pack: string, cwd: string, options: InstallCom
     scope,
     plan: true,
     ...(selectedTargets ? { targets: selectedTargets } : {}),
-    projectLocalExclude,
+    adoptionMode,
   });
   if (!preflight) return;
   process.stdout.write(
@@ -765,7 +813,7 @@ async function installInteractive(pack: string, cwd: string, options: InstallCom
     ...options,
     scope,
     ...(selectedTargets ? { targets: selectedTargets } : {}),
-    projectLocalExclude,
+    adoptionMode,
   });
 }
 
@@ -777,33 +825,31 @@ async function configureInteractive(
   const locale = localeFor(cwd);
   const existing = readInstallConfig(homeDir) || defaultInstallConfig();
   const projectProfile = existing.projects[repositoryKey(cwd)];
-  const initialScope = projectProfile?.packs?.length ? 'project' : 'user';
+  const initialScope =
+    projectProfile?.packs?.length || projectProfile?.adoption_mode === 'team' ? 'project' : 'user';
   let rl = null;
   try {
-    const scopeChoice = process.stdin.isTTY
-      ? await select(
-          'Installation model',
-          initialScope === 'project'
-            ? [
-                { value: 'project', label: 'Project / Team' },
-                { value: 'user', label: 'Local / User' },
-              ]
-            : [
-                { value: 'user', label: 'Local / User' },
-                { value: 'project', label: 'Project / Team' },
-              ],
-        )
+    const adoptionChoice = process.stdin.isTTY
+      ? await select('How will SAF be used in this project?', [
+          ...(projectProfile?.adoption_mode
+            ? []
+            : [{ value: 'keep', label: 'Keep current visibility' }]),
+          { value: 'personal', label: 'Just for me — recommended' },
+          { value: 'specs-shared', label: 'Share specs with the team' },
+          { value: 'team', label: 'Use SAF with the team' },
+        ])
       : null;
-    if (scopeChoice?.cancelled) return { cancelled: true };
+    if (adoptionChoice?.cancelled) return { cancelled: true };
     if (!rl) rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const scopeAnswer = scopeChoice
-      ? (selectionString(scopeChoice) ?? 'user')
-      : await rl?.question('Installation model [Local / User]: ');
-    const scope: 'user' | 'project' = /project/i.test(scopeAnswer.trim()) ? 'project' : 'user';
+    const adoptionAnswer = adoptionChoice
+      ? (selectionString(adoptionChoice) ?? 'keep')
+      : await rl?.question(`Adoption mode [${projectProfile?.adoption_mode || 'keep'}]: `);
+    const adoptionMode = isAdoptionMode(adoptionAnswer) ? adoptionAnswer : undefined;
+    const scope: 'user' | 'project' = adoptionMode
+      ? adoptionModeForScope(adoptionMode)
+      : initialScope;
     const profile =
-      scope === 'project'
-        ? existing.projects[repositoryKey(cwd)] || { packs: [], sharing: 'shared' }
-        : existing.user;
+      scope === 'project' ? existing.projects[repositoryKey(cwd)] || { packs: [] } : existing.user;
     const packsAnswer = await rl.question(
       `Packs [${(profile.packs || []).join(', ') || 'full'}]: `,
     );
@@ -812,7 +858,6 @@ async function configureInteractive(
       .map((value: string) => value.trim())
       .filter(Boolean);
     let targets: string[] = [];
-    let sharing: string | null = null;
     if (scope === 'user') {
       for (const [id, label] of Object.entries(USER_TARGET_LABELS))
         process.stdout.write(`  ${id} — ${label}\n`);
@@ -825,20 +870,14 @@ async function configureInteractive(
       const parsed = parseTargetSelection(targetsAnswer, profileTargets);
       if (!parsed.ok) return { error: parsed.message ?? 'invalid targets' };
       targets = parsed.targets;
-    } else {
-      const sharingAnswer = await rl.question(
-        `Project sharing [${isProjectInstallProfile(profile) ? profile.sharing || 'shared' : 'shared'}]: `,
-      );
-      sharing = /local/i.test(sharingAnswer)
-        ? 'local'
-        : isProjectInstallProfile(profile)
-          ? profile.sharing || 'shared'
-          : 'shared';
     }
     process.stdout.write(`\n${t(locale, 'configure.review')}\n`);
-    process.stdout.write(`  Scope: ${scope}\n  Packs: ${packs.join(', ')}\n`);
     process.stdout.write(
-      scope === 'user' ? `  Targets: ${targets.join(', ')}\n` : `  Sharing: ${sharing}\n`,
+      `  Adoption: ${adoptionMode || projectProfile?.adoption_mode || 'Keep current visibility'}\n` +
+        `  Scope: ${scope}\n  Packs: ${packs.join(', ')}\n`,
+    );
+    process.stdout.write(
+      scope === 'user' ? `  Targets: ${targets.join(', ')}\n` : '  Skills: project\n',
     );
     process.stdout.write(
       `  ${persist ? t(locale, 'configure.savesIntent') : '  Draft only; no changes are saved yet.\n'}`,
@@ -851,7 +890,7 @@ async function configureInteractive(
       scope,
       packs,
       targets,
-      ...(sharing ? { sharing } : {}),
+      ...(adoptionMode ? { adoptionMode } : {}),
       plan: !persist,
     });
   } finally {
@@ -882,14 +921,12 @@ async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()
     scope,
     packs: profile.packs,
     ...(isUserInstallProfile(profile) ? { targets: profile.targets } : {}),
-    ...(isProjectInstallProfile(profile) ? { sharing: profile.sharing } : {}),
+    ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
   });
   const applied = await install(profile.packs?.[0] || 'full', cwd, {
     scope,
     ...(isUserInstallProfile(profile) ? { targets: profile.targets } : {}),
-    ...(isProjectInstallProfile(profile) && profile.sharing === 'local'
-      ? { projectLocalExclude: true }
-      : {}),
+    ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
   });
   if (!applied) return { error: 'installation apply failed' };
   const validation = await doctor(cwd);

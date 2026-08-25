@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
-import { applyProjectSharing, configureIntent } from '../src/configure';
+import { applyAdoption } from '../src/adoption';
+import { configureIntent } from '../src/configure';
 import {
   DEFAULT_USER_TARGETS,
   desiredSkillsForPacks,
@@ -87,7 +88,7 @@ test('target selection is strict, defaults accurately, and all includes Cursor',
   assert.equal(parseTargetSelection('agents, unknown').ok, false);
 });
 
-test('project configure persists intent and only manages its owned exclude block', () => {
+test('team configure persists adoption and never excludes the whole skills directory', () => {
   const project = path.join(temporary, 'project');
   fs.mkdirSync(path.join(project, '.git', 'info'), { recursive: true });
   configureIntent({
@@ -95,17 +96,11 @@ test('project configure persists intent and only manages its owned exclude block
     cwd: project,
     scope: 'project',
     packs: ['planning'],
-    sharing: 'local',
+    adoptionMode: 'team',
   });
-  assert.match(
-    fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'),
-    /\.agents\/skills/,
-  );
-  applyProjectSharing(project, 'shared');
-  assert.doesNotMatch(
-    fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'),
-    /\.agents\/skills/,
-  );
+  const content = fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8');
+  assert.doesNotMatch(content, /\.agents\/skills\//);
+  assert.match(content, /context\/project-context\.md/);
 });
 
 test('configure intent replaces a selected pack instead of retaining a stale larger pack', () => {
@@ -124,12 +119,11 @@ test('configure intent replaces a selected pack instead of retaining a stale lar
   assert.deepEqual(saved.user.packs, ['planning']);
 });
 
-test('project sharing leaves an equivalent user exclusion untouched', () => {
+test('team adoption preserves a foreign skills exclusion', () => {
   const project = path.join(temporary, 'project-user-exclude');
   const exclude = path.join(project, '.git', 'info', 'exclude');
   fs.mkdirSync(path.dirname(exclude), { recursive: true });
   fs.writeFileSync(exclude, '.agents/skills/\n', 'utf8');
-  applyProjectSharing(project, 'local');
-  applyProjectSharing(project, 'shared');
-  assert.equal(fs.readFileSync(exclude, 'utf8'), '.agents/skills/\n');
+  applyAdoption(project, 'team', temporary);
+  assert.match(fs.readFileSync(exclude, 'utf8'), /^\.agents\/skills\/\n/);
 });

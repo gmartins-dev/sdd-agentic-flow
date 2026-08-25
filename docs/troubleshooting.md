@@ -16,15 +16,16 @@ first; it names the failing check.
 
 ### `.sdd-agentic-flow/` or `.agents/skills/` visible in Git after setup
 
-**Cause:** user-scope `init` hides `.sdd-agentic-flow/` only via `.git/info/exclude` (not
-`.gitignore`). Project-scope install writes `.agents/skills/` into the repo (Git-visible unless
-you chose project scope during setup).
+**Cause:** adoption visibility is either unclassified, drifting, or was not selected for this
+project. SAF uses only its own `.git/info/exclude` blocks; project-scope install writes official
+`.agents/skills/` files into the repo.
 
-**Diagnose:** `git status --short` and `sdd-agentic-flow config installation --plan`. Confirm intent scope
-(`user` vs `project`).
+**Diagnose:** `git status --short`, `sdd-agentic-flow doctor`, and
+`sdd-agentic-flow config installation --plan`. Confirm both skill scope (`user` vs `project`)
+and adoption (`personal`, `specs-shared`, or `team`).
 
-**Fix:** Re-run `init` with user scope, or pass `init --local-git-exclude` when using project
-scope. Then run `install <pack> --scope project` when project-local skills are intended.
+**Fix:** Re-run guided setup and choose the intended adoption preset. SAF does not alter
+`.gitignore`, global excludes, foreign exclude lines, or tracked files.
 
 ### `skills` / `shared_layer`: official skills or shared layer not fully installed
 

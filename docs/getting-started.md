@@ -10,7 +10,7 @@ In a real terminal, guided onboarding configures the project, installs the `full
 pack for you by default, asks how SAF should operate (Supervised is recommended),
 creates project context, and runs `doctor`. Press Enter to choose the recommended
 setup and operating policy, review once, and apply. Choose **Customize setup** when
-you need a different pack, scope, skill targets, project sharing, or policy.
+you need a different pack, skill scope, targets, project adoption, or policy.
 Use explicit `config` commands and `--yes` for scripted mutations.
 
 The bare command is also the entry point for existing, partial, and attention-needed setups;

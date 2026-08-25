@@ -27,9 +27,18 @@ or run in CI; only explicit `--json` output is machine structured.
 `init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub with the workflow
 diagram and an internal link to the bundled full guide (`.sdd-agentic-flow/saf-skills-usage-guide.md`
 or `.pt-BR.md` by locale). Re-running `init` refreshes those files and never overwrites
-`config.yml`. With the default user installation scope, `init` also appends `.sdd-agentic-flow/`
-to `.git/info/exclude` so toolkit state stays out of `git status` without editing `.gitignore`
-(never excludes `.specs/`). See [installation scope](installation-scope.md).
+`config.yml`. Guided setup applies the selected adoption preset to SAF-owned blocks in
+`.git/info/exclude`; direct `init` does not infer or mutate project visibility. See
+[installation scope](installation-scope.md).
+
+## Adoption intent
+
+`adoption_mode` is an optional field in the user-local installation-intent v2 document
+intent. Its values are `personal`, `specs-shared`, and `team`. It describes the desired project
+footprint; it is not Git authority and does not belong in `.sdd-agentic-flow/config.yml`.
+Install scope remains the independent `user` or `project` skill choice. Existing intents without
+the field are `unclassified` and preserve their current visibility until an explicit choice is
+confirmed. SAF never edits `.gitignore`, global excludes, or tracked files.
 
 ## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
 

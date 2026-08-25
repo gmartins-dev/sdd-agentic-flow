@@ -175,7 +175,8 @@ for the surrounding document**, not lossless normalization of every possible YAM
 ### Install intent / saf-install-intent/v2
 
 `src/install-domain.ts` accepts one document with `schema`, `user.packs`, `user.targets`, and
-project profiles containing `root`, `packs`, and `sharing`. Its serializer emits stable section and
+project profiles containing `root`, `packs`, and optional `adoption_mode`. It reads legacy
+`sharing` for 6.4.x compatibility but does not use it as the current visibility contract. Its serializer emits stable section and
 list ordering, a final newline, and controlled quoted project keys/roots. It rejects unsupported
 schemas before reuse. Writes use a temporary file followed by rename. The supported-field guarantee
 is **semantic** and the canonical serialization is **structural**; arbitrary YAML constructs and

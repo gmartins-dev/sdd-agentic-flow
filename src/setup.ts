@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
-
+import { type AdoptionMode, adoptionModeForScope, isAdoptionMode } from './adoption';
 import { renderPolicySummary } from './config';
 import {
   AUTONOMY_LEVELS,
@@ -80,6 +80,7 @@ type SetupDraft = {
   pack?: string | undefined;
   targets?: string[] | undefined;
   sharing?: string | undefined;
+  adoptionMode?: AdoptionMode | undefined;
   path?: string | undefined;
   projectLocalExclude?: boolean | undefined;
   saved?: Record<string, unknown> | null | undefined;
@@ -326,11 +327,8 @@ function writeUsageGuide(cwd: string, locale: string) {
   log('PASS', `wrote ${activeGuide[0][0]}`, locale);
 }
 
-function resolveLocalGitExclude(cwd: string, options: SetupCommandOptions = {}): boolean {
-  if (options.localGitExclude) return true;
-  const saved = savedSetupProfile(cwd);
-  const scope = asString(options.scope, (saved?.scope as string | undefined) || 'user');
-  return scope === 'user';
+function resolveLocalGitExclude(options: SetupCommandOptions = {}): boolean {
+  return Boolean(options.localGitExclude);
 }
 
 function applyLocalGitExclude(cwd: string, locale: string) {
@@ -360,7 +358,7 @@ function applyLocalGitExclude(cwd: string, locale: string) {
 function applyInitSideEffects(cwd: string, options: SetupCommandOptions = {}) {
   const locale = asString(options.locale, localeFor(cwd));
   writeUsageGuide(cwd, locale);
-  if (resolveLocalGitExclude(cwd, options)) applyLocalGitExclude(cwd, locale);
+  if (resolveLocalGitExclude(options)) applyLocalGitExclude(cwd, locale);
 }
 
 function printUsageGuidePointer(cwd: string, locale = 'en-US') {
@@ -450,8 +448,13 @@ function onboardingStateFor(cwd: string) {
 function savedSetupProfile(cwd: string): Record<string, unknown> | null {
   const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
   const project = saved.projects[repositoryKey(cwd)];
-  if (project?.packs?.length)
+  if (project?.packs?.length || project?.adoption_mode === 'team')
     return { scope: 'project', profile: project as Record<string, unknown> };
+  if (project?.adoption_mode)
+    return {
+      scope: 'user',
+      profile: { ...saved.user, adoption_mode: project.adoption_mode } as Record<string, unknown>,
+    };
   if (saved.user?.packs?.length) return { scope: 'user', profile: saved.user };
   return null;
 }
@@ -462,6 +465,7 @@ function setupDraft(cwd: string, state: string): SetupDraft {
     packs?: string[];
     targets?: string[];
     sharing?: string;
+    adoption_mode?: AdoptionMode;
   };
   return {
     install: state !== 'NEW_PROJECT',
@@ -469,6 +473,7 @@ function setupDraft(cwd: string, state: string): SetupDraft {
     pack: profile.packs?.[0] || 'full',
     targets: profile.targets || [...DEFAULT_USER_TARGETS],
     projectLocalExclude: profile.sharing === 'local',
+    ...(profile.adoption_mode ? { adoptionMode: profile.adoption_mode } : {}),
     saved,
   };
 }
@@ -621,6 +626,9 @@ function printSetupReview(draft: SetupDraft, locale: string, options: SetupComma
   process.stdout.write(
     `  ${t(locale, 'setup.location')}       ${setupLocationLabel(asString(draft.pack), asString(draft.scope), options)}\n`,
   );
+  process.stdout.write(
+    `  Adoption             ${draft.adoptionMode || 'Keep current visibility'}\n`,
+  );
   if (draft.scope === 'user')
     process.stdout.write(
       `  ${t(locale, 'install.targets')}      ${(draft.targets ?? []).join(', ')}\n`,
@@ -671,23 +679,32 @@ async function customizeSetup(draft: SetupDraft, locale: string, options: SetupC
     { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
   );
   if (pack.cancelled) return null;
-  const scope = await select(
-    t(locale, 'setup.scope'),
+  const adoption = await select(
+    'How will SAF be used in this project?',
     [
-      { value: 'user', label: t(locale, 'setup.scopeUser') },
-      { value: 'project', label: t(locale, 'setup.scopeProject') },
+      ...(draft.adoptionMode ? [] : [{ value: 'keep', label: 'Keep current visibility' }]),
+      { value: 'personal', label: 'Just for me — recommended' },
+      { value: 'specs-shared', label: 'Share specs with the team' },
+      { value: 'team', label: 'Use SAF with the team' },
     ],
     { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
   );
-  if (scope.cancelled) return null;
+  if (adoption.cancelled) return null;
   const packValue = selectionString(pack);
-  const scopeValue = selectionString(scope);
-  if (!packValue || !scopeValue) return null;
+  const adoptionValue = selectionString(adoption);
+  if (!packValue || !adoptionValue) return null;
+  const selectedAdoption = isAdoptionMode(adoptionValue) ? adoptionValue : undefined;
+  const scopeValue = selectedAdoption
+    ? adoptionModeForScope(selectedAdoption)
+    : (draft.scope as string) || 'user';
+  const baseDraft = { ...draft };
+  if (!selectedAdoption) delete baseDraft.adoptionMode;
   const next: SetupDraft = {
-    ...draft,
+    ...baseDraft,
     install: true,
     pack: packValue,
     scope: scopeValue,
+    ...(selectedAdoption ? { adoptionMode: selectedAdoption } : {}),
   };
   if (next.scope === 'user') {
     const targets = await select(
@@ -705,17 +722,6 @@ async function customizeSetup(draft: SetupDraft, locale: string, options: SetupC
     const selectedTargets = selectionStrings(targets);
     if (targets.cancelled || !selectedTargets.length) return null;
     next.targets = selectedTargets;
-  } else {
-    const sharing = await select(
-      t(locale, 'setup.sharing'),
-      [
-        { value: 'shared', label: t(locale, 'setup.shared') },
-        { value: 'local', label: t(locale, 'setup.local') },
-      ],
-      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-    );
-    if (sharing.cancelled) return null;
-    next.projectLocalExclude = selectionString(sharing) === 'local';
   }
   const policy = await selectOperatingPolicy(
     locale,
@@ -750,7 +756,7 @@ async function applySetup(
     ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
     quiet: true,
     scope: draft.scope,
-    localGitExclude: draft.scope === 'user' || Boolean(options.localGitExclude),
+    localGitExclude: Boolean(options.localGitExclude),
     ascii: Boolean(options.ascii),
   });
   if (draft.install) {
@@ -760,15 +766,13 @@ async function applySetup(
       scope: draft.scope === 'project' ? 'project' : 'user',
       packs: [asString(draft.pack, 'full')],
       ...(draft.scope === 'user' && draft.targets ? { targets: draft.targets } : {}),
-      ...(draft.scope === 'project'
-        ? { sharing: draft.projectLocalExclude ? 'local' : 'shared' }
-        : {}),
+      ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
     });
     if (
       !(await install(asString(draft.pack, 'full'), cwd, {
         ...(draft.scope ? { scope: draft.scope } : {}),
         ...(draft.targets ? { targets: draft.targets } : {}),
-        ...(draft.projectLocalExclude ? { projectLocalExclude: draft.projectLocalExclude } : {}),
+        ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
         quiet: true,
         ascii: Boolean(options.ascii),
       }))
@@ -797,7 +801,7 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
       ...options,
       scope: draft.scope,
       ...(draft.targets ? { targets: draft.targets } : {}),
-      ...(draft.projectLocalExclude ? { projectLocalExclude: draft.projectLocalExclude } : {}),
+      ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
       plan: true,
       quiet: true,
     }),
@@ -943,7 +947,7 @@ async function initInteractive(
         'Install skills with: npx sdd-agentic-flow install full\n',
     );
     applyInitSideEffects(cwd, {
-      localGitExclude: resolveLocalGitExclude(cwd, { localGitExclude }),
+      localGitExclude: resolveLocalGitExclude({ localGitExclude }),
     });
     return;
   }
@@ -1110,7 +1114,7 @@ async function initInteractive(
       ...initOptions,
       ...(initOptions.language ? { profile: initOptions.language } : {}),
       quiet,
-      localGitExclude: resolveLocalGitExclude(cwd, { localGitExclude }),
+      localGitExclude: resolveLocalGitExclude({ localGitExclude }),
     });
   } catch (error: unknown) {
     fail(errorMessage(error), 1);

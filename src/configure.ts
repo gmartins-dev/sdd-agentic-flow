@@ -1,5 +1,10 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import os from 'node:os';
+import {
+  type AdoptionMode,
+  adoptionModeForScope,
+  applyAdoption,
+  inspectAdoption,
+} from './adoption';
 import {
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
@@ -9,9 +14,6 @@ import {
   repositoryKey,
   writeInstallConfig,
 } from './install-domain';
-import { gitInfoExcludePath } from './paths';
-
-const EXCLUDE_BLOCK = '# sdd-agentic-flow project-local skills\n.agents/skills/\n';
 
 type SharingResult = {
   changed: boolean;
@@ -29,6 +31,7 @@ type ConfigureIntentInput = {
   packs?: string[];
   targets?: string[];
   sharing?: string | undefined;
+  adoptionMode?: AdoptionMode | undefined;
   plan?: boolean;
 };
 
@@ -36,23 +39,12 @@ type ConfigureIntentResult = {
   before: InstallConfig['user'] | InstallProjectProfile;
   after: InstallConfig['user'] | InstallProjectProfile;
   wrote: boolean;
+  adoptionMode?: AdoptionMode;
 };
 
 function applyProjectSharing(cwd: string, sharing: string): SharingResult {
-  const exclude = gitInfoExcludePath(cwd);
-  if (!exclude) return { changed: false, warning: 'Git directory unavailable' };
-  const current = fs.existsSync(exclude) ? fs.readFileSync(exclude, 'utf8') : '';
-  const next =
-    sharing === 'local'
-      ? current.includes(EXCLUDE_BLOCK)
-        ? current
-        : `${current}${current && !current.endsWith('\n') ? '\n' : ''}${EXCLUDE_BLOCK}`
-      : current.replace(EXCLUDE_BLOCK, '');
-  if (next !== current) {
-    fs.mkdirSync(path.dirname(exclude), { recursive: true });
-    fs.writeFileSync(exclude, next, 'utf8');
-  }
-  return { changed: next !== current };
+  const result = applyAdoption(cwd, sharing === 'local' ? 'personal' : 'team', os.homedir());
+  return { changed: result.changed, ...(result.warning ? { warning: result.warning } : {}) };
 }
 
 function resolveProfile(
@@ -64,7 +56,7 @@ function resolveProfile(
   return {
     kind: 'project',
     key,
-    profile: config.projects[key] || { root: cwd, packs: [], sharing: 'shared' },
+    profile: config.projects[key] || { root: cwd, packs: [] },
   };
 }
 
@@ -74,11 +66,21 @@ function configureIntent({
   scope = 'user',
   packs,
   targets,
-  sharing,
+  adoptionMode,
   plan = false,
 }: ConfigureIntentInput): ConfigureIntentResult {
+  if (adoptionMode && adoptionModeForScope(adoptionMode) !== scope)
+    throw new Error(
+      `adoption mode ${adoptionMode} requires scope ${adoptionModeForScope(adoptionMode)}`,
+    );
   const config = readInstallConfig(homeDir) || defaultInstallConfig();
   const resolved = resolveProfile(config, { scope, cwd });
+  const projectKey = repositoryKey(cwd);
+  if (adoptionMode) {
+    const inspection = inspectAdoption(cwd, homeDir);
+    if (inspection.specsRoot === '(invalid)')
+      throw new Error(inspection.warning || 'invalid specs.root');
+  }
   if (resolved.kind === 'user') {
     const next: InstallConfig['user'] = { ...resolved.profile };
     if (packs?.length) next.packs = [...new Set(packs)];
@@ -86,20 +88,39 @@ function configureIntent({
     if (!next.targets.length) next.targets = [...DEFAULT_USER_TARGETS];
     if (!plan) {
       config.user = next;
+      if (adoptionMode) {
+        config.projects[projectKey] = {
+          ...(config.projects[projectKey] || { packs: [] }),
+          root: cwd,
+          packs: adoptionMode === 'team' ? config.projects[projectKey]?.packs || [] : [],
+          adoption_mode: adoptionMode,
+        };
+        applyAdoption(cwd, adoptionMode, homeDir);
+      }
       writeInstallConfig(config, homeDir);
     }
-    return { before: resolved.profile, after: next, wrote: !plan };
+    return {
+      before: resolved.profile,
+      after: next,
+      wrote: !plan,
+      ...(adoptionMode ? { adoptionMode } : {}),
+    };
   }
   const next: InstallProjectProfile = { ...resolved.profile };
   if (packs?.length) next.packs = [...new Set(packs)];
   next.root = cwd;
-  next.sharing = sharing || next.sharing || 'shared';
+  if (adoptionMode) next.adoption_mode = adoptionMode;
   if (!plan) {
     config.projects[resolved.key] = next;
     writeInstallConfig(config, homeDir);
-    if (sharing) applyProjectSharing(cwd, next.sharing);
+    if (adoptionMode) applyAdoption(cwd, adoptionMode, homeDir);
   }
-  return { before: resolved.profile, after: next, wrote: !plan };
+  return {
+    before: resolved.profile,
+    after: next,
+    wrote: !plan,
+    ...(adoptionMode ? { adoptionMode } : {}),
+  };
 }
 
 export type { ConfigureIntentInput, ConfigureIntentResult, SharingResult };

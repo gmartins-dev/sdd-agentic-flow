@@ -2,7 +2,7 @@
 name: saf-create-spec
 description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd-agentic-flow/config.yml before producing artifacts.
 metadata:
-  version: 6.4.3
+  version: 6.5.0
 extends: null
 requires: [config, source-item]
 consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]

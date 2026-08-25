@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
+import { hasManagedExcludeBlocks, removeManagedExcludeBlocksFromFile } from './adoption';
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
 import { USER_TARGETS } from './install-domain';
@@ -11,8 +11,6 @@ import {
   DEFAULT_USER_DIR_SEGMENTS,
   gitInfoExcludePath,
   KNOWN_AGENTS,
-  LOCAL_GIT_EXCLUDE_COMMENT,
-  LOCAL_GIT_EXCLUDE_ENTRY,
   projectSddRoot,
   sddJoin,
   userInstallConfigPath,
@@ -99,8 +97,7 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
   }
   const gitExclude = gitInfoExcludePath(cwd);
   if (gitExclude && fs.existsSync(gitExclude)) {
-    const content = fs.readFileSync(gitExclude, 'utf8');
-    if (content.includes(LOCAL_GIT_EXCLUDE_COMMENT) && content.includes(LOCAL_GIT_EXCLUDE_ENTRY)) {
+    if (hasManagedExcludeBlocks(gitExclude)) {
       targets.push({ path: gitExclude, kind: 'git-exclude-block' });
     }
   }
@@ -121,27 +118,7 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
 }
 
 function removeGitExcludeBlock(filePath: string) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const lines = content.split('\n');
-  const kept: string[] = [];
-  let skipping = false;
-  for (const line of lines) {
-    if (line.trim() === LOCAL_GIT_EXCLUDE_COMMENT) {
-      skipping = true;
-      continue;
-    }
-    if (skipping && line.trim() === LOCAL_GIT_EXCLUDE_ENTRY) {
-      skipping = false;
-      continue;
-    }
-    if (!skipping) kept.push(line);
-  }
-  const next = kept
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trimEnd();
-  if (next) fs.writeFileSync(filePath, `${next}\n`);
-  else fs.rmSync(filePath, { force: true });
+  removeManagedExcludeBlocksFromFile(filePath);
 }
 
 function applyPurge(targets: PurgeTarget[], cwd: string) {

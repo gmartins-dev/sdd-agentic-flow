@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 6.5.0
+
+### Local-first adoption and explicit sharing
+
+Adds personal, specs-shared, and team adoption presets with optional
+`adoption_mode` in installation intent v2. SAF now reconciles only its own
+blocks in `.git/info/exclude`, preserves foreign skills and tracked files, and
+keeps generated execution state local in team adoption. Git remains optional;
+the CLI never edits `.gitignore`, global excludes, commits, or pushes.
+
 ## 6.4.3
 
 ### Documentation and CLI guidance consistency

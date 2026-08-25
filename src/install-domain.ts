@@ -38,7 +38,9 @@ type TargetAlias = keyof typeof USER_TARGET_ALIASES;
 type InstallProjectProfile = {
   root?: string;
   packs: string[];
-  sharing: string;
+  /** @deprecated 6.4 compatibility; adoption_mode is authoritative when present. */
+  sharing?: string;
+  adoption_mode?: 'personal' | 'specs-shared' | 'team';
 };
 
 type InstallConfig = {
@@ -182,7 +184,8 @@ function serializeInstallConfig(config: InstallConfig): string {
   for (const [key, profile] of Object.entries(config.projects || {})) {
     lines.push(`  "${key}":`, `    root: "${profile.root}"`, '    packs:');
     yamlList(lines, 6, profile.packs || []);
-    lines.push(`    sharing: ${profile.sharing || 'shared'}`);
+    if (profile.adoption_mode) lines.push(`    adoption_mode: ${profile.adoption_mode}`);
+    if (profile.sharing) lines.push(`    sharing: ${profile.sharing}`);
   }
   return `${lines.join('\n')}\n`;
 }
@@ -224,7 +227,7 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
       index = parsed.index - 1;
     } else if (section === 'projects' && /^ {2}"[^"]+":$/.test(line)) {
       const key = line.trim().slice(1, -2);
-      const profile: InstallProjectProfile = { packs: [], sharing: 'shared' };
+      const profile: InstallProjectProfile = { packs: [] };
       for (index += 1; index < lines.length && lines[index]?.startsWith('    '); index += 1) {
         const child = lines[index]?.trim() ?? '';
         if (!child) continue;
@@ -234,6 +237,11 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
           profile.packs = parsed.values;
           index = parsed.index - 1;
         } else if (child.startsWith('sharing: ')) profile.sharing = child.slice(9);
+        else if (child.startsWith('adoption_mode: ')) {
+          const mode = child.slice(15);
+          if (['personal', 'specs-shared', 'team'].includes(mode))
+            profile.adoption_mode = mode as 'personal' | 'specs-shared' | 'team';
+        }
       }
       config.projects[key] = profile;
       index -= 1;

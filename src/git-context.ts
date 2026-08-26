@@ -27,6 +27,13 @@ function identityPath(value: string): string {
   return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
 }
 
+function canonicalCommonDir(value: string): string {
+  const normalized = value.replaceAll('\\', '/');
+  const marker = '/worktrees/';
+  const index = normalized.toLowerCase().indexOf(marker);
+  return index >= 0 ? normalized.slice(0, index) : normalized;
+}
+
 export function resolveGitContext(cwd: string): GitContextResult {
   const projectRoot = fs.realpathSync(cwd);
   try {
@@ -42,7 +49,7 @@ export function resolveGitContext(cwd: string): GitContextResult {
     }
     const adoptionKey = crypto
       .createHash('sha256')
-      .update(`${identityPath(gitCommonDir)}\0${projectRelativePath}`)
+      .update(`${identityPath(canonicalCommonDir(gitCommonDir))}\0${projectRelativePath}`)
       .digest('hex')
       .slice(0, 16);
     return {

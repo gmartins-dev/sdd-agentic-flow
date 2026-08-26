@@ -19,6 +19,15 @@ function comparablePath(value: string): string {
   return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
 }
 
+function relativeProjectPath(gitRoot: string, projectRoot: string): string {
+  const root = comparablePath(gitRoot);
+  const project = comparablePath(projectRoot);
+  if (project === root) return '.';
+  const prefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+  if (project.startsWith(prefix)) return project.slice(prefix.length).replaceAll(path.sep, '/');
+  return path.relative(root, project).replaceAll(path.sep, '/') || '.';
+}
+
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, {
     cwd,
@@ -35,10 +44,7 @@ export function resolveGitContext(cwd: string): GitContextResult {
     const gitCommonDir = fs.realpathSync(
       path.isAbsolute(commonRaw) ? commonRaw : path.resolve(projectRoot, commonRaw),
     );
-    const projectRelativePath =
-      path
-        .relative(comparablePath(gitRoot), comparablePath(projectRoot))
-        .replaceAll(path.sep, '/') || '.';
+    const projectRelativePath = relativeProjectPath(gitRoot, projectRoot);
     if (projectRelativePath === '..' || projectRelativePath.startsWith('../')) {
       return { ok: false, error: 'workspace root must be inside the Git worktree' };
     }

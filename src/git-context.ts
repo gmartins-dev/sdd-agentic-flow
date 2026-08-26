@@ -14,6 +14,11 @@ export type GitContext = {
 
 export type GitContextResult = { ok: true; context: GitContext } | { ok: false; error: string };
 
+function comparablePath(value: string): string {
+  const normalized = path.normalize(path.resolve(value));
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+}
+
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, {
     cwd,
@@ -31,7 +36,9 @@ export function resolveGitContext(cwd: string): GitContextResult {
       path.isAbsolute(commonRaw) ? commonRaw : path.resolve(projectRoot, commonRaw),
     );
     const projectRelativePath =
-      path.relative(gitRoot, projectRoot).replaceAll(path.sep, '/') || '.';
+      path
+        .relative(comparablePath(gitRoot), comparablePath(projectRoot))
+        .replaceAll(path.sep, '/') || '.';
     if (projectRelativePath === '..' || projectRelativePath.startsWith('../')) {
       return { ok: false, error: 'workspace root must be inside the Git worktree' };
     }

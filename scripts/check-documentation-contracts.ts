@@ -16,6 +16,11 @@ const DOCUMENTATION_EXEMPTIONS = new Set([
 ]);
 const LEGACY_PATTERNS = [
   /\bsdd-agentic-flow[ \t]+install[ \t]+[a-z][a-z0-9-]*\b/gi,
+  /\binstall[ \t]+(?:planning|execution|review|multi-task|full)\b/gi,
+  /\binit[ \t]+--(?:preset|language|execution-mode|autonomy-level|interactive|en|br)\b/gi,
+  /^##[ \t]+Packs\b/gim,
+  /\bsaf-(?:config|install-intent|install-provenance)\/v2\b/gi,
+  /\b(?:default|defaults to)[ \t`]*(?:guided|manual)\b/gi,
   /\bcompatible_with\b/g,
   /\bmetadata\.pack\b/g,
   /\bpresets\//g,

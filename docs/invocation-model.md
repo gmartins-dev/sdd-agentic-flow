@@ -8,16 +8,10 @@ The **canonical workflow path** is Plan → Prompt → Implement → Check → P
 Validate. Invoke `saf-route` when the next step is uncertain. Read the
 recommended skill's local `SKILL.md` as the source of truth.
 
-Operating presets (`init --preset`) write `execution_mode` and `autonomy_level` only:
-
-| Preset | Writes | Invocation policy |
-| --- | --- | --- |
-| `manual` (default) | `guided` + `manual` | Stop after each skill |
-| `supervised` | `apply` + `supervised` | Propose next skill; human confirms |
-| `autonomous` | `full` + `autonomous` | Same session may follow the next on-path `SKILL.md` for admissible normal or repair transitions while the seven guardrails remain satisfied |
-
-Autonomous does not mean unlimited authority. If the preset is `autonomous`, the **invoking
-agent** may read the next on-path `SKILL.md` for a normal or authorized repair transition when
+Missing project configuration resolves to `apply + supervised`. `config policy`
+can persist an explicit policy override. Autonomous does not mean unlimited
+authority. When policy is `full + autonomous`, the **invoking agent** may read
+the next on-path `SKILL.md` for a normal or authorized repair transition when
 the guardrails admit that transition. A recoverable negative result may route to its owning
 repair Skill; exceptional authority, safety, budget, no-progress, or human-override conditions
 return control to a human. The CLI still does not invoke Skills. Commit, push, merge, tag, and
@@ -41,4 +35,4 @@ publish stay human on every preset.
 - `saf-review-pr`
 - `saf-fix-pr`
 
-Invoke `saf-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 13 public skills.
+Invoke `saf-route` when the next step is uncertain. Read the recommended skill's local `SKILL.md` as the source of truth. See the [skills catalog](skills-catalog.md) for all 12 public skills.

@@ -91,8 +91,28 @@ test('team keeps official project assets visible and hides only derived state', 
   assert.equal(result.expected.includes('.agents/skills/'), false);
   assert.doesNotMatch(content, /\.agents\/skills\//);
   assert.match(content, /context\/project-context\.md/);
+  assert.match(content, /workspace\.yml/);
   assert.match(content, /reports\//);
   assert.match(content, /foreign-pattern/);
+});
+
+test('subprojects anchor specs and local state to the SAF project root', () => {
+  const root = path.join(temporary, 'monorepo');
+  const cwd = path.join(root, 'apps', 'payments');
+  fs.mkdirSync(cwd, { recursive: true });
+  execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+  fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
+  fs.writeFileSync(
+    path.join(cwd, '.sdd-agentic-flow', 'config.yml'),
+    'schema: saf-config/v3\n\nspecs:\n  root: docs/specs\n',
+    'utf8',
+  );
+  const home = path.join(root, 'home');
+  applyAdoption(cwd, 'personal', home);
+  const content = fs.readFileSync(path.join(root, '.git', 'info', 'exclude'), 'utf8');
+  assert.match(content, /apps\/payments\/docs\/specs\//);
+  assert.match(content, /apps\/payments\/\.sdd-agentic-flow\//);
+  assert.doesNotMatch(content, /^docs\/specs\//m);
 });
 
 test('unclassified intent reports no drift and does not change visibility', () => {

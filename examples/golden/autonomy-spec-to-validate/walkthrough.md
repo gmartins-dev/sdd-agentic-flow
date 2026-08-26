@@ -5,7 +5,8 @@ Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-002 — task-check 
 ## Commands
 
 ```bash
-sdd-agentic-flow init --execution-mode full --autonomy-level autonomous
+sdd-agentic-flow init
+sdd-agentic-flow config policy --yes --preset autonomous
 sdd-agentic-flow install --scope project
 ```
 

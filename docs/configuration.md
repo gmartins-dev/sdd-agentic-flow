@@ -1,13 +1,10 @@
 # Configuration
 
-`.sdd-agentic-flow/config.yml` controls specs root, source type, language, workflow and safety.
-The generated file is intentionally explicit and can be edited by the project owner.
-
-It stores project name, default branch, agent target, language profile, human-output language,
-source type, workflow choices, and quality gates. New projects use `en-US` by default. Use
-`init --language pt-BR` for Brazilian Portuguese explanations while keeping technical tokens
-canonical. `init` preserves an existing configuration; interactive init also exits without
-overwriting it. See [language profiles](language-profiles.md).
+`.sdd-agentic-flow/config.yml` is optional. When it is absent, SAF uses the
+built-in v3 policy, including `apply + supervised`, `.specs/features`, and
+`en-US`. Create it only to persist project-specific overrides for specs root,
+language, workflow, or safety. `init` never creates or overwrites it. See
+[language profiles](language-profiles.md).
 
 Keep `quality` gates enabled unless the project records an explicit exception. The `safety`
 keys keep commit, push, and merge/deploy disabled by default.
@@ -24,16 +21,14 @@ Use `config installation --plan` to preview installation intent and target paths
 install skills; run `install` to reconcile. `install --plan` is human-readable when piped
 or run in CI; only explicit `--json` output is machine structured.
 
-`init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub with the workflow
-diagram and an internal link to the bundled full guide (`.sdd-agentic-flow/saf-skills-usage-guide.md`
-or `.pt-BR.md` by locale). Re-running `init` refreshes those files and never overwrites
-`config.yml`. Guided setup applies the selected adoption preset to SAF-owned blocks in
-`.git/info/exclude`; direct `init` does not infer or mutate project visibility. See
-[installation scope](installation-scope.md).
+`init` writes the local workspace marker and generated project context. It
+preserves existing config. Installation intent controls the selected adoption
+mode and its SAF-owned blocks in `.git/info/exclude`; `init` does not infer
+project visibility. See [installation scope](installation-scope.md).
 
 ## Adoption intent
 
-`adoption_mode` is an optional field in the user-local installation-intent v2 document
+`adoption_mode` is an optional field in the user-local installation-intent v3 document
 intent. Its values are `personal`, `specs-shared`, and `team`. It describes the desired project
 footprint; it is not Git authority and does not belong in `.sdd-agentic-flow/config.yml`.
 Install scope remains the independent `user` or `project` skill choice. Existing intents without
@@ -42,18 +37,13 @@ confirmed. SAF never edits `.gitignore`, global excludes, or tracked files.
 
 ## Autonomy fields (`workflow.execution_mode`, `workflow.autonomy_level`)
 
-`workflow.execution_mode` (`plan`/`guided`/`apply`/`review`/`full`, default `guided`) and
-`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) are two
+`workflow.execution_mode` (`plan`/`guided`/`apply`/`review`/`full`, default `apply`) and
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `supervised`) are two
 orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `autonomy_level`
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
-combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. `init --preset` writes both fields from an operating-policy name (`manual` →
-`guided`+`manual`, `supervised` → `apply`+`supervised`, `autonomous` → `full`+`autonomous`)
-and cannot combine with `--execution-mode` or `--autonomy-level`. `init
---autonomy-level`/`--execution-mode` set both at creation time; both default to their most
-conservative value. An existing `.sdd-agentic-flow/config.yml` without these fields behaves the
-same way once the defaults are applied (`WARN`, not `FAIL`, when fields are missing). Guided TTY `init` includes an operating-policy
-step (Supervised recommended). After init, change operating policy with
-`config policy` (interactive TTY, or `--plan` / `--yes` for CI). Only `execution_mode` and
+combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. Use
+`config policy` (interactive TTY, or `--plan` / `--yes` for CI) to persist an override.
+Only `execution_mode` and
 `autonomy_level` are CLI-editable; other keys remain manual YAML edits. See
 [commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides`:
 documented here, not editable via `config policy` yet. `workflow.autonomy_budget`
@@ -86,8 +76,7 @@ Signals detected (all presence-only checks; no file content is parsed beyond `pa
 - **Platform:** ORM config (`prisma/schema.prisma`, `drizzle.config.ts`/`.js`) and feature-flag
   config (`.launchdarkly.yml`, `unleash.yml`).
 
-Run `sdd-agentic-flow context refresh` any time to refresh it after the project changes (this rewrites the whole file, so copy
-out any manual notes first). Skills that consult project context read it only when it exists and
+Run `sdd-agentic-flow context refresh` any time to refresh it after the project changes. Skills that consult project context read it only when it exists and
 treat it as optional context, the same way they treat `.sdd-agentic-flow/context/domain-glossary.md`.
 
 ### Provenance and refresh

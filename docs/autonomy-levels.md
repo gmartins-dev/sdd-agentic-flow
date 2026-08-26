@@ -1,17 +1,17 @@
 # Autonomy levels
 
-`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml` is a **new axis orthogonal to**
+`workflow.autonomy_level` in optional `.sdd-agentic-flow/config.yml` is an axis orthogonal to
 [execution modes](execution-modes.md) (`plan`/`guided`/`apply`/`review`/`full`). It does not
 replace or duplicate them. `execution_mode` answers "what is a skill authorized to do";
 `autonomy_level` answers "does a skill need a human between it and the next one." The default,
-`manual`, keeps the fully supervised behavior.
+`supervised`, pairs with `apply` in the built-in effective policy.
 
 ## The three levels
 
 | Level | What happens after a skill completes | Transition policy |
 | --- | --- | --- |
-| `manual` (default) | Returns control completely. Nothing advances automatically. | `stop` |
-| `supervised` | Reports evidence and asks "continue to `<next skill>`?"; a human decides. | `confirm` |
+| `manual` | Returns control completely. Nothing advances automatically. | `stop` |
+| `supervised` (default) | Reports evidence and asks "continue to `<next skill>`?"; a human decides. | `confirm` |
 | `autonomous` | Owns local progression, repair, and validation until verified completion within delegated authority. | `continue`, bounded by recovery |
 
 **Autonomous does not mean unlimited authority.** The agent resolves ordinary failures, repair
@@ -20,9 +20,8 @@ required for safety, external or irreversible authority, underdetermined intent,
 expansion, exhaustion, no meaningful progress, or explicit override. Commit, push, merge, tag, and
 publish stay outside the delegation.
 
-Daily use can set both axes with `init --preset` (`manual` / `supervised` / `autonomous`;
-aliases `man` / `assist`|`assisted` / `auto`). That is UX over the two fields below, not a
-third stored axis. The 5×3 matrix stays for power users.
+Missing configuration uses `apply + supervised`. Use `config policy` to persist
+a different pair. The 5×3 matrix remains available for explicit policy.
 
 ## `execution_mode` × `autonomy_level` compatibility
 
@@ -35,8 +34,8 @@ third stored axis. The 5×3 matrix stays for power users.
 | `full` | valid | valid | valid (default) |
 
 `plan` and `guided` never combine with `autonomous`: a plan-only workflow has nothing to
-auto-advance into, and step-by-step confirmation is the entire point of `guided`. `doctor
---autonomy` flags either combination as `FAIL`; `init --execution-mode --autonomy-level` rejects
+auto-advance into, and step-by-step confirmation is the entire point of `guided`.
+`doctor --autonomy` flags either combination as `FAIL`; `config policy` rejects
 it before writing `.sdd-agentic-flow/config.yml`.
 
 ## Capability / gate matrix (across presets)
@@ -64,8 +63,8 @@ surface area to warrant its own page.
 
 ```yaml
 workflow:
-  execution_mode: guided # plan, guided, apply, review, full — default: guided
-  autonomy_level: manual # manual, supervised, autonomous — default: manual
+  execution_mode: apply # plan, guided, apply, review, full — default: apply
+  autonomy_level: supervised # manual, supervised, autonomous — default: supervised
 
   autonomy_budget:
     max_iterations: 50
@@ -74,12 +73,9 @@ workflow:
     pause_on_warning: true # stop, not just warn, once budget drops below ~20%
 ```
 
-`init --execution-mode <mode> --autonomy-level <level>` sets both at creation time. On a TTY,
-`init` runs **guided setup**, which includes an operating-policy step (Supervised recommended,
-Manual, Autonomous, or Advanced). `init --interactive` on a TTY is the same guided flow; the
-legacy piped seven-step wizard remains for non-TTY `--interactive` compatibility only. An
-`.sdd-agentic-flow/config.yml` without either field is not an error. `doctor --autonomy`
-reports `WARN`, and both fields default to `guided`/`manual`. See [configuration](configuration.md).
+Use `config policy` to persist this pair. An absent config is healthy and
+resolves to `apply + supervised`. An incomplete or invalid config fails closed.
+See [configuration](configuration.md).
 
 `workflow.skill_overrides` (optional, not written by `init`) pins one skill to a stricter level
 regardless of the workflow default. For example, keep `saf-review-pr` at `manual` even inside an
@@ -94,7 +90,7 @@ workflow:
 
 ## CLI surface
 
-- `init --execution-mode <mode> --autonomy-level <level>`: set both at project creation.
+- `config policy`: preview or persist an explicit policy override.
 - `doctor --autonomy [--verbose]`: validate `workflow.execution_mode`/`autonomy_level`, the
   compatibility matrix, every installed skill's `autonomy_profile` support for the configured
   level, `workflow.autonomy_budget`, and the last recorded loop state. `--verbose` also lists all

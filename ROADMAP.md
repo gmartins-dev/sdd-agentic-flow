@@ -1,5 +1,13 @@
 # Roadmap
 
+- **v7.0.0 (2026-08-26):** Simplified workspace-first SAF lifecycle. Consolidates one
+  official 12-Skill bundle, Git-aware per-workspace initialization, optional configuration with
+  `apply + supervised` defaults, v3 state, portable sidecars, bounded pre-v7 reset, stable
+  worktree adoption identity, schema-2 diagnostics, deterministic project context, and aligned
+  docs. Final RC hardening covers nested monorepo excludes, Team-local workspace markers,
+  zero-config autonomy reporting, and retired-v6 documentation vocabulary. No AI runtime,
+  external Skill registry, telemetry, or automatic remote mutation.
+
 - **v6.5.0 (2026-08-25):** Local-first adoption and explicit sharing. Adds
   personal, specs-shared, and team presets, optional installation-intent
   adoption state, scoped SAF-owned Git exclude blocks, foreign-skill

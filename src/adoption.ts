@@ -28,6 +28,7 @@ const BLOCKS = {
 } as const;
 
 const LOCAL_TEAM_ARTIFACTS = [
+  '.sdd-agentic-flow/workspace.yml',
   '.sdd-agentic-flow/context/project-context.md',
   '.sdd-agentic-flow/reports/',
   '.sdd-agentic-flow/snapshots/',
@@ -56,7 +57,7 @@ function isAdoptionMode(value: unknown): value is AdoptionMode {
 
 function repositoryRoot(cwd: string): string {
   const resolved = resolveGitContext(cwd);
-  return resolved.ok ? resolved.context.gitRoot : path.resolve(cwd);
+  return resolved.ok ? resolved.context.projectRoot : path.resolve(cwd);
 }
 
 function normalizeSpecsRoot(
@@ -65,11 +66,11 @@ function normalizeSpecsRoot(
 ): { ok: true; relative: string; absolute: string } | { ok: false; error: string } {
   const raw = value.trim().replace(/\\/g, '/');
   if (!raw || path.posix.isAbsolute(raw)) {
-    return { ok: false, error: 'specs.root must be a non-empty repository-relative path' };
+    return { ok: false, error: 'specs.root must be a non-empty project-relative path' };
   }
   const segments = raw.split('/');
   if (segments.some((segment) => segment === '..')) {
-    return { ok: false, error: 'specs.root cannot traverse outside the repository' };
+    return { ok: false, error: 'specs.root cannot traverse outside the project' };
   }
   const relative = path.posix.normalize(raw).replace(/^\.\//, '');
   if (!relative || relative === '.') {
@@ -79,7 +80,7 @@ function normalizeSpecsRoot(
   const absolute = path.resolve(root, relative);
   const relativeToRoot = path.relative(root, absolute);
   if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
-    return { ok: false, error: 'specs.root must remain inside the repository' };
+    return { ok: false, error: 'specs.root must remain inside the project' };
   }
   return { ok: true, relative: relative.replace(/\/$/, ''), absolute };
 }
@@ -105,10 +106,22 @@ function projectAdoptionMode(cwd: string, homeDir: string): AdoptionState {
   }
 }
 
-function expectedExcludes(mode: AdoptionMode, specsRoot: string): string[] {
-  if (mode === 'personal') return ['.sdd-agentic-flow/', `${specsRoot}/`];
-  if (mode === 'specs-shared') return ['.sdd-agentic-flow/'];
-  return [...LOCAL_TEAM_ARTIFACTS];
+function gitExcludeEntry(projectRelativePath: string, entry: string): string {
+  return projectRelativePath === '.' ? entry : `${projectRelativePath}/${entry}`;
+}
+
+function expectedExcludes(
+  mode: AdoptionMode,
+  specsRoot: string,
+  projectRelativePath = '.',
+): string[] {
+  const entries =
+    mode === 'personal'
+      ? ['.sdd-agentic-flow/', `${specsRoot}/`]
+      : mode === 'specs-shared'
+        ? ['.sdd-agentic-flow/']
+        : [...LOCAL_TEAM_ARTIFACTS];
+  return entries.map((entry) => gitExcludeEntry(projectRelativePath, entry));
 }
 
 function blockText(block: (typeof BLOCKS)[keyof typeof BLOCKS], entries: string[]): string {
@@ -153,6 +166,8 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
   const mode = projectAdoptionMode(cwd, homeDir);
   const normalized = specsRootFor(cwd);
   const repoRoot = repositoryRoot(cwd);
+  const git = resolveGitContext(cwd);
+  const projectRelativePath = git.ok ? git.context.projectRelativePath : '.';
   if (!normalized.ok) {
     return {
       mode,
@@ -164,12 +179,12 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
       warning: normalized.error,
     };
   }
-  const git = resolveGitContext(cwd);
   const excludePath = git.ok ? git.context.excludePath : gitInfoExcludePath(cwd);
   const content =
     excludePath && fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const managed = managedEntries(content);
-  const expected = mode === 'unclassified' ? [] : expectedExcludes(mode, normalized.relative);
+  const expected =
+    mode === 'unclassified' ? [] : expectedExcludes(mode, normalized.relative, projectRelativePath);
   const drift =
     mode === 'unclassified'
       ? []
@@ -201,15 +216,25 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
   if (!excludePath)
     return {
       ...inspection,
-      expected: expectedExcludes(mode, inspection.specsRoot),
+      expected: expectedExcludes(
+        mode,
+        inspection.specsRoot,
+        git.ok ? git.context.projectRelativePath : '.',
+      ),
       changed: false,
       warning: 'Git metadata is unavailable',
     };
   const current = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const preserved = removeManagedBlocks(current).trimEnd();
-  const specs = mode === 'personal' ? [`${inspection.specsRoot}/`] : [];
-  const state = mode === 'personal' || mode === 'specs-shared' ? ['.sdd-agentic-flow/'] : [];
-  const derived = mode === 'team' ? expectedExcludes(mode, inspection.specsRoot) : [];
+  const projectRelativePath = git.ok ? git.context.projectRelativePath : '.';
+  const specs =
+    mode === 'personal' ? [gitExcludeEntry(projectRelativePath, `${inspection.specsRoot}/`)] : [];
+  const state =
+    mode === 'personal' || mode === 'specs-shared'
+      ? [gitExcludeEntry(projectRelativePath, '.sdd-agentic-flow/')]
+      : [];
+  const derived =
+    mode === 'team' ? expectedExcludes(mode, inspection.specsRoot, projectRelativePath) : [];
   const blocks = [
     specs.length ? blockText(BLOCKS.specs, specs) : '',
     state.length ? blockText(BLOCKS.state, state) : '',
@@ -222,7 +247,7 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
     else fs.rmSync(excludePath, { force: true });
   }
   const refreshed = inspectAdoption(cwd, homeDir);
-  const expected = expectedExcludes(mode, inspection.specsRoot);
+  const expected = expectedExcludes(mode, inspection.specsRoot, projectRelativePath);
   const drift = [
     ...new Set([
       ...expected.filter((entry) => !refreshed.managed.includes(entry)),

@@ -67,7 +67,11 @@ export function planWorkspaceInitialization(
       ...(contextExists ? [SDD_PATHS.projectContext] : []),
       ...(fs.existsSync(path.join(cwd, SDD_PATHS.config)) ? [SDD_PATHS.config] : []),
     ],
-    excludes: expectedExcludes(adoptionMode, inspectAdoption(cwd, homeDir).specsRoot),
+    excludes: expectedExcludes(
+      adoptionMode,
+      inspectAdoption(cwd, homeDir).specsRoot,
+      resolved.context.projectRelativePath,
+    ),
     createsConfig: false,
   };
 }

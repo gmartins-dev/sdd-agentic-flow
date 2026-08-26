@@ -24,9 +24,9 @@ TLC condensed stages (Specify → Discuss → Design → Tasks → Execute → V
 **methodology**. The skill sequence below is how this toolkit **implements** that
 methodology. They are not two products. After this paragraph, this toolkit calls that
 skill sequence the **canonical workflow path** (not a “linear chain” — review, fix, and
-multi-task are controlled workflow selections). Operating **presets** (`init --preset`) only
-choose how much human interaction that path asks for. `saf-route` discovers the next
-operation; it does not run the path.
+multi-task are controlled workflow selections). Optional workflow policy controls
+how much human interaction that path asks for; absent config uses `apply + supervised`.
+`saf-route` discovers the next operation; it does not run the path.
 
 The canonical workflow path:
 
@@ -78,8 +78,8 @@ This toolkit does not measure token savings or speed multipliers. A token econom
 
 ## With this toolkit
 
-1. **CLI** (`npx sdd-agentic-flow`) creates `.sdd-agentic-flow/config.yml`, installs Markdown skills, and runs `doctor`.
-2. **Skills** (13 public) encode each phase as a capability contract with safety defaults.
+1. **CLI** (`npx sdd-agentic-flow`) installs the official bundle, initializes a Git workspace, and runs `doctor`.
+2. **Skills** (12 public) encode each phase as a capability contract with safety defaults.
 3. **Baselines** condense TLC for planning and TDD for implementation; see [baselines](baselines.md).
    Humans decide *what* must be true; agents may choose *how* to produce the code; sensors
    produce evidence; verification evaluates that evidence against the spec; the human decides.

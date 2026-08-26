@@ -23,5 +23,5 @@ optional.
 top of these five modes: execution mode says what a Skill may mutate, autonomy level says whether
 the agent continues or escalates before the next admissible transition. `plan` and `guided` never
 combine with `autonomous`.
-Daily use can set both axes with guided `init` (Supervised recommended), `init --preset`, or
-`config policy` instead of naming these tokens. See [autonomy levels](autonomy-levels.md).
+Missing configuration uses `apply + supervised`. Use `config policy` to persist
+an explicit override. See [autonomy levels](autonomy-levels.md).

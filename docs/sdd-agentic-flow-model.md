@@ -63,11 +63,11 @@ or run agents.
 
 | Control | Artifact / CLI | Governs |
 | --- | --- | --- |
-| Operating preset | `init --preset` (UX) | Writes the two fields below; not a third stored axis |
+| Effective policy | optional project config | Defaults to `apply` + `supervised` when config is absent |
 | `execution_mode` | `.sdd-agentic-flow/config.yml` | What a skill may do (plan / guided / apply / review / full) |
 | `autonomy_level` | same config | Whether the next skill needs a human between steps |
 | `autonomy_budget` | same config | Iteration/token/runtime limits (guardrail 6) |
-| Capability contract | each `SKILL.md` frontmatter | Inputs, outputs, baselines, `autonomy_profile` |
+| Capability contract | each `SKILL.md` and `saf-contract.yml` sidecar | Inputs, outputs, baselines, and SAF metadata |
 | Guardrails 1–7 | `shared/references/autonomy-guardrails.md` | When `autonomous` may auto-advance |
 | Loop state | `.sdd-agentic-flow/autonomy/loop-state.md` | Resume point, overrides, last skill status |
 | Evidence | check/validation reports, `Status:` field | Whether "done" is believable |

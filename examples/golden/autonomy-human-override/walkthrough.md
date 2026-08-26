@@ -5,7 +5,8 @@ Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-004 — override-gu
 ## Commands
 
 ```bash
-sdd-agentic-flow init --execution-mode full --autonomy-level autonomous
+sdd-agentic-flow init
+sdd-agentic-flow config policy --yes --preset autonomous
 ```
 
 Copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`, then:

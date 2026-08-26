@@ -5,7 +5,8 @@ Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-005 — doctor read
 ## Commands
 
 ```bash
-sdd-agentic-flow init --execution-mode full --autonomy-level autonomous
+sdd-agentic-flow init
+sdd-agentic-flow config policy --yes --preset autonomous
 ```
 
 Set `workflow.autonomy_budget.max_iterations: 0` in `.sdd-agentic-flow/config.yml`, copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`, then:

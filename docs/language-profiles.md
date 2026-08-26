@@ -16,20 +16,12 @@ names, configuration keys, modes, statuses, and identifiers remain unchanged.
 
 ## Select a profile
 
-```bash
-sdd-agentic-flow init --language en-US
-sdd-agentic-flow init --language pt-BR
-sdd-agentic-flow init --interactive --language pt-BR
+The default profile is `en-US`. `init` does not create or overwrite project
+configuration. Add an explicit `language.profile` override to
+`.sdd-agentic-flow/config.yml` only when the project needs a different
+human-output language.
 
-# --en and --br are shorthand for the two --language forms above
-sdd-agentic-flow init --en
-sdd-agentic-flow init --br
-```
-
-The default profile is `en-US`. `init` does not overwrite an existing
-`.sdd-agentic-flow/config.yml`. Edit that file deliberately when changing a project profile.
-
-Generated configuration has this shape:
+An explicit configuration override has this shape:
 
 ```yaml
 language:

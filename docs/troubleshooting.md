@@ -128,9 +128,7 @@ file isn't installed yet. `FAIL` — `language.profile`/`human_outputs`/`technic
 parsed fields and the exact message.
 
 **Fix:** when the configured profile asset is absent because skills are not installed or are
-partial, run `sdd-agentic-flow install`. Re-run `init` or
-`init --language pt-BR` (or the `--en`/`--br` shorthands) only for a missing or invalid project
-language configuration; otherwise correct the four `language.*` fields by hand to match one of
+partial, run `sdd-agentic-flow install`. Correct the four `language.*` fields by hand to match one of
 `docs/language-profiles.md`'s supported profiles.
 
 ### `safety`: "required safety defaults are missing"
@@ -229,10 +227,9 @@ the full model these checks validate.
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json`.
 
-**Fix:** none required. Behavior defaults to `guided`/`manual`. Add
+**Fix:** none required. Behavior defaults to `apply`/`supervised`. Add
 `workflow.execution_mode`/`autonomy_level` to `.sdd-agentic-flow/config.yml` explicitly if you want a
-different default, or re-run `init --execution-mode <mode> --autonomy-level <level>` against a
-fresh project.
+different policy, using `config policy` when applicable.
 
 ### `autonomy_combo`: `FAIL` "execution_mode=... cannot combine with autonomy_level=..."
 

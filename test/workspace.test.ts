@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
+import { configureIntent } from '../src/configure';
 import { resolveGitContext } from '../src/git-context';
 import {
   applyWorkspaceInitialization,
@@ -64,4 +65,16 @@ test('linked worktrees share adoption identity and keep local markers', () => {
   );
   assert.equal(fs.existsSync(path.join(root, '.sdd-agentic-flow', 'workspace.yml')), true);
   assert.equal(fs.existsSync(path.join(linked, '.sdd-agentic-flow', 'workspace.yml')), true);
+});
+
+test('workspace plan keeps Team excludes relative to a nested project', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-workspace-monorepo-'));
+  const project = path.join(root, 'apps', 'payments');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-workspace-monorepo-home-'));
+  fs.mkdirSync(project, { recursive: true });
+  git(root, 'init');
+  configureIntent({ homeDir: home, cwd: project, scope: 'project', adoptionMode: 'team' });
+  const plan = planWorkspaceInitialization(project, home);
+  assert.equal(plan.ok, true);
+  assert.ok(plan.excludes.includes('apps/payments/.sdd-agentic-flow/workspace.yml'));
 });

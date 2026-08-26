@@ -25,6 +25,21 @@ test('documentation contracts reject retired references', () => {
   );
 });
 
+test('documentation contracts reject retired v7 lifecycle vocabulary', () => {
+  const findings = checkDocumentationContracts(
+    new Map([
+      [
+        'README.md',
+        'Run `init --preset supervised`, `install full`, and use `saf-config/v2`.\n\n## Packs\n',
+      ],
+    ]),
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('retired documentation vocabulary')),
+    true,
+  );
+});
+
 test('documentation contracts cover the representation model and registry inventory', () => {
   const documents = new Map<string, string>([
     [

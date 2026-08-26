@@ -93,25 +93,15 @@ npx sdd-agentic-flow
 ```
 
 Esse é o ponto de entrada humano canônico: ele encaminha primeiro uso, setup existente, setup
-parcial e recuperação. O onboarding guiado cria `.sdd-agentic-flow/config.yml`, instala skills e
-valida o setup. A CLI é um **plano de controle** para setup, inspeção e manutenção — não invoca
-skills. Veja [O que é SDD?](docs/what-is-sdd.md) e a [referência de comandos](docs/commands.md).
+parcial e recuperação. A CLI recomenda o lifecycle `install` → `init` → `doctor`; configuração
+é opcional. Ela é um **plano de controle** para setup, inspeção e manutenção — não invoca skills.
+Veja [O que é SDD?](docs/what-is-sdd.md) e a [referência de comandos](docs/commands.md).
 
-Para automação ou uso avançado, use comandos explícitos como `npx sdd-agentic-flow init`,
-`npx sdd-agentic-flow install`, `npx sdd-agentic-flow init` e `npx sdd-agentic-flow doctor`.
-
-`init --preset` grava os dois campos existentes (`execution_mode`, `autonomy_level`) — não é um terceiro eixo de config.
-
-| Preset | Grava | Como o caminho corre |
-| --- | --- | --- |
-| `supervised` (recomendado no TTY; aliases `assist`, `assisted`) | `apply` + `supervised` | Propõe a próxima skill; você confirma |
-| `manual` (padrão fail-safe sem flags; alias `man`) | `guided` + `manual` | Para depois de cada skill |
-| `autonomous` (alias `auto`) | `full` + `autonomous` | Assume planejamento, reparo e validação local até a conclusão verificada dentro da autoridade delegada |
-
-Não misture `--preset` com `--execution-mode` / `--autonomy-level`. **Autonomous não significa
-autoridade ilimitada.** Ele resolve falhas e ciclos de reparo ordinários sem perguntas intermediárias,
-mas commit, push, merge, tag, publish, deploy e outras ações externas ou irreversíveis continuam fora
-da delegação. A CLI não executa skills.
+Para automação ou uso avançado, use comandos explícitos como `npx sdd-agentic-flow install`,
+`npx sdd-agentic-flow init` e `npx sdd-agentic-flow doctor`. A política padrão efetiva é
+`apply + supervised`; use `config policy` somente quando um override explícito for necessário.
+**Autonomous não significa autoridade ilimitada.** Commit, push, merge, tag, publish, deploy e
+outras ações externas ou irreversíveis continuam fora da delegação. A CLI não executa skills.
 
 Depois, invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie uma receita de [prompts](docs/prompt-recipes.md) ao delegar a um agente.
 

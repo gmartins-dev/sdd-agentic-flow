@@ -240,31 +240,9 @@ Running `npx sdd-agentic-flow` with no command shows a contextual status screen 
 
 Unknown commands and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. A pipe or CI run remains deterministic human-readable text; `doctor --json` is the explicit machine contract. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
 
-Choose a language profile explicitly when creating a project:
-
-```bash
-npx sdd-agentic-flow init --language en-US
-npx sdd-agentic-flow init --language pt-BR
-# --en / --br are shorthand for the two flags above
-npx sdd-agentic-flow init --en
-npx sdd-agentic-flow init --br
-```
-
-See [language profiles](docs/language-profiles.md) for the profile contract.
-
-## Packs
-
-| Pack | Purpose |
-| --- | --- |
-| `planning` | Discovery, specification, explanation, and task prompts. |
-| `execution` | Single-task execution and feature validation. |
-| `review` | Local change-review package, review, and finding repair. |
-| `multi-task` | Dependency-aware multi-task execution. |
-| `full` | All public skills. |
-
-`full` is the recommended capability set. Operating policy is separate: guided onboarding uses
-`supervised`; non-interactive fail-safe operation uses `manual`. Hosted SCM, tracker, and
-coding-agent providers are optional external integrations, never core bundle dependencies.
+The official bundle contains 12 Skills and the shared layer. Language and
+policy overrides are optional project configuration; use `config policy` when
+an explicit override is needed. See [configuration](docs/configuration.md).
 
 ## Execution modes
 
@@ -272,7 +250,13 @@ The toolkit documents five local operating modes: `plan`, `guided`, `apply`, `re
 
 ## Autonomy levels
 
-`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default `manual`) is a second, orthogonal axis: `execution_mode` says what a skill may do, `autonomy_level` says whether it needs a human before the next one runs. `autonomous` advances through normal work and bounded repair when the transition is admissible; only exceptional authority, safety, budget, no-progress, or human-override conditions return control to a human. Set it with `init --autonomy-level`, audit it with `doctor --autonomy`, and inspect an in-flight run with `context autonomy-state` / `autonomous-resume`. See [autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, default
+`supervised`) is a second, orthogonal axis: `execution_mode` says what a skill
+may do, and `autonomy_level` says whether it needs a human before the next one
+runs. Missing config resolves to `apply + supervised`; use `config policy` for
+an explicit override. Audit it with `doctor --autonomy`, and inspect an
+in-flight run with `context autonomy-state` / `autonomous-resume`. See
+[autonomy levels](docs/autonomy-levels.md) and [autonomy guardrails](docs/autonomy-guardrails.md).
 
 ## TDD baseline
 

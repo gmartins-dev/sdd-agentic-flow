@@ -16,20 +16,12 @@ chaves de configuração, modos, statuses e identificadores permanecem iguais.
 
 ## Selecione um perfil
 
-```bash
-sdd-agentic-flow init --language en-US
-sdd-agentic-flow init --language pt-BR
-sdd-agentic-flow init --interactive --language pt-BR
+O perfil padrão é `en-US`. O `init` não cria nem sobrescreve a configuração do
+projeto. Adicione um override explícito de `language.profile` em
+`.sdd-agentic-flow/config.yml` somente quando o projeto precisar de outro idioma
+para saídas humanas.
 
-# --en e --br são atalhos para as duas formas de --language acima
-sdd-agentic-flow init --en
-sdd-agentic-flow init --br
-```
-
-O perfil padrão é `en-US`. O `init` não sobrescreve `.sdd-agentic-flow/config.yml`
-existente. Altere esse arquivo deliberadamente para mudar o perfil do projeto.
-
-Configuração gerada:
+Override de configuração explícito:
 
 ```yaml
 language:

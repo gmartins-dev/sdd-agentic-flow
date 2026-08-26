@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 7.0.0
+
+### Simplified workspace-first SAF lifecycle
+
+Consolidates SAF into one official 12-Skill bundle and the lifecycle
+`install` → per-workspace Git-aware `init` → optional `config` → `doctor`.
+Configuration now defaults effectively to `apply + supervised`; install intent,
+provenance, and config use v3; workspace markers use `saf-workspace/v1`; and
+machine output uses schema 2. Removes packs, `saf-setup`, public `list`, and
+pack-shaped state. Adds portable Agent Skills sidecars, bounded pre-v7 reset,
+stable linked-worktree adoption identity, independent readiness axes, and
+deterministic generated project context. Final RC hardening fixes nested
+monorepo Git excludes, local Team workspace markers, zero-config autonomy
+reporting, and retired v6 documentation detection.
+
 ## 6.5.0
 
 ### Local-first adoption and explicit sharing

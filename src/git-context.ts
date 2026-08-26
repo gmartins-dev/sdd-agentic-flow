@@ -39,17 +39,19 @@ export function resolveGitContext(cwd: string): GitContextResult {
   try {
     const gitRoot = fs.realpathSync(git(projectRoot, 'rev-parse', '--show-toplevel'));
     const commonRaw = git(projectRoot, 'rev-parse', '--git-common-dir');
+    const gitDirRaw = git(projectRoot, 'rev-parse', '--git-dir');
     const gitCommonDir = fs.realpathSync(
       path.isAbsolute(commonRaw) ? commonRaw : path.resolve(projectRoot, commonRaw),
     );
     const prefix = git(projectRoot, 'rev-parse', '--show-prefix');
     const projectRelativePath = prefix ? prefix.replaceAll('\\', '/').replace(/\/$/, '') : '.';
+    const identityRelativePath = /[\\/]worktrees[\\/]/i.test(gitDirRaw) ? '.' : projectRelativePath;
     if (projectRelativePath === '..' || projectRelativePath.startsWith('../')) {
       return { ok: false, error: 'workspace root must be inside the Git worktree' };
     }
     const adoptionKey = crypto
       .createHash('sha256')
-      .update(`${identityPath(canonicalCommonDir(gitCommonDir))}\0${projectRelativePath}`)
+      .update(`${identityPath(canonicalCommonDir(gitCommonDir))}\0${identityRelativePath}`)
       .digest('hex')
       .slice(0, 16);
     return {

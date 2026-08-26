@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: null
+requires: []
+consumes: [domain-glossary, project-context]
+produces: [discovery-state, spec-ready-brief]
+baseline: []
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; convergence on a spec-ready brief is a human judgment call, not a guardrail a skill can self-certify'
+  blocking_conditions: [unresolved_unknowns, no_convergence]
+  evidence_required: [spec-ready-brief]

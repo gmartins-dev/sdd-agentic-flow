@@ -8,7 +8,7 @@ import {
   lexicalConflict,
 } from '../src/command-registry';
 
-test('v5 command registry contains only the locked canonical hierarchy', () => {
+test('v7 command registry contains only the canonical hierarchy', () => {
   assert.deepEqual(CANONICAL_COMMANDS, [
     'init',
     'install',
@@ -22,7 +22,6 @@ test('v5 command registry contains only the locked canonical hierarchy', () => {
     'upgrade',
     'autonomous-resume',
     'uninstall',
-    'list',
     'learn-sdd',
     'help',
     'version',

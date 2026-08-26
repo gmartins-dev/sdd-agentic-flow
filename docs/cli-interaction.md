@@ -58,14 +58,14 @@ Handled failures use exit code `1`. Unexpected/internal errors use `2`. Success 
 Human-facing errors on stderr look like:
 
 ```text
-FAIL unknown pack: foo.
+FAIL unknown command: foo.
 
 Reason:
-  Pack `foo` does not exist.
+  Command `foo` does not exist.
 
 Try:
-  sdd-agentic-flow list
-  Did you mean `full`?
+  sdd-agentic-flow help
+  Did you mean `help`?
 ```
 
 Did-you-mean suggestions appear under `Try:` and are never executed automatically. The CLI

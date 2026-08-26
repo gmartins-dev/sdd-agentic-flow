@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-check-task
+requires: [task-evidence]
+consumes: []
+produces: [change-review-package]
+baseline: [tlc-spec-driven]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'pr-description.md present, linked to complete task evidence, with no required template section missing'
+  blocking_conditions: [missing_task_evidence, incomplete_pr_template]
+  evidence_required: [pr-description.md]

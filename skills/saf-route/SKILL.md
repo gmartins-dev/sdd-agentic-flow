@@ -1,28 +1,14 @@
 ---
 name: saf-route
 description: Recommend the next local SDD skill without changing files. Use when a user needs help choosing a safe workflow step or resolving prerequisites.
-metadata:
-  version: 6.5.0
-extends: null
-requires: [config]
-consumes: [discovery-state]
-produces: [route-recommendation]
-baseline: []
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'route recommendation present and one on-path next Skill is admissible; this Skill remains read-only'
-  blocking_conditions: [ambiguous_state]
-  evidence_required: [route-recommendation]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Route an SDD workflow
 
 ## When to use
 
-Use before a workflow step when the requested phase, prerequisites, or installed pack are unclear. Recommend the canonical workflow path (Plan → Prompt → Implement → Check → PR → Review → Fix → Validate). Route first by artifact state, then by uncertainty. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): listing slugs ≠ loading bodies; 0 ask / 1 select / >1 human gate.
+Use before a workflow step when the requested phase or prerequisites are unclear. Recommend the canonical workflow path (Plan → Prompt → Implement → Check → PR → Review → Fix → Validate). Route first by artifact state, then by uncertainty. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): listing slugs ≠ loading bodies; 0 ask / 1 select / >1 human gate.
 
 ## When not to use
 
@@ -36,16 +22,16 @@ Do not use to implement, review, create a PR, change files, or replace the candi
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when it exists. If it is missing, recommend `saf-setup`.
+1. Read `.sdd-agentic-flow/config.yml` when it exists; otherwise use the canonical effective defaults.
 2. Read `../sdd-agentic-flow-shared/references/workflow-routing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/spec-lifecycle.md`.
 3. Inspect the candidate local `SKILL.md` before stating what it does. Its instructions are the source of truth.
 4. Match the request against the routing table in `../sdd-agentic-flow-shared/references/workflow-routing.md` — it is the single source of truth for routing situations and recommended skills; do not reproduce or re-derive the table here, and never let this step's wording diverge from it.
-5. Identify missing packs, prerequisites, unresolved uncertainty, and any human decision required. Treat workflow/artifact state as the primary router: use uncertainty only to distinguish conversational brainstorming from durable discovery or a human gate. A discovery-only feature workspace is resumable with `saf-brainstorm`, but is not a spec-ready package. If the request needs a feature package and does not name one, listing directory names under `specs.root` and skimming `context.md` or discovery status is allowed. 0 matches → ask; 1 unique → name it in the recommendation; >1 plausible → human decision required; never “probably this one.” Do not read every `spec.md` to make the recommendation. Listing ≠ loading bodies. This remains a read-only router, not a package registry. If config `autonomy_level` is `autonomous`, the invoking agent may follow one admissible on-path recommendation without a new confirmation; this Skill never invokes the next Skill.
+5. Identify missing prerequisites, unresolved uncertainty, and any human decision required. Treat workflow/artifact state as the primary router: use uncertainty only to distinguish conversational brainstorming from durable discovery or a human gate. A discovery-only feature workspace is resumable with `saf-brainstorm`, but is not a spec-ready package. If the request needs a feature package and does not name one, listing directory names under `specs.root` and skimming `context.md` or discovery status is allowed. 0 matches → ask; 1 unique → name it in the recommendation; >1 plausible → human decision required; never “probably this one.” Do not read every `spec.md` to make the recommendation. Listing ≠ loading bodies. This remains a read-only router, not a package registry. Under effective autonomous policy, the invoking agent may follow one admissible on-path recommendation without a new confirmation; this Skill never invokes the next Skill.
 
 ## Safety
 
 - This skill is read-only and never invokes another skill automatically.
-- Do not infer requirements, install packs, change files, or perform Git, release, deploy, or publish actions.
+- Do not infer requirements, install assets, change files, or perform Git, release, deploy, or publish actions.
 - Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` and preserve human authority.
 
 ## Output

@@ -1,6 +1,5 @@
 flowchart TD
-  setup[saf-setup] --> route[saf-route]
-  route --> brainstorm[saf-brainstorm]
+  route[saf-route] --> brainstorm[saf-brainstorm]
   brainstorm -->|converged| specs[saf-create-spec]
   route --> specs
   specs -.->|on demand| explain[saf-explain]

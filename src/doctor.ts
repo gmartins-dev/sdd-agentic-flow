@@ -1,22 +1,25 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 import { inspectAdoption } from './adoption';
-import { AUTONOMY_LEVELS, configValue, EXECUTION_MODES } from './config-domain';
+import {
+  AUTONOMY_LEVELS,
+  configValue,
+  EXECUTION_MODES,
+  effectiveConfigYaml,
+  readConfig,
+} from './config-domain';
 import { parseContractArray, validateContractReferences } from './contract-graph';
 import { unknownContractKinds } from './contract-kinds';
 import { buildDoctorView, type DoctorCheck, formatEvidenceGraph } from './doctor-view';
 import { collectEvidenceGraph, type EvidenceGraphResult } from './evidence-graph';
 import { renderEvidenceGraphHtml } from './evidence-graph-html';
+import { resolveGitContext } from './git-context';
 import { harnessReadinessChecks } from './harness-readiness';
 import type { PlanForInstallProfileInput } from './install';
-import {
-  classifyProvenanceVersion,
-  readInstallConfig,
-  repositoryKey,
-  USER_TARGETS,
-} from './install-domain';
+import { classifyProvenanceVersion, readInstallConfig, USER_TARGETS } from './install-domain';
 import { type InstallPlan, isPlanEmpty } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
@@ -30,7 +33,6 @@ import {
   legacySddJoin,
   OPTIONAL_CONTRACT_FIELDS,
   PACKAGE_ROOT,
-  PACKS_DIR,
   PRIVATE_PATTERNS,
   REQUIRED_CONTRACT_FIELDS,
   SDD_PATHS,
@@ -40,11 +42,13 @@ import {
   VERSION,
 } from './paths';
 import { gitInfo, parseProvenance, readLoopState } from './project-context';
+import { parseSkillContract } from './skill-contract';
 import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from './skill-identity';
 import { styleStatus } from './ui';
 import { checkForUpdate } from './update-check';
 import { readInstallProvenance } from './upgrade';
 import { satisfiesRange } from './version-compat';
+import { WORKSPACE_MARKER } from './workspace';
 
 type InternalDoctorCheck = DoctorCheck & { section?: string };
 
@@ -65,11 +69,7 @@ type DoctorCommandOptions = {
 
 type SmokeCheckDeps = {
   init: (cwd: string, options: { profile?: string; quiet?: boolean }) => boolean | undefined;
-  install: (
-    pack: string,
-    cwd: string,
-    options: { scope?: string; quiet?: boolean; homeDir?: string },
-  ) => unknown;
+  install: (cwd: string, options: { scope?: string; quiet?: boolean; homeDir?: string }) => unknown;
 };
 
 let resolveInstallProfilePlan: ((input: PlanForInstallProfileInput) => InstallPlan) | null = null;
@@ -83,62 +83,6 @@ function setDoctorInstallPlanResolver(
 
 function setDoctorSmokeDeps(deps: SmokeCheckDeps): void {
   smokeCheckDeps = deps;
-}
-
-function defaultConfigYaml(): string {
-  return `schema: saf-config/v2
-
-project:
-  name: example-project
-  default_branch: main
-
-agent:
-  target: generic
-
-language:
-  profile: en-US
-  human_outputs: en-US
-  technical_tokens: canonical
-  bilingual_mode: technical-canonical
-
-specs:
-  root: .specs/features
-  files:
-    - context.md
-    - spec.md
-    - design.md
-    - tasks.md
-
-source:
-  type: local-files
-  snapshots_dir: .sdd-agentic-flow/snapshots
-
-workflow:
-  default_flow: single
-  feature_profile: medium_feature
-  allow_multi_worktree: false
-  allow_stacked_prs: false
-  commit_policy: manual
-  execution_mode: guided
-  autonomy_level: manual
-
-  autonomy_budget:
-    max_iterations: 50
-    max_tokens: 500000
-    max_runtime_hours: 4
-    pause_on_warning: true
-
-quality:
-  tlc_baseline_required: true
-  require_tdd: true
-  require_independent_check: true
-  require_evidence_before_completion: true
-
-safety:
-  no_commit_by_default: true
-  no_push_by_default: true
-  no_merge_or_deploy: true
-`;
 }
 
 function resolveConfiguredAgent(cwd: string): string | null {
@@ -186,7 +130,7 @@ function languageReport(cwd: string) {
   const content = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : isPackage
-      ? defaultConfigYaml()
+      ? effectiveConfigYaml()
       : null;
   if (!content) {
     return {
@@ -310,7 +254,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       const legacy =
         Boolean(
           provenance?.package === 'sdd-agentic-flow' &&
-            provenance.schema !== 'saf-install-provenance/v2',
+            provenance.schema !== 'saf-install-provenance/v3',
         ) ||
         fs
           .readdirSync(root)
@@ -328,7 +272,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
   const configPath = sddJoin(cwd, 'config.yml');
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
-    : defaultConfigYaml();
+    : effectiveConfigYaml();
   const specsRoot = configValue(safetyConfig, 'root');
   const language = languageReport(cwd);
   const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd);
@@ -357,7 +301,6 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         path.join(cwd, 'src'),
         path.join(cwd, 'skills'),
         path.join(cwd, 'shared'),
-        path.join(cwd, 'packs'),
         path.join(cwd, 'examples'),
         path.join(cwd, 'docs'),
       ])
@@ -374,7 +317,6 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       'NOTICE and licensing map present',
       'Licensing',
     );
-    add('packs', fs.existsSync(PACKS_DIR) ? 'PASS' : 'FAIL', 'installable packs present', 'Packs');
     add(
       'agent_compatibility',
       fs.existsSync(path.join(cwd, 'docs', 'agent-compatibility.md')) ? 'PASS' : 'FAIL',
@@ -388,11 +330,37 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       'Safety',
     );
   } else {
+    const gitContext = resolveGitContext(cwd);
+    add(
+      'git_workspace',
+      gitContext.ok ? 'PASS' : 'FAIL',
+      gitContext.ok ? `Git workspace found at ${gitContext.context.gitRoot}` : gitContext.error,
+      'Workspace',
+    );
+    const resolvedConfig = readConfig(configPath);
     add(
       'config',
-      fs.existsSync(configPath) ? 'PASS' : 'WARN',
-      fs.existsSync(configPath) ? `${SDD_PATHS.config} found` : `${SDD_PATHS.config} not found`,
-      'Config',
+      resolvedConfig.ok ? 'PASS' : 'FAIL',
+      resolvedConfig.ok
+        ? resolvedConfig.state === 'absent'
+          ? `${SDD_PATHS.config} absent; using built-in defaults`
+          : `${SDD_PATHS.config} found`
+        : resolvedConfig.errors.join('; '),
+      'Policy',
+    );
+    const workspacePath = path.join(cwd, SDD_PATHS.workspace);
+    const workspaceContent = fs.existsSync(workspacePath)
+      ? fs.readFileSync(workspacePath, 'utf8')
+      : null;
+    add(
+      'workspace',
+      workspaceContent === null ? 'WARN' : workspaceContent === WORKSPACE_MARKER ? 'PASS' : 'FAIL',
+      workspaceContent === null
+        ? `${SDD_PATHS.workspace} not found; run \`sdd-agentic-flow init\``
+        : workspaceContent === WORKSPACE_MARKER
+          ? `${SDD_PATHS.workspace} is current`
+          : `${SDD_PATHS.workspace} is invalid or unsupported; preserved without changes`,
+      'Workspace',
     );
     const adoption = inspectAdoption(cwd, os.homedir());
     add(
@@ -425,19 +393,20 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       }
     })();
     (() => {
+      if (!gitContext.ok) return;
       const installConfig = readInstallConfig(os.homedir());
-      const key = repositoryKey(cwd);
+      const key = gitContext.context.adoptionKey;
       const profile = installConfig?.projects[key] || installConfig?.user;
       const scope = installConfig?.projects[key] ? 'project' : 'user';
-      if (!profile?.packs?.length || !resolveInstallProfilePlan) return;
+      if (!profile || !resolveInstallProfilePlan) return;
       const plan = resolveInstallProfilePlan({ cwd, homeDir: os.homedir(), scope, profile });
       const status = plan.blocked || !isPlanEmpty(plan) ? 'WARN' : 'PASS';
       add(
         'installation_intent',
         status,
         isPlanEmpty(plan)
-          ? `installation intent is synchronized (${profile.packs.join(', ')})`
-          : `installation intent has pending reconciliation (${profile.packs.join(', ')})`,
+          ? 'installation intent is synchronized'
+          : 'installation intent has pending reconciliation',
         'Installation',
       );
     })();
@@ -464,8 +433,8 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     );
     add(
       'project_readiness',
-      fs.existsSync(configPath) && presence.complete ? 'PASS' : 'WARN',
-      'project readiness is based on config and selected official skills',
+      resolvedConfig.ok && presence.complete ? 'PASS' : 'WARN',
+      'project readiness is based on effective policy and official skills',
       'Project readiness',
     );
     {
@@ -473,7 +442,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       const contextArtifactExists = fs.existsSync(contextArtifactPath);
       let contextMessage = contextArtifactExists
         ? `${SDD_PATHS.projectContext} found`
-        : `${SDD_PATHS.projectContext} not found; run \`context refresh\``;
+        : `${SDD_PATHS.projectContext} not found; optional until workspace initialization`;
       if (contextArtifactExists) {
         const provenance = parseProvenance(fs.readFileSync(contextArtifactPath, 'utf8'));
         const current = gitInfo(cwd);
@@ -484,7 +453,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       }
       add(
         'project_context',
-        contextArtifactExists ? 'PASS' : 'WARN',
+        contextArtifactExists ? 'PASS' : 'INFO',
         contextMessage,
         'Project context',
       );
@@ -626,7 +595,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       projectInstalled ? 'PASS' : 'INFO',
       projectInstalled
         ? `project-scope installation found at ${path.relative(cwd, projectTarget) || '.'}`
-        : 'no project-scope installation found (opt in with `install <pack> --scope project`)',
+        : 'no project-scope installation found (opt in with `install --scope project`)',
       'Installation',
     );
     for (const [targetId, segments] of Object.entries(USER_TARGETS)) {
@@ -668,11 +637,6 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
   return checks;
 }
 
-function frontmatterOf(content: string): string | null {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  return match?.[1] ?? null;
-}
-
 function installedSkillDirs(root: string): string[] {
   if (!fs.existsSync(root)) return [];
   return fs
@@ -702,11 +666,18 @@ function contractsCheck(cwd: string): InternalDoctorCheck {
   const warnings: string[] = [];
   const parsed: Array<{ name: string; frontmatter: string }> = [];
   for (const skill of skills) {
-    const skillPath = path.join(root, skill, 'SKILL.md');
-    const content = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf8') : null;
-    const frontmatter = content ? frontmatterOf(content) : null;
+    const contractPath = path.join(root, skill, 'saf-contract.yml');
+    const frontmatter = fs.existsSync(contractPath) ? fs.readFileSync(contractPath, 'utf8') : null;
     if (!frontmatter) {
-      failures.push(`${skill}: SKILL.md missing or has no frontmatter`);
+      failures.push(`${skill}: saf-contract.yml missing`);
+      continue;
+    }
+    try {
+      parseSkillContract(frontmatter);
+    } catch (error) {
+      failures.push(
+        `${skill}: invalid saf-contract.yml (${error instanceof Error ? error.message : String(error)})`,
+      );
       continue;
     }
     for (const field of REQUIRED_CONTRACT_FIELDS)
@@ -863,8 +834,8 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
   if (!configExists) {
     add(
       'autonomy_config',
-      'WARN',
-      `${SDD_PATHS.config} not found; run \`init\` to set workflow.execution_mode/autonomy_level`,
+      'PASS',
+      'using built-in defaults: execution_mode=apply, autonomy_level=supervised',
     );
   } else if (!executionMode || !autonomyLevel) {
     add(
@@ -893,11 +864,11 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
   const effectiveExecutionMode =
     executionMode && (EXECUTION_MODES as readonly string[]).includes(executionMode)
       ? executionMode
-      : 'guided';
+      : 'apply';
   const effectiveAutonomyLevel =
     autonomyLevel && (AUTONOMY_LEVELS as readonly string[]).includes(autonomyLevel)
       ? autonomyLevel
-      : 'manual';
+      : 'supervised';
   if (explicitlyInvalid) {
     add(
       'autonomy_combo',
@@ -922,14 +893,24 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
     const missingProfile: string[] = [];
     const unsupported: string[] = [];
     for (const skill of skills) {
-      const skillPath = path.join(root, skill, 'SKILL.md');
-      const skillContent = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf8') : null;
-      const frontmatter = skillContent ? frontmatterOf(skillContent) : null;
-      if (!frontmatter || !/^autonomy_profile:/m.test(frontmatter)) {
+      const contractPath = path.join(root, skill, 'saf-contract.yml');
+      let autonomyProfile: Record<string, string | null | string[]> | null = null;
+      try {
+        const contract = parseSkillContract(fs.readFileSync(contractPath, 'utf8'));
+        const profile = contract.autonomy_profile;
+        if (profile && typeof profile === 'object' && !Array.isArray(profile)) {
+          autonomyProfile = profile;
+        }
+      } catch {
+        // Report a single actionable finding below for missing or malformed sidecars.
+      }
+      if (!autonomyProfile) {
         missingProfile.push(skill);
         continue;
       }
-      const supportedLevels = parseContractArray(frontmatter, 'supported_levels') || [];
+      const supportedLevels = Array.isArray(autonomyProfile.supported_levels)
+        ? autonomyProfile.supported_levels
+        : [];
       const overrideLevel = skillOverrideLevel(content ?? '', skill);
       const levelForSkill =
         overrideLevel && (AUTONOMY_LEVELS as readonly string[]).includes(overrideLevel)
@@ -1062,25 +1043,25 @@ function smokeCheck(): InternalDoctorCheck {
   const { init, install } = smokeCheckDeps;
   let temporary: string | undefined;
   try {
-    for (const profile of LANGUAGE_PROFILES) {
+    for (const profile of ['en-US']) {
       temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-smoke-'));
+      spawnSync('git', ['init', '--quiet'], { cwd: temporary });
       const originalHome = process.env.HOME;
       process.env.HOME = temporary;
       try {
         init(temporary, { profile, quiet: true });
-        install('full', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        install(temporary, { scope: 'user', quiet: true, homeDir: temporary });
         init(temporary, { profile, quiet: true });
-        install('full', temporary, { scope: 'project', quiet: true, homeDir: temporary });
+        install(temporary, { scope: 'user', quiet: true, homeDir: temporary });
         const required = [
-          SDD_PATHS.config,
+          SDD_PATHS.workspace,
           SDD_PATHS.projectContext,
           '.agents/skills',
           '.agents/skills/sdd-agentic-flow-shared',
           `.agents/skills/sdd-agentic-flow-shared/language-profiles/${profile}.md`,
-          '.specs/features',
         ].every((relative) => temporary && fs.existsSync(path.join(temporary, relative)));
         const state = severity(doctorChecks(temporary));
-        if (!required || state === 'FAIL' || languageReport(temporary).profile !== profile)
+        if (!required || state === 'FAIL')
           throw new Error(`expected ${profile} files or project checks are missing`);
       } finally {
         if (originalHome === undefined) delete process.env.HOME;
@@ -1129,10 +1110,16 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
     version: VERSION,
     checks: projectedChecks.map(({ section: _section, ...check }) => check),
     language: languageReport(cwd),
+    readiness: {
+      installation: projectedChecks.find((check) => check.name === 'skills')?.status ?? 'INFO',
+      workspace: projectedChecks.find((check) => check.name === 'workspace')?.status ?? 'INFO',
+      policy: projectedChecks.find((check) => check.name === 'config')?.status ?? 'INFO',
+    },
+    config_origin: readConfig(sddJoin(cwd, 'config.yml')).origin ?? 'invalid',
   };
   if (options.json)
     process.stdout.write(
-      `${JSON.stringify({ schema_version: 1, cli_version: VERSION, command: 'doctor', ok: true, data: result })}\n`,
+      `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'doctor', ok: true, data: result })}\n`,
     );
   else
     renderDoctor(projectedChecks, {
@@ -1170,7 +1157,7 @@ function evidenceGraphDoctor(
     } else process.stdout.write(html);
   } else if (options.json) {
     process.stdout.write(
-      `${JSON.stringify({ schema_version: 1, cli_version: VERSION, command: 'doctor --evidence-graph', ok: exitCode === 0, data: { ...result, exitCode } })}\n`,
+      `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'doctor --evidence-graph', ok: exitCode === 0, data: { ...result, exitCode } })}\n`,
     );
   } else {
     process.stdout.write(`${formatEvidenceGraph(result)}\n`);

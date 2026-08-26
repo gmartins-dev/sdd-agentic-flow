@@ -1,21 +1,7 @@
 ---
 name: saf-create-spec
-description: Create or update a repository-local, evidence-based SDD specification package, either from a requested outcome or from existing, undocumented code. Use when a user asks to turn a feature request into requirements, acceptance criteria, design decisions, or implementation-ready specifications, or asks to document/formalize behavior that already exists in the codebase with no source item to start from; read .sdd-agentic-flow/config.yml before producing artifacts.
-metadata:
-  version: 6.5.0
-extends: null
-requires: [config, source-item]
-consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
-produces: [spec-package]
-baseline: [tlc-spec-driven]
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion'
-  blocking_conditions: [missing_spec, inconsistent_design, unspecified_requirements]
-  evidence_required: [spec.md, design.md]
+description: Create or update a repository-local, evidence-based SDD specification package from a requested outcome or existing code; use project config when present and effective defaults otherwise.
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Create SDD Specifications
@@ -26,20 +12,20 @@ Use when a feature, change, bug fix, or technical initiative needs an implementa
 
 ## When not to use
 
-Do not use for direct implementation, a casual explanation, or an unscoped brainstorming request. Do not proceed without repository-local configuration; use `saf-setup` first.
+Do not use for direct implementation, a casual explanation, or an unscoped brainstorming request.
 
 ## Inputs
 
 - **Source-item mode:** the requested outcome and known constraints.
 - **Existing-code mode:** an explicit **scope** — the specific module, feature, package, directory, or bounded area to reverse-engineer, named by the user. Never proceed against an unstated or whole-repository scope — ask the user to name a bounded area first.
-- `.sdd-agentic-flow/config.yml`.
+- `.sdd-agentic-flow/config.yml`, when present; otherwise canonical effective defaults.
 - Relevant repository evidence: code, tests, existing decisions, and prior SDD artifacts (within the stated scope, in existing-code mode).
 - A converged `discovery.md` or `brief.md`, when present for the named feature workspace.
 
 ## Workflow
 
 1. Determine the mode. If the user provides a requested outcome, ticket, or feature request, use **source-item mode**. If the user asks to document or formalize behavior that already exists in the code with no prior spec and no requested outcome, use **existing-code mode** and confirm the user has named an explicit scope — a specific module, feature, or bounded area, not the whole repository — before continuing; ask for one if it is missing or too broad.
-2. Read `.sdd-agentic-flow/config.yml` and use its artifact paths, naming rules, and configured scope. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`.
+2. Read `.sdd-agentic-flow/config.yml` when present and use its overrides; otherwise use the canonical effective defaults.
 3. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to apply the common lifecycle and required decision points. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply `../sdd-agentic-flow-shared/references/feature-profiles.md` guidance to scope the package's depth. Read `../sdd-agentic-flow-shared/references/work-types.md`. Infer **work intent** (`feature` / `bugfix` / `refactor` / `investigation` / `maintenance`) from the request or source item and state it in prose near the top of `spec.md` or `context.md` (example: `Work intent: bugfix`). Work intent is not a config key, not a CLI `--type`, and not a fifth `feature_profile`. Apply the matching content contract from `work-types.md` inside existing headers — do not add `## Unchanged behavior` or `## System Invariants`, and do not create `bugfix.md`.
 4. Read `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/artifact-contracts.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/spec-lifecycle.md` before handling inputs or writing artifacts. New slug → new folder. Same slug → identify overwrite and wait for an explicit update request (already in Safety). If the work extends or supersedes another package, record canonical `Extends:` / `Supersedes:` in `context.md`. Optional `Lifecycle: draft` or `active` in `context.md` (not a new H2). Do not glob sibling `spec.md` files except to detect slug collision or an explicit relation. Read `../sdd-agentic-flow-shared/references/engineering-principles.md` so `design.md` follows existing architecture. If the existing architecture is flawed, record the tension; in autonomous mode, reconcile an intent-preserving correction through this canonical writer when repository evidence supports it; do not silently change acceptance semantics.
 5. Read `.sdd-agentic-flow/context/project-context.md` when it exists; treat it as read-only discovered output. In source-item mode, also read `.sdd-agentic-flow/context/domain-glossary.md` when it exists; propose or create it only with explicit authorization and a source or uncertainty note for every term. When a converged discovery artifact exists, read only its relevant decisions and findings, then re-ground them against current repository evidence. `discovery.md` informs the package; `spec.md` becomes the normative requirement authority.

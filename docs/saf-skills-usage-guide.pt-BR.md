@@ -1,213 +1,39 @@
 # Guia de uso das skills SDD
 
-Use as skills públicas do `sdd-agentic-flow` em um fluxo local com agentes de código. O toolkit mantém especificações, prompts, alterações e evidências no projeto para que uma pessoa revise cada etapa.
-
-SAF define restrições de workflow e transições admissíveis. O host de agentes de código executa.
-As evidências atuais apoiam a verificação antes que o trabalho avance. Veja a jornada
-ilustrativa em [developer journey](https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/developer-journey.md).
-
-## 1. Instale o toolkit
-
-Execute no diretório raiz do projeto:
+O SAF define restrições do workflow e transições de evidência; o host do agente
+executa o trabalho. Instale o bundle oficial uma vez, inicialize cada workspace
+Git e configure apenas quando os defaults precisarem de override.
 
 ```bash
+npx sdd-agentic-flow install
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install full
 npx sdd-agentic-flow doctor
 ```
 
-O `init` guiado em terminal real inclui política operacional (Supervisionado recomendado).
-Use `init` e comandos `config` explícitos em automação. A CLI grava
-`.sdd-agentic-flow/config.yml` e preserva uma configuração existente.
+A ausência de `.sdd-agentic-flow/config.yml` é saudável. As skills usam os
+defaults canônicos `apply` + `supervised`, `.specs/features/`, fontes locais e
+os gates documentados. Configuração inválida ou futura falha de forma fechada.
 
-Use `npx sdd-agentic-flow list` para consultar os packs:
-
-| Pack                     | Uso                                                              |
-| ------------------------ | ---------------------------------------------------------------- |
-| `planning`               | Discovery, specs, explicações e prompts de tarefas                |
-| `execution`              | Execução de uma tarefa e validação da feature                     |
-| `review`                 | Pacote local de change review, review e correção de findings       |
-| `multi-task`             | Execução de múltiplas tarefas com dependências explícitas         |
-| `full`                   | Todas as skills públicas                                         |
-
-## 2. Leia a configuração do projeto
-
-`.sdd-agentic-flow/config.yml` registra nome do projeto, branch, agente, idioma de saída,
-tipo de origem, fluxo padrão e gates de segurança. Leia o arquivo antes de
-pedir que um agente use uma skill. O agente deve seguir a configuração e parar
-quando o pedido contrariar seus gates.
-
-## 3. Escolha um modo de execução
-
-```mermaid
-flowchart LR
-  Plan[plan\nescrever specs e prompts] --> Guided[guided\npropor alterações]
-  Guided --> Apply[apply\nalterar arquivos locais]
-  Apply --> Review[review\ninspecionar evidências]
-  Review --> Full[full\ncoordenar o fluxo local]
-```
-
-| Modo     | Permite                                                      | Não permite por padrão                       |
-| -------- | ------------------------------------------------------------ | -------------------------------------------- |
-| `plan`   | Specs, designs, tasks, prompts e reports                     | Alterações no código-fonte                   |
-| `guided` | Patches propostos sob supervisão humana                      | Commit ou push automático                    |
-| `apply`  | Alterações locais autorizadas                                | Commit, push, merge, deploy ou publish       |
-| `review` | Findings e reports de validação                              | Mutações de arquivos                         |
-| `full`   | Fluxo local coordenado de planejamento, execução e validação | Autonomia irrestrita ou operações de release |
-
-`full` descreve a cobertura do fluxo. Não concede autoridade para publicar.
-
-## 4. Siga o fluxo de uma tarefa
-
-Use este caminho para uma tarefa delimitada ou poucas tarefas seriais.
-
-```mermaid
-flowchart TD
-  Source[Source item] --> Specs[saf-create-spec]
-  Specs --> Prompts[saf-create-prompts]
-  Prompts --> Implement[saf-implement]
-  Implement --> Check[saf-check-task]
-  Check --> Review[saf-review-pr]
-  Review --> Validation[saf-validate]
-  Check -->|findings| Fix[saf-fix-pr]
-  Fix --> Review
-```
-
-Prompts recomendados:
+## Workflow
 
 ```text
-Use a skill instalada `saf-create-spec` para este source item.
-Siga `.sdd-agentic-flow/config.yml`, trabalhe em modo `plan` e crie ou atualize apenas a
-especificação. Não implemente código nem crie commits. Pare se houver
-ambiguidade. Relate evidências, perguntas abertas e limitações.
+saf-route
+→ saf-brainstorm (somente para ideias ainda incertas)
+→ saf-create-spec
+→ saf-create-prompts
+→ saf-implement ou saf-implement-multi
+→ saf-check-task por tarefa
+→ saf-create-pr → saf-review-pr → saf-fix-pr (quando solicitado)
+→ saf-validate
 ```
 
-```text
-Use a skill instalada `saf-implement` para a task aprovada abaixo.
-Siga o contrato da task e `.sdd-agentic-flow/config.yml`. Altere somente os arquivos
-necessários. Execute os checks exigidos. Não faça commit, push, merge, deploy ou
-publish. Relate evidências e limitações.
-```
+No fluxo multi-task, a execução sequencial é o fallback. Paralelismo exige
+autorização explícita para worktrees, concorrência no host e fronteiras mutáveis
+sem sobreposição. O host cria e gerencia worktrees e aplica a semântica de
+inicialização antes de iniciar cada worker.
 
-## 5. Use o fluxo de várias tarefas quando houver dependências
+As skills não concedem autoridade para commit, push, merge, release, deploy,
+publish, persistência de credenciais ou serviços externos.
 
-Escolha este caminho quando as tarefas tiverem ownership independente ou waves
-de execução explícitas. `saf-implement-multi` planeja e coordena o trabalho
-local; não transforma o fluxo em um pipeline automático de release.
-
-```mermaid
-flowchart TD
-  Source[Source item] --> Specs[saf-create-spec]
-  Specs --> Tasks[Conjunto de tasks aprovadas]
-  Tasks --> Plan[saf-implement-multi\nplanejar waves e ownership]
-  Plan --> Wave1[Wave 1\ntrabalho local]
-  Plan --> Wave2[Wave 2\napós dependências]
-  Wave1 --> Checks[saf-check-task\npor task]
-  Wave2 --> Checks
-  Checks --> Validation[saf-validate\nevidências da feature]
-```
-
-Prefira o fluxo de uma tarefa quando as dependências forem seriais ou a
-alteração for pequena. Use várias tarefas quando o trabalho paralelo tiver
-limites claros e a equipe puder revisar as evidências.
-
-## 6. Mapa de skills
-
-| Skill | Entrada | Saída | Altera arquivos? | Modo |
-| --- | --- | --- | --- | --- |
-| `saf-setup` | Contexto do projeto    | Orientação de setup  | Quando autorizada | `guided` |
-| `saf-create-spec`       | Source item            | Specs da feature     | Quando autorizada | `plan`   |
-| `saf-create-prompts`     | Specs e tasks          | Prompts para agentes | Quando autorizada | `plan`   |
-| `saf-implement`     | Task aprovada          | Código e evidências  | Quando autorizada | `apply`  |
-| `saf-implement-multi`    | Conjunto de tasks      | Plano de execução    | Quando autorizada | `guided` |
-| `saf-check-task`         | Task e evidências      | Report de check      | Não               | `review` |
-| `saf-create-pr`          | Alteração concluída    | Pacote de PR         | Quando autorizada | `guided` |
-| `saf-review-pr`          | Conjunto de alterações | Findings de review   | Não               | `review` |
-| `saf-fix-pr`             | Findings aceitos       | Correções locais     | Quando autorizada | `apply`  |
-| `saf-validate`         | Evidências da feature  | Report de validação  | Não               | `review` |
-
-## 7. Uso com agentes
-
-As skills são arquivos Markdown instalados em `.agents/skills`. Aponte o agente
-para a skill correspondente e peça que siga a configuração do projeto.
-
-### Codex CLI
-
-```text
-Use `.agents/skills/saf-create-spec/SKILL.md` para esta feature.
-Siga `.sdd-agentic-flow/config.yml`, trabalhe em modo `plan` e deixe a decisão final comigo.
-```
-
-### Claude Code
-
-```text
-Leia a skill instalada `saf-validate` e valide esta feature localmente.
-Use as evidências do repositório, não chame serviços externos e relate PASS,
-WARN, FAIL, evidências e limitações.
-```
-
-### Cursor
-
-```text
-Use `.agents/skills/saf-implement/SKILL.md` como contrato desta task.
-Trabalhe em modo `apply` somente após minha autorização para alterações locais.
-Não faça commit nem push.
-```
-
-### Agente genérico
-
-```text
-Use a skill Markdown instalada que corresponde a esta etapa.
-Leia `.sdd-agentic-flow/config.yml` primeiro. Mantenha as alterações locais, preserve
-arquivos não relacionados, pare diante de ambiguidades e apresente evidências
-antes de declarar conclusão.
-```
-
-O projeto foi validado manualmente com Codex CLI, Claude Code e fluxos no estilo
-Cursor. O formato Markdown-first atende agentes genéricos, mas não garante
-compatibilidade com todo cliente.
-
-## 8. Faça review e validação
-
-Execute os checks locais antes de aceitar o trabalho:
-
-```bash
-npx sdd-agentic-flow doctor
-npx sdd-agentic-flow doctor --json
-npx sdd-agentic-flow doctor --smoke
-```
-
-A skill `task-check` revisa uma task de forma independente. A skill
-`validation` revisa a feature acumulada. Nenhuma substitui a revisão humana.
-
-Quando um requisito, decisão de design ou implementação divergir da SDD, pare
-e reconcilie a especificação antes de continuar.
-
-## 9. Desfaça a instalação local
-
-Veja o plano de limpeza antes de aplicar:
-
-```bash
-npx sdd-agentic-flow uninstall --plan
-npx sdd-agentic-flow uninstall --yes
-```
-
-A desinstalação remove as skills conhecidas do toolkit. Ela preserva código,
-specs, reports, snapshots e caminhos desconhecidos. Use `--include-config` para
-remover `.sdd-agentic-flow/config.yml`; use `--full` para incluir os arquivos de
-uso regeneráveis e o estado do loop de autonomia. As duas opções exigem
-`--yes`. Use `--purge` para a limpeza entre escopos descrita em
-[uninstall](uninstall.md). Execute `init` novamente para recriar o estado ausente;
-o `init` não remove snapshots, reports nem specs de features existentes.
-
-## 10. Limites de segurança
-
-A CLI roda localmente e não possui dependências runtime. Ela não usa telemetria,
-postinstall ou rede externa por padrão. As skills não fazem commit, push, merge,
-deploy ou publish automaticamente. Uma pessoa revisa o diff e decide quando o
-trabalho está concluído.
-
-Leia o [trust model](trust-model.md), os [execution modes](execution-modes.md)
-e o [safety model](safety-model.md) para conhecer a política completa.
-
-Para a versão em inglês, veja o [guia de uso em inglês](saf-skills-usage-guide.md).
+Veja [instalação](installation.md), [modelo de confiança](trust-model.md),
+[modos de execução](execution-modes.md) e [modelo de segurança](safety-model.md).

@@ -11,7 +11,7 @@ import path from 'node:path';
 import { checkForUpdate, type UpdateCheckResult } from './update-check';
 
 const PROVENANCE_REL = path.join('sdd-agentic-flow-shared', 'install-provenance.yml');
-const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v2';
+const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v3';
 
 type ExecutionMode = 'npx' | 'global' | 'local';
 
@@ -22,7 +22,6 @@ type InstallProvenance = {
   skillIdentity: string | null;
   scope?: string;
   target?: string;
-  packs?: string[];
   managedSkills?: string[];
   managedPaths?: string[];
   applyState?: 'applying' | 'complete';
@@ -35,7 +34,6 @@ type ProvenanceInput =
       scope?: string;
       target?: string;
       skillIdentity?: string;
-      packs?: string[];
       managedSkills?: string[];
       managedPaths?: string[];
       applyState?: 'applying' | 'complete';
@@ -45,12 +43,6 @@ type ManagedPair = {
   source: string;
   dest: string;
   rel: string;
-};
-
-type PresetLike = {
-  skills?: string[];
-  shared?: boolean;
-  adapter?: boolean;
 };
 
 type PairKind = 'missing' | 'identical' | 'differs';
@@ -116,8 +108,6 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
     `scope: ${value.scope || 'user'}`,
     `target: ${value.target || 'unknown'}`,
     `skill_identity: ${value.skillIdentity || 'saf'}`,
-    'packs:',
-    ...(value.packs || []).map((pack) => `  - ${pack}`),
     'managed_skills:',
     ...(value.managedSkills || []).map((skill) => `  - ${skill}`),
     'managed_paths:',
@@ -154,10 +144,8 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
         ? { applyState: applyStateMatch[1] }
         : {}),
     };
-    const packs = list('packs');
     const managedSkills = list('managed_skills');
     const managedPaths = list('managed_paths');
-    if (packs.length) provenance.packs = packs;
     if (managedSkills.length) provenance.managedSkills = managedSkills;
     if (managedPaths.length) provenance.managedPaths = managedPaths;
     return provenance;
@@ -176,11 +164,11 @@ function walkFiles(directory: string): string[] {
 
 function collectManagedPairs(
   packageRoot: string,
-  preset: PresetLike,
+  skills: readonly string[],
   targetRoot: string,
 ): ManagedPair[] {
   const pairs: ManagedPair[] = [];
-  for (const skill of preset.skills || []) {
+  for (const skill of skills) {
     const sourceRoot = path.join(packageRoot, 'skills', skill);
     const destRoot = path.join(targetRoot, skill);
     if (!fs.existsSync(sourceRoot)) continue;
@@ -189,27 +177,15 @@ function collectManagedPairs(
       pairs.push({ source, dest: path.join(destRoot, rel), rel: path.join(skill, rel) });
     }
   }
-  if (preset.shared) {
-    const sourceRoot = path.join(packageRoot, 'shared');
-    const destRoot = path.join(targetRoot, 'sdd-agentic-flow-shared');
-    for (const source of walkFiles(sourceRoot)) {
-      const rel = path.relative(sourceRoot, source);
-      pairs.push({
-        source,
-        dest: path.join(destRoot, rel),
-        rel: path.join('sdd-agentic-flow-shared', rel),
-      });
-    }
-  }
-  if (preset.adapter) {
-    const source = path.join(packageRoot, 'docs', 'adapters.md');
-    const dest = path.join(targetRoot, 'sdd-agentic-flow-shared', 'docs', 'adapters.md');
-    if (fs.existsSync(source))
-      pairs.push({
-        source,
-        dest,
-        rel: path.join('sdd-agentic-flow-shared', 'docs', 'adapters.md'),
-      });
+  const sourceRoot = path.join(packageRoot, 'shared');
+  const destRoot = path.join(targetRoot, 'sdd-agentic-flow-shared');
+  for (const source of walkFiles(sourceRoot)) {
+    const rel = path.relative(sourceRoot, source);
+    pairs.push({
+      source,
+      dest: path.join(destRoot, rel),
+      rel: path.join('sdd-agentic-flow-shared', rel),
+    });
   }
   return pairs;
 }
@@ -266,53 +242,6 @@ function applyManagedPairs(
   return summary;
 }
 
-function detectInstalledPacks(skillsRoot: string, packsDir: string): string[] {
-  if (!fs.existsSync(skillsRoot)) return [];
-  const names = fs
-    .readdirSync(packsDir)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => file.replace(/\.json$/, ''))
-    .sort();
-  const found: string[] = [];
-  for (const name of names) {
-    let preset: PresetLike;
-    try {
-      preset = JSON.parse(
-        fs.readFileSync(path.join(packsDir, `${name}.json`), 'utf8'),
-      ) as PresetLike;
-    } catch {
-      continue;
-    }
-    const skills = preset.skills || [];
-    if (!skills.length) continue;
-    if (skills.every((skill) => fs.existsSync(path.join(skillsRoot, skill, 'SKILL.md'))))
-      found.push(name);
-  }
-  const provenance = readInstallProvenance(skillsRoot);
-  if (
-    provenance?.package === 'sdd-agentic-flow' &&
-    provenance.schema === CURRENT_PROVENANCE_SCHEMA
-  ) {
-    const recorded = (provenance.packs || []).filter((pack) => names.includes(pack));
-    if (recorded.length) return recorded;
-  }
-  // A larger matching pack subsumes its smaller subsets (for example full includes planning).
-  return found.filter((name) => {
-    const skills =
-      (JSON.parse(fs.readFileSync(path.join(packsDir, `${name}.json`), 'utf8')) as PresetLike)
-        .skills || [];
-    return !found.some((other) => {
-      if (other === name) return false;
-      const otherSkills =
-        (JSON.parse(fs.readFileSync(path.join(packsDir, `${other}.json`), 'utf8')) as PresetLike)
-          .skills || [];
-      return (
-        skills.length < otherSkills.length && skills.every((skill) => otherSkills.includes(skill))
-      );
-    });
-  });
-}
-
 function runNpmGlobalInstall({
   execFileSyncImpl = execFileSync,
   env = process.env,
@@ -351,14 +280,7 @@ function formatCheckReport(result: UpdateCheckResult): string {
   return `${lines.join('\n')}\n`;
 }
 
-export type {
-  ApplySummary,
-  ClassifiedPairs,
-  ExecutionMode,
-  InstallProvenance,
-  ManagedPair,
-  PresetLike,
-};
+export type { ApplySummary, ClassifiedPairs, ExecutionMode, InstallProvenance, ManagedPair };
 export {
   applyManagedPairs,
   checkForUpdate,
@@ -366,7 +288,6 @@ export {
   classifyPair,
   collectManagedPairs,
   detectExecutionMode,
-  detectInstalledPacks,
   formatCheckReport,
   PROVENANCE_REL,
   provenancePath,

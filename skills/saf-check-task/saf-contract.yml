@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-implement
+requires: [task-evidence]
+consumes: [domain-glossary, project-context]
+produces: [check-report]
+baseline: [tlc-spec-driven, tdd]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'check-report present with status PASS (PASS invalid on a false-positive catalog hit) and every configured gate satisfied'
+  blocking_conditions: [acceptance_criteria_unmet, gates_failed]
+  evidence_required: [check-report]

@@ -71,6 +71,7 @@ function project(name: string): ProjectState {
   const home = path.join(runRoot, `${name}-home`);
   fs.mkdirSync(cwd, { recursive: true });
   fs.mkdirSync(home, { recursive: true });
+  spawnSync('git', ['init', '--quiet'], { cwd });
   return { cwd, home };
 }
 
@@ -304,19 +305,15 @@ function runJourneys() {
   const before = entries(fresh.cwd);
   record('J01', 'new user', 'sdd-agentic-flow', () => {
     const result = run([], fresh);
-    expect(result, 0, /Suggested next step|init/);
+    expect(result, 0, /Suggested next step|install/);
     assert.deepEqual(entries(fresh.cwd), before);
   });
   record('J02', 'new user', 'init', () => {
-    const result = run(['init', '--preset', 'supervised', '--language', 'pt-BR'], fresh);
+    const result = run(['init'], fresh);
     expect(result, 0, /initialized|inicializados/);
     assert.match(
-      fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
-      /pt-BR/,
-    );
-    assert.match(
-      fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/config.yml'), 'utf8'),
-      /execution_mode: apply[\s\S]*autonomy_level: supervised/,
+      fs.readFileSync(path.join(fresh.cwd, '.sdd-agentic-flow/workspace.yml'), 'utf8'),
+      /saf-workspace\/v1/,
     );
   });
   record('J03', 'new user', 'init again', () => {
@@ -327,12 +324,20 @@ function runJourneys() {
     const result = run(['doctor', '--json', '--contracts', '--autonomy'], fresh);
     expect(result, 0);
     const report = JSON.parse(result.stdout);
-    assert.equal(report.schema_version, 1);
+    assert.equal(report.schema_version, 2);
     assert.ok(Array.isArray(report.data.checks));
     assert.notEqual(report.data.status, 'FAIL');
   });
 
   const greenfield = project('02-project-user');
+  expect(run(['init'], greenfield), 0);
+  expect(
+    run(
+      ['config', 'installation', '--yes', '--scope', 'project', '--adoption-mode', 'team'],
+      greenfield,
+    ),
+    0,
+  );
   record('J05', 'project setup', 'context refresh -> context status', () => {
     expect(run(['context', 'refresh'], greenfield), 0);
     const result = run(['context', 'status'], greenfield);
@@ -341,12 +346,12 @@ function runJourneys() {
   record('J06', 'project setup', 'context refresh', () => {
     expect(run(['context', 'refresh'], greenfield), 0, /created|refreshed|generated/);
   });
-  record('J07', 'project setup', 'install full --scope project', () => {
-    expect(run(['install', 'full', '--scope', 'project'], greenfield), 0, /installed|preserved/);
+  record('J07', 'project setup', 'install --scope project', () => {
+    expect(run(['install', '--scope', 'project'], greenfield), 0, /installed|preserved/);
     assert.ok(fs.existsSync(path.join(greenfield.cwd, '.agents/skills/saf-create-spec/SKILL.md')));
   });
-  record('J08', 'project setup', 'install full --scope project (repeat)', () => {
-    expect(run(['install', 'full', '--scope', 'project'], greenfield), 0, /preserved|unchanged/);
+  record('J08', 'project setup', 'install --scope project (repeat)', () => {
+    expect(run(['install', '--scope', 'project'], greenfield), 0, /installed|preserved|unchanged/);
   });
   record('J09', 'project setup', 'doctor --smoke --contracts', () => {
     expect(run(['doctor', '--smoke', '--contracts'], greenfield), 0);
@@ -367,48 +372,40 @@ function runJourneys() {
     );
   });
   record('J12', 'policy configuration', 'config policy --yes --preset supervised', () => {
-    expect(run(['config', 'policy', '--yes', '--preset', 'supervised'], policy), 0, /PASS|saved/);
+    expect(
+      run(['config', 'policy', '--yes', '--preset', 'supervised'], policy),
+      0,
+      /PASS|saved|Already using/,
+    );
   });
   record('J13', 'policy configuration', 'config installation --plan', () => {
     expect(
       run(
-        [
-          'config',
-          'installation',
-          '--plan',
-          '--scope',
-          'project',
-          '--pack',
-          'full',
-          '--sharing',
-          'local',
-        ],
+        ['config', 'installation', '--plan', '--scope', 'project', '--adoption-mode', 'team'],
         policy,
       ),
       0,
       /Intent preview|would save/,
     );
   });
-  record(
-    'J14',
-    'policy configuration',
-    'config installation --yes --scope project --pack full',
-    () => {
-      expect(
-        run(['config', 'installation', '--yes', '--scope', 'project', '--pack', 'full'], policy),
-        0,
-        /saved/,
-      );
-    },
-  );
+  record('J14', 'policy configuration', 'config installation --yes --scope project', () => {
+    expect(
+      run(
+        ['config', 'installation', '--yes', '--scope', 'project', '--adoption-mode', 'team'],
+        policy,
+      ),
+      0,
+      /saved/,
+    );
+  });
 
   const userInstall = project('04-user-install');
-  record('J15', 'global installation', 'install full --plan', () => {
+  record('J15', 'global installation', 'install --plan', () => {
     const before = snapshotPersistentState([
       { name: 'project', path: userInstall.cwd },
       { name: 'home', path: userInstall.home },
     ]);
-    const result = run(['install', 'full', '--plan'], userInstall);
+    const result = run(['install', '--plan'], userInstall);
     expect(result, 0, /Installation plan|Scope +user|Repository footprint/);
     assertSnapshotUnchanged(
       before,
@@ -418,8 +415,8 @@ function runJourneys() {
       ]),
     );
   });
-  record('J16', 'global installation', 'install full --target claude', () => {
-    expect(run(['install', 'full', '--target', 'claude'], userInstall), 0, /installed|preserved/);
+  record('J16', 'global installation', 'install --target claude', () => {
+    expect(run(['install', '--target', 'claude'], userInstall), 0, /installed|preserved/);
     assert.ok(
       fs.existsSync(path.join(userInstall.home, '.claude/skills/saf-create-spec/SKILL.md')),
     );
@@ -433,24 +430,27 @@ function runJourneys() {
   });
 
   const safety = project('05-safety');
-  record('J18', 'safe reconciliation', 'install full --plan with foreign skill', () => {
+  record('J18', 'safe reconciliation', 'install --plan with foreign skill', () => {
     const foreign = path.join(safety.home, '.agents/skills/saf-create-spec');
     fs.mkdirSync(foreign, { recursive: true });
     fs.writeFileSync(path.join(foreign, 'SKILL.md'), '# foreign\n');
-    const result = run(['install', 'full', '--plan'], safety);
+    const result = run(['install', '--plan'], safety);
     expect(result, 0, /Collisions|COLLISION|BLOCKED|foreign/);
   });
   record('J19', 'safe reconciliation', 'unrecognized legacy skill is preserved', () => {
-    const legacy = path.join(safety.cwd, '.agents/skills/sdd-route');
+    const legacyState = project('05-safety-legacy');
+    const legacy = path.join(legacyState.cwd, '.agents/skills/sdd-third-party');
     fs.mkdirSync(legacy, { recursive: true });
     fs.writeFileSync(path.join(legacy, 'SKILL.md'), '# legacy\n');
-    const result = run(['install', 'full', '--scope', 'project'], safety);
-    expect(result, 0, /installed|preserved/);
+    const result = run(['install', '--scope', 'project'], legacyState);
+    expect(result, 1, /blocked/);
     assert.equal(fs.existsSync(path.join(legacy, 'SKILL.md')), true);
   });
 
   const autonomy = project('06-autonomy');
-  expect(run(['init', '--preset', 'autonomous'], autonomy), 0);
+  expect(run(['init'], autonomy), 0);
+  expect(run(['install'], autonomy), 0);
+  expect(run(['config', 'policy', '--yes', '--preset', 'autonomous'], autonomy), 0);
   record('J20', 'autonomy workflow', 'context autonomy-state without state', () => {
     expect(run(['context', 'autonomy-state'], autonomy), 0, /not found|no .*loop-state/);
   });
@@ -499,7 +499,14 @@ function runJourneys() {
 
   const removal = project('07-removal');
   expect(run(['init'], removal), 0);
-  expect(run(['install', 'full', '--scope', 'project'], removal), 0);
+  expect(
+    run(
+      ['config', 'installation', '--yes', '--scope', 'project', '--adoption-mode', 'team'],
+      removal,
+    ),
+    0,
+  );
+  expect(run(['install', '--scope', 'project'], removal), 0);
   fs.mkdirSync(path.join(removal.cwd, '.specs/features'), { recursive: true });
   fs.writeFileSync(path.join(removal.cwd, '.specs/features/keep.md'), 'keep\n');
   fs.writeFileSync(path.join(removal.cwd, 'user-file.txt'), 'keep\n');
@@ -525,7 +532,7 @@ function runJourneys() {
   const invalid = project('08-errors');
   const badCases: Array<[string, string, RegExp]> = [
     ['E01', 'doctro', /Did you mean `doctor`/],
-    ['E02', 'install missing-pack', /unknown pack/],
+    ['E02', 'install missing-pack', /accepts no pack positional|usage: install/],
     ['E03', 'doctor --unknown', /usage:/],
     ['E04', 'uninstall', /uninstall --plan/],
     ['E05', 'config installation --interactive --plan', /cannot be combined/],
@@ -575,7 +582,7 @@ function runJourneys() {
   const packed = project('09-packed-consumer');
   const { tarball, cacheDir } = packTarball();
   record('J33', 'fresh packaged consumer', 'npm pack -> npx init/install/doctor', () => {
-    for (const args of [['init'], ['install', 'full'], ['doctor', '--json']]) {
+    for (const args of [['install'], ['init'], ['doctor', '--json']]) {
       const result = runPacked(args, packed, tarball, cacheDir);
       assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}${result.stdout}`);
     }
@@ -583,18 +590,11 @@ function runJourneys() {
   const packedPlain = project('10-packed-plain-br');
   record('J34', 'packaged plain Portuguese consumer', 'NO_COLOR + init/install/doctor', () => {
     const env = { NO_COLOR: '1' };
-    assert.equal(
-      runPacked(['init', '--language', 'pt-BR'], packedPlain, tarball, cacheDir, env).status,
-      0,
-    );
-    assert.equal(
-      runPacked(['install', 'full', '--scope', 'project'], packedPlain, tarball, cacheDir, env)
-        .status,
-      0,
-    );
+    assert.equal(runPacked(['install'], packedPlain, tarball, cacheDir, env).status, 0);
+    assert.equal(runPacked(['init'], packedPlain, tarball, cacheDir, env).status, 0);
     const doctor = runPacked(['doctor'], packedPlain, tarball, cacheDir, env);
     assert.equal(doctor.status, 0, doctor.stderr);
-    assert.match(doctor.stdout, /Verificações: \d+ PASS/);
+    assert.match(doctor.stdout, /Checks: \d+ PASS/);
     assert.equal(doctor.stdout.includes(String.fromCharCode(27)), false);
   });
   const packedInteractive = project('11-packed-interactive');
@@ -609,21 +609,18 @@ function runJourneys() {
       } satisfies AuditObservation;
     }
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
-    assert.match(result.stdout, /Recommended setup|Supervised|Supervisionado/);
-    assert.match(result.stdout, /PASS Ready|Pronto/);
-    assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')));
-    const config = fs.readFileSync(
-      path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml'),
-      'utf8',
+    assert.match(result.stdout, /workspace initialized|workspace inicializado/);
+    assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
+    assert.equal(
+      fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')),
+      false,
     );
-    assert.match(config, /execution_mode: apply/);
-    assert.match(config, /autonomy_level: supervised/);
-    return 'interactive setup completed';
+    return 'interactive workspace initialization completed';
   });
 
   const targetedRemoval = project('12-targeted-removal');
-  expect(run(['install', 'full', '--target', 'agents'], targetedRemoval), 0);
-  expect(run(['install', 'full', '--target', 'claude'], targetedRemoval), 0);
+  expect(run(['install', '--target', 'agents'], targetedRemoval), 0);
+  expect(run(['install', '--target', 'claude'], targetedRemoval), 0);
   fs.mkdirSync(path.join(targetedRemoval.home, '.agents', 'skills'), { recursive: true });
   fs.writeFileSync(path.join(targetedRemoval.home, '.agents', 'skills', 'foreign.txt'), 'keep\n');
   record('J40', 'scoped uninstall', 'uninstall --plan --target agents', () => {
@@ -660,8 +657,8 @@ function runJourneys() {
   });
 
   const allScopeRemoval = project('13-all-scope-removal');
-  expect(run(['install', 'full', '--scope', 'project'], allScopeRemoval), 0);
-  expect(run(['install', 'full', '--target', 'agents'], allScopeRemoval), 0);
+  expect(run(['install', '--scope', 'project'], allScopeRemoval), 0);
+  expect(run(['install', '--target', 'agents'], allScopeRemoval), 0);
   record('J42', 'scoped uninstall', 'uninstall --plan --scope all', () => {
     const before = snapshotPersistentState([
       { name: 'project', path: allScopeRemoval.cwd },

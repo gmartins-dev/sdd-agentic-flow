@@ -3,9 +3,14 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { classifyInstallIntent, installConfigPath } from './install-domain';
+import { HISTORICAL_SKILLS, OFFICIAL_SKILLS } from './skill-identity';
 
-const LEGACY_PROVENANCE_SCHEMA = 'saf-install-provenance/v1';
-const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v2';
+const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v3';
+const LEGACY_PROVENANCE_SCHEMAS = new Set([
+  'saf-install-provenance/v1',
+  'saf-install-provenance/v2',
+]);
+const HISTORICAL_SKILL_NAMES = new Set<string>([...OFFICIAL_SKILLS, ...HISTORICAL_SKILLS]);
 
 type LegacyTarget = { root: string; managedSkills: string[]; shared: boolean };
 type Backup = { original: string; staged: string };
@@ -43,18 +48,23 @@ function listField(text: string, name: string): string[] {
 
 function legacyTarget(root: string): LegacyTarget | null {
   const provenance = path.join(root, 'sdd-agentic-flow-shared', 'install-provenance.yml');
-  if (!fs.existsSync(provenance)) return null;
-  const text = fs.readFileSync(provenance, 'utf8');
-  if (!/^package:\s*sdd-agentic-flow$/m.test(text)) return null;
-  if (!/^schema:\s*saf-install-provenance\/v1$/m.test(text)) return null;
-  const managedSkills = listField(text, 'managed_skills').filter((skill) =>
-    /^[a-z0-9][a-z0-9-]*$/.test(skill),
-  );
-  if (!managedSkills.length) return null;
+  const text = fs.existsSync(provenance) ? fs.readFileSync(provenance, 'utf8') : '';
+  const provenanceOwned =
+    /^package:\s*sdd-agentic-flow$/m.test(text) &&
+    LEGACY_PROVENANCE_SCHEMAS.has(schemaAt(provenance) || '');
+  const fromProvenance = provenanceOwned
+    ? listField(text, 'managed_skills').filter((skill) => /^[a-z0-9][a-z0-9-]*$/.test(skill))
+    : [];
+  const exactHistorical = fs.existsSync(root)
+    ? fs.readdirSync(root).filter((name) => HISTORICAL_SKILL_NAMES.has(name))
+    : [];
+  const managedSkills = [...new Set([...fromProvenance, ...exactHistorical])];
+  const shared = provenanceOwned || fs.existsSync(path.join(root, 'sdd-agentic-flow-shared'));
+  if (!managedSkills.length && !shared) return null;
   return {
     root,
     managedSkills,
-    shared: fs.existsSync(path.join(root, 'sdd-agentic-flow-shared')),
+    shared,
   };
 }
 
@@ -63,7 +73,7 @@ function targetState(root: string): 'none' | 'current' | 'legacy' | 'future' | '
   const schema = schemaAt(file);
   if (!schema) return 'none';
   if (schema === CURRENT_PROVENANCE_SCHEMA) return 'current';
-  if (schema === LEGACY_PROVENANCE_SCHEMA) return 'legacy';
+  if (LEGACY_PROVENANCE_SCHEMAS.has(schema)) return 'legacy';
   if (/^saf-install-provenance\/v\d+$/.test(schema)) return 'future';
   return 'unknown';
 }
@@ -79,6 +89,7 @@ export function inspectCleanUpgrade({
 }): CleanUpgradeInspection {
   const intent = classifyInstallIntent(homeDir);
   const configSchema = schemaAt(path.join(cwd, '.sdd-agentic-flow', 'config.yml'));
+  const workspaceSchema = schemaAt(path.join(cwd, '.sdd-agentic-flow', 'workspace.yml'));
   const targetStates = targetRoots.map(targetState);
   const states = [
     intent.kind === 'future' || intent.kind === 'unknown'
@@ -89,27 +100,37 @@ export function inspectCleanUpgrade({
           ? 'current'
           : 'none',
     ...targetStates,
-    configSchema === 'saf-config/v1'
+    configSchema === 'saf-config/v1' || configSchema === 'saf-config/v2'
       ? 'legacy'
-      : configSchema === 'saf-config/v2' || !configSchema
+      : configSchema === 'saf-config/v3' || !configSchema
         ? 'none'
         : /^saf-config\/v\d+$/.test(configSchema)
           ? 'future'
           : 'unknown',
+    workspaceSchema === 'saf-workspace/v1' || !workspaceSchema
+      ? 'none'
+      : /^saf-workspace\/v\d+$/.test(workspaceSchema)
+        ? 'future'
+        : 'unknown',
   ] as CleanUpgradeState[];
   const blocked = states.find((state) => state === 'future' || state === 'unknown');
   const legacyTargets = targetRoots
     .map(legacyTarget)
     .filter((target): target is LegacyTarget => Boolean(target));
   const legacyIntent = intent.kind === 'legacy';
-  const legacyConfig = configSchema === 'saf-config/v1';
+  const legacyConfig = configSchema === 'saf-config/v1' || configSchema === 'saf-config/v2';
   const projectRoot = path.join(cwd, '.sdd-agentic-flow');
   const projectFiles = [
     'config.yml',
     'usage.md',
     'saf-skills-usage-guide.md',
     'saf-skills-usage-guide.pt-BR.md',
+    'workspace.yml',
+    path.join('context', 'project-context.md'),
     path.join('autonomy', 'loop-state.md'),
+    'reports',
+    'snapshots',
+    'explanations',
   ]
     .map((relative) => path.join(projectRoot, relative))
     .filter((file) => fs.existsSync(file));
@@ -127,18 +148,6 @@ export function inspectCleanUpgrade({
     };
   }
   const legacy = states.includes('legacy');
-  if (legacy && (legacyIntent || legacyConfig) && targetRoots.length && !legacyTargets.length) {
-    return {
-      state: 'unknown',
-      cwd,
-      blockedReason: 'legacy state was found without trustworthy SAF ownership provenance',
-      legacyTargets,
-      legacyIntent,
-      legacyConfig,
-      intentPath: installConfigPath(homeDir),
-      projectFiles,
-    };
-  }
   return {
     state: legacy ? 'legacy' : states.includes('current') ? 'current' : 'none',
     cwd,

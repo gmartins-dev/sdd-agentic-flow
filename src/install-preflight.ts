@@ -6,7 +6,6 @@ import {
   classifyManagedPairs,
   collectManagedPairs,
   type ManagedPair,
-  type PresetLike,
   readInstallProvenance,
 } from './upgrade';
 
@@ -47,7 +46,6 @@ type TargetReport = {
 type InstallPlan = {
   modeLabel: string;
   scope: InstallScope;
-  desiredPacks: string[];
   targetIds: string[];
   targets: TargetReport[];
   totals: ActionTotals;
@@ -60,13 +58,12 @@ type InstallPlan = {
 
 type BuildInstallPlanInput = {
   packageRoot: string;
-  preset: PresetLike;
+  skills: readonly string[];
   targets: string[];
   officialSkills: readonly string[];
   scope: InstallScope;
   modeLabel?: string;
   selectedTargets?: string[] | null;
-  desiredPacks?: string[];
   targetIds?: string[];
 };
 
@@ -100,21 +97,21 @@ function skillDirPartial(skillDir: string): boolean {
 
 function classifyTargetRoot(
   packageRoot: string,
-  preset: PresetLike,
+  skills: readonly string[],
   targetRoot: string,
   officialSkills: readonly string[],
   scope: InstallScope = 'user',
 ): TargetReport {
-  const pairs = collectManagedPairs(packageRoot, preset, targetRoot);
+  const pairs = collectManagedPairs(packageRoot, skills, targetRoot);
   const classified = classifyManagedPairs(pairs);
   const provenance = readInstallProvenance(targetRoot);
   const managed = Boolean(
-    provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v2',
+    provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v3',
   );
   const legacy =
     Boolean(
       provenance?.package === 'sdd-agentic-flow' &&
-        provenance.schema !== 'saf-install-provenance/v2',
+        provenance.schema !== 'saf-install-provenance/v3',
     ) ||
     (fs.existsSync(targetRoot) &&
       fs
@@ -125,11 +122,11 @@ function classifyTargetRoot(
   const partialWarnings: string[] = [];
   const staleManagedSkills = managed
     ? (provenance?.managedSkills || []).filter(
-        (skill) => !preset.skills?.includes(skill) && fs.existsSync(path.join(targetRoot, skill)),
+        (skill) => !skills.includes(skill) && fs.existsSync(path.join(targetRoot, skill)),
       )
     : [];
 
-  for (const skill of preset.skills || []) {
+  for (const skill of skills) {
     const destSkill = path.join(targetRoot, skill);
     if (!fs.existsSync(destSkill)) continue;
     if (skillDirPartial(destSkill)) {
@@ -150,7 +147,7 @@ function classifyTargetRoot(
     COLLISION: collisions,
     MANAGED_MODIFIED: classified.differs.length,
     PARTIAL: partialWarnings.length,
-    BLOCKED: 0,
+    BLOCKED: legacy ? 1 : 0,
   };
 
   return {
@@ -164,19 +161,18 @@ function classifyTargetRoot(
     partialWarnings,
     foreignSkills: entries.map((entry) => entry.skill),
     staleManagedSkills,
-    blocked: collisions > 0,
+    blocked: collisions > 0 || legacy,
   };
 }
 
 function buildInstallPlan({
   packageRoot,
-  preset,
+  skills,
   targets,
   officialSkills,
   scope,
   modeLabel = 'Local / User',
   selectedTargets = null,
-  desiredPacks = [],
   targetIds = [],
 }: BuildInstallPlanInput): InstallPlan {
   const targetReports: TargetReport[] = [];
@@ -193,7 +189,7 @@ function buildInstallPlan({
   for (const targetRoot of targets) {
     const label = targetLabelFor(targetRoot, scope);
     if (selectedTargets && !selectedTargets.includes(label)) continue;
-    const report = classifyTargetRoot(packageRoot, preset, targetRoot, officialSkills, scope);
+    const report = classifyTargetRoot(packageRoot, skills, targetRoot, officialSkills, scope);
     targetReports.push(report);
     for (const key of Object.keys(totals) as (keyof ActionTotals)[]) {
       totals[key] += report.summary[key] || 0;
@@ -203,7 +199,6 @@ function buildInstallPlan({
   return {
     modeLabel,
     scope,
-    desiredPacks,
     targetIds,
     targets: targetReports,
     totals,
@@ -222,11 +217,11 @@ function buildInstallPlan({
 
 function applyInstallPlan(
   packageRoot: string,
-  preset: PresetLike,
+  skills: readonly string[],
   targetRoot: string,
   { officialSkills }: { officialSkills?: readonly string[] } = {},
 ): ApplyInstallResult {
-  const report = classifyTargetRoot(packageRoot, preset, targetRoot, officialSkills || []);
+  const report = classifyTargetRoot(packageRoot, skills, targetRoot, officialSkills || []);
   if (report.blocked) {
     return {
       ok: false,

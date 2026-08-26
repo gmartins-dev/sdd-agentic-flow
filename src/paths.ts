@@ -10,7 +10,6 @@ export const PACKAGE_ROOT = path.resolve(__dirname, '..');
 export const VERSION = (
   JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')) as PackageJson
 ).version;
-export const PACKS_DIR = path.join(PACKAGE_ROOT, 'packs');
 export const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
 export const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'];
 export const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'];
@@ -65,6 +64,7 @@ export const SDD_ROOT = '.sdd-agentic-flow';
 export const LEGACY_SDD_ROOT = '.sdd';
 export const SDD_PATHS = {
   config: `${SDD_ROOT}/config.yml`,
+  workspace: `${SDD_ROOT}/workspace.yml`,
   contextDir: `${SDD_ROOT}/context`,
   projectContext: `${SDD_ROOT}/context/project-context.md`,
   autonomyDir: `${SDD_ROOT}/autonomy`,

@@ -3,14 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-
+import { OFFICIAL_SKILLS } from '../src/skill-identity';
 import {
   applyManagedPairs,
   checkForUpdate,
   classifyManagedPairs,
   collectManagedPairs,
   detectExecutionMode,
-  detectInstalledPacks,
   formatCheckReport,
   readInstallProvenance,
   writeInstallProvenance,
@@ -37,7 +36,7 @@ test('install provenance round-trips', () => {
   assert.deepEqual(readInstallProvenance(root), {
     package: 'sdd-agentic-flow',
     packageVersion: '1.13.0',
-    schema: 'saf-install-provenance/v2',
+    schema: 'saf-install-provenance/v3',
     skillIdentity: 'saf',
     applyState: 'complete',
   });
@@ -48,7 +47,6 @@ test('install provenance uses canonical ordering and atomic-target shape', () =>
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-prov-shape-'));
   writeInstallProvenance(root, {
     packageVersion: '6.0.1',
-    packs: ['full'],
     managedSkills: ['saf-route'],
     managedPaths: ['saf-route/SKILL.md'],
   });
@@ -56,31 +54,16 @@ test('install provenance uses canonical ordering and atomic-target shape', () =>
   const content = fs.readFileSync(file, 'utf8');
   assert.match(
     content,
-    /^package: sdd-agentic-flow\npackage_version: 6\.0\.1\nschema: saf-install-provenance\/v2\n/,
+    /^package: sdd-agentic-flow\npackage_version: 6\.0\.1\nschema: saf-install-provenance\/v3\n/,
   );
   assert.match(content, /\nmanaged_paths:\n {2}- saf-route\/SKILL\.md\n$/);
   assert.equal(fs.existsSync(`${file}.tmp`), false);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('pack detection preserves a full installation instead of collapsing it to a subset', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-packs-'));
-  const full = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'packs/full.json'), 'utf8'));
-  for (const skill of full.skills) {
-    const dir = path.join(root, skill);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'SKILL.md'), '# test\n');
-  }
-  assert.deepEqual(detectInstalledPacks(root, path.join(PACKAGE_ROOT, 'packs')), ['full']);
-  fs.rmSync(root, { recursive: true, force: true });
-});
-
 test('managed refresh never silently overwrites differing files', () => {
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-refresh-'));
-  const preset = JSON.parse(
-    fs.readFileSync(path.join(PACKAGE_ROOT, 'packs/execution.json'), 'utf8'),
-  );
-  const pairs = collectManagedPairs(PACKAGE_ROOT, preset, target);
+  const pairs = collectManagedPairs(PACKAGE_ROOT, OFFICIAL_SKILLS, target);
   assert.ok(pairs.length > 0);
   const first = pairs[0];
   assert.ok(first);

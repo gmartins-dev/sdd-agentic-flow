@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'] as const;
 const AUTONOMY_LEVELS = ['manual', 'supervised', 'autonomous'] as const;
@@ -7,6 +8,63 @@ const INVALID_AUTONOMY_COMBOS = new Set(['plan:autonomous', 'guided:autonomous']
 type ExecutionMode = (typeof EXECUTION_MODES)[number];
 type AutonomyLevel = (typeof AUTONOMY_LEVELS)[number];
 type OperatingPresetName = keyof typeof OPERATING_PRESETS;
+
+const EFFECTIVE_DEFAULTS = Object.freeze({
+  execution_mode: 'apply',
+  autonomy_level: 'supervised',
+  feature_profile: 'medium_feature',
+  specs_root: '.specs/features',
+  source_type: 'local-files',
+  language_profile: 'en-US',
+  tlc_baseline_required: true,
+  require_tdd: true,
+  require_independent_check: true,
+  require_evidence_before_completion: true,
+  no_commit_by_default: true,
+  no_push_by_default: true,
+  no_merge_or_deploy: true,
+});
+
+function effectiveConfigYaml(): string {
+  return `schema: saf-config/v3
+
+language:
+  profile: ${EFFECTIVE_DEFAULTS.language_profile}
+  human_outputs: ${EFFECTIVE_DEFAULTS.language_profile}
+  technical_tokens: canonical
+  bilingual_mode: technical-canonical
+
+specs:
+  root: ${EFFECTIVE_DEFAULTS.specs_root}
+
+source:
+  type: ${EFFECTIVE_DEFAULTS.source_type}
+  snapshots_dir: .sdd-agentic-flow/snapshots
+
+workflow:
+  default_flow: single
+  feature_profile: ${EFFECTIVE_DEFAULTS.feature_profile}
+  commit_policy: manual
+  execution_mode: ${EFFECTIVE_DEFAULTS.execution_mode}
+  autonomy_level: ${EFFECTIVE_DEFAULTS.autonomy_level}
+  autonomy_budget:
+    max_iterations: 50
+    max_tokens: 500000
+    max_runtime_hours: 4
+    pause_on_warning: true
+
+quality:
+  tlc_baseline_required: ${EFFECTIVE_DEFAULTS.tlc_baseline_required}
+  require_tdd: ${EFFECTIVE_DEFAULTS.require_tdd}
+  require_independent_check: ${EFFECTIVE_DEFAULTS.require_independent_check}
+  require_evidence_before_completion: ${EFFECTIVE_DEFAULTS.require_evidence_before_completion}
+
+safety:
+  no_commit_by_default: ${EFFECTIVE_DEFAULTS.no_commit_by_default}
+  no_push_by_default: ${EFFECTIVE_DEFAULTS.no_push_by_default}
+  no_merge_or_deploy: ${EFFECTIVE_DEFAULTS.no_merge_or_deploy}
+`;
+}
 
 /** Recommended preset for guided onboarding Enter-through (not global fail-safe default). */
 const ONBOARDING_DEFAULT_PRESET: OperatingPresetName = 'supervised';
@@ -31,6 +89,8 @@ type Policy = {
 
 type ReadConfigResult = {
   ok: boolean;
+  state?: 'absent' | 'valid' | 'invalid';
+  origin?: 'built-in-defaults' | 'project-config';
   path: string;
   content: string | null;
   policy?: Policy;
@@ -84,14 +144,35 @@ function presetEquivalentFor(executionMode: string, autonomyLevel: string): stri
 
 function readConfig(configPath: string): ReadConfigResult {
   if (!fs.existsSync(configPath)) {
-    return { ok: false, errors: ['config not found'], path: configPath, content: null };
+    return {
+      ok: true,
+      state: 'absent',
+      origin: 'built-in-defaults',
+      errors: [],
+      path: configPath,
+      content: null,
+      policy: {
+        executionMode: EFFECTIVE_DEFAULTS.execution_mode,
+        autonomyLevel: EFFECTIVE_DEFAULTS.autonomy_level,
+      },
+      featureProfile: EFFECTIVE_DEFAULTS.feature_profile,
+      languageProfile: EFFECTIVE_DEFAULTS.language_profile,
+      presetEquivalent: 'supervised',
+    };
   }
   let content: string;
   try {
     content = fs.readFileSync(configPath, 'utf8');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, errors: [message], path: configPath, content: null };
+    return {
+      ok: false,
+      state: 'invalid',
+      origin: 'project-config',
+      errors: [message],
+      path: configPath,
+      content: null,
+    };
   }
   const executionMode = configValue(content, 'execution_mode');
   const autonomyLevel = configValue(content, 'autonomy_level');
@@ -99,7 +180,7 @@ function readConfig(configPath: string): ReadConfigResult {
   const languageProfile = configValue(content, 'profile');
   const errors: string[] = [];
   const schema = content.match(/^schema:\s*(\S+)$/m)?.[1];
-  if (schema !== 'saf-config/v2') errors.push('unsupported config schema');
+  if (schema !== 'saf-config/v3') errors.push('unsupported config schema');
   if (!executionMode) errors.push('workflow.execution_mode missing');
   if (!autonomyLevel) errors.push('workflow.autonomy_level missing');
   if (executionMode && !isExecutionMode(executionMode)) {
@@ -113,6 +194,8 @@ function readConfig(configPath: string): ReadConfigResult {
   }
   return {
     ok: errors.length === 0,
+    state: errors.length === 0 ? 'valid' : 'invalid',
+    origin: 'project-config',
     path: configPath,
     content,
     policy: { executionMode, autonomyLevel },
@@ -186,14 +269,14 @@ function applyPolicyMutation(
     return { ok: false, errors: validation.errors, wrote: false };
   }
   const current = readConfig(configPath);
-  if (!current.ok || !current.content) {
+  if (!current.ok) {
     return {
       ok: false,
       errors: current.errors?.length ? current.errors : ['config not readable'],
       wrote: false,
     };
   }
-  if (!current.content || !current.policy?.executionMode || !current.policy?.autonomyLevel) {
+  if (!current.policy?.executionMode || !current.policy?.autonomyLevel) {
     return {
       ok: false,
       errors: current.errors?.length ? current.errors : ['config policy fields missing'],
@@ -210,13 +293,14 @@ function applyPolicyMutation(
   if (options.dryRun) {
     return { ok: true, preview, wrote: false };
   }
-  let next = current.content;
+  let next = current.content ?? effectiveConfigYaml();
   let replaced = replaceWorkflowField(next, 'execution_mode', executionMode);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;
   replaced = replaceWorkflowField(next, 'autonomy_level', autonomyLevel);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, next, 'utf8');
   return { ok: true, preview, wrote: true };
 }
@@ -302,7 +386,9 @@ export {
   autonomyComboValid,
   configValue,
   defaultOnboardingPolicy,
+  EFFECTIVE_DEFAULTS,
   EXECUTION_MODES,
+  effectiveConfigYaml,
   formatPolicyPair,
   ONBOARDING_DEFAULT_PRESET,
   ONBOARDING_PRESET_ORDER,

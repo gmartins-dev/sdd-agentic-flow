@@ -23,12 +23,13 @@ after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
 function project(name: string, specsRoot = 'specs/features'): string {
   const cwd = path.join(temporary, name);
-  fs.mkdirSync(path.join(cwd, '.git', 'info'), { recursive: true });
+  fs.mkdirSync(cwd, { recursive: true });
+  execFileSync('git', ['init'], { cwd, stdio: 'ignore' });
   fs.writeFileSync(path.join(cwd, '.git', 'info', 'exclude'), 'foreign-pattern\n', 'utf8');
   fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.sdd-agentic-flow', 'config.yml'),
-    `schema: saf-config/v2\n\nspecs:\n  root: ${specsRoot}\n`,
+    `schema: saf-config/v3\n\nspecs:\n  root: ${specsRoot}\n`,
     'utf8',
   );
   return cwd;

@@ -1,19 +1,15 @@
-# Pack matrix
+# Compatibility matrix
 
-Skills define intrinsic capabilities. Installation packs define distribution only; pack
-membership is not duplicated in `SKILL.md` frontmatter. `npm run skills:lint` validates the
-pack registry against `OFFICIAL_SKILLS` and verifies that `full` is the complete roster.
+The official bundle is the complete locked roster in `OFFICIAL_SKILLS`. Every
+supported target receives the same 12 skills and shared layer.
 
-| Pack | Purpose | Skills |
+| Target | User scope | Project scope |
 | --- | --- | --- |
-| `planning` | discovery, specification, explanation, and prompt creation | `saf-setup`, `saf-route`, `saf-brainstorm`, `saf-create-spec`, `saf-create-prompts`, `saf-explain` |
-| `execution` | single-task implementation and feature validation | `saf-route`, `saf-implement`, `saf-check-task`, `saf-validate` |
-| `review` | local change-review workflow | `saf-route`, `saf-create-pr`, `saf-review-pr`, `saf-fix-pr` |
-| `multi-task` | dependency-aware multi-task execution | `saf-route`, `saf-implement`, `saf-implement-multi`, `saf-check-task`, `saf-validate` |
-| `full` | complete SAF workflow | all 13 official skills |
+| Agents/Codex | `~/.agents/skills/` | `.agents/skills/` |
+| Cursor | `~/.agents/skills/`, `~/.cursor/skills/` | `.agents/skills/` |
+| Claude Code | `~/.claude/skills/` | `.agents/skills/` |
+| VS Code/Copilot | `~/.copilot/skills/` | `.agents/skills/` |
 
-`full` is the recommended capability set. Operating policy is separate: guided onboarding
-defaults to `full + supervised`; non-interactive fail-safe operation uses `full + manual`.
-
-The current pack set is clean-slate. `core`, `local-files`, `github`, `pr`, and `multi-worktree`
-are not aliases or supported pack IDs.
+Capability compatibility is validated through each skill's portable
+frontmatter and `saf-contract.yml`. The CLI does not require a provider API,
+persist credentials, or create an agent runtime.

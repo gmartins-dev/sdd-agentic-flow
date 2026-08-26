@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-create-spec
+requires: [spec-package]
+consumes: [domain-glossary, project-context]
+produces: [explanation]
+baseline: []
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised]
+  auto_continue_condition: 'not applicable — this skill never auto-advances; it produces an explanation for a human reader, not a workflow step'
+  blocking_conditions: [missing_spec_package]
+  evidence_required: [explanation]

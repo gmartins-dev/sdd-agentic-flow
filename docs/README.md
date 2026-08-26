@@ -9,7 +9,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [getting-started.md](getting-started.md) | One-command guided setup |
 | [what-is-sdd.md](what-is-sdd.md) | Plain-language SDD overview and where the CLI fits |
 | [commands.md](commands.md) | CLI command reference |
-| [installation.md](installation.md) | First install, pack selection, re-running install safely |
+| [installation.md](installation.md) | Official bundle, workspace initialization, and safe reinstallation |
 | [installation-scope.md](installation-scope.md) | Choosing `--scope user` vs `--scope project` |
 | [configuration.md](configuration.md) | Editing `.sdd-agentic-flow/config.yml`, project context, autonomy fields |
 | [environment-compatibility.md](environment-compatibility.md) | Node.js version, OS, shell requirements |
@@ -27,7 +27,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [developer-journey.md](developer-journey.md) | Illustrative intent-to-transition developer lifecycle |
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
 | [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
-| [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, outputs, packs) |
+| [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, and outputs) |
 | [skills.md](skills.md) | Skills layer overview |
 | [prompt-recipes.md](prompt-recipes.md) | Copy-paste prompt patterns |
 | [tdd-baseline.md](tdd-baseline.md) | TDD baseline overview (detail in shared reference) |
@@ -70,7 +70,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 
 | Doc | When to read |
 | --- | --- |
-| [architecture.md](architecture.md) | CLI, packs, skills, shared layer, consumer project |
+| [architecture.md](architecture.md) | CLI, official bundle, skills, shared layer, consumer project |
 | [cli-interaction.md](cli-interaction.md) | Output modes, stdout/stderr, colors, branding vs protocol |
 | [cli-terminal-behavior.md](cli-terminal-behavior.md) | TTY, plain output, prompts, terminal capabilities, and interruption |
 | [machine-interface.md](machine-interface.md) | JSON envelope, stable tokens, and machine-readable errors |

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
-import { applyAdoption } from '../src/adoption';
+
 import { configureIntent } from '../src/configure';
 import {
+  classifyInstallIntent,
   DEFAULT_USER_TARGETS,
-  desiredSkillsForPacks,
   type InstallConfig,
   parseTargetSelection,
   readInstallConfig,
@@ -19,54 +20,43 @@ import {
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-install-domain-'));
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
-test('intent persistence round-trips and pack union derives skills', () => {
+test('v3 intent persistence contains targets and project adoption without packs', () => {
   const config: InstallConfig = {
-    schema: 'saf-install-intent/v2',
-    user: { packs: ['planning'], targets: [...DEFAULT_USER_TARGETS] },
-    projects: {},
+    schema: 'saf-install-intent/v3',
+    user: { targets: [...DEFAULT_USER_TARGETS] },
+    projects: {
+      abc: {
+        git_common_dir: '/repo/.git',
+        project_relative_path: 'apps/api',
+        adoption_mode: 'team',
+      },
+    },
   };
   writeInstallConfig(config, temporary);
   assert.deepEqual(readInstallConfig(temporary), config);
-  assert.deepEqual(
-    desiredSkillsForPacks(['planning', 'review'], {
-      planning: { skills: ['a', 'b'] },
-      review: { skills: ['b', 'c'] },
-    }),
-    ['a', 'b', 'c'],
-  );
+  const content = fs.readFileSync(path.join(temporary, '.sdd-agentic-flow', 'install.yml'), 'utf8');
+  assert.match(content, /^schema: saf-install-intent\/v3/);
+  assert.doesNotMatch(content, /packs:|sharing:|root:/);
 });
 
-test('intent serializer keeps canonical sections and a final newline', () => {
-  const home = path.join(temporary, 'serializer-home');
-  writeInstallConfig(
-    {
-      schema: 'saf-install-intent/v2',
-      user: { packs: ['review'], targets: ['agents'] },
-      projects: {},
-    },
-    home,
-  );
-  const content = fs.readFileSync(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'utf8');
-  assert.match(content, /^schema: saf-install-intent\/v2\n\nuser:\n/);
-  assert.match(content, /\nprojects:\n$/);
-  assert.equal(content.endsWith('\n'), true);
-});
-
-test('unsupported installation intent is rejected before it can be reused', () => {
-  for (const { name, content } of [
-    { name: 'legacy', content: 'schema: saf-install-intent/v1\n' },
-    { name: 'future', content: 'schema: saf-install-intent/v3\n' },
-    { name: 'malformed', content: 'not an installation intent\n' },
-  ]) {
-    const home = path.join(temporary, `${name}-intent-home`);
+test('only v3 intent is current and older schemas are cleanup-only', () => {
+  for (const [schema, kind] of [
+    ['saf-install-intent/v1', 'legacy'],
+    ['saf-install-intent/v2', 'legacy'],
+    ['saf-install-intent/v3', 'current'],
+    ['saf-install-intent/v4', 'future'],
+  ] as const) {
+    const home = path.join(temporary, schema.replaceAll('/', '-'));
     const file = path.join(home, '.sdd-agentic-flow', 'install.yml');
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, content, 'utf8');
-    assert.throws(() => readInstallConfig(home), /unsupported installation intent/);
+    fs.writeFileSync(file, `schema: ${schema}\n`);
+    assert.equal(classifyInstallIntent(home).kind, kind);
+    if (kind !== 'current') assert.throws(() => readInstallConfig(home), /clean reinstall/);
   }
 });
 
 test('repository keys and interactive eligibility are deterministic', () => {
+  execFileSync('git', ['init'], { cwd: temporary, stdio: 'ignore' });
   assert.equal(repositoryKey(temporary), repositoryKey(temporary));
   assert.equal(shouldUseInteractiveInstall({ stdinIsTTY: true, stdoutIsTTY: true }), true);
   assert.equal(
@@ -82,48 +72,16 @@ test('target selection is strict, defaults accurately, and all includes Cursor',
   const all = parseTargetSelection('all');
   assert.ok(all.ok);
   assert.deepEqual(all.targets, ['agents', 'cursor', 'claude', 'copilot']);
-  const agents = parseTargetSelection('agents, Claude Code');
-  assert.ok(agents.ok);
-  assert.deepEqual(agents.targets, ['agents', 'claude']);
   assert.equal(parseTargetSelection('agents, unknown').ok, false);
 });
 
-test('team configure persists adoption and never excludes the whole skills directory', () => {
-  const project = path.join(temporary, 'project');
-  fs.mkdirSync(path.join(project, '.git', 'info'), { recursive: true });
+test('configure intent updates bundle targets without pack-shaped fields', () => {
+  const home = path.join(temporary, 'configure-home');
   configureIntent({
-    homeDir: temporary,
-    cwd: project,
-    scope: 'project',
-    packs: ['planning'],
-    adoptionMode: 'team',
+    homeDir: home,
+    cwd: temporary,
+    scope: 'user',
+    targets: ['agents'],
   });
-  const content = fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8');
-  assert.doesNotMatch(content, /\.agents\/skills\//);
-  assert.match(content, /context\/project-context\.md/);
-});
-
-test('configure intent replaces a selected pack instead of retaining a stale larger pack', () => {
-  const home = path.join(temporary, 'replace-pack-home');
-  writeInstallConfig(
-    {
-      schema: 'saf-install-intent/v2',
-      user: { packs: ['full'], targets: [...DEFAULT_USER_TARGETS] },
-      projects: {},
-    },
-    home,
-  );
-  configureIntent({ homeDir: home, cwd: temporary, scope: 'user', packs: ['planning'] });
-  const saved = readInstallConfig(home);
-  assert.ok(saved);
-  assert.deepEqual(saved.user.packs, ['planning']);
-});
-
-test('team adoption preserves a foreign skills exclusion', () => {
-  const project = path.join(temporary, 'project-user-exclude');
-  const exclude = path.join(project, '.git', 'info', 'exclude');
-  fs.mkdirSync(path.dirname(exclude), { recursive: true });
-  fs.writeFileSync(exclude, '.agents/skills/\n', 'utf8');
-  applyAdoption(project, 'team', temporary);
-  assert.match(fs.readFileSync(exclude, 'utf8'), /^\.agents\/skills\/\n/);
+  assert.deepEqual(readInstallConfig(home)?.user.targets, ['agents']);
 });

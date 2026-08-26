@@ -1,28 +1,19 @@
 # Skills
 
-See the [skills catalog](skills-catalog.md) for Purpose, When to
-use/not to use, Inputs/Outputs, Dependencies, Conflicts, Baseline, Pack(s), and flow position
-for each of the 13 public skills.
+The official bundle contains 12 skills. See the [skills catalog](skills-catalog.md)
+for purpose, semantic inputs, and outputs, and the
+[invocation model](invocation-model.md) for orchestration guidance.
 
-See the [invocation model](invocation-model.md) for orchestration guidance. `saf-route` is read-only: it recommends a local next skill but does not invoke it.
+Each `SKILL.md` uses portable Agent Skills frontmatter. SAF workflow metadata
+lives in `saf-contract.yml`. Shared references provide TLC/TDD, safety, routing,
+evidence, and effective-default contracts.
 
-Each public skill reads `.sdd-agentic-flow/config.yml`, uses the internal TLC baseline, and leaves
-final authority with the user. Implementation, checking, validation, and prompt skills
-also use the [TDD baseline](tdd-baseline.md) for code tasks. Skills are
-authored/normalized with `$skill-creator`; users do not need that development-time tool.
+`.sdd-agentic-flow/config.yml` is optional. When absent, every skill uses the
+canonical defaults. Missing task identity, spec packages, findings, or required
+evidence remains a blocker.
 
-Every skill declares a capability contract in its frontmatter (`extends`, `requires`,
-`consumes`, `produces`, `baseline`, `packs`). See [architecture](architecture.md)
-for the full contract table and how skills, the shared layer, and project context fit
-together.
+Skills resolve shared references from the installed sibling directory and
+leave external or irreversible authority with the user and host.
 
-Skills resolve shared references from their installed sibling directory and should
-return `Blocked` when configuration, task identity, or required evidence is absent.
-
-See the public [skill map](../README.md#skill-map) for purpose, inputs, outputs, mutation behavior, execution modes, and recommended use.
-
-See the [compatibility matrix](compatibility-matrix.md) for exactly which packs install which
-skill. For decision help, see the guides on
-[choosing a feature profile](guides/choosing-a-feature-profile.md),
-[adopting in a brownfield repo](guides/adopting-in-a-brownfield-repo.md), and
-[condensed vs. full TLC/TDD](guides/condensed-vs-full-tlc-tdd.md).
+See [architecture](architecture.md), [compatibility matrix](compatibility-matrix.md),
+and [usage guide](saf-skills-usage-guide.md).

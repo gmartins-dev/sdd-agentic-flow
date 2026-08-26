@@ -10,7 +10,7 @@ técnico do toolkit.
 | `en-US` | Inglês               | Inglês canônico | `technical-canonical` |
 | `pt-BR` | Português brasileiro | Inglês canônico | `technical-canonical` |
 
-Os arquivos de perfil do shared layer são instalados com o pack selecionado. Eles
+Os arquivos de perfil do shared layer são instalados com o bundle oficial. Eles
 orientam explicações, prompts e reports. Comandos, paths, nomes de skills,
 chaves de configuração, modos, statuses e identificadores permanecem iguais.
 

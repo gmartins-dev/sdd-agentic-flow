@@ -1,21 +1,7 @@
 ---
 name: saf-fix-pr
 description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
-metadata:
-  version: 6.5.0
-extends: saf-review-pr
-requires: [config, review-findings]
-consumes: []
-produces: [fix-evidence]
-baseline: [tlc-spec-driven]
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'fix-evidence present and every actionable finding on the findings ledger is resolved or explicitly deferred with a reason'
-  blocking_conditions: [findings_unresolved, scope_exceeded]
-  evidence_required: [fix-evidence]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Fix SDD pull-request findings
@@ -33,11 +19,11 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 ## Inputs
 
 - One task reference and a review report, PR findings, or user-supplied evidence.
-- `.sdd-agentic-flow/config.yml`, SDD artifacts, current diff, and configured validation commands.
+- Optional `.sdd-agentic-flow/config.yml` overrides, SDD artifacts, current diff, and validation commands.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`, then resolve one task and its permitted scope.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, then resolve one task and its permitted scope.
 2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. In autonomous mode, reconcile intent-preserving spec drift through `saf-create-spec` rather than editing the contract here. Do not close findings by reclassifying missing evidence as preference or by silently changing delegated intent.
 3. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md`. Apply the smallest patch per actionable finding and add or update focused regression evidence. No opportunistic cleanup.
 4. Run configured targeted checks, update the ledger, and hand off to `saf-review-pr` for focused re-review.

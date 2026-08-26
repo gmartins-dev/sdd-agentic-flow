@@ -17,7 +17,7 @@ function initConfig(cwd: string): void {
   fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.sdd-agentic-flow/config.yml'),
-    `schema: saf-config/v2
+    `schema: saf-config/v3
 workflow:
   execution_mode: guided
   autonomy_level: manual

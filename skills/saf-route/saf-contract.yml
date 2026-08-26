@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: null
+requires: []
+consumes: [discovery-state]
+produces: [route-recommendation]
+baseline: []
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'route recommendation present and one on-path next Skill is admissible; this Skill remains read-only'
+  blocking_conditions: [ambiguous_state]
+  evidence_required: [route-recommendation]

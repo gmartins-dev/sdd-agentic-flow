@@ -1,44 +1,23 @@
 # Getting started
 
-Run the canonical human entry point in the project you want to prepare:
+Use the explicit lifecycle in a Git workspace:
 
 ```bash
-npx sdd-agentic-flow
-```
-
-In a real terminal, guided onboarding configures the project, installs the `full`
-pack for you by default, asks how SAF should operate (Supervised is recommended),
-creates project context, and runs `doctor`. Press Enter to choose the recommended
-setup and operating policy, review once, and apply. Choose **Customize setup** when
-you need a different pack, skill scope, targets, project adoption, or policy.
-Use explicit `config` commands and `--yes` for scripted mutations.
-
-The bare command is also the entry point for existing, partial, and attention-needed setups;
-it routes to maintenance or recovery instead of restarting setup.
-
-## Use a scripted setup
-
-Outside a real TTY, `init` writes configuration and generated context but does not run the
-guided installer. Use explicit commands when a script or CI job prepares a project:
-
-```bash
-npx sdd-agentic-flow init --preset manual
-npx sdd-agentic-flow install full
+npx sdd-agentic-flow install
+npx sdd-agentic-flow init --plan
+npx sdd-agentic-flow init
 npx sdd-agentic-flow doctor
 ```
 
-`manual` is the fail-safe policy for non-interactive setup. Replace it with `supervised` or
-`autonomous` only when the project has deliberately chosen that authority level. Use
-`config installation --plan` or `install full --plan` to inspect paths before writing them.
+Install SAF once for your agent host, initialize every exact workspace or
+linked worktree, and configure only when the built-in `apply` + `supervised`
+policy needs an override. `init` is idempotent and does not create config.
 
-## Check the result
+`doctor` reports Installation, Workspace, and Policy independently. Use
+`doctor --json` for machine schema 2. A missing config or generated context is
+non-blocking by itself; invalid or future state fails closed.
 
-Run `doctor` after installation. It reports the package, filesystem, project context, skill
-contracts, and autonomy checks that apply to the current project. Use `doctor --json` when a
-script needs a versioned machine-readable result. If a check returns `WARN` or `FAIL`, start
-with [troubleshooting](troubleshooting.md).
+For a pre-v7 footprint, preview with `install --plan`, inspect every removal,
+then explicitly authorize the bounded reset and install with `install --yes`.
 
-Existing installations are replaced with the current contract only through an explicit
-clean-slate upgrade or reinstall; repository workflow artifacts are preserved.
-For install scopes, custom packs, and collision handling, see
-[installation](installation.md).
+See [installation](installation.md) and [troubleshooting](troubleshooting.md).

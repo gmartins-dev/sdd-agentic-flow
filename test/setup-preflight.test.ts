@@ -22,7 +22,7 @@ test('blocked guided setup preflight produces no project writes', async () => {
   );
   fs.mkdirSync(cwd, { recursive: true });
   setSetupCommandDeps({
-    install: (pack, root, options) => install(pack, root, { ...options, homeDir }),
+    install: (root, options) => install(root, { ...options, homeDir }),
     upgradeCommand: async () => undefined,
     runCommand: async () => undefined,
     runInteractiveMenu: async () => undefined,
@@ -34,7 +34,6 @@ test('blocked guided setup preflight produces no project writes', async () => {
     {
       install: true,
       scope: 'user',
-      pack: 'full',
       targets: ['agents'],
     },
     { quiet: true, homeDir },

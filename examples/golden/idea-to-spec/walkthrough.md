@@ -9,7 +9,7 @@ stance on documentation vs. mechanically-proved claims).
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install planning --scope project
+sdd-agentic-flow install --scope project
 ```
 
 The idea starts vague: "notifications are too noisy at night." A real `saf-brainstorm` run in

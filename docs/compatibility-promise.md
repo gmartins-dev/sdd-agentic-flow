@@ -1,31 +1,30 @@
 # Compatibility and upgrade policy
 
-SAF is experimental software. Major releases may replace CLI, installation, skill,
-configuration, artifact, and workflow contracts without backward compatibility.
+SAF is experimental software. Major releases may replace CLI, installation,
+skill, configuration, artifact, and workflow contracts.
 
 ## Current contracts
 
-- Skill capability contracts are defined by each `SKILL.md`; distribution membership lives only in `packs/*.json`.
-- Installation packs are exactly `planning`, `execution`, `review`, `multi-task`, and `full`.
-- Current state schemas are `saf-config/v2`, `saf-install-intent/v2`, and `saf-install-provenance/v2`.
-- SAF remains local-first, zero-runtime-dependency, agent-neutral, and does not commit, push, merge, deploy, publish, or add telemetry automatically.
+- One official bundle contains the locked 12-skill roster and shared layer.
+- Skills use portable frontmatter plus `saf-skill-contract/v1` sidecars.
+- Current state schemas are `saf-config/v3`, `saf-install-intent/v3`,
+  `saf-install-provenance/v3`, and `saf-workspace/v1`.
+- Machine schema 2 remains compatible throughout the 7.x line; additive fields
+  are allowed, incompatible removal or semantic changes are not.
+- SAF remains local-first, agent-neutral, and performs no automatic Git or
+  remote release action.
 
 ## Clean-slate upgrade
 
-An incompatible upgrade replaces SAF-managed installation assets with the latest release
-contract. It does not translate old configuration, aliases, pack IDs, or skill metadata.
-Recognized older metadata may be inspected only by the cleanup-only ownership recognizer; it is
-never accepted as current operational state.
+Pre-v7 state is cleanup-only. SAF displays the exact recognized footprint and
+requires explicit confirmation. Removal authority comes only from exact
+historical names, canonical SAF paths, recognized markers/blocks, or validated
+provenance. Unknown and future state fails closed.
 
-The cleanup preserves repository source, Git history, `.specs/features/**`, project context,
-reports, snapshots, explanations, evidence, review artifacts, and non-SAF skills. It replaces
-managed SAF skills, the shared installed layer, installation intent, provenance, config, and
-regenerable usage files. Unknown or future state fails closed before deletion.
-
-`core`, `local-files`, `github`, `pr`, and `multi-worktree` are not current pack aliases.
-Bare CLI invocation is read-only; installation requires an explicit install/init operation.
+Cleanup preserves `.specs/**`, source, tests, documentation, Git history,
+foreign skills, credentials, and unknown entries. Partial cleanup is reentrant.
 
 ## Version boundary
 
-Current state is supported. Explicitly recognized previous SAF state is cleanup-only. Future or
-unknown schemas are refused, because the CLI must not delete state it cannot understand.
+Only current schemas are operational. Previous schemas locate bounded cleanup
+targets but are never translated into desired v7 state.

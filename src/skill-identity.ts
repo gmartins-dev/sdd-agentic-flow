@@ -1,5 +1,4 @@
 const OFFICIAL_SKILLS = Object.freeze([
-  'saf-setup',
   'saf-route',
   'saf-brainstorm',
   'saf-create-spec',
@@ -16,6 +15,7 @@ const OFFICIAL_SKILLS = Object.freeze([
 
 const SKILL_NAMESPACE = 'saf-';
 const LEGACY_SKILL_PREFIXES = Object.freeze(['sdd-', 'setup-sdd-'] as const);
+const HISTORICAL_SKILLS = Object.freeze(['saf-setup'] as const);
 
 function isOfficialSkill(name: string): boolean {
   return (OFFICIAL_SKILLS as readonly string[]).includes(name);
@@ -31,12 +31,14 @@ function listManagedSkillDirNames(entries: string[]): string[] {
   return entries.filter(
     (name) =>
       (OFFICIAL_SKILLS as readonly string[]).includes(name) ||
+      (HISTORICAL_SKILLS as readonly string[]).includes(name) ||
       isLegacySkillName(name) ||
       name === 'sdd-agentic-flow-shared',
   );
 }
 
 export {
+  HISTORICAL_SKILLS,
   isLegacySkillName,
   isOfficialSkill,
   LEGACY_SKILL_PREFIXES,

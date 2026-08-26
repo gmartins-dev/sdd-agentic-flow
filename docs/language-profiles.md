@@ -10,7 +10,7 @@ technical contract of the toolkit.
 | `en-US` | English              | Canonical English | `technical-canonical` |
 | `pt-BR` | Brazilian Portuguese | Canonical English | `technical-canonical` |
 
-The shared profile files are installed with the selected pack. They define how an
+The shared profile files are installed with the official bundle. They define how an
 agent should write explanations, prompts, and reports. Commands, paths, skill
 names, configuration keys, modes, statuses, and identifiers remain unchanged.
 

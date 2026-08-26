@@ -98,7 +98,7 @@ valida o setup. A CLI é um **plano de controle** para setup, inspeção e manut
 skills. Veja [O que é SDD?](docs/what-is-sdd.md) e a [referência de comandos](docs/commands.md).
 
 Para automação ou uso avançado, use comandos explícitos como `npx sdd-agentic-flow init`,
-`npx sdd-agentic-flow install full` e `npx sdd-agentic-flow doctor`.
+`npx sdd-agentic-flow install`, `npx sdd-agentic-flow init` e `npx sdd-agentic-flow doctor`.
 
 `init --preset` grava os dois campos existentes (`execution_mode`, `autonomy_level`) — não é um terceiro eixo de config.
 
@@ -116,7 +116,7 @@ da delegação. A CLI não executa skills.
 Depois, invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie uma receita de [prompts](docs/prompt-recipes.md) ao delegar a um agente.
 
 Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
-recomendado ao pressionar Enter), instala o pack `full`, prepara o contexto e valida o resultado.
+recomendado ao pressionar Enter), instala o bundle oficial, prepara o workspace e valida o resultado.
 Altere a política com `config policy`; altere a instalação com `config installation`.
 Use `init` em scripts e CI. Veja [início rápido](docs/getting-started.md).
 
@@ -130,8 +130,7 @@ canônico para continuar copiáveis e estáveis.
 
 ```mermaid
 flowchart TD
-  setup[saf-setup] --> route[saf-route]
-  route --> brainstorm[saf-brainstorm]
+  route[saf-route] --> brainstorm[saf-brainstorm]
   brainstorm -->|converged| specs[saf-create-spec]
   route --> specs
   specs -.->|on demand| explain[saf-explain]
@@ -193,9 +192,9 @@ Você se encaixa se adota Spec-Driven Development, entrega em sprint com gates d
 Scripts descartáveis, agentes sem revisão humana, pipelines automáticos de release/deploy, ou fluxos que rejeitam specs, limites de tarefa e checkpoints de validação.
 
 <details>
-<summary><strong>Referência técnica</strong> (CLI, packs, skill map, confiança, segurança)</summary>
+<summary><strong>Referência técnica</strong> (CLI, bundle oficial, skill map, confiança, segurança)</summary>
 
-A referência completa de comandos, packs, modos de execução, níveis de autonomia, mapa de skills, vocabulário de domínio e limites de segurança está no [README em inglês](README.md) (seção colapsável **Technical reference**).
+A referência completa de comandos, bundle oficial, modos de execução, níveis de autonomia, mapa de skills, vocabulário de domínio e limites de segurança está no [README em inglês](README.md) (seção colapsável **Technical reference**).
 
 Resumo de confiança: código inspecionável, zero dependências runtime, sem telemetria ou rede por padrão. As exceções de rede são `doctor --check-updates`, `upgrade` e a pergunta opcional do welcome interativo. O toolkit não faz commit, push, merge, deploy ou publish automaticamente. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
 

@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { EFFECTIVE_DEFAULTS } from '../src/config-domain';
 import { parseContractArray, validateContractReferences } from '../src/contract-graph';
 import { unknownContractKinds } from '../src/contract-kinds';
+import { parseSkillContract } from '../src/skill-contract';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 const root = path.resolve(__dirname, '..');
@@ -11,17 +13,6 @@ const baselineRegistry = fs.readFileSync(path.join(root, 'shared/baselines/regis
 const knownBaselineIds = [...baselineRegistry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)]
   .map((match) => match[1])
   .filter((id): id is string => Boolean(id));
-const packFiles = fs.readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json'));
-const packs = packFiles.map(
-  (file) =>
-    JSON.parse(fs.readFileSync(path.join(root, 'packs', file), 'utf8')) as {
-      name: string;
-      skills: string[];
-    },
-);
-const expectedPacks = ['execution', 'full', 'multi-task', 'planning', 'review'];
-if (JSON.stringify(packs.map((pack) => pack.name).sort()) !== JSON.stringify(expectedPacks))
-  failures.push('packs: expected exactly execution, full, multi-task, planning, review');
 const skills = OFFICIAL_SKILLS.map((name) => {
   const content = fs.readFileSync(path.join(root, 'skills', name, 'SKILL.md'), 'utf8');
   const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1];
@@ -31,12 +22,30 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   if (descriptions.has(description))
     failures.push(`${name}: duplicate description with ${descriptions.get(description)}`);
   descriptions.set(description, name);
+  const allowed = new Set([
+    'name',
+    'description',
+    'license',
+    'compatibility',
+    'metadata',
+    'allowed-tools',
+  ]);
+  for (const match of (frontmatter ?? '').matchAll(/^([a-z][a-z-]*):/gm))
+    if (match[1] && !allowed.has(match[1]))
+      failures.push(`${name}: non-portable frontmatter field ${match[1]}`);
+  if (/^\s+version:/m.test(frontmatter ?? ''))
+    failures.push(`${name}: metadata.version is retired`);
+  const sidecarFile = path.join(root, 'skills', name, 'saf-contract.yml');
+  const sidecar = fs.existsSync(sidecarFile) ? fs.readFileSync(sidecarFile, 'utf8') : '';
+  if (!sidecar) failures.push(`${name}: missing saf-contract.yml`);
+  let parsed: ReturnType<typeof parseSkillContract> = {};
+  try {
+    parsed = parseSkillContract(sidecar);
+  } catch (error) {
+    failures.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
+  }
   for (const field of ['extends', 'requires', 'consumes', 'produces', 'baseline'])
-    if (!new RegExp(`^${field}:`, 'm').test(frontmatter ?? ''))
-      failures.push(`${name}: missing ${field}`);
-  for (const removed of ['compatible_with:', '  pack:', 'packs:'])
-    if ((frontmatter ?? '').includes(removed))
-      failures.push(`${name}: retired contract token ${removed.trim()}`);
+    if (!(field in parsed)) failures.push(`${name}: missing ${field}`);
   const headings = [...content.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   const canonical = ['When to use', 'When not to use', 'Inputs', 'Workflow', 'Safety', 'Output'];
   if (JSON.stringify(headings) !== JSON.stringify(canonical))
@@ -45,25 +54,13 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   for (const label of ['Status', 'Next recommended skill', 'Reason'])
     if (!output.includes(label)) failures.push(`${name}: output missing ${label}`);
   for (const { field, value } of unknownContractKinds({
-    requires: parseContractArray(frontmatter ?? '', 'requires') ?? [],
-    consumes: parseContractArray(frontmatter ?? '', 'consumes') ?? [],
-    produces: parseContractArray(frontmatter ?? '', 'produces') ?? [],
+    requires: parseContractArray(sidecar, 'requires') ?? [],
+    consumes: parseContractArray(sidecar, 'consumes') ?? [],
+    produces: parseContractArray(sidecar, 'produces') ?? [],
   }))
     failures.push(`${name}: unknown ${field} contract kind '${value}'`);
-  return { name, frontmatter: frontmatter ?? '' };
+  return { name, frontmatter: sidecar };
 });
-
-for (const pack of packs) {
-  const unknown = pack.skills.filter(
-    (skill) => !(OFFICIAL_SKILLS as readonly string[]).includes(skill),
-  );
-  if (unknown.length) failures.push(`${pack.name}: unknown skills ${unknown.join(', ')}`);
-}
-const full = packs.find((pack) => pack.name === 'full');
-if (
-  JSON.stringify([...(full?.skills || [])].sort()) !== JSON.stringify([...OFFICIAL_SKILLS].sort())
-)
-  failures.push('full: skills must equal OFFICIAL_SKILLS');
 
 const { failures: referenceFailures, cycles } = validateContractReferences(skills, {
   knownBaselineIds,
@@ -72,6 +69,30 @@ failures.push(
   ...referenceFailures,
   ...cycles.map((cycle) => `contract cycle: ${cycle.join(' -> ')}`),
 );
+for (const skill of skills) {
+  const conflicts = parseContractArray(skill.frontmatter, 'conflicts') ?? [];
+  for (const conflict of conflicts)
+    if ((OFFICIAL_SKILLS as readonly string[]).includes(conflict))
+      failures.push(`${skill.name}: conflicts with official skill ${conflict}`);
+}
+
+const defaultsFile = fs.readFileSync(
+  path.join(root, 'shared/references/effective-defaults.md'),
+  'utf8',
+);
+const defaultsBlock = defaultsFile.match(/```yaml effective-defaults\n([\s\S]*?)\n```/)?.[1];
+if (!defaultsBlock) failures.push('effective defaults: missing structured block');
+else {
+  const projection = Object.fromEntries(
+    defaultsBlock.split('\n').map((line) => {
+      const [key, ...rest] = line.split(':');
+      const value = rest.join(':').trim();
+      return [key, value === 'true' ? true : value === 'false' ? false : value];
+    }),
+  );
+  if (JSON.stringify(projection) !== JSON.stringify(EFFECTIVE_DEFAULTS))
+    failures.push('effective defaults: shared projection differs from CLI constants');
+}
 const vendor =
   /\b(github|gitlab|bitbucket|jira|linear|azure devops|claude|cursor|codex|gemini|copilot)\b/i;
 for (const name of OFFICIAL_SKILLS) {

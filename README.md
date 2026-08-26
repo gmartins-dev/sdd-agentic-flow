@@ -100,18 +100,16 @@ npx sdd-agentic-flow
 ```
 
 That is the canonical human entry point: it routes first use, existing setup, partial setup, and
-recovery. Guided onboarding creates `.sdd-agentic-flow/config.yml`, installs skills, and validates
-setup. The CLI is a **control plane** for setup, inspection, guidance, and maintenance. It does
+recovery. The explicit lifecycle is install the official bundle once, initialize each Git
+workspace, and configure policy only when overrides are needed. The CLI is a **control plane** for setup, inspection, guidance, and maintenance. It does
 not invoke skills. See [What is SDD?](docs/what-is-sdd.md), the [engineering model](docs/engineering-model.md),
 and the [commands reference](docs/commands.md).
 
-For scripted or advanced flows, use explicit commands such as `npx sdd-agentic-flow init`,
-`npx sdd-agentic-flow install full`, and `npx sdd-agentic-flow doctor`.
+For scripted or advanced flows, use `npx sdd-agentic-flow install`, then
+`npx sdd-agentic-flow init`, then `npx sdd-agentic-flow doctor`.
 
-In a real terminal, guided `init` includes an operating-policy step. **Supervised** is the
-recommended choice. Use `init --preset` or `config policy` to set policy explicitly in scripts.
-
-`init --preset` writes the two existing fields (`execution_mode`, `autonomy_level`); it does not add a third config axis.
+The built-in policy is **Supervised** (`apply` + `supervised`). Use `config policy` to persist
+explicit overrides; `init` never creates policy configuration merely because it ran.
 
 | Preset | Writes | How the path runs |
 | --- | --- | --- |
@@ -119,7 +117,7 @@ recommended choice. Use `init --preset` or `config policy` to set policy explici
 | `manual` (fail-safe non-interactive default; alias `man`) | `guided` + `manual` | Stop after each skill |
 | `autonomous` (alias `auto`) | `full` + `autonomous` | Owns local planning, repair, and validation until verified completion within delegated authority |
 
-Do not mix `--preset` with `--execution-mode` / `--autonomy-level`. Power users can still set those two flags without `--preset`. See [configuration](docs/configuration.md).
+See [configuration](docs/configuration.md) for explicit policy overrides.
 
 **Autonomous does not mean unlimited authority.** It resolves ordinary failures and repair cycles
 without intermediate questions, while commit, push, merge, tag, publish, deploy, and other external
@@ -136,8 +134,7 @@ For the guided path, customization options, and non-interactive setup rules, see
 
 ```mermaid
 flowchart TD
-  setup[saf-setup] --> route[saf-route]
-  route --> brainstorm[saf-brainstorm]
+  route[saf-route] --> brainstorm[saf-brainstorm]
   brainstorm -->|converged| specs[saf-create-spec]
   route --> specs
   specs -.->|on demand| explain[saf-explain]
@@ -196,7 +193,7 @@ You are a good fit if you adopt Spec-Driven Development, run sprint delivery wit
 Quick one-off scripts, fully autonomous no-review agents, automatic deploy/release pipelines, or workflows that reject specs, task boundaries, and validation checkpoints.
 
 <details>
-<summary><strong>Technical reference</strong> (CLI, packs, skill map, trust, safety)</summary>
+<summary><strong>Technical reference</strong> (CLI, official bundle, skill map, trust, safety)</summary>
 
 ## Why trust this toolkit?
 
@@ -217,17 +214,16 @@ See [the trust model](docs/trust-model.md) for scope and limits.
 ## Commands
 
 ```text
-init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...]  Guided setup
-config installation [--scope user|project] [--pack ...] [--target ...] [--adoption-mode personal|specs-shared|team] [--plan]  Save intent
+init [--plan] [--json] [--quiet] [--ascii] [--yes]  Initialize the exact current Git workspace
+config installation [--scope user|project] [--target ...] [--adoption-mode personal|specs-shared|team] [--plan|--yes]  Save intent
 context refresh                       Refresh project context
 context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
-install <pack> [--scope user|project] [--target ...] [--plan] [--quiet]  Install a pack (default: user scope)
+install [--scope user|project] [--target ...] [--plan|--yes] [--quiet]  Install the official bundle
 doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
 autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
 uninstall --plan                      Show only toolkit assets that would be removed
 uninstall --yes [--purge] [--scope user|project|all] [--target ...] [--verbose] [--quiet]  Remove managed assets
-list                                  List packs
 learn-sdd                             Show a one-screen SDD summary
 version                               Show the package identity
 completion bash|zsh|fish              Print shell completion
@@ -242,7 +238,7 @@ If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting]
 
 Running `npx sdd-agentic-flow` with no command shows a contextual status screen (what's already set up, and one suggested next command) instead of the full reference. It never runs anything on its own. At a genuinely interactive terminal (a real TTY, and no `CI` env var set), it also offers a numbered menu below the status screen; selecting an entry runs the exact same command the equivalent typed invocation would, and the uninstall entry only ever previews (`--plan`), never applies. Piped output, scripts, CI, and agent invocations always see just the status screen, unchanged. Run `npx sdd-agentic-flow help` for the full command reference, or `help <command>` / `<command> --help` for one command's usage and examples.
 
-Unknown commands, packs, and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. A pipe or CI run remains deterministic human-readable text; `doctor --json` is the explicit machine contract. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
+Unknown commands and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. A pipe or CI run remains deterministic human-readable text; `doctor --json` is the explicit machine contract. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
 
 Choose a language profile explicitly when creating a project:
 
@@ -268,7 +264,7 @@ See [language profiles](docs/language-profiles.md) for the profile contract.
 
 `full` is the recommended capability set. Operating policy is separate: guided onboarding uses
 `supervised`; non-interactive fail-safe operation uses `manual`. Hosted SCM, tracker, and
-coding-agent providers are optional external integrations, never core pack dependencies.
+coding-agent providers are optional external integrations, never core bundle dependencies.
 
 ## Execution modes
 
@@ -302,7 +298,6 @@ For the long-form version of this table, see the [skills catalog](docs/skills-ca
 
 | Skill | Purpose | Input | Output | Mutates files? | Default mode | Recommended when |
 | --- | --- | --- | --- | --- | --- | --- |
-| `saf-setup` | Setup project configuration | Project context | Local setup guidance | Yes, when authorized | guided | Starting a project |
 | `saf-route` | Recommend next local skill | Request/artifacts | Route recommendation | No | plan | The next step is unclear |
 | `saf-brainstorm` | Shape a vague idea | Rough idea | Spec-ready brief | Yes, when converged | guided | The idea isn't spec-ready yet |
 | `saf-create-spec` | Plan feature specs | Source item OR existing codebase | Feature spec set | Yes, when authorized | plan | Requirements need structure, or undocumented code needs specs |

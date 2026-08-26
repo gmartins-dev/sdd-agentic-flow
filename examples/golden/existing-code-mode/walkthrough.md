@@ -15,7 +15,7 @@ tests answer), exactly as the skill's `SKILL.md` requires.
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install full --scope project
+sdd-agentic-flow install --scope project
 ```
 
 Then `context.md`, `spec.md`, and `design.md` are copied to

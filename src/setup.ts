@@ -27,7 +27,6 @@ import {
   severity,
 } from './doctor';
 import { inferInitDefaults } from './init-defaults';
-import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
@@ -47,7 +46,6 @@ import {
   LOCAL_GIT_EXCLUDE_ENTRY,
   OPERATING_PRESETS,
   PACKAGE_ROOT,
-  PACKS_DIR,
   resolveOperatingPreset,
   SDD_PATHS,
   SDD_ROOT,
@@ -55,9 +53,9 @@ import {
   USAGE_GUIDE_PT_BR_URL,
   USAGE_GUIDE_URL,
 } from './paths';
-import { discoverProject } from './project-context';
 import { type SelectionResult, select } from './selector';
 import { type DisplayMode, isRich, outputMode, renderStep, styleStatus } from './ui';
+import { applyWorkspaceInitialization, planWorkspaceInitialization } from './workspace';
 
 type InitOptions = {
   profile?: string;
@@ -77,9 +75,7 @@ type InitOptions = {
 type SetupDraft = {
   install?: boolean | undefined;
   scope?: string | undefined;
-  pack?: string | undefined;
   targets?: string[] | undefined;
-  sharing?: string | undefined;
   adoptionMode?: AdoptionMode | undefined;
   path?: string | undefined;
   projectLocalExclude?: boolean | undefined;
@@ -125,11 +121,7 @@ type NextStepOptions = SetupCommandOptions & {
   quiet?: boolean | undefined;
 };
 
-type InstallFn = (
-  pack: string,
-  cwd: string,
-  options: SetupCommandOptions,
-) => boolean | Promise<boolean>;
+type InstallFn = (cwd: string, options: SetupCommandOptions) => boolean | Promise<boolean>;
 
 type SetupCommandDeps = {
   install: InstallFn;
@@ -209,18 +201,10 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function presetNames(): string[] {
-  return fs
-    .readdirSync(PACKS_DIR)
-    .filter((file: string) => file.endsWith('.json'))
-    .map((file: string) => file.replace(/\.json$/, ''))
-    .sort();
-}
-
 function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const inferred = inferInitDefaults(cwd);
   const profile = options.profile || options.language || 'en-US';
-  return `schema: saf-config/v2
+  return `schema: saf-config/v3
 
 project:
   name: ${options.name || inferred.name}
@@ -389,45 +373,12 @@ function selectionStrings(result: SelectionResult): string[] {
 
 function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: Boolean(options.ascii) });
-  const locale = localeFor(cwd, options.profile || options.language);
-  applyInitSideEffects(cwd, { ...options, locale });
-  const configPath = sddJoin(cwd, 'config.yml');
-  if (fs.existsSync(configPath)) {
-    const existing = fs.readFileSync(configPath, 'utf8');
-    const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
-    if (schema !== 'saf-config/v2') {
-      fs.writeFileSync(configPath, configFor(cwd, options), 'utf8');
-      log('INFO', `replaced legacy ${SDD_PATHS.config} with the current configuration contract`);
-      return true;
-    }
-    log('WARN', `preserved existing ${SDD_PATHS.config}`);
-    return false;
-  }
-  for (const relative of [
-    SDD_PATHS.snapshots,
-    SDD_PATHS.reports,
-    SDD_PATHS.explanationsDir,
-    '.specs/features',
-  ]) {
-    fs.mkdirSync(path.join(cwd, relative), { recursive: true });
-  }
-  fs.writeFileSync(configPath, configFor(cwd, options), 'utf8');
-  logPassLine(t(locale, 'init.createdConfig', { path: SDD_PATHS.config }), {
-    mode,
-    quiet: options.quiet,
-  });
-  logPassLine(t(locale, 'init.createdDirectories'), { mode, quiet: options.quiet });
-  if (options.presetName) {
-    const aliasNote = options.presetAlias ? ` (alias: ${options.presetAlias})` : '';
-    log('INFO', `preset ${options.presetName}${aliasNote}`);
-    log('INFO', `execution_mode: ${options.executionMode || 'guided'}`);
-    log('INFO', `autonomy_level: ${options.autonomyLevel || 'manual'}`);
-  }
-  discoverProject(cwd, { force: false, quiet: true, ascii: Boolean(options.ascii) });
-  if (!options.quiet) {
-    nextStep('npx sdd-agentic-flow install full', { quiet: options.quiet, mode });
-    process.stdout.write(`\n${printUsageGuidePointer(cwd, locale)}`);
-  }
+  const plan = planWorkspaceInitialization(cwd);
+  if (!plan.ok) return fail(plan.error || 'workspace initialization failed', 1);
+  const applied = applyWorkspaceInitialization(plan);
+  if (!applied.ok) return fail(applied.error || 'workspace initialization failed', 1);
+  logPassLine(`initialized ${plan.git?.projectRoot}`, { mode, quiet: options.quiet });
+  if (!options.quiet) nextStep('npx sdd-agentic-flow doctor', { quiet: options.quiet, mode });
   return true;
 }
 
@@ -448,31 +399,27 @@ function onboardingStateFor(cwd: string) {
 function savedSetupProfile(cwd: string): Record<string, unknown> | null {
   const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
   const project = saved.projects[repositoryKey(cwd)];
-  if (project?.packs?.length || project?.adoption_mode === 'team')
+  if (project?.adoption_mode === 'team')
     return { scope: 'project', profile: project as Record<string, unknown> };
   if (project?.adoption_mode)
     return {
       scope: 'user',
       profile: { ...saved.user, adoption_mode: project.adoption_mode } as Record<string, unknown>,
     };
-  if (saved.user?.packs?.length) return { scope: 'user', profile: saved.user };
+  if (saved.user.targets.length) return { scope: 'user', profile: saved.user };
   return null;
 }
 
 function setupDraft(cwd: string, state: string): SetupDraft {
   const saved = savedSetupProfile(cwd);
   const profile = (saved?.profile ?? {}) as {
-    packs?: string[];
     targets?: string[];
-    sharing?: string;
     adoption_mode?: AdoptionMode;
   };
   return {
     install: state !== 'NEW_PROJECT',
     scope: (saved?.scope as string | undefined) || 'user',
-    pack: profile.packs?.[0] || 'full',
     targets: profile.targets || [...DEFAULT_USER_TARGETS],
-    projectLocalExclude: profile.sharing === 'local',
     ...(profile.adoption_mode ? { adoptionMode: profile.adoption_mode } : {}),
     saved,
   };
@@ -610,8 +557,8 @@ async function selectOperatingPolicy(
   return setupPolicyFromPreset(chosen);
 }
 
-function setupLocationLabel(pack: string, scope: string, options: SetupCommandOptions = {}) {
-  return `${pack} ${isRich(resolveMode({ ascii: Boolean(options.ascii) })) ? '·' : '-'} ${scope}`;
+function setupLocationLabel(scope: string, options: SetupCommandOptions = {}) {
+  return `official bundle ${isRich(resolveMode({ ascii: Boolean(options.ascii) })) ? '·' : '-'} ${scope}`;
 }
 
 function printSetupReview(draft: SetupDraft, locale: string, options: SetupCommandOptions = {}) {
@@ -624,7 +571,7 @@ function printSetupReview(draft: SetupDraft, locale: string, options: SetupComma
     return;
   }
   process.stdout.write(
-    `  ${t(locale, 'setup.location')}       ${setupLocationLabel(asString(draft.pack), asString(draft.scope), options)}\n`,
+    `  ${t(locale, 'setup.location')}       ${setupLocationLabel(asString(draft.scope), options)}\n`,
   );
   process.stdout.write(
     `  Adoption             ${draft.adoptionMode || 'Keep current visibility'}\n`,
@@ -645,14 +592,7 @@ function printCurrentSetup(cwd: string, locale: string) {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const saved = savedSetupProfile(cwd);
   const state = onboardingStateFor(cwd);
-  const location = saved
-    ? setupLocationLabel(
-        asString(
-          (saved.profile as InstallProjectProfile | InstallConfig['user']).packs?.join(', '),
-        ),
-        asString(saved.scope),
-      )
-    : t(locale, 'setup.missing');
+  const location = saved ? setupLocationLabel(asString(saved.scope)) : t(locale, 'setup.missing');
   const context = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'))
     ? t(locale, 'setup.ready')
     : t(locale, 'setup.missing');
@@ -670,15 +610,6 @@ function printCurrentSetup(cwd: string, locale: string) {
 }
 
 async function customizeSetup(draft: SetupDraft, locale: string, options: SetupCommandOptions) {
-  const pack = await select(
-    t(locale, 'setup.pack'),
-    ['full', ...presetNames().filter((name: string) => name !== 'full')].map((value: string) => ({
-      value,
-      label: value,
-    })),
-    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-  );
-  if (pack.cancelled) return null;
   const adoption = await select(
     'How will SAF be used in this project?',
     [
@@ -690,9 +621,8 @@ async function customizeSetup(draft: SetupDraft, locale: string, options: SetupC
     { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
   );
   if (adoption.cancelled) return null;
-  const packValue = selectionString(pack);
   const adoptionValue = selectionString(adoption);
-  if (!packValue || !adoptionValue) return null;
+  if (!adoptionValue) return null;
   const selectedAdoption = isAdoptionMode(adoptionValue) ? adoptionValue : undefined;
   const scopeValue = selectedAdoption
     ? adoptionModeForScope(selectedAdoption)
@@ -702,7 +632,6 @@ async function customizeSetup(draft: SetupDraft, locale: string, options: SetupC
   const next: SetupDraft = {
     ...baseDraft,
     install: true,
-    pack: packValue,
     scope: scopeValue,
     ...(selectedAdoption ? { adoptionMode: selectedAdoption } : {}),
   };
@@ -764,12 +693,11 @@ async function applySetup(
       homeDir: os.homedir(),
       cwd,
       scope: draft.scope === 'project' ? 'project' : 'user',
-      packs: [asString(draft.pack, 'full')],
       ...(draft.scope === 'user' && draft.targets ? { targets: draft.targets } : {}),
       ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
     });
     if (
-      !(await install(asString(draft.pack, 'full'), cwd, {
+      !(await install(cwd, {
         ...(draft.scope ? { scope: draft.scope } : {}),
         ...(draft.targets ? { targets: draft.targets } : {}),
         ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
@@ -797,7 +725,7 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
   if (!draft.install) return true;
   const { install } = requireCommandDeps();
   return Boolean(
-    await install(asString(draft.pack, 'full'), cwd, {
+    await install(cwd, {
       ...options,
       scope: draft.scope,
       ...(draft.targets ? { targets: draft.targets } : {}),
@@ -944,7 +872,7 @@ async function initInteractive(
     if (config.ok) process.stdout.write(`\n${renderPolicySummary(config, mode)}\n`);
     process.stdout.write(
       '\nChange operating policy with: npx sdd-agentic-flow config policy\n' +
-        'Install skills with: npx sdd-agentic-flow install full\n',
+        'Install skills with: npx sdd-agentic-flow install\n',
     );
     applyInitSideEffects(cwd, {
       localGitExclude: resolveLocalGitExclude({ localGitExclude }),

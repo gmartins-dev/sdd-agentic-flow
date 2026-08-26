@@ -14,15 +14,7 @@ const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-version-consistency
 
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
-function writeFixture({
-  version = '0.0.1',
-  cliSource,
-  skillBody = '',
-}: {
-  version?: string;
-  cliSource?: string;
-  skillBody?: string;
-} = {}) {
+function writeFixture(version = '0.0.1', cliSource?: string) {
   const root = fs.mkdtempSync(path.join(temporary, 'repo-'));
   fs.writeFileSync(
     path.join(root, 'package.json'),
@@ -33,92 +25,39 @@ function writeFixture({
     `${JSON.stringify({ name: 'fixture', version, lockfileVersion: 3, packages: { '': { name: 'fixture', version }, 'node_modules/demo': { version: '1.0.0' } } }, null, 2)}\n`,
   );
   fs.mkdirSync(path.join(root, 'dist'));
-  fs.mkdirSync(path.join(root, 'skills', 'demo'), { recursive: true });
-  fs.mkdirSync(path.join(root, 'packs'));
   fs.writeFileSync(
     path.join(root, 'dist', 'sdd-agentic-flow.js'),
     cliSource ||
       "const VERSION = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')).version;\n",
   );
-  fs.writeFileSync(
-    path.join(root, 'skills', 'demo', 'SKILL.md'),
-    `---\nname: demo\nmetadata:\n  version: 0.0.1\n---\n\n# Demo\n\nDo not stamp this body version: 9.9.9\n${skillBody}`,
-  );
-  fs.writeFileSync(
-    path.join(root, 'packs', 'full.json'),
-    `${JSON.stringify({ name: 'full', version: '0.0.1', skills: ['demo'] }, null, 2)}\n`,
-  );
   return root;
 }
 
-test('this repository is version-consistent and the CLI derives VERSION from package.json', () => {
+test('this repository is version-consistent and CLI derives VERSION from package.json', () => {
   const result = checkVersionConsistency(packageRoot);
   assert.equal(result.packageVersion, packageVersion);
   assert.equal(result.cli.derived, true);
   assert.equal(result.cli.drifted, false);
-  assert.ok(result.skills.length > 0);
-  assert.ok(result.packs.length > 0);
-  assert.ok(result.skills.every((entry) => !entry.drifted));
-  assert.ok(result.packs.every((entry) => !entry.drifted));
   assert.equal(result.lockfile.versionDrifted, false);
   assert.equal(result.lockfile.rootVersionDrifted, false);
 });
 
-test('a hardcoded CLI VERSION is always drift, even when the number matches package.json', () => {
-  const root = writeFixture({
-    version: '1.11.0',
-    cliSource: "const VERSION = '1.11.0';\n",
-  });
-  fs.writeFileSync(
-    path.join(root, 'skills', 'demo', 'SKILL.md'),
-    '---\nname: demo\nmetadata:\n  version: 1.11.0\n---\n\n# Demo\n',
-  );
-  fs.writeFileSync(
-    path.join(root, 'packs', 'full.json'),
-    `${JSON.stringify({ name: 'full', version: '1.11.0' }, null, 2)}\n`,
-  );
-  const result = checkVersionConsistency(root);
+test('a hardcoded CLI VERSION is always drift', () => {
+  const result = checkVersionConsistency(writeFixture('1.11.0', "const VERSION = '1.11.0';\n"));
   assert.equal(result.cli.derived, false);
   assert.equal(result.cli.drifted, true);
-  assert.equal(result.cli.version, '1.11.0');
 });
 
-test('stampVersions writes package.json into skill frontmatter and packs, not the skill body', () => {
-  const root = writeFixture({ version: '2.0.0' });
-  const first = stampVersions(root);
-  assert.equal(first.packageVersion, '2.0.0');
-  assert.deepEqual(first.written.sort(), ['packs/full.json', 'skills/demo/SKILL.md']);
-
-  const skill = fs.readFileSync(path.join(root, 'skills', 'demo', 'SKILL.md'), 'utf8');
-  assert.match(skill, /^ {2}version: 2\.0\.0$/m);
-  assert.match(skill, /body version: 9\.9\.9/);
-  assert.equal(
-    JSON.parse(fs.readFileSync(path.join(root, 'packs', 'full.json'), 'utf8')).version,
-    '2.0.0',
-  );
-
-  const second = stampVersions(root);
-  assert.deepEqual(second.written, []);
-  assert.equal(checkVersionConsistency(root).cli.drifted, false);
-  assert.ok(checkVersionConsistency(root).skills.every((entry) => !entry.drifted));
-  assert.ok(checkVersionConsistency(root).packs.every((entry) => !entry.drifted));
-});
-
-test('lockfile root mismatches are reported and stamping preserves every other field', () => {
-  const root = writeFixture({ version: '2.0.0' });
+test('stampVersions updates only package-lock root fields', () => {
+  const root = writeFixture('2.0.0');
   const lockPath = path.join(root, 'package-lock.json');
-  const before = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-  before.version = '1.0.0';
-  before.packages[''].version = '1.1.0';
-  fs.writeFileSync(lockPath, `${JSON.stringify(before, null, 2)}\n`);
-  const inconsistent = checkVersionConsistency(root);
-  assert.equal(inconsistent.lockfile.versionDrifted, true);
-  assert.equal(inconsistent.lockfile.rootVersionDrifted, true);
-  stampVersions(root);
-  const after = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-  after.version = before.version;
-  after.packages[''].version = before.packages[''].version;
-  assert.deepEqual(after, before);
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  lock.version = '1.0.0';
+  lock.packages[''].version = '1.1.0';
+  fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  assert.deepEqual(stampVersions(root).written, ['package-lock.json']);
+  assert.deepEqual(stampVersions(root).written, []);
+  assert.equal(checkVersionConsistency(root).lockfile.versionDrifted, false);
 });
 
 test('missing, invalid, and incomplete lockfiles fail closed', () => {

@@ -1,21 +1,7 @@
 ---
 name: saf-brainstorm
 description: Explore a vague idea into a converged, spec-ready problem statement, or shape a solution once the problem is already clear. Use when a user has an idea that is not yet ready for saf-create-spec — a fuzzy goal without a defined problem, or a clear problem without a decided approach; never produces spec.md, design.md, or tasks.md directly.
-metadata:
-  version: 6.5.0
-extends: null
-requires: [config]
-consumes: [domain-glossary, project-context]
-produces: [discovery-state, spec-ready-brief]
-baseline: []
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised]
-  auto_continue_condition: 'not applicable — this skill never auto-advances; convergence on a spec-ready brief is a human judgment call, not a guardrail a skill can self-certify'
-  blocking_conditions: [unresolved_unknowns, no_convergence]
-  evidence_required: [spec-ready-brief]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Brainstorm an idea toward spec-ready
@@ -37,7 +23,7 @@ Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is a
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, tell the user to run `npx sdd-agentic-flow init` before a brief can be filed under `.specs/features/`; the conversation can still continue without it.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, including `.specs/features/` as the artifact root.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, and inspect the code or docs the idea touches, so the questions asked next never repeat what the repository already answers.
 3. Determine the mode from the idea's current clarity, and re-evaluate it at every turn — a design conversation can reveal a hidden requirements gap that sends it back to exploratory:
    - **Exploratory mode** — the problem itself is not yet defined. Ask one systematic question at a time, only for what inspection could not already answer. Do not advance to solution design until the problem, its constraints, and why it matters are clear.

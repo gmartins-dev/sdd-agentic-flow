@@ -79,6 +79,6 @@ test('installation dimensions remain independent and provenance direction is exp
   assert.equal(classifyProvenanceVersion('6.4.3', '6.4.3'), 'current');
   assert.equal(classifyProvenanceVersion('7.0.0', '6.4.3'), 'newer');
   assert.equal(classifyProvenanceVersion('not-a-version', '6.4.3'), 'unknown');
-  assert.equal(schemaGenerationFor('saf-install-intent/v2', 'saf-install-intent'), 2);
+  assert.equal(schemaGenerationFor('saf-install-intent/v3', 'saf-install-intent'), 3);
   assert.equal(schemaGenerationFor('saf-install-intent/malformed', 'saf-install-intent'), null);
 });

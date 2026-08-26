@@ -1,8 +1,8 @@
 # Using with Cursor
 
-Install a pack and let Cursor read the skill and `.sdd-agentic-flow/config.yml` files.
+Install the official bundle and let Cursor read its skills. Project config is optional.
 
-`install full` defaults to `--scope user` and writes to `~/.agents/skills/` and
+`install` defaults to `--scope user` and writes to `~/.agents/skills/` and
 `~/.cursor/skills/` (Cursor's global skill directories). Pass `--scope project` to install into
 `.agents/skills/` inside this repository instead. See
 [installation scope](installation-scope.md).

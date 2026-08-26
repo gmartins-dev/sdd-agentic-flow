@@ -25,7 +25,6 @@ publish stay human on every preset.
 
 ## User-invoked orchestrators
 
-- `saf-setup`
 - `saf-route`
 - `saf-brainstorm`
 - `saf-create-spec`

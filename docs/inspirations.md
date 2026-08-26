@@ -32,7 +32,7 @@ These sources inform the design of `sdd-agentic-flow`; they are not normative sp
 
 ## What this toolkit expands
 
-- multi-skill workflow and installable packs
+- multi-skill workflow and installable bundles
 - local CLI, doctor, smoke validation, uninstall model, safety model, and agent-client-agnostic documentation
 - optional multi-task isolation guidance
 

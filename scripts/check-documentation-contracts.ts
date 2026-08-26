@@ -8,7 +8,6 @@ import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 export type DocumentationFinding = { file: string; message: string };
 
-const CURRENT_PACKS = new Set(['planning', 'execution', 'review', 'multi-task', 'full']);
 const DOCUMENTATION_EXEMPTIONS = new Set([
   'CHANGELOG.md',
   'ROADMAP.md',
@@ -16,7 +15,7 @@ const DOCUMENTATION_EXEMPTIONS = new Set([
   'docs/compatibility-promise.md',
 ]);
 const LEGACY_PATTERNS = [
-  /\bsdd-agentic-flow\s+install\s+(?:core|local-files|github|pr|multi-worktree)\b/gi,
+  /\bsdd-agentic-flow[ \t]+install[ \t]+[a-z][a-z0-9-]*\b/gi,
   /\bcompatible_with\b/g,
   /\bmetadata\.pack\b/g,
   /\bpresets\//g,
@@ -28,6 +27,7 @@ function activeMarkdownFiles(root: string): string[] {
   return execFileSync('git', ['ls-files', '*.md'], { cwd: root, encoding: 'utf8' })
     .split(/\r?\n/)
     .filter(Boolean)
+    .filter((file) => fs.existsSync(path.join(root, file)))
     .filter((file) => !file.startsWith('.specs/') && !file.startsWith('.sdd-agentic-flow/'))
     .filter((file) => !DOCUMENTATION_EXEMPTIONS.has(file));
 }
@@ -43,7 +43,20 @@ function addUnknownTokens(
   const seen = new Set<string>();
   for (const match of content.matchAll(pattern)) {
     const token = match[1];
-    if (token && token !== 'saf-skills-usage-guide' && !known.has(token) && !seen.has(token)) {
+    if (
+      token &&
+      ![
+        'saf-skills-usage-guide',
+        'saf-workspace',
+        'saf-contract',
+        'saf-skill-contract',
+        'saf-config',
+        'saf-install-intent',
+        'saf-install-provenance',
+      ].includes(token) &&
+      !known.has(token) &&
+      !seen.has(token)
+    ) {
       findings.push({ file, message: `unknown ${label}: ${token}` });
       seen.add(token);
     }
@@ -120,14 +133,6 @@ export function checkDocumentationContracts(
         commands,
         'CLI command',
       );
-
-      for (const match of literal.matchAll(
-        /\bsdd-agentic-flow\s+install\s+([a-z][a-z0-9-]*)\b/gi,
-      )) {
-        const pack = match[1]?.toLowerCase();
-        if (pack && !CURRENT_PACKS.has(pack))
-          findings.push({ file, message: `unknown or retired pack reference: ${pack}` });
-      }
     }
   }
 

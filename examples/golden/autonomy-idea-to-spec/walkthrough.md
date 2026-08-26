@@ -6,7 +6,7 @@ Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-001 — brainstorm 
 
 ```bash
 sdd-agentic-flow init --execution-mode full --autonomy-level autonomous
-sdd-agentic-flow install planning --scope project
+sdd-agentic-flow install --scope project
 ```
 
 Copy converged brainstorm output and spec package from this directory into `.specs/features/quiet-hours-notifications/`, and copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`.

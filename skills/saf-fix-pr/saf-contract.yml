@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-review-pr
+requires: [review-findings]
+consumes: []
+produces: [fix-evidence]
+baseline: [tlc-spec-driven]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'fix-evidence present and every actionable finding on the findings ledger is resolved or explicitly deferred with a reason'
+  blocking_conditions: [findings_unresolved, scope_exceeded]
+  evidence_required: [fix-evidence]

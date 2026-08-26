@@ -9,7 +9,7 @@ project's stance on documentation vs. mechanically-proved claims).
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install full --scope project
+sdd-agentic-flow install --scope project
 ```
 
 Then the artifacts a real `saf-create-spec` run in **source-item mode** would produce for

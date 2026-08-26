@@ -4,7 +4,7 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 
 | Situation                             | Recommended skill                  |
 | --- | --- |
-| No `.sdd-agentic-flow/config.yml`                  | `saf-setup`           |
+| No `.sdd-agentic-flow/config.yml`                  | Continue with effective defaults |
 | Idea not yet defined or a decided problem with unresolved approach | `saf-brainstorm` (durable mode for persistent investigations) |
 | Discovery-only workspace | `saf-brainstorm` to resume or converge; not implementation-ready |
 | Ambiguous or unstructured request     | `saf-create-spec`                 |
@@ -19,4 +19,4 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | Accepted review findings              | `saf-fix-pr`, then `saf-review-pr` |
 | Integrated feature                    | `saf-validate`                   |
 
-Route first by artifact/workflow state, then by uncertainty. Consequential human judgment or ambiguous package identity is a human gate. Routing recommends; it does not install packs, change files, invoke skills, or bypass human decisions.
+Route first by artifact/workflow state, then by uncertainty. Consequential human judgment or ambiguous package identity is a human gate. Routing recommends; it does not install bundles, change files, invoke skills, or bypass human decisions.

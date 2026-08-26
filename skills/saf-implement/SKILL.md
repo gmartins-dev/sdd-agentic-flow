@@ -1,21 +1,7 @@
 ---
 name: saf-implement
 description: Implement exactly one validated SDD task as the smallest tested, merge-ready increment. Use for a single task reference or explicit task implementation request; not for planning a feature or coordinating several tasks.
-metadata:
-  version: 6.5.0
-extends: saf-create-prompts
-requires: [config, task-identity]
-consumes: [domain-glossary, project-context]
-produces: [code-change+tdd-evidence]
-baseline: [tlc-spec-driven, tdd]
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'tests pass, the configured linter is clean, and modified files stay within the declared task scope'
-  blocking_conditions: [tests_fail, linter_errors, scope_exceeded]
-  evidence_required: [tests, tdd-evidence]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Implement one SDD task
@@ -31,12 +17,12 @@ Do not use for specification authoring, several tasks, a feature-wide validation
 ## Inputs
 
 - A single canonical task reference or explicit feature and task identifiers.
-- Repository SDD artifacts, relevant code, and `.sdd-agentic-flow/config.yml`.
+- Repository SDD artifacts, relevant code, and optional `.sdd-agentic-flow/config.yml` overrides.
 - Optional task prompt or prior handoff, treated as supporting evidence only.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults.
 2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read `workflow.feature_profile` from `.sdd-agentic-flow/config.yml` and apply feature-profile guidance for evidence rigor. Resolve exactly one package, then exactly one task from the configured SDD source. Load the [Task Context Package](../sdd-agentic-flow-shared/references/task-context-package.md) minimum context. Resolve bounded goal, completion criteria, constraints and applicable [decision gates](../sdd-agentic-flow-shared/references/decision-gates.md) before mutation per [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). Load this skill's existing Inputs/Workflow list only; related slugs only if named or requested (one hop). Confirm its acceptance criteria, requirement anchors, dependencies, allowed scope, and current implementation state.
 3. Inspect callers and existing patterns before editing. Stop if the work requires a sibling task, unsafe environment, or unresolved authority conflict. Specifications are **living** control artifacts: if you find drift, first determine whether repository evidence supports an intent-preserving reconciliation. In autonomous mode, route that reconciliation to `saf-create-spec`, refresh affected prompts, and resume without asking when acceptance semantics and delegated scope remain unchanged. Do not silently implement a different requirement, silently rewrite the spec from implementation preference, or proceed when the change expands authority. A contract-change proposal is non-authoritative and never authorizes its own semantics.
 4. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md` before editing. Search existing patterns, prefer modifying an existing file, and keep the complexity budget. In autonomous mode, choose an evidence-backed technical design that preserves the effective contract; do not add a competing architecture, new dependency, or new convention when the decision would expand delegated authority.

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -56,16 +58,44 @@ test('canonical read-only commands expose help topics and direct --help', () => 
   }
 });
 
-test('list rejects unknown arguments instead of silently ignoring them', () => {
+test('list is a removed v7 command', () => {
   const result = run(['list', '--not-a-real-flag']);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /usage: list \[--help\]/);
-  assert.match(result.stderr, /Unknown list argument/);
+  assert.match(result.stderr, /unknown command: list/);
+  assert.match(result.stderr, /not part of the current canonical interface/);
 });
 
 test('install help documents the supported non-interactive grammar', () => {
   const result = run(['install', '--help']);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /--plan/);
-  assert.doesNotMatch(result.stdout, /install .*--yes/);
+  assert.match(result.stdout, /install .*--plan\|--yes/);
+});
+
+test('init plan and doctor use machine schema 2 without bundle-selection data', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-cli-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const invoke = (args: string[]) =>
+    spawnSync(process.execPath, [cli, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: cwd },
+    });
+  const init = invoke(['init', '--plan', '--json']);
+  assert.equal(init.status, 0);
+  const initReport = JSON.parse(init.stdout);
+  assert.equal(initReport.schema_version, 2);
+  assert.equal(initReport.command, 'init');
+  assert.equal(initReport.data.createsConfig, false);
+  assert.equal('packs' in initReport.data, false);
+
+  const doctor = invoke(['doctor', '--json']);
+  const doctorReport = JSON.parse(doctor.stdout);
+  assert.equal(doctorReport.schema_version, 2);
+  assert.deepEqual(Object.keys(doctorReport.data.readiness).sort(), [
+    'installation',
+    'policy',
+    'workspace',
+  ]);
+  assert.equal('config_origin' in doctorReport.data, true);
 });

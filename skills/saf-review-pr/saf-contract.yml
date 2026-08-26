@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-create-pr
+requires: [change-review-package]
+consumes: []
+produces: [review-findings]
+baseline: [tlc-spec-driven]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'review-findings present and every finding evidence-backed; actionable findings route to bounded repair'
+  blocking_conditions: [unverified_findings, authority_boundary, no_progress]
+  evidence_required: [review-findings]

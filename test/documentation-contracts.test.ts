@@ -4,11 +4,9 @@ import { test } from 'node:test';
 
 import { checkDocumentationContracts } from '../scripts/check-documentation-contracts';
 
-test('documentation contracts accept current commands, packs, and skills', () => {
+test('documentation contracts accept current commands and skills', () => {
   const findings = checkDocumentationContracts(
-    new Map([
-      ['README.md', '`sdd-agentic-flow install full` uses `saf-route` and `saf-validate`.'],
-    ]),
+    new Map([['README.md', '`sdd-agentic-flow install` uses `saf-route` and `saf-validate`.']]),
   );
   assert.deepEqual(findings, []);
 });

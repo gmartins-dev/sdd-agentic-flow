@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-create-spec
+requires: [spec-package]
+consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
+produces: [task-prompts]
+baseline: [tlc-spec-driven, tdd]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'prompts.md present with a paste-ready prompt for every task in tasks.md; no ambiguous task boundary'
+  blocking_conditions: [missing_spec_package, ambiguous_task_boundaries]
+  evidence_required: [prompts.md]

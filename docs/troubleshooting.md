@@ -29,27 +29,27 @@ and adoption (`personal`, `specs-shared`, or `team`).
 
 ### `skills` / `shared_layer`: official skills or shared layer not fully installed
 
-**Cause:** `install <pack>` was never run, or was run with `--scope user` (so nothing is in
+**Cause:** `install` was never run, or was run with `--scope user` (so nothing is in
 the project's `.agents/skills/` — this is expected, not a bug, unless you intended
 `--scope project`).
 
 **Diagnose:** `sdd-agentic-flow doctor` and check the "Installation" section — it reports
 separately whether a project-scope and each user-scope installation exist.
 
-**Fix:** `sdd-agentic-flow install full` (user scope, global) or
-`sdd-agentic-flow install full --scope project` (writes into this project). See
+**Fix:** `sdd-agentic-flow install` (user scope, global) or
+`sdd-agentic-flow install --scope project` (writes into this project). See
 [installation scope](installation-scope.md).
 
 ### `skills`: "partial official skill install detected"
 
-**Cause:** an interrupted or manually-tampered install left only part of the selected pack in
+**Cause:** an interrupted or manually-tampered install left only part of the official bundle in
 place. Health is evaluated against the current installation intent, not a fixed core list.
 Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) surface this as a
 `WARN`, distinct from the plain "not fully installed" message.
 
 **Diagnose:** `sdd-agentic-flow doctor` — the message names exactly which skills are missing.
 
-**Fix:** `sdd-agentic-flow install full` again (idempotent; fills in only what's missing).
+**Fix:** `sdd-agentic-flow install` again (idempotent; fills in only what's missing).
 
 ### `project_readiness`: based on config and selected skills
 
@@ -98,7 +98,7 @@ scope, or was partially removed.
 **Diagnose:** `sdd-agentic-flow doctor` — the message names the missing file, e.g.
 `shared/references/tlc-baseline.md not found`.
 
-**Fix:** `sdd-agentic-flow install <pack>` again (idempotent; fills in only what's missing) in
+**Fix:** `sdd-agentic-flow install` again (idempotent; fills in only what's missing) in
 the scope you're checking against.
 
 ### `adaptive-sizing`: "workflow.feature_profile not set in config"
@@ -128,7 +128,7 @@ file isn't installed yet. `FAIL` — `language.profile`/`human_outputs`/`technic
 parsed fields and the exact message.
 
 **Fix:** when the configured profile asset is absent because skills are not installed or are
-partial, run `sdd-agentic-flow install full`. Re-run `init --language en-US` or
+partial, run `sdd-agentic-flow install`. Re-run `init` or
 `init --language pt-BR` (or the `--en`/`--br` shorthands) only for a missing or invalid project
 language configuration; otherwise correct the four `language.*` fields by hand to match one of
 `docs/language-profiles.md`'s supported profiles.
@@ -174,7 +174,7 @@ check only inspects the project scope, not user-scope installations.
 
 **Diagnose:** `sdd-agentic-flow doctor --contracts`.
 
-**Fix:** `sdd-agentic-flow install <pack> --scope project` if you want project-local skills to
+**Fix:** `sdd-agentic-flow install --scope project` if you want project-local skills to
 validate against; otherwise this `WARN` is expected under the default `user` scope.
 
 ### `capability_contracts`: `FAIL` "missing required field" / "SKILL.md missing or has no frontmatter"
@@ -184,7 +184,7 @@ validate against; otherwise this `WARN` is expected under the default `user` sco
 **Diagnose:** `sdd-agentic-flow doctor --contracts --json` — the message names the skill and
 field.
 
-**Fix:** re-run `install <pack> --scope project`; if the file already exists, remove it first
+**Fix:** re-run `install --scope project`; if the file already exists, remove it first
 (or use `uninstall --yes --scope project` then reinstall) so the clean version is copied
 back in.
 
@@ -216,7 +216,7 @@ installed skills.
 required range, and your installed CLI version.
 
 **Fix:** upgrade `sdd-agentic-flow` (`npx sdd-agentic-flow@latest ...`, or update your global
-install), then re-run `install <pack>`.
+install), then re-run `install`.
 
 ## `doctor --autonomy`
 
@@ -250,7 +250,7 @@ lower `autonomy_level` to `manual`/`supervised`.
 **Cause:** the configured `autonomy_level` is `supervised` or `autonomous`, but one or more
 installed skills' `autonomy_profile.supported_levels` doesn't include it — by design for skills
 that always end in a human decision (`saf-brainstorm`, `saf-explain`, `saf-route`,
-`saf-setup`).
+workspace initialization).
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 
@@ -278,7 +278,7 @@ installed from an older package that predates this field.
 
 **Diagnose:** `sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 
-**Fix:** re-run `install <pack> --scope project`; if the file already exists, remove it first (or
+**Fix:** re-run `install --scope project`; if the file already exists, remove it first (or
 use `uninstall --yes --scope project` then reinstall) so the clean version is copied back in —
 same caveat as the `capability_contracts` "missing required field" entry above, since `install`
 never overwrites an existing file.
@@ -319,7 +319,7 @@ internally" — both are non-zero failures.
 
 ## For package maintainers (`doctor` run inside this repository)
 
-`package_integrity`, `private_context`, `licensing`, `packs`, `agent_compatibility`, and
+`package_integrity`, `private_context`, `licensing`, `agent_compatibility`, and
 `postinstall` only run when `doctor` detects it's running inside the `sdd-agentic-flow`
 package itself (its own `package.json` name). These are safeguards for `npm publish`
 readiness, not consumer-facing — see [publishing](publishing.md) if one of these fails before

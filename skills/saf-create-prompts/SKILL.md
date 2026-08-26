@@ -1,21 +1,7 @@
 ---
 name: saf-create-prompts
-description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package. Use when a user asks to split specifications into agent prompts or handoff prompts; read .sdd-agentic-flow/config.yml first and do not implement the work.
-metadata:
-  version: 6.5.0
-extends: saf-create-spec
-requires: [config, spec-package]
-consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
-produces: [task-prompts]
-baseline: [tlc-spec-driven, tdd]
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'prompts.md present with a paste-ready prompt for every task in tasks.md; no ambiguous task boundary'
-  blocking_conditions: [missing_spec_package, ambiguous_task_boundaries]
-  evidence_required: [prompts.md]
+description: Generate self-contained, paste-ready implementation prompts from a validated repository-local SDD specification package; use config overrides when present and do not implement the work.
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Create SDD Implementation Prompts
@@ -30,14 +16,14 @@ Do not use to create a specification from scratch, execute implementation, make 
 
 ## Inputs
 
-- `.sdd-agentic-flow/config.yml`.
+- `.sdd-agentic-flow/config.yml`, when present; otherwise canonical effective defaults.
 - A validated specification package and its acceptance criteria.
 - When present, the converged decisions and findings in `discovery.md` or `brief.md`.
 - Optional task ordering, ownership boundaries, and target agent constraints.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first to locate the specification package and configured prompt output location. If it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`. Resolve **one** package; load this skill's existing Inputs/Workflow list only. Related slugs only if named or requested (one hop). Do not glob sibling `spec.md`.
+1. Read `.sdd-agentic-flow/config.yml` when present to apply path overrides; otherwise use canonical effective defaults. Resolve **one** package; load this skill's existing Inputs/Workflow list only. Related slugs only if named or requested (one hop). Do not glob sibling `spec.md`.
 2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
 3. Read `../sdd-agentic-flow-shared/references/prompt-authoring-standard.md`, `../sdd-agentic-flow-shared/references/tdd-baseline.md`, `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts. Use discovery artifacts only to recover relevant resolved context; `spec.md` remains the requirement authority.
 4. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist.

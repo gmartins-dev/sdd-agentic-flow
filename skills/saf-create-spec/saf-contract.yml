@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: null
+requires: [source-item]
+consumes: [discovery-state, spec-ready-brief, domain-glossary, project-context]
+produces: [spec-package]
+baseline: [tlc-spec-driven]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'spec.md and design.md present with no unresolved Unknown finding blocking an acceptance criterion'
+  blocking_conditions: [missing_spec, inconsistent_design, unspecified_requirements]
+  evidence_required: [spec.md, design.md]

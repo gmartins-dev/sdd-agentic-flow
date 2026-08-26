@@ -5,8 +5,9 @@ import { test } from 'node:test';
 
 import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from '../src/skill-identity';
 
-test('the public SAF namespace contains the locked 13-skill roster', () => {
-  assert.equal(OFFICIAL_SKILLS.length, 13);
+test('the public SAF namespace contains the locked 12-skill roster', () => {
+  assert.equal(OFFICIAL_SKILLS.length, 12);
+  assert.equal((OFFICIAL_SKILLS as readonly string[]).includes('saf-setup'), false);
   assert.ok(OFFICIAL_SKILLS.every((name) => name.startsWith('saf-')));
 });
 

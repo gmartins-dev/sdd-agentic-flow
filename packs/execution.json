@@ -1,8 +1,0 @@
-{
-  "name": "execution",
-  "version": "6.5.0",
-  "description": "Single-task execution and verification.",
-  "skills": ["saf-route", "saf-implement", "saf-check-task", "saf-validate"],
-  "shared": true,
-  "status": "stable"
-}

@@ -1,0 +1,60 @@
+import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export type GitContext = {
+  projectRoot: string;
+  gitRoot: string;
+  gitCommonDir: string;
+  projectRelativePath: string;
+  adoptionKey: string;
+  excludePath: string;
+};
+
+export type GitContextResult = { ok: true; context: GitContext } | { ok: false; error: string };
+
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+export function resolveGitContext(cwd: string): GitContextResult {
+  const projectRoot = fs.realpathSync(cwd);
+  try {
+    const gitRoot = fs.realpathSync(git(projectRoot, 'rev-parse', '--show-toplevel'));
+    const commonRaw = git(projectRoot, 'rev-parse', '--git-common-dir');
+    const gitCommonDir = fs.realpathSync(
+      path.isAbsolute(commonRaw) ? commonRaw : path.resolve(projectRoot, commonRaw),
+    );
+    const projectRelativePath =
+      path.relative(gitRoot, projectRoot).replaceAll(path.sep, '/') || '.';
+    if (projectRelativePath === '..' || projectRelativePath.startsWith('../')) {
+      return { ok: false, error: 'workspace root must be inside the Git worktree' };
+    }
+    const adoptionKey = crypto
+      .createHash('sha256')
+      .update(`${gitCommonDir}\0${projectRelativePath}`)
+      .digest('hex')
+      .slice(0, 16);
+    return {
+      ok: true,
+      context: {
+        projectRoot,
+        gitRoot,
+        gitCommonDir,
+        projectRelativePath,
+        adoptionKey,
+        excludePath: path.join(gitCommonDir, 'info', 'exclude'),
+      },
+    };
+  } catch {
+    return {
+      ok: false,
+      error: 'Git repository metadata is required; run init from a Git workspace',
+    };
+  }
+}

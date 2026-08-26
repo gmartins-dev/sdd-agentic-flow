@@ -36,8 +36,8 @@ function shouldShowInteractiveMenu(
 // literal array entry directly, so a future edit can't accidentally wire a destructive default.
 const MENU_ACTIONS: MenuAction[] = [
   { label: 'Create local configuration', command: ['init'] },
-  { label: 'Install the full skill pack', command: ['install', 'full'] },
-  { label: 'Preview install plan (read-only)', command: ['install', 'full', '--plan'] },
+  { label: 'Install the official skill bundle', command: ['install'] },
+  { label: 'Preview install plan (read-only)', command: ['install', '--plan'] },
   { label: 'Configure installation intent', command: ['config', 'installation'] },
   { label: 'Validate local setup', command: ['doctor'] },
   { label: 'Change operating policy', command: ['config', 'policy'] },
@@ -58,7 +58,7 @@ function menuActionByCommand(...command: string[]): MenuAction | undefined {
 function menuActionsFor(state: MenuState = {}): MenuAction[] {
   if (state.installationBlocker) {
     return [
-      { label: 'Review installation plan (read-only)', command: ['install', 'full', '--plan'] },
+      { label: 'Review installation plan (read-only)', command: ['install', '--plan'] },
       { label: 'Validate current state', command: ['doctor'] },
       { label: 'Review full SAF purge', command: ['uninstall', '--plan', '--purge'] },
       { label: 'Keep installation unchanged', command: [] },
@@ -76,7 +76,7 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
   }
   if (state.onboardingState === 'NEEDS_ATTENTION') {
     return [
-      { label: 'Resolve installation issue', command: ['install', 'full', '--plan'] },
+      { label: 'Resolve installation issue', command: ['install', '--plan'] },
       { label: 'Review diagnostics', command: ['doctor'] },
       { label: 'Review full SAF purge', command: ['uninstall', '--plan', '--purge'] },
       { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
@@ -93,8 +93,8 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
   if (!hasConfig) return pick(['init'], ['learn-sdd'], ['help']);
   if (!hasSkills) {
     return pick(
-      ['install', 'full'],
-      ['install', 'full', '--plan'],
+      ['install'],
+      ['install', '--plan'],
       ['doctor'],
       ['config', 'installation'],
       ['help'],

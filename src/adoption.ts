@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { configValue } from './config-domain';
+import { resolveGitContext } from './git-context';
 import { readInstallConfig, repositoryKey } from './install-domain';
 import { gitInfoExcludePath, gitMetadataDir } from './paths';
-import { OFFICIAL_SKILLS } from './skill-identity';
+import { HISTORICAL_SKILLS, OFFICIAL_SKILLS } from './skill-identity';
 
 const ADOPTION_MODES = ['personal', 'specs-shared', 'team'] as const;
 type AdoptionMode = (typeof ADOPTION_MODES)[number];
@@ -54,15 +55,8 @@ function isAdoptionMode(value: unknown): value is AdoptionMode {
 }
 
 function repositoryRoot(cwd: string): string {
-  try {
-    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return path.resolve(cwd);
-  }
+  const resolved = resolveGitContext(cwd);
+  return resolved.ok ? resolved.context.gitRoot : path.resolve(cwd);
 }
 
 function normalizeSpecsRoot(
@@ -170,7 +164,8 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
       warning: normalized.error,
     };
   }
-  const excludePath = gitInfoExcludePath(cwd);
+  const git = resolveGitContext(cwd);
+  const excludePath = git.ok ? git.context.excludePath : gitInfoExcludePath(cwd);
   const content =
     excludePath && fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const managed = managedEntries(content);
@@ -201,7 +196,8 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
   if (inspection.warning && inspection.specsRoot === '(invalid)') {
     return { ...inspection, changed: false };
   }
-  const excludePath = gitInfoExcludePath(cwd);
+  const git = resolveGitContext(cwd);
+  const excludePath = git.ok ? git.context.excludePath : gitInfoExcludePath(cwd);
   if (!excludePath)
     return {
       ...inspection,
@@ -274,7 +270,7 @@ function removeUntrackedProjectAssets(cwd: string): string[] {
   if (!gitMetadataDir(cwd)) return [];
   const root = path.join(cwd, '.agents', 'skills');
   if (!fs.existsSync(root)) return [];
-  const names = ['sdd-agentic-flow-shared', ...OFFICIAL_SKILLS];
+  const names = ['sdd-agentic-flow-shared', ...OFFICIAL_SKILLS, ...HISTORICAL_SKILLS];
   const removed: string[] = [];
   for (const name of names) {
     const target = path.join(root, name);

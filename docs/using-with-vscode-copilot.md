@@ -1,12 +1,12 @@
 # Using with VS Code + GitHub Copilot
 
-Install a pack, then reference the installed Markdown skill by name in a Copilot Chat prompt.
+Install the official bundle, then reference the installed Markdown skill by name in a Copilot Chat prompt.
 
 ```bash
-npx sdd-agentic-flow install full
+npx sdd-agentic-flow install
 ```
 
-`install full` defaults to `--scope user`, writing to `~/.copilot/skills/` (GitHub Copilot's
+`install` defaults to `--scope user`, writing to `~/.copilot/skills/` (GitHub Copilot's
 global skill directory). Add `--scope project` to install into `.agents/skills/` inside this
 repository instead. VS Code can also be pointed at a custom skills location via the
 `chat.agentSkillsLocations` setting. See [installation scope](installation-scope.md).

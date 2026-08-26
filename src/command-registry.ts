@@ -21,7 +21,6 @@ const definitions = [
   ['upgrade', 'human-authority', true, false, false],
   ['autonomous-resume', 'human-authority', false, false, false],
   ['uninstall', 'local-mutation', true, true, true],
-  ['list', 'read-only', false, false, true],
   ['learn-sdd', 'read-only', false, false, false],
   ['help', 'read-only', false, false, false],
   ['version', 'read-only', false, false, true],
@@ -40,7 +39,7 @@ export const COMMAND_REGISTRY: readonly CommandDefinition[] = definitions.map(
 
 export const CANONICAL_COMMANDS = COMMAND_REGISTRY.map((command) => command.path.join(' '));
 
-export const REMOVED_COMMANDS = ['discover', 'configure'] as const;
+export const REMOVED_COMMANDS = ['discover', 'configure', 'list'] as const;
 
 export function isRemovedCommand(command: string): boolean {
   return (REMOVED_COMMANDS as readonly string[]).includes(command);

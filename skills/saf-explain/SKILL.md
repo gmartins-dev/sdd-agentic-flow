@@ -1,21 +1,7 @@
 ---
 name: saf-explain
 description: Explain an already-specified or already-implemented SDD feature in plain language, for a reader with no prior context — pedagogical, never a substitute for spec.md, design.md, or tasks.md. Use only on demand; never required for every feature.
-metadata:
-  version: 6.5.0
-extends: saf-create-spec
-requires: [config, spec-package]
-consumes: [domain-glossary, project-context]
-produces: [explanation]
-baseline: []
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised]
-  auto_continue_condition: 'not applicable — this skill never auto-advances; it produces an explanation for a human reader, not a workflow step'
-  blocking_conditions: [missing_spec_package]
-  evidence_required: [explanation]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Explain an SDD feature
@@ -31,12 +17,12 @@ Do not use to author or replace `spec.md` (normative), `design.md` (technical), 
 ## Inputs
 
 - One feature identifier with an existing spec package.
-- `.sdd-agentic-flow/config.yml`, the feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation when it exists.
+- Optional `.sdd-agentic-flow/config.yml` overrides, the feature's `context.md`/`spec.md`/`design.md`/`tasks.md`, and accumulated implementation when it exists.
 - `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md`, when present.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run `npx sdd-agentic-flow init`.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults.
 2. Resolve exactly one feature and read its full spec package (`context.md`, `spec.md`, `design.md` when present, `tasks.md` when present) and any accumulated implementation relevant to it. That full-package list **is** this skill's existing Inputs — do not shrink it. Related slugs only if named or requested (one hop).
 3. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, so the explanation uses the project's own vocabulary rather than inventing new terms.
 4. Write `.sdd-agentic-flow/explanations/<feature>.md` using `../sdd-agentic-flow-shared/templates/explanation.template.md`: problem, context/current state, what changes, how the new flow works, important concepts, decisions, key scenarios, what this does NOT change, how to verify, and a glossary. Every section must cite a source artifact (`spec.md` heading, `design.md` decision, or `tasks.md` id). If a section has no source, omit it or write `Not in source artifacts` — never invent.

@@ -57,7 +57,7 @@ test('future or untrusted state fails closed before cleanup', () => {
   const home = path.join(root, 'home');
   const cwd = path.join(root, 'project');
   const target = path.join(home, '.agents', 'skills');
-  write(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'schema: saf-install-intent/v3\n');
+  write(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'schema: saf-install-intent/v4\n');
   write(path.join(target, 'saf-route', 'SKILL.md'), 'untouched');
   const future = inspectCleanUpgrade({ cwd, homeDir: home, targetRoots: [target] });
   assert.equal(future.state, 'future');

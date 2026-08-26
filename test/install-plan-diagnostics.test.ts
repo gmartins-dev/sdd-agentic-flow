@@ -27,7 +27,7 @@ test('blocked install plan is diagnostic, non-mutating, and does not become appl
   fs.mkdirSync(cwd, { recursive: true });
   process.exitCode = undefined;
 
-  const result = install('full', cwd, {
+  const result = install(cwd, {
     homeDir,
     scope: 'user',
     targets: ['agents'],

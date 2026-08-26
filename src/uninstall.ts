@@ -4,7 +4,7 @@ import path from 'node:path';
 import { hasManagedExcludeBlocks, removeManagedExcludeBlocksFromFile } from './adoption';
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
-import { USER_TARGETS } from './install-domain';
+import { classifyInstallIntent, USER_TARGETS } from './install-domain';
 import { targetLabelFor } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
@@ -86,14 +86,34 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
     'usage.md',
     'saf-skills-usage-guide.md',
     'saf-skills-usage-guide.pt-BR.md',
+    path.join('context', 'project-context.md'),
     path.join('autonomy', 'loop-state.md'),
+    'reports',
+    'snapshots',
+    'explanations',
   ]) {
     const file = path.join(projectState, relative);
     if (fs.existsSync(file)) targets.push({ path: file, kind: 'project-install-state' });
   }
+  const workspace = path.join(projectState, 'workspace.yml');
+  if (fs.existsSync(workspace)) {
+    const current = fs.readFileSync(workspace, 'utf8') === 'schema: saf-workspace/v1\n';
+    targets.push({
+      path: workspace,
+      kind: 'workspace-marker',
+      ...(!current ? { preserve: true, reason: 'future or invalid workspace marker' } : {}),
+    });
+  }
   const userInstall = userInstallConfigPath(homeDir);
   if (fs.existsSync(userInstall)) {
-    targets.push({ path: userInstall, kind: 'user-install-intent' });
+    const state = classifyInstallIntent(homeDir);
+    targets.push({
+      path: userInstall,
+      kind: 'user-install-intent',
+      ...(state.kind === 'future' || state.kind === 'unknown'
+        ? { preserve: true, reason: 'future or unknown schema' }
+        : {}),
+    });
   }
   const gitExclude = gitInfoExcludePath(cwd);
   if (gitExclude && fs.existsSync(gitExclude)) {
@@ -104,7 +124,14 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
   const legacyRoot = path.join(cwd, '.sdd');
   if (fs.existsSync(legacyRoot)) {
     if (legacySddOwnershipProven(cwd)) {
-      targets.push({ path: legacyRoot, kind: 'legacy-sdd-root' });
+      for (const name of [
+        'config.yml',
+        'install.yml',
+        ...listManagedSkillDirNames(fs.readdirSync(legacyRoot)),
+      ]) {
+        const owned = path.join(legacyRoot, name);
+        if (fs.existsSync(owned)) targets.push({ path: owned, kind: 'legacy-sdd-child' });
+      }
     } else {
       targets.push({
         path: legacyRoot,

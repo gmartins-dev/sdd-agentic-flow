@@ -163,7 +163,7 @@ Round-trip terms are precise:
 | `semantic` | The meaning of supported fields survives read/write. |
 | `lossless` | Unmodified information survives except for explicitly documented normalization. |
 
-### `config.yml` / saf-config/v2
+### `config.yml` / saf-config/v3
 
 `src/config-domain.ts` recognizes the schema, workflow execution/autonomy fields, feature profile,
 and language profile needed by current policy checks. It uses targeted textual mutation for
@@ -172,20 +172,16 @@ those fields. Unknown content is retained by targeted mutation; missing or inval
 fields fail closed. The current guarantee is **semantic for supported policy fields and structural
 for the surrounding document**, not lossless normalization of every possible YAML construct.
 
-### Install intent / saf-install-intent/v2
+### Install intent / saf-install-intent/v3
 
-`src/install-domain.ts` accepts one document with `schema`, `user.packs`, `user.targets`, and
-project profiles containing `root`, `packs`, and optional `adoption_mode`. It reads legacy
-`sharing` for 6.4.x compatibility but does not use it as the current visibility contract. Its serializer emits stable section and
-list ordering, a final newline, and controlled quoted project keys/roots. It rejects unsupported
-schemas before reuse. Writes use a temporary file followed by rename. The supported-field guarantee
-is **semantic** and the canonical serialization is **structural**; arbitrary YAML constructs and
-unknown fields are not a write-back contract.
+`src/install-domain.ts` accepts one document with `schema`, `user.targets`, and
+project profiles containing canonical `git_common_dir`, `project_relative_path`, and
+`adoption_mode`. It emits stable ordering and rejects non-current schemas before operational reuse.
 
-### Install provenance / saf-install-provenance/v2
+### Install provenance / saf-install-provenance/v3
 
 `src/upgrade.ts` writes schema, package/version identity, apply state, scope/target, skill identity,
-and lists for packs, managed skills, and managed paths. It emits stable field/list ordering and a
+and lists for managed skills and managed paths. It emits stable field/list ordering and a
 final newline, and persists through a temporary file followed by rename. The reader recognizes
 supported scalars/lists and ignores unsupported content rather than claiming general YAML parsing.
 The supported-field guarantee is **semantic** and the canonical serialization is **structural**.
@@ -262,7 +258,7 @@ artifact-contract reference covers only its landmarked persisted materialization
 
 | Domain | Producer / consumers | Authority | Scope/residency | Editability / level | Carrier / composition | Representation / round-trip |
 | --- | --- | --- | --- | --- | --- | --- |
-| `SKILL.md` and shared references | pack source; hosts and skills consume | source file and external Agent Skills spec for frontmatter | package / host installation | human-readable; L1 hybrid | file / composite | YAML frontmatter + Markdown; external contract |
+| `SKILL.md` and shared references | bundle source; hosts and skills consume | source file and external Agent Skills spec for frontmatter | package / host installation | human-readable; L1 hybrid | file / composite | YAML frontmatter + Markdown; external contract |
 | `context.md`, `discovery.md`, `brief.md` | spec skills; agents/humans | feature workspace artifact | feature-workspace | human-editable; L1 | file / atomic | Markdown landmarks; structural |
 | `spec.md`, `design.md`, `tasks.md` | spec skill; implementation/check/validate | respective SDD artifact | feature-workspace | human/agent-readable; L1 | file-set / composite | Markdown/GFM tables; structural |
 | prompts, checks, validation, review, fix, handoff | workflow skills; later workflow stages | each named report/package owner | feature-workspace or `.sdd-agentic-flow/reports` | human-readable; L1 | file or file-set / atomic or composite | Markdown landmarks; structural |
@@ -270,7 +266,7 @@ artifact-contract reference covers only its landmarked persisted materialization
 | install intent | install/setup; install/upgrade/uninstall | install domain | user | machine-maintained, inspectable; L3 narrow | file / atomic | SAF-owned YAML-compatible text; semantic/structural |
 | install provenance | install/upgrade/doctor | provenance writer/reader | host-installation | machine-maintained, inspectable; L3 narrow | file / atomic | SAF-owned YAML-compatible text; semantic/structural |
 | `loop-state.md` | autonomous host; resume/doctor | host execution state | project-control | human-editable, machine-interpreted; L1 hybrid | file / atomic | Markdown control text; no write-back migration |
-| packs/evals/manifests | package/CLI; machine loaders | JSON source files | package / host installation | machine-oriented; L3 | file / atomic | JSON; exact deserialization |
+| skill sidecars/manifests | package/CLI; machine loaders | YAML/JSON source files | package / host installation | machine-oriented; L3 | file / atomic | restricted YAML or JSON; exact contract parsing |
 | CLI `--json` | CLI; scripts/automation | CLI command implementation | ephemeral process output | machine-oriented; L3 | process-output / atomic | one JSON document; no mutation authority |
 | Evidence Graph HTML | graph producer; human browser | source specs/code/reports | project-control projection | not hand-authored; derived | file / atomic | offline escaped HTML; regenerable |
 | Mermaid diagrams | docs/templates; renderer/human | Markdown source/template | package documentation projection | not authority; derived | embedded block / atomic | Mermaid fence; regenerable |

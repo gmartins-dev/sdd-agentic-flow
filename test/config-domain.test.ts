@@ -22,7 +22,7 @@ function writeConfig(name: string, body: string): string {
   return file;
 }
 
-const SAMPLE = `schema: saf-config/v2
+const SAMPLE = `schema: saf-config/v3
 workflow:
   execution_mode: guided
   autonomy_level: manual
@@ -41,8 +41,16 @@ test('readConfig parses policy and preset equivalent', () => {
   assert.equal(config.presetEquivalent, 'manual');
 });
 
+test('readConfig treats missing config as healthy built-in defaults', () => {
+  const config = readConfig(path.join(temporary, 'missing.yml'));
+  assert.equal(config.ok, true);
+  assert.equal(config.state, 'absent');
+  assert.equal(config.origin, 'built-in-defaults');
+  assert.deepEqual(config.policy, { executionMode: 'apply', autonomyLevel: 'supervised' });
+});
+
 test('readConfig rejects unsupported v5 schema before policy mutation', () => {
-  const file = writeConfig('old.yml', SAMPLE.replace('saf-config/v2', 'saf-config/v0'));
+  const file = writeConfig('old.yml', SAMPLE.replace('saf-config/v3', 'saf-config/v0'));
   const config = readConfig(file);
   assert.equal(config.ok, false);
   assert.match(config.errors.join('; '), /unsupported config schema/);
@@ -89,6 +97,23 @@ test('applyPolicyMutation writes authorized fields only', () => {
   assert.equal(updated.policy.executionMode, 'full');
   assert.equal(updated.policy.autonomyLevel, 'autonomous');
   assert.equal(updated.presetEquivalent, 'autonomous');
+});
+
+test('applyPolicyMutation materializes config only when an absent default is changed', () => {
+  const file = path.join(temporary, 'new/config.yml');
+  const preview = applyPolicyMutation(
+    file,
+    { executionMode: 'full', autonomyLevel: 'autonomous' },
+    { dryRun: true },
+  );
+  assert.equal(preview.ok, true);
+  assert.equal(fs.existsSync(file), false);
+  const result = applyPolicyMutation(file, {
+    executionMode: 'full',
+    autonomyLevel: 'autonomous',
+  });
+  assert.equal(result.ok, true);
+  assert.equal(readConfig(file).presetEquivalent, 'autonomous');
 });
 
 test('policy mutation preserves comments and unrelated config content', () => {

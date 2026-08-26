@@ -5,7 +5,7 @@ Copy-paste patterns for common SDD steps. Adjust paths and task names to your pr
 ## Route an unclear request
 
 ```text
-Use the installed saf-route skill to recommend the next local SDD skill. Read .sdd-agentic-flow/config.yml and the relevant local artifacts. Do not modify files, install packs, or invoke another skill. State prerequisites and any human decision required.
+Use the installed saf-route skill to recommend the next local SDD skill. Read optional .sdd-agentic-flow/config.yml overrides and the relevant local artifacts. Do not modify files, install assets, or invoke another skill. State prerequisites and any human decision required.
 ```
 
 ## Specify without implementation

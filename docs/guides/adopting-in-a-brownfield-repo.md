@@ -60,9 +60,9 @@ npx sdd-agentic-flow context refresh   # regenerate it unconditionally
 revision, branch) and tells you plainly whether the repository has moved on since generation —
 useful after a brownfield repo has had significant changes since you last ran `init`/`context refresh`.
 
-## 4. Install a pack and start the loop
+## 4. Install the official bundle and start the loop
 
-Once config and context exist, install a pack (`full` is the safe default) and follow the main
+Install the official bundle, initialize the exact workspace, and follow the main
 SDD flow from the [README](../../README.md#main-sdd-flow), starting with `saf-create-spec`.
 
 If the code you're bringing under SDD already exists with no prior spec and no requested

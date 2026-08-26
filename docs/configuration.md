@@ -21,7 +21,7 @@ rename or deprecate the key. See [TDD baseline](tdd-baseline.md) and
 ## Installation intent
 
 Use `config installation --plan` to preview installation intent and target paths. It does not
-install skills; run `install <pack>` to reconcile. `install --plan` is human-readable when piped
+install skills; run `install` to reconcile. `install --plan` is human-readable when piped
 or run in CI; only explicit `--json` output is machine structured.
 
 `init` also writes `.sdd-agentic-flow/usage.md`, a short regenerable stub with the workflow

@@ -1,21 +1,7 @@
 ---
 name: saf-check-task
 description: Independently check one implemented SDD task against its acceptance criteria and configured gates before handoff. Use for a task-scoped readiness check, not feature-wide validation or code changes.
-metadata:
-  version: 6.5.0
-extends: saf-implement
-requires: [config, task-evidence]
-consumes: [domain-glossary, project-context]
-produces: [check-report]
-baseline: [tlc-spec-driven, tdd]
-depends_on: []
-conflicts: []
-requires_cli: null
-autonomy_profile:
-  supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'check-report present with status PASS (PASS invalid on a false-positive catalog hit) and every configured gate satisfied'
-  blocking_conditions: [acceptance_criteria_unmet, gates_failed]
-  evidence_required: [check-report]
+compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
 # Check one SDD task
@@ -31,11 +17,11 @@ Do not use to implement fixes, review an entire feature, approve a PR, or infer 
 ## Inputs
 
 - One canonical task reference.
-- `.sdd-agentic-flow/config.yml`, the task's SDD artifacts, current diff, and configured validation commands.
+- Optional `.sdd-agentic-flow/config.yml` overrides, the task's SDD artifacts, current diff, and validation commands.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` first; if it is missing, ask the user to run `/saf-setup` or `npx sdd-agentic-flow init`, then resolve exactly one package and exactly one task. Load this skill's existing Inputs/Workflow list only.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults. Resolve exactly one package and exactly one task. Load this skill's existing Inputs/Workflow list only.
 2. Follow this **fresh-eyes** order (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh independent verifier context when the host provides one; otherwise explicitly re-ground the oracle from canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Inspect changed files for scope drift and pre-existing changes.
 3. Derive task-scoped validation obligations from the required behaviors, current diff, affected seams, repository contracts, and risk, following `change-impact-validation.md`. Select the smallest adequate sensor set and name any omitted higher-level sensor with a requirement-based reason. Confirm each sensor observes a contractual seam and that its oracle is grounded in spec, repo contracts, or configured gates — not inferred solely from the implementation. Flag tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid. For each required behavior, name one wrong implementation that the current sensors would still pass (**non-shallow litmus**). If you cannot, record **Shallow sensor** or an evidence gap — not PASS.
 4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS an implementation of one interpretation. On spec drift, write `needs changes` with a reconciliation note — do not rewrite the spec to match the code.

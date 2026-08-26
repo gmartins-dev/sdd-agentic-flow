@@ -2,7 +2,7 @@
 
 Run `npm run release:check` first. It chains `npm run check`, `npm run pack:dry`,
 `sdd-agentic-flow doctor --smoke`, and a version-consistency check across `package.json`, every
-`skills/*/SKILL.md`, every `packs/*.json`, and package-lock root metadata, stopping at the first failure. It replaces the
+`skills/*/SKILL.md`, every `saf-contract.yml`, and package-lock root metadata, stopping at the first failure. It replaces the
 manual command list this section used to carry, so this doc never needs an edit on a routine
 version bump again.
 
@@ -14,9 +14,9 @@ version bump again.
 npm run version:stamp
 ```
 
-That writes the same `x.y.z` into every `skills/*/SKILL.md` `metadata.version`, every
-`packs/*.json` `version` (copies that must exist on disk after `install` — agents and
-`doctor --contracts` read the skill file, not this repository's `package.json`). The CLI
+That updates only the package-lock root version fields. Skill files and sidecar contracts
+are portable assets and intentionally carry no package version (agents and
+`doctor --contracts` read those files, not this repository's `package.json`). The CLI
 reads `package.json` at runtime; do not put a literal `const VERSION = 'x.y.z'` back in
 `src/sdd-agentic-flow.ts` or `dist/sdd-agentic-flow.js`. It also updates only
 `package-lock.json.version` and `package-lock.json.packages[""].version`, without resolving dependencies.

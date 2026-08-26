@@ -1,0 +1,14 @@
+schema: saf-skill-contract/v1
+extends: saf-create-prompts
+requires: [task-identity]
+consumes: [domain-glossary, project-context]
+produces: [code-change+tdd-evidence]
+baseline: [tlc-spec-driven, tdd]
+depends_on: []
+conflicts: []
+requires_cli: null
+autonomy_profile:
+  supported_levels: [manual, supervised, autonomous]
+  auto_continue_condition: 'tests pass, the configured linter is clean, and modified files stay within the declared task scope'
+  blocking_conditions: [tests_fail, linter_errors, scope_exceeded]
+  evidence_required: [tests, tdd-evidence]

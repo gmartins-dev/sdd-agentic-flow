@@ -90,7 +90,7 @@ Start with the [skills usage guide](saf-skills-usage-guide.md). Follow a proven 
 
 ```bash
 npx sdd-agentic-flow init
-npx sdd-agentic-flow install full
+npx sdd-agentic-flow install
 npx sdd-agentic-flow doctor
 ```
 

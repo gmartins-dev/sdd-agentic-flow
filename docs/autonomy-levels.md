@@ -127,7 +127,7 @@ autonomy_profile:
 
 - `supported_levels`: a skill whose output is always a recommendation or explanation for a human
   to act on, never itself a link in the autonomous chain (`saf-brainstorm`, `saf-explain`,
-  `saf-setup`), omits `autonomous`. `saf-route` remains read-only but may provide the next
+  human-judgment capabilities), omits `autonomous`. `saf-route` remains read-only but may provide the next
   autonomous intake recommendation.
 - `auto_continue_condition`: one human-readable line describing "safe to advance automatically"
   for this skill. Informational; the actual gate is guardrails 1–3.

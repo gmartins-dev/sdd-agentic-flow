@@ -22,6 +22,11 @@ function git(cwd: string, ...args: string[]): string {
   }).trim();
 }
 
+function identityPath(value: string): string {
+  const normalized = path.normalize(value).replaceAll('\\', '/');
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+}
+
 export function resolveGitContext(cwd: string): GitContextResult {
   const projectRoot = fs.realpathSync(cwd);
   try {
@@ -37,7 +42,7 @@ export function resolveGitContext(cwd: string): GitContextResult {
     }
     const adoptionKey = crypto
       .createHash('sha256')
-      .update(`${gitCommonDir}\0${projectRelativePath}`)
+      .update(`${identityPath(gitCommonDir)}\0${projectRelativePath}`)
       .digest('hex')
       .slice(0, 16);
     return {

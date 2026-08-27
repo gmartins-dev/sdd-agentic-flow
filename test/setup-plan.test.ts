@@ -40,7 +40,9 @@ test('detects hosts from injected local hints without executing providers', () =
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-host-bin-'));
   try {
     fs.mkdirSync(path.join(home, '.cursor'), { recursive: true });
-    fs.writeFileSync(path.join(bin, 'claude'), '', { mode: 0o755 });
+    fs.writeFileSync(path.join(bin, process.platform === 'win32' ? 'claude.cmd' : 'claude'), '', {
+      mode: 0o755,
+    });
     const detected = detectSetupHosts({ cwd, homeDir: home, env: { PATH: bin } });
     assert.equal(detected.find((host) => host.host === 'cursor')?.detected, true);
     assert.equal(detected.find((host) => host.host === 'claude-code')?.detected, true);

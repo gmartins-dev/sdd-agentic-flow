@@ -83,12 +83,19 @@ type RenderSelectorOptions = {
   activeIndex?: number;
   selected?: unknown[];
   locale?: string | undefined;
+  plain?: boolean;
 };
 
 function renderSelector(
   question: string,
   options: SelectOption[],
-  { multiple = false, activeIndex = 0, selected, locale }: RenderSelectorOptions = {},
+  {
+    multiple = false,
+    activeIndex = 0,
+    selected,
+    locale,
+    plain = false,
+  }: RenderSelectorOptions = {},
 ): string {
   const selectedValues = new Set(
     (
@@ -108,9 +115,16 @@ function renderSelector(
     if (option.description) lines.push(`      ${option.description}`);
   });
   lines.push(
-    multiple
-      ? `\n${t(locale ?? 'en-US', 'selector.multiple')}`
-      : `\n${t(locale ?? 'en-US', 'selector.single')}`,
+    `\n${t(
+      locale ?? 'en-US',
+      plain
+        ? multiple
+          ? 'selector.plainMultiple'
+          : 'selector.plainSingle'
+        : multiple
+          ? 'selector.multiple'
+          : 'selector.single',
+    )}`,
   );
   return lines.join('\n');
 }
@@ -130,7 +144,9 @@ async function select(
     settings.ascii === undefined ? {} : { ascii: settings.ascii },
   );
   const plain = !capabilities.interactive || !capabilities.rawInput || process.env.TERM === 'dumb';
-  output.write(`${renderSelector(question, options, { multiple, locale: settings.locale })}\n`);
+  output.write(
+    `${renderSelector(question, options, { multiple, locale: settings.locale, plain })}\n`,
+  );
   if (plain) {
     const rl = readline.createInterface({ input, output, terminal: false });
     try {
@@ -218,6 +234,13 @@ async function select(
           index = choice;
           const option = options[index];
           if (!multiple && option) return done({ value: option.value });
+          if (multiple && option && !option.action) {
+            const keyValue = optionValueKey(option.value);
+            const selectedKeys = new Set(selected.map(optionValueKey));
+            selected = selectedKeys.has(keyValue)
+              ? selected.filter((item) => optionValueKey(item) !== keyValue)
+              : [...selected, option.value];
+          }
           redraw();
         }
       }

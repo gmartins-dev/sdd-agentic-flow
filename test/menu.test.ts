@@ -83,7 +83,7 @@ test('ready menu uses the canonical shell labels', () => {
   const actions = menuActionsFor({ onboardingState: 'READY' });
   assert.deepEqual(
     actions.map((action) => action.label),
-    ['Exit', 'Change settings', 'Check for updates', 'Validate setup', 'Advanced options'],
+    ['Change settings', 'Check for updates', 'Validate setup', 'Advanced options', 'Exit'],
   );
 });
 

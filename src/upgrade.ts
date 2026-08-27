@@ -105,8 +105,8 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
     `package_version: ${value.packageVersion}`,
     `schema: ${CURRENT_PROVENANCE_SCHEMA}`,
     `apply_state: ${value.applyState || 'complete'}`,
-    `scope: ${value.scope || 'user'}`,
-    `target: ${value.target || 'unknown'}`,
+    ...(value.scope ? [`scope: ${value.scope}`] : []),
+    ...(value.target ? [`target: ${value.target}`] : []),
     `skill_identity: ${value.skillIdentity || 'saf'}`,
     'managed_skills:',
     ...(value.managedSkills || []).map((skill) => `  - ${skill}`),
@@ -128,6 +128,8 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
     const packageMatch = text.match(/^package:\s*(\S+)/m);
     const schemaMatch = text.match(/^schema:\s*(\S+)/m);
     const applyStateMatch = text.match(/^apply_state:\s*(\S+)/m);
+    const scopeMatch = text.match(/^scope:\s*(\S+)/m);
+    const targetMatch = text.match(/^target:\s*(\S+)/m);
     const skillIdentityMatch = text.match(/^skill_identity:\s*(\S+)/m);
     const list = (name: string): string[] => {
       const match = text.match(new RegExp(`^${name}:\\s*\\n((?:\\s+-\\s+[^\\n]+\\n?)*)`, 'm'));
@@ -140,6 +142,8 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
       packageVersion: versionMatch?.[1] ?? null,
       schema: schemaMatch?.[1] ?? 'unsupported',
       skillIdentity: skillIdentityMatch?.[1] ?? null,
+      ...(scopeMatch?.[1] ? { scope: scopeMatch[1] } : {}),
+      ...(targetMatch?.[1] ? { target: targetMatch[1] } : {}),
       ...(applyStateMatch?.[1] === 'applying' || applyStateMatch?.[1] === 'complete'
         ? { applyState: applyStateMatch[1] }
         : {}),

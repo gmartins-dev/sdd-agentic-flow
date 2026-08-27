@@ -53,7 +53,15 @@ import {
   targetsForHosts,
 } from './setup-plan';
 import { inspectSetupState } from './setup-state';
-import { type DisplayMode, isRich, outputMode, renderStep, styleStatus } from './ui';
+import {
+  clearViewport,
+  type DisplayMode,
+  isRich,
+  outputMode,
+  renderStep,
+  styleStatus,
+  writeBrand,
+} from './ui';
 import {
   applyWorkspaceInitialization,
   planWorkspaceInitialization,
@@ -751,12 +759,14 @@ async function collectSetupIntent(
     executionMode = selectedExecutionMode as SetupIntent['executionMode'];
     autonomyLevel = autonomy.value as SetupIntent['autonomyLevel'];
   }
-  const language = persisted.language
-    ? { value: persisted.language }
-    : await choose('Language', [
-        { value: 'en-US', label: 'English', selected: locale !== 'pt-BR' },
-        { value: 'pt-BR', label: 'Português (Brasil)', selected: locale === 'pt-BR' },
-      ]);
+  const language = options.language
+    ? { value: options.language }
+    : persisted.language
+      ? { value: persisted.language }
+      : await choose('Language', [
+          { value: 'en-US', label: 'English', selected: locale !== 'pt-BR' },
+          { value: 'pt-BR', label: 'Português (Brasil)', selected: locale === 'pt-BR' },
+        ]);
   if (('cancelled' in language && language.cancelled) || typeof language.value !== 'string')
     return { cancelled: true };
   return {
@@ -835,10 +845,77 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
   );
 }
 
+function needsSessionLanguageSelection(state: string, hasReliableLocale: boolean): boolean {
+  return state === 'Fresh' && !hasReliableLocale;
+}
+
+type OperationResultState = 'success' | 'error' | 'cancelled';
+
+function renderOperationResult(
+  title: string,
+  state: OperationResultState,
+  summary: string,
+  locale = 'en-US',
+): string {
+  const labels =
+    locale === 'pt-BR'
+      ? {
+          success: 'Concluído',
+          error: 'Erro',
+          cancelled: 'Cancelado',
+          details: 'Detalhes',
+          recovery: 'Recuperação',
+          next: 'Próxima ação',
+        }
+      : {
+          success: 'Success',
+          error: 'Error',
+          cancelled: 'Cancelled',
+          details: 'Details',
+          recovery: 'Recovery',
+          next: 'Next action',
+        };
+  const action = labels.next;
+  const recovery =
+    state === 'success'
+      ? locale === 'pt-BR'
+        ? 'o estado aplicado pode ser revisado no menu Validar'
+        : 'review the applied state from the Validate menu'
+      : locale === 'pt-BR'
+        ? 'nenhuma intenção pendente foi confirmada; tente novamente quando estiver pronto'
+        : 'no pending intent was confirmed; retry from the menu when ready';
+  return `\n${title}\n\n${labels[state]}: ${summary}\n${labels.details}: ${summary}\n${labels.recovery}: ${recovery}\n\n${action}: ${
+    state === 'success'
+      ? locale === 'pt-BR'
+        ? 'retorne ao menu ou revise o estado atual'
+        : 'return to the menu or review the current state'
+      : locale === 'pt-BR'
+        ? 'retorne ao menu para tentar novamente'
+        : 'return to the menu to try again'
+  }\n`;
+}
+
+async function chooseSessionLocale(
+  choose: typeof select,
+  options: Pick<SetupCommandOptions, 'ascii'> = {},
+): Promise<ReturnType<typeof resolveLocale> | null> {
+  const language = await choose(
+    'Choose your language / Escolha o idioma',
+    [
+      { value: 'en-US', label: 'English', selected: true },
+      { value: 'pt-BR', label: 'Português (Brasil)' },
+    ],
+    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'] },
+  );
+  return language.cancelled || typeof language.value !== 'string'
+    ? null
+    : resolveLocale({ explicit: language.value });
+}
+
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   const { upgradeCommand, runCommand, changeInstallation } = requireCommandDeps();
   const homeDir = asString(options.homeDir, os.homedir());
-  const locale = localeFor(cwd, options.language);
+  let locale = localeFor(cwd, options.language);
   const choose = (
     question: string,
     values: Array<{ value: string; label: string; action?: boolean }>,
@@ -848,9 +925,45 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       cancelValues: ['q', '0'],
       locale,
     });
+  const transition = () =>
+    clearViewport({ stdout: process.stdout, stdin: process.stdin }, process.env, {
+      ascii: Boolean(options.ascii),
+    });
+  const showOperationResult = async (title: string, result: unknown): Promise<boolean> => {
+    const state: OperationResultState =
+      result === false ||
+      (result &&
+        typeof result === 'object' &&
+        ('error' in result || ('ok' in result && result.ok === false)))
+        ? 'error'
+        : result && typeof result === 'object' && 'cancelled' in result
+          ? 'cancelled'
+          : 'success';
+    const summary =
+      state === 'error' && result && typeof result === 'object' && 'error' in result
+        ? String(result.error)
+        : state === 'error' && result && typeof result === 'object' && 'message' in result
+          ? String(result.message)
+          : state === 'error' && result && typeof result === 'object' && 'errors' in result
+            ? Array.isArray(result.errors)
+              ? result.errors.join('; ')
+              : String(result.errors)
+            : state === 'cancelled'
+              ? t(locale, 'setup.cancelled')
+              : locale === 'pt-BR'
+                ? 'operação concluída'
+                : 'operation completed';
+    process.stdout.write(renderOperationResult(title, state, summary, locale));
+    const next = await choose(t(locale, 'menu.question'), [
+      { value: 'back', label: t(locale, 'menu.back'), action: true },
+      { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+    ]);
+    return next.cancelled || next.value === 'exit';
+  };
 
   const runSettings = async (): Promise<'back' | 'exit'> => {
     for (;;) {
+      transition();
       const choice = await choose(t(locale, 'menu.settings'), [
         { value: 'workflow', label: t(locale, 'menu.workflow') },
         { value: 'language', label: t(locale, 'menu.language') },
@@ -869,8 +982,19 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
           { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         ]);
         if (workflow.cancelled || workflow.value === 'exit') return 'exit';
-        if (workflow.value && workflow.value !== 'back')
-          await runCommand('config', ['policy', '--preset', String(workflow.value)], cwd);
+        if (workflow.value && workflow.value !== 'back') {
+          let result: unknown;
+          try {
+            result = await runCommand(
+              'config',
+              ['policy', '--preset', String(workflow.value)],
+              cwd,
+            );
+          } catch (error: unknown) {
+            result = { error: errorMessage(error) };
+          }
+          if (await showOperationResult(t(locale, 'menu.workflow'), result)) return 'exit';
+        }
       } else if (choice.value === 'language') {
         const language = await choose(t(locale, 'menu.language'), [
           { value: 'en-US', label: 'English' },
@@ -879,16 +1003,35 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
           { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         ]);
         if (language.cancelled || language.value === 'exit') return 'exit';
-        if (language.value && language.value !== 'back')
-          await runCommand('config', ['policy', '--language', String(language.value)], cwd);
+        if (language.value && language.value !== 'back') {
+          let result: unknown;
+          try {
+            result = await runCommand(
+              'config',
+              ['policy', '--language', String(language.value)],
+              cwd,
+            );
+          } catch (error: unknown) {
+            result = { error: errorMessage(error) };
+          }
+          locale = resolveLocale({ explicit: String(language.value) });
+          if (await showOperationResult(t(locale, 'menu.language'), result)) return 'exit';
+        }
       } else if (choice.value === 'installation') {
-        await changeInstallation(cwd);
+        let result: unknown;
+        try {
+          result = await changeInstallation(cwd);
+        } catch (error: unknown) {
+          result = { error: errorMessage(error) };
+        }
+        if (await showOperationResult(t(locale, 'install.details'), result)) return 'exit';
       }
     }
   };
 
   const runAdvanced = async (): Promise<'back' | 'exit'> => {
     for (;;) {
+      transition();
       const choice = await choose(t(locale, 'menu.advanced'), [
         { value: 'help', label: t(locale, 'menu.commandReference') },
         { value: 'config', label: t(locale, 'menu.configDetails') },
@@ -908,20 +1051,47 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         uninstall: ['uninstall', ['--plan']],
       };
       const command = commands[String(choice.value)];
-      if (command) await runCommand(command[0], command[1], cwd);
+      if (command) {
+        let result: unknown;
+        try {
+          result = await runCommand(command[0], command[1], cwd);
+        } catch (error: unknown) {
+          result = { error: errorMessage(error) };
+        }
+        if (await showOperationResult(t(locale, 'menu.advanced'), result)) return 'exit';
+      }
     }
   };
 
+  const hasConfiguredLanguage =
+    fs.existsSync(sddJoin(cwd, 'config.yml')) && Boolean(languageReport(cwd).profile);
+  let languageSelected = Boolean(options.language || hasConfiguredLanguage);
   for (;;) {
     const snapshot = inspectSetupState(cwd, homeDir);
+    if (needsSessionLanguageSelection(snapshot.state, languageSelected)) {
+      const mode =
+        options.mode ??
+        outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
+          ascii: Boolean(options.ascii),
+        });
+      await writeBrand(mode, process.stdout, process.env);
+      const selectedLocale = await chooseSessionLocale(select, options);
+      if (!selectedLocale) {
+        process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
+        return;
+      }
+      locale = selectedLocale;
+      languageSelected = true;
+    }
     if (snapshot.state === 'Ready' || snapshot.state === 'Attention') {
+      transition();
       printCurrentSetup(cwd, locale, homeDir);
       const action = await choose(t(locale, 'menu.question'), [
-        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         { value: 'settings', label: t(locale, 'menu.settings') },
         { value: 'updates', label: t(locale, 'menu.updates') },
         { value: 'validate', label: t(locale, 'menu.validate') },
         { value: 'advanced', label: t(locale, 'menu.advanced') },
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
       if (action.cancelled || action.value === 'exit') {
         if (action.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
@@ -930,24 +1100,48 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       if (action.value === 'settings') {
         if ((await runSettings()) === 'exit') return;
       } else if (action.value === 'updates') {
-        await upgradeCommand(cwd, { ascii: Boolean(options.ascii), interactive: true, homeDir });
+        let result: unknown;
+        try {
+          result = await upgradeCommand(cwd, {
+            ascii: Boolean(options.ascii),
+            interactive: true,
+            homeDir,
+          });
+        } catch (error: unknown) {
+          result = { error: errorMessage(error) };
+        }
+        if (await showOperationResult(t(locale, 'menu.updates'), result)) return;
       } else if (action.value === 'validate') {
-        await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+        let result: unknown;
+        try {
+          result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+        } catch (error: unknown) {
+          result = { error: errorMessage(error) };
+        }
+        if (await showOperationResult(t(locale, 'menu.validate'), result)) return;
       } else if (action.value === 'advanced') {
         if ((await runAdvanced()) === 'exit') return;
       }
       continue;
     }
     if (snapshot.state === 'Blocked') {
+      transition();
       process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
       const action = await choose(t(locale, 'menu.question'), [
         { value: 'validate', label: t(locale, 'menu.validate') },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
       if (action.cancelled || action.value === 'exit') return;
-      await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+      let result: unknown;
+      try {
+        result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+      } catch (error: unknown) {
+        result = { error: errorMessage(error) };
+      }
+      if (await showOperationResult(t(locale, 'menu.validate'), result)) return;
       continue;
     }
+    transition();
     process.stdout.write(
       `\nsdd-agentic-flow ${VERSION}\n${t(locale, 'welcome.product')}\n${t(locale, 'welcome.tagline')}\n\n` +
         `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
@@ -969,14 +1163,20 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       return;
     }
     if (entry.value === 'learn') {
-      await runCommand('learn-sdd', [], cwd);
+      let result: unknown;
+      try {
+        result = await runCommand('learn-sdd', [], cwd);
+      } catch (error: unknown) {
+        result = { error: errorMessage(error) };
+      }
+      if (await showOperationResult(t(locale, 'menu.learn'), result)) return;
       continue;
     }
     break;
   }
 
   for (;;) {
-    const intent = await collectSetupIntent(cwd, locale, options, homeDir);
+    const intent = await collectSetupIntent(cwd, locale, { ...options, language: locale }, homeDir);
     if ('cancelled' in intent) return log('INFO', t(locale, 'setup.cancelled'), locale);
     const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
     printSetupPlan(plan, locale);
@@ -1267,9 +1467,11 @@ async function initInteractive(
 
 export type { InitOptions, SetupCommandOptions };
 export {
+  chooseSessionLocale,
   guidedInit,
   init,
   initInteractive,
+  needsSessionLanguageSelection,
   onboardingStateFor,
   persistedSetupIntent,
   policyFromConfig,
@@ -1278,6 +1480,7 @@ export {
   printCurrentSetup,
   printPolicyLines,
   printUsageGuidePointer,
+  renderOperationResult,
   resolvePolicyFromCommandOptions,
   setSetupCommandDeps,
 };

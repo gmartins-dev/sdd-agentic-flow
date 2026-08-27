@@ -101,6 +101,17 @@ function terminalCapabilities(
   };
 }
 
+function clearViewport(
+  streams: OutputStreams = {},
+  env: NodeJS.ProcessEnv = process.env,
+  flags: OutputFlags = {},
+): boolean {
+  const output = streams.stdout;
+  if (!output || !terminalCapabilities(streams, env, flags).cursor) return false;
+  output.write('\x1b[H\x1b[2J');
+  return true;
+}
+
 function styleStatus(
   status: string,
   stream: BrandStream | undefined,
@@ -300,6 +311,7 @@ export type {
   TerminalCapabilities,
 };
 export {
+  clearViewport,
   colorEnabled,
   didYouMean,
   doctorFooterLines,

@@ -13,6 +13,7 @@ import {
 } from './install-domain';
 import { SDD_PATHS, sddJoin, userSkillsDirsForTargets } from './paths';
 import { OFFICIAL_SKILLS } from './skill-identity';
+import { readInstallProvenance } from './upgrade';
 import { WORKSPACE_MARKER } from './workspace';
 
 type SetupState = 'Fresh' | 'Incomplete' | 'Ready' | 'Attention' | 'Blocked';
@@ -136,6 +137,28 @@ function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts
     .filter((target) => target.present.length > 0 && !target.complete)
     .map((target) => `${target.id} target is incomplete`);
   const blockers: string[] = [];
+  for (const target of targets) {
+    if (readInstallProvenance(target.root)?.applyState === 'applying')
+      blockers.push(`${target.id} target has an interrupted apply`);
+  }
+  const teamProject = targets.some((target) => target.id === 'project-agents');
+  if (!teamProject) {
+    const selected = new Set(targets.map((target) => target.id));
+    for (const id of Object.keys(USER_TARGETS)) {
+      if (selected.has(id)) continue;
+      const root = userSkillsDirsForTargets([id], homeDir)[0];
+      const provenance = root ? readInstallProvenance(root) : null;
+      if (
+        provenance?.package === 'sdd-agentic-flow' &&
+        provenance.schema === 'saf-install-provenance/v3'
+      )
+        blockers.push(
+          provenance.applyState === 'applying'
+            ? `${id} target has an interrupted apply`
+            : `${id} target is outside the authoritative selection`,
+        );
+    }
+  }
   if (installState.kind === 'future' || installState.kind === 'unknown')
     blockers.push(`installation state ${installState.schema} is not recognized`);
   if (installState.kind === 'legacy')

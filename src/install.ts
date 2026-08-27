@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -17,7 +18,12 @@ import {
   repositoryKey,
   writeInstallConfig,
 } from './install-domain';
-import { applyInstallPlan, buildInstallPlan, type InstallPlan } from './install-preflight';
+import {
+  applyInstallPlan,
+  buildInstallPlan,
+  type InstallPlan,
+  isPlanEmpty,
+} from './install-preflight';
 import { resolveLocale, t } from './messages';
 import { PACKAGE_ROOT, userSkillsDirsForTargets, VERSION } from './paths';
 import { select } from './selector';
@@ -203,6 +209,62 @@ function blockedPlan(schema: string): InstallPlan {
   };
 }
 
+function removeManagedTargetContent(
+  root: string,
+  provenance: ReturnType<typeof readInstallProvenance>,
+  expectedScope?: string,
+) {
+  if (
+    provenance?.package !== 'sdd-agentic-flow' ||
+    provenance.schema !== 'saf-install-provenance/v3' ||
+    (expectedScope && provenance.scope && provenance.scope !== expectedScope)
+  )
+    return;
+  if (provenance.applyState === 'applying') return;
+  const paths = provenance.managedPaths?.length
+    ? provenance.managedPaths
+    : (provenance.managedSkills || []).map((skill) => skill);
+  for (const relative of paths) {
+    const destination = path.resolve(root, relative);
+    if (
+      destination !== path.resolve(root) &&
+      destination.startsWith(`${path.resolve(root)}${path.sep}`)
+    )
+      fs.rmSync(destination, { recursive: true, force: true });
+  }
+  const provenanceFile = path.join(root, 'sdd-agentic-flow-shared', 'install-provenance.yml');
+  fs.rmSync(provenanceFile, { force: true });
+  const shared = path.dirname(provenanceFile);
+  if (fs.existsSync(shared) && fs.readdirSync(shared).length === 0)
+    fs.rmSync(shared, { recursive: true });
+  const prune = (directory: string) => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isDirectory()) prune(path.join(directory, entry.name));
+    }
+    if (directory !== root && fs.readdirSync(directory).length === 0)
+      fs.rmSync(directory, { recursive: true });
+  };
+  prune(root);
+}
+
+function cleanupDeselectedUserTargets(
+  previousTargets: string[],
+  desiredTargets: string[],
+  homeDir: string,
+): boolean {
+  const desired = new Set(desiredTargets);
+  for (const target of previousTargets) {
+    if (desired.has(target)) continue;
+    const root = userSkillsDirsForTargets([target], homeDir)[0];
+    if (!root) continue;
+    const provenance = readInstallProvenance(root);
+    if (provenance?.applyState === 'applying') return false;
+    removeManagedTargetContent(root, provenance, 'user');
+  }
+  return true;
+}
+
 function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   const homeDir = options.homeDir || os.homedir();
   const historicalRoots = [
@@ -249,6 +311,17 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     intentState.kind === 'current'
       ? readInstallConfig(homeDir) || defaultInstallConfig()
       : defaultInstallConfig();
+  const previousUserTargets = config.user.targets.length
+    ? [...config.user.targets]
+    : ['agents', 'cursor', 'claude', 'copilot'].filter((target) => {
+        const root = userSkillsDirsForTargets([target], homeDir)[0];
+        const provenance = root ? readInstallProvenance(root) : null;
+        return (
+          provenance?.package === 'sdd-agentic-flow' &&
+          provenance.schema === 'saf-install-provenance/v3' &&
+          provenance.scope !== 'project'
+        );
+      });
   if (options.adoptionMode && !isAdoptionMode(options.adoptionMode))
     return fail('unknown adoption mode: use personal, specs-shared, or team');
   const git = resolveGitContext(cwd);
@@ -257,6 +330,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   const scope =
     options.scope ||
     (adoptionMode ? adoptionModeForScope(adoptionMode) : storedProject ? 'project' : 'user');
+  const leavingTeamProject = scope === 'user' && storedProject?.adoption_mode === 'team';
   if (scope !== 'user' && scope !== 'project')
     return fail('unknown scope: use --scope user or --scope project');
   if (adoptionMode && adoptionModeForScope(adoptionMode) !== scope)
@@ -326,14 +400,33 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       applyState: 'complete',
     });
   }
-  if (scope === 'user') config.user.targets = targets;
-  else {
+  const appliedPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
+  if (!isPlanEmpty(appliedPlan)) return fail('installation verification failed');
+  if (adoptionMode) {
+    const adoption = applyAdoption(cwd, adoptionMode, homeDir);
+    if (adoption.warning || adoption.drift.length) return fail('adoption verification failed');
+  }
+  if (scope === 'user' && !cleanupDeselectedUserTargets(previousUserTargets, targets, homeDir))
+    return fail('installation cleanup blocked by interrupted apply');
+  if (leavingTeamProject && git.ok) {
+    const projectRoot = path.join(cwd, '.agents', 'skills');
+    removeManagedTargetContent(projectRoot, readInstallProvenance(projectRoot), 'project');
+    if (readInstallProvenance(projectRoot)?.package === 'sdd-agentic-flow')
+      return fail('project cleanup verification failed');
+  }
+  const cleanedPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
+  if (!isPlanEmpty(cleanedPlan)) return fail('installation cleanup verification failed');
+  if (scope === 'user') {
+    config.user.targets = targets;
+    if (leavingTeamProject && git.ok) delete config.projects[git.context.adoptionKey];
+  } else {
     const project = profile as InstallProjectProfile;
     if (!git.ok) return fail(git.error);
     config.projects[git.context.adoptionKey] = project;
   }
   writeInstallConfig(config, homeDir);
-  if (adoptionMode) applyAdoption(cwd, adoptionMode, homeDir);
+  const finalPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
+  if (!isPlanEmpty(finalPlan)) return fail('installation re-inspection failed');
   if (!options.quiet)
     process.stdout.write(
       `PASS installed ${OFFICIAL_SKILLS.length} official skills + shared layer\n`,
@@ -478,7 +571,7 @@ async function configureInteractive(
 }
 
 async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()) {
-  const configured = await configureInteractive(cwd, homeDir);
+  const configured = await configureInteractive(cwd, homeDir, { persist: false });
   if (isConfigureCancelled(configured) || isConfigureError(configured)) return configured;
   const applied = await install(cwd, {
     homeDir,

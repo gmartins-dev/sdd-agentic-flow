@@ -362,7 +362,7 @@ function cancellationScenario(): Scenario {
       const result = await runScriptPty(adapter.ptyCommand(sandbox), {
         cwd: sandbox.cwd,
         env: adapter.ptyEnvironment(sandbox),
-        steps: [{ waitFor: /Enter selects the first option/, input: '\u0003' }],
+        steps: [{ waitFor: /1-9 select/, input: '\u0003' }],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
       expectUnchanged(before, observeSandbox(sandbox));
@@ -445,11 +445,11 @@ function ptyScenario(): Scenario {
         cwd: sandbox.cwd,
         env: adapter.ptyEnvironment(sandbox),
         steps: [
-          { waitFor: /Enter selects the first option/, input: '1' },
+          { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
+          { waitFor: /What would you like to do/, input: '1' },
           { waitFor: /Sharing/, input: '1' },
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
-          { waitFor: /Language/, input: '\r' },
           { waitFor: /Ready to set up SAF/, input: '1\n' },
           { waitFor: /PASS Ready/, input: '' },
         ],
@@ -512,12 +512,12 @@ function readySettingsScenario(): Scenario {
         cwd: sandbox.cwd,
         env: adapter.ptyEnvironment(sandbox),
         steps: [
-          { waitFor: /What would you like to do/, input: '2\n' },
+          { waitFor: /What would you like to do/, input: '1\n' },
           { waitFor: /Change settings|Alterar configurações/, input: '1\n' },
           { waitFor: /Workflow|Fluxo de trabalho/, input: '1\n' },
           {
-            waitFor: /Already using|Já usando/,
-            input: '5\n',
+            waitFor: /policy updated|política atualizada|Already using|Já usando/,
+            input: '2\n',
           },
         ],
       });

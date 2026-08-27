@@ -82,7 +82,7 @@ test('selector falls back to numbered input when a TTY cannot enter raw mode', a
     output,
   });
   assert.deepEqual(selected, { value: 'default' });
-  assert.match(output.read().toString(), /1-9 selects/);
+  assert.match(output.read().toString(), /Enter selects the default; 1-9 selects; q\/0 cancels/);
 });
 
 test('NO_COLOR keeps the complete numbered selector without ANSI output', async () => {
@@ -143,6 +143,28 @@ test('raw selector redraws the active option before Enter commits it', async () 
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;
   }
+});
+
+test('raw multi-select numbers toggle the numbered value before Enter confirms', async () => {
+  const input = new PassThrough();
+  setTty(input);
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+  };
+  const output = setTty(new PassThrough());
+  const pending = select(
+    'Choose',
+    [
+      { value: 'one', label: 'One' },
+      { value: 'two', label: 'Two' },
+    ],
+    { input, output, multiple: true },
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  input.emit('keypress', '2', { name: '2' });
+  input.emit('keypress', '\r', { name: 'return' });
+  assert.deepEqual(await pending, { value: ['two'] });
 });
 
 test('raw selector accepts configured menu exits', async () => {

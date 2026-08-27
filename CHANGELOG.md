@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 7.5.0
+
+### Human shell completion
+
+Adds language-first Fresh onboarding, session-local locale selection, accurate
+raw and plain selector guidance, numeric multi-select toggling, and Exit-last
+Ready navigation. Installation application now reconciles managed content and
+adoption before persisting the final intent. The release preserves local-first
+behavior, zero runtime dependencies, machine contracts, and no automatic Git
+or remote release mutation.
+
 ## 7.4.0
 
 ### Human CLI UX convergence

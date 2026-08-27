@@ -67,11 +67,11 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
   }
   if (state.onboardingState === 'READY') {
     return [
-      { label: 'Exit', command: [] },
       { label: 'Change settings', command: [] },
       { label: 'Check for updates', command: ['upgrade'] },
       { label: 'Validate setup', command: ['doctor'] },
       { label: 'Advanced options', command: ['help'] },
+      { label: 'Exit', command: [] },
     ];
   }
   if (state.onboardingState === 'NEEDS_ATTENTION') {

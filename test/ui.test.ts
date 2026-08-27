@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  clearViewport,
   colorEnabled,
   didYouMean,
   doctorFooterLines,
@@ -72,6 +73,23 @@ test('CLI-016: terminal capabilities keep raw navigation under NO_COLOR and ASCI
   const dumb = terminalCapabilities({ stdin: input, stdout: output }, { TERM: 'dumb' });
   assert.equal(dumb.cursor, false);
   assert.equal(dumb.rawInput, true);
+});
+
+test('viewport clearing is cursor-gated and never clears scrollback', () => {
+  const writes: string[] = [];
+  const output = {
+    isTTY: true,
+    write: (value: string) => {
+      writes.push(value);
+      return true;
+    },
+  } as never;
+  const input = { isTTY: true, setRawMode: () => undefined } as never;
+  assert.equal(clearViewport({ stdin: input, stdout: output }, {}), true);
+  assert.deepEqual(writes, ['\x1b[H\x1b[2J']);
+  assert.equal(writes.join('').includes('\x1b[3J'), false);
+  assert.equal(clearViewport({ stdin: input, stdout: output }, { TERM: 'dumb' }), false);
+  assert.equal(clearViewport({ stdin: input, stdout: output }, { CI: '1' }), false);
 });
 
 test('CLI-012: symbols are ASCII outside human-rich; welcome brand is the full embedded art', () => {

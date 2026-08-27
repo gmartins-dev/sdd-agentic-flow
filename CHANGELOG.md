@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 7.5.1
+
+### Bare shell welcome lifecycle
+
+Completes the v7.5 human-shell contract by rendering localized branding,
+identity, and state-aware welcome content exactly once for each bare interactive
+TTY invocation. Fresh sessions keep the bilingual language prelude, while
+Ready, Incomplete, Attention, and Blocked re-entry now retain the welcome on
+the initial screen. Plain and ASCII TTYs use the existing static fallback;
+machine, pipe, CI, and explicit command output remain unchanged.
+
 ## 7.5.0
 
 ### Human shell completion

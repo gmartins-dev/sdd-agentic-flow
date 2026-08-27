@@ -50,6 +50,8 @@ const CATALOGS = Object.freeze({
     'welcome.freshHint': 'Nothing will be changed until you review the setup plan.',
     'welcome.incompleteTitle': 'SAF setup is incomplete',
     'welcome.incompleteBody': 'Some setup steps are complete, but this workspace is not ready yet.',
+    'welcome.returningTitle': 'Welcome back',
+    'welcome.readyTitle': 'SAF is ready',
     'welcome.readyBody': 'Your SAF setup is healthy and ready to use.',
     'welcome.attentionTitle': 'SAF is ready, with something to review',
     'welcome.blockedTitle': 'SAF needs attention before setup can continue',
@@ -291,6 +293,8 @@ const CATALOGS = Object.freeze({
     'welcome.incompleteTitle': 'A configuração do SAF está incompleta',
     'welcome.incompleteBody':
       'Algumas etapas foram concluídas, mas este workspace ainda não está pronto.',
+    'welcome.returningTitle': 'Bem-vindo de volta',
+    'welcome.readyTitle': 'O SAF está pronto',
     'welcome.readyBody': 'A configuração do SAF está saudável e pronta para uso.',
     'welcome.attentionTitle': 'O SAF está pronto, mas há algo para revisar',
     'welcome.blockedTitle': 'O SAF precisa de atenção antes de continuar',

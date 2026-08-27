@@ -52,7 +52,7 @@ import {
   setupPrecondition,
   targetsForHosts,
 } from './setup-plan';
-import { inspectSetupState } from './setup-state';
+import { inspectSetupState, type SetupStateSnapshot } from './setup-state';
 import {
   clearViewport,
   type DisplayMode,
@@ -60,6 +60,7 @@ import {
   outputMode,
   renderStep,
   styleStatus,
+  symbol,
   writeBrand,
 } from './ui';
 import {
@@ -532,9 +533,6 @@ function printCurrentSetup(cwd: string, locale: string, homeDir = os.homedir()) 
       `  ${locale === 'pt-BR' ? 'Idioma' : 'Language'}    ${config.languageProfile === 'pt-BR' ? 'Português (Brasil)' : 'English'}\n`,
     );
   }
-  if (state.state === 'Attention')
-    process.stdout.write(`\n${t(locale, 'welcome.attentionTitle')}\n`);
-  if (state.state === 'Blocked') process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
 }
 
 async function applySetup(
@@ -912,6 +910,39 @@ async function chooseSessionLocale(
     : resolveLocale({ explicit: language.value });
 }
 
+function renderLanguagePrelude(): string {
+  return `\nsdd-agentic-flow ${VERSION}\n\n`;
+}
+
+function renderInvocationWelcome(
+  snapshot: SetupStateSnapshot,
+  locale: string,
+  mode: DisplayMode = 'human-rich',
+): string {
+  let stateContent: string;
+  switch (snapshot.state) {
+    case 'Ready':
+      stateContent = `${t(locale, 'welcome.returningTitle')}\n\n${symbol('success', mode)} ${t(locale, 'welcome.readyTitle')}\n${t(locale, 'welcome.readyBody')}`;
+      break;
+    case 'Attention':
+      stateContent = `${t(locale, 'welcome.returningTitle')}\n\n${symbol('warn', mode)} ${t(locale, 'welcome.attentionTitle')}`;
+      break;
+    case 'Blocked':
+      stateContent = t(locale, 'welcome.blockedTitle');
+      break;
+    case 'Fresh':
+      stateContent = `${t(locale, 'welcome.freshTitle')}\n${t(locale, 'welcome.freshBody')}`;
+      break;
+    default:
+      stateContent = `${t(locale, 'welcome.incompleteTitle')}\n${t(locale, 'welcome.incompleteBody')}`;
+      break;
+  }
+  return (
+    `sdd-agentic-flow ${VERSION}\n${t(locale, 'welcome.product')}\n${t(locale, 'welcome.tagline')}\n\n` +
+    `${stateContent}\n\n`
+  );
+}
+
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   const { upgradeCommand, runCommand, changeInstallation } = requireCommandDeps();
   const homeDir = asString(options.homeDir, os.homedir());
@@ -1066,25 +1097,37 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   const hasConfiguredLanguage =
     fs.existsSync(sddJoin(cwd, 'config.yml')) && Boolean(languageReport(cwd).profile);
   let languageSelected = Boolean(options.language || hasConfiguredLanguage);
-  for (;;) {
-    const snapshot = inspectSetupState(cwd, homeDir);
-    if (needsSessionLanguageSelection(snapshot.state, languageSelected)) {
-      const mode =
-        options.mode ??
-        outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
-          ascii: Boolean(options.ascii),
-        });
-      await writeBrand(mode, process.stdout, process.env);
-      const selectedLocale = await chooseSessionLocale(select, options);
-      if (!selectedLocale) {
-        process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
-        return;
-      }
-      locale = selectedLocale;
-      languageSelected = true;
+  const mode =
+    options.mode ??
+    outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
+      ascii: Boolean(options.ascii),
+    });
+  let initialScreen = true;
+  let snapshot = inspectSetupState(cwd, homeDir);
+  if (needsSessionLanguageSelection(snapshot.state, languageSelected)) {
+    transition();
+    process.stdout.write(renderLanguagePrelude());
+    const selectedLocale = await chooseSessionLocale(select, options);
+    if (!selectedLocale) {
+      process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
+      return;
     }
+    locale = selectedLocale;
+    languageSelected = true;
+    snapshot = inspectSetupState(cwd, homeDir);
+    transition();
+  } else {
+    transition();
+  }
+  // The brand is eligible here because guidedInit is only entered by the bare interactive shell.
+  // Non-TTY bare execution stays on the status-only welcome path in main().
+  await writeBrand(mode, process.stdout, process.env);
+  process.stdout.write(renderInvocationWelcome(snapshot, locale, mode));
+
+  for (;;) {
+    snapshot = inspectSetupState(cwd, homeDir);
     if (snapshot.state === 'Ready' || snapshot.state === 'Attention') {
-      transition();
+      if (!initialScreen) transition();
       printCurrentSetup(cwd, locale, homeDir);
       const action = await choose(t(locale, 'menu.question'), [
         { value: 'settings', label: t(locale, 'menu.settings') },
@@ -1097,6 +1140,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         if (action.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
         return;
       }
+      initialScreen = false;
       if (action.value === 'settings') {
         if ((await runSettings()) === 'exit') return;
       } else if (action.value === 'updates') {
@@ -1125,13 +1169,16 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       continue;
     }
     if (snapshot.state === 'Blocked') {
-      transition();
-      process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
+      if (!initialScreen) {
+        transition();
+        process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
+      }
       const action = await choose(t(locale, 'menu.question'), [
         { value: 'validate', label: t(locale, 'menu.validate') },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
       if (action.cancelled || action.value === 'exit') return;
+      initialScreen = false;
       let result: unknown;
       try {
         result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
@@ -1141,12 +1188,13 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       if (await showOperationResult(t(locale, 'menu.validate'), result)) return;
       continue;
     }
-    transition();
-    process.stdout.write(
-      `\nsdd-agentic-flow ${VERSION}\n${t(locale, 'welcome.product')}\n${t(locale, 'welcome.tagline')}\n\n` +
-        `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
-        `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshBody') : t(locale, 'welcome.incompleteBody')}\n\n`,
-    );
+    if (!initialScreen) {
+      transition();
+      process.stdout.write(
+        `\n${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
+          `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshBody') : t(locale, 'welcome.incompleteBody')}\n\n`,
+      );
+    }
     const entry = await choose(t(locale, 'menu.question'), [
       {
         value: 'start',
@@ -1162,6 +1210,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       if (entry.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
       return;
     }
+    initialScreen = false;
     if (entry.value === 'learn') {
       let result: unknown;
       try {
@@ -1480,6 +1529,8 @@ export {
   printCurrentSetup,
   printPolicyLines,
   printUsageGuidePointer,
+  renderInvocationWelcome,
+  renderLanguagePrelude,
   renderOperationResult,
   resolvePolicyFromCommandOptions,
   setSetupCommandDeps,

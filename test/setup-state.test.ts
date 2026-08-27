@@ -7,6 +7,8 @@ import { defaultInstallConfig, writeInstallConfig } from '../src/install-domain'
 import {
   chooseSessionLocale,
   needsSessionLanguageSelection,
+  renderInvocationWelcome,
+  renderLanguagePrelude,
   renderOperationResult,
 } from '../src/setup';
 import { classifySetupState, collectSetupFacts, inspectSetupState } from '../src/setup-state';
@@ -40,6 +42,34 @@ test('operation result pages expose state, summary, and next action', () => {
   assert.match(page, /Installation details/);
   assert.match(page, /Error: apply failed/);
   assert.match(page, /Next action:/);
+});
+
+test('invocation welcome owns localized identity and state greeting', () => {
+  const snapshot = (state: string) => ({ state }) as never;
+  const ready = renderInvocationWelcome(snapshot('Ready'), 'en-US', 'human-plain');
+  assert.match(ready, /sdd-agentic-flow/);
+  assert.match(ready, /Spec-Driven Agentic Workflow Harness/);
+  assert.match(ready, /Specs first\. Evidence before done/);
+  assert.match(ready, /Welcome back/);
+  assert.match(ready, /OK SAF is ready/);
+  assert.doesNotMatch(ready, /Current setup/);
+
+  const attention = renderInvocationWelcome(snapshot('Attention'), 'pt-BR', 'human-plain');
+  assert.match(attention, /Bem-vindo de volta/);
+  assert.match(attention, /O SAF está pronto, mas há algo para revisar/);
+
+  const incomplete = renderInvocationWelcome(snapshot('Incomplete'), 'en-US', 'human-plain');
+  assert.match(incomplete, /SAF setup is incomplete/);
+  assert.match(incomplete, /Some setup steps are complete/);
+
+  const blocked = renderInvocationWelcome(snapshot('Blocked'), 'en-US', 'human-plain');
+  assert.match(blocked, /SAF needs attention before setup can continue/);
+});
+
+test('language prelude is neutral until session locale is selected', () => {
+  const prelude = renderLanguagePrelude();
+  assert.match(prelude, /sdd-agentic-flow/);
+  assert.doesNotMatch(prelude, /Specs first|Boas-vindas|Welcome back/);
 });
 
 test('classifies setup from durable facts without requiring config', () => {

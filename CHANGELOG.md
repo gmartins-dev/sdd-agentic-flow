@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 7.3.0
+
+### CLI behavioral certification
+
+Adds shared compiled and packed CLI certification profiles with independent
+sandbox observation, bidirectional mutation diffs, output-driven Linux PTY
+interaction, lifecycle and recovery journeys, explicit certification verdicts,
+and a release gate that accepts only a complete `PASS`. No new dependency,
+runtime network behavior, telemetry, or automatic Git mutation is introduced.
+
 ## 7.2.0
 
 ### Guided CLI contract completion

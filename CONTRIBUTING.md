@@ -89,6 +89,18 @@ an independent Markdown report to `.local/gmm/sdd-agentic-flow/` using the filen
 `v<version>-cli-test-report-YYYYMMDDTHHMMSSZ.md`; the same UTC timestamp is recorded in the
 report header. Set `SAF_CLI_REPORT=/path/to/report.md` when a specific output path is needed.
 
+### CLI behavioral certification
+
+Run `npm run cli:certify` to execute the deterministic certification profile against the
+compiled CLI. It uses disposable project and HOME sandboxes, an independent state observer,
+mutation contracts, lifecycle journeys, machine-output checks, and Linux PTY evidence.
+
+Run `npm run cli:certify:packed` to run the same scenarios against the real `npm pack` tarball
+through `npx file:<tarball>`. Both commands write timestamped evidence under
+`.local/gmm/sdd-agentic-flow/`. Only an overall `PASS` exits successfully; `PASS WITH FINDINGS`,
+`FAIL`, and `NOT CERTIFIED` return non-zero. `release:check` runs both certification profiles and
+rejects every non-`PASS` result.
+
 ## Diagrams
 
 Diagrams use Mermaid as their textual, versionable source — always as inline ` ```mermaid `

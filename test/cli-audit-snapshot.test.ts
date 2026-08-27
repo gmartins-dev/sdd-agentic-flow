@@ -3,7 +3,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { snapshotPersistentState } from '../scripts/cli-audit-snapshot.js';
+import {
+  assertMutationContract,
+  diffSnapshots,
+  snapshotPersistentState,
+} from '../scripts/cli-audit-snapshot.js';
 
 test('snapshot records content changes and entry additions/removals', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-audit-snapshot-'));
@@ -45,4 +49,36 @@ test('snapshot records symlink target changes when the host permits symlinks', (
   assert.equal(after.find((entry) => entry.path === 'project/current')?.target, 'two.txt');
   assert.notDeepEqual(after, before);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('state diff detects unexpected and missing mutations', () => {
+  const before = [
+    { path: 'project/.', type: 'directory' as const, size: 0 },
+    { path: 'project/keep.txt', type: 'file' as const, size: 5, sha256: 'keep' },
+  ];
+  const after = [
+    ...before,
+    { path: 'project/created.txt', type: 'file' as const, size: 2, sha256: 'new' },
+  ];
+  const diff = diffSnapshots(before, after, {
+    requireAdded: ['project/missing.txt'],
+  });
+  assert.deepEqual(
+    diff.added.map((entry) => entry.path),
+    ['project/created.txt'],
+  );
+  assert.deepEqual(diff.unexpectedAdded, [after[2]]);
+  assert.deepEqual(diff.missingExpectedAdded, ['project/missing.txt']);
+  assert.throws(() => assertMutationContract(diff), /unexpected mutation/);
+});
+
+test('state diff accepts exact and subtree mutation allowlists', () => {
+  const before = [{ path: 'home/.', type: 'directory' as const, size: 0 }];
+  const after = [
+    ...before,
+    { path: 'home/.agents', type: 'directory' as const, size: 0 },
+    { path: 'home/.agents/skills', type: 'directory' as const, size: 0 },
+  ];
+  const diff = diffSnapshots(before, after, { allowAdded: ['home/.agents/**'] });
+  assertMutationContract(diff);
 });

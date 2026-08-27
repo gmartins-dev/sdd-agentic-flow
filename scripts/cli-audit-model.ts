@@ -1,11 +1,31 @@
 export type ExecutionOutcome = 'PASS' | 'FAIL' | 'SKIPPED';
 export type EvidenceCoverage = 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
+export type CertificationVerdict = 'PASS' | 'PASS WITH FINDINGS' | 'FAIL' | 'NOT CERTIFIED';
+export type ScenarioRequirement = 'mandatory' | 'optional';
+export type FindingSeverity = 'Critical' | 'High' | 'Medium' | 'Low' | 'Info';
+
+export type CertificationFinding = {
+  id: string;
+  severity: FindingSeverity;
+  blocking: boolean;
+  classification: string;
+  summary: string;
+};
 
 export type AuditObservation = {
   outcome: ExecutionOutcome;
   coverage: EvidenceCoverage;
   note: string;
   limitation?: string;
+};
+
+export type ScenarioEvidence = AuditObservation & {
+  requirement: ScenarioRequirement;
+};
+
+export type CertificationDecision = {
+  verdict: CertificationVerdict;
+  exitCode: 0 | 1;
 };
 
 export type AuditCaseSummary = {
@@ -41,6 +61,28 @@ export function normalizeObservation(result: unknown): AuditObservation {
 
 export function assertUniqueScenarioId(ids: ReadonlySet<string>, id: string): void {
   if (ids.has(id)) throw new Error(`duplicate audit scenario ID: ${id}`);
+}
+
+export function decideCertification(
+  scenarios: ReadonlyArray<ScenarioEvidence>,
+  findings: ReadonlyArray<CertificationFinding> = [],
+): CertificationDecision {
+  const mandatory = scenarios.filter((scenario) => scenario.requirement === 'mandatory');
+  if (
+    mandatory.some((scenario) => scenario.outcome === 'SKIPPED' || scenario.coverage !== 'COMPLETE')
+  ) {
+    return { verdict: 'NOT CERTIFIED', exitCode: 1 };
+  }
+  if (scenarios.some((scenario) => scenario.outcome === 'FAIL')) {
+    return { verdict: 'FAIL', exitCode: 1 };
+  }
+  if (findings.some((finding) => finding.blocking)) {
+    return { verdict: 'FAIL', exitCode: 1 };
+  }
+  if (findings.length > 0) {
+    return { verdict: 'PASS WITH FINDINGS', exitCode: 1 };
+  }
+  return { verdict: 'PASS', exitCode: 0 };
 }
 
 export function summarizeAuditCases(

@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v7.3.0 (2026-08-27):** CLI behavioral certification with independent
+  sandbox observation, bidirectional mutation evidence, output-driven PTY
+  journeys, fail-closed recovery coverage, packed-artifact verification, and a
+  release gate that accepts only a complete `PASS`. No new dependency,
+  telemetry, runtime network behavior, or automatic Git/release mutation.
+
 - **v7.2.0 (2026-08-26):** Completes the guided CLI contract with derived setup
   state, local host evidence, five-field intent, declarative plan/review/apply,
   surgical policy mutation, staged recovery, and truthful purge behavior. Adds

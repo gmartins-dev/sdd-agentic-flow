@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from 'node:test';
 
 import {
@@ -8,7 +12,13 @@ import {
   setupPolicyFromPair,
   setupPolicyFromPreset,
 } from '../src/config-domain';
-import { policyFromConfig, policyReviewTitle, resolvePolicyFromCommandOptions } from '../src/setup';
+import { defaultInstallConfig, serializeInstallConfig } from '../src/install-domain';
+import {
+  persistedSetupIntent,
+  policyFromConfig,
+  policyReviewTitle,
+  resolvePolicyFromCommandOptions,
+} from '../src/setup';
 
 test('onboarding default preset is supervised (apply + supervised)', () => {
   assert.equal(ONBOARDING_DEFAULT_PRESET, 'supervised');
@@ -102,4 +112,33 @@ test('policyFromConfig maps stored config to draft', () => {
   assert.equal(draft.presetName, 'autonomous');
   assert.equal(draft.executionMode, 'full');
   assert.equal(draft.autonomyLevel, 'autonomous');
+});
+
+test('guided resume reconstructs persisted intent without re-asking it', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-resume-project-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-resume-home-'));
+  try {
+    execFileSync('git', ['init', '--quiet'], { cwd });
+    const install = defaultInstallConfig();
+    install.user.targets = ['agents', 'claude', 'copilot'];
+    fs.mkdirSync(path.join(home, '.sdd-agentic-flow'), { recursive: true });
+    fs.writeFileSync(
+      path.join(home, '.sdd-agentic-flow', 'install.yml'),
+      serializeInstallConfig(install),
+    );
+    fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, '.sdd-agentic-flow', 'config.yml'),
+      'schema: saf-config/v3\n\nlanguage:\n  profile: pt-BR\n  human_outputs: pt-BR\n\nworkflow:\n  execution_mode: apply\n  autonomy_level: supervised\n  feature_profile: large_feature\n',
+    );
+    assert.deepEqual(persistedSetupIntent(cwd, home), {
+      selectedHosts: ['codex', 'claude-code', 'vscode-copilot'],
+      workflow: 'supervised',
+      language: 'pt-BR',
+      featureProfile: 'large_feature',
+    });
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });

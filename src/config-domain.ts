@@ -103,6 +103,9 @@ type ReadConfigResult = {
 type PolicyMutationInput = {
   executionMode: string;
   autonomyLevel: string;
+  languageProfile?: string;
+  language?: string;
+  featureProfile?: string;
 };
 
 type PolicyPreview = {
@@ -110,6 +113,10 @@ type PolicyPreview = {
   after: { executionMode: ExecutionMode; autonomyLevel: AutonomyLevel };
   beforePreset: string | null;
   afterPreset: string | null;
+  beforeLanguage?: string;
+  afterLanguage?: string;
+  beforeFeatureProfile?: string;
+  afterFeatureProfile?: string;
 };
 
 type ApplyPolicyOptions = {
@@ -207,7 +214,13 @@ function readConfig(configPath: string): ReadConfigResult {
   };
 }
 
-function validatePolicyMutation({ executionMode, autonomyLevel }: PolicyMutationInput): {
+function validatePolicyMutation({
+  executionMode,
+  autonomyLevel,
+  languageProfile,
+  language,
+  featureProfile,
+}: PolicyMutationInput): {
   ok: boolean;
   errors: string[];
 } {
@@ -221,6 +234,14 @@ function validatePolicyMutation({ executionMode, autonomyLevel }: PolicyMutation
   if (executionMode && autonomyLevel && !autonomyComboValid(executionMode, autonomyLevel)) {
     errors.push(`invalid combo: ${executionMode} + ${autonomyLevel}`);
   }
+  const selectedLanguage = languageProfile ?? language;
+  if (selectedLanguage && !['en-US', 'pt-BR'].includes(selectedLanguage))
+    errors.push(`invalid language profile: ${selectedLanguage}`);
+  if (
+    featureProfile &&
+    !['small_fix', 'medium_feature', 'large_feature', 'epic'].includes(featureProfile)
+  )
+    errors.push(`invalid feature profile: ${featureProfile}`);
   return { ok: errors.length === 0, errors };
 }
 
@@ -233,6 +254,16 @@ function replaceWorkflowField(
   if (!pattern.test(content)) {
     return { ok: false, error: `field ${key} not found` };
   }
+  return { ok: true, content: content.replace(pattern, `$1${value}`) };
+}
+
+function replaceConfigField(
+  content: string,
+  key: string,
+  value: string,
+): { ok: true; content: string } | { ok: false; error: string } {
+  const pattern = new RegExp(`^(\\s+${key}:\\s*).+$`, 'm');
+  if (!pattern.test(content)) return { ok: false, error: `field ${key} not found` };
   return { ok: true, content: content.replace(pattern, `$1${value}`) };
 }
 
@@ -256,7 +287,7 @@ function buildPolicyPreview(
 
 function applyPolicyMutation(
   configPath: string,
-  { executionMode, autonomyLevel }: PolicyMutationInput,
+  { executionMode, autonomyLevel, languageProfile, language, featureProfile }: PolicyMutationInput,
   options: ApplyPolicyOptions = {},
 ): {
   ok: boolean;
@@ -264,7 +295,13 @@ function applyPolicyMutation(
   preview?: PolicyPreview;
   wrote?: boolean;
 } {
-  const validation = validatePolicyMutation({ executionMode, autonomyLevel });
+  const validation = validatePolicyMutation({
+    executionMode,
+    autonomyLevel,
+    ...(languageProfile ? { languageProfile } : {}),
+    ...(language ? { language } : {}),
+    ...(featureProfile ? { featureProfile } : {}),
+  });
   if (!validation.ok) {
     return { ok: false, errors: validation.errors, wrote: false };
   }
@@ -290,6 +327,21 @@ function applyPolicyMutation(
     },
     { executionMode, autonomyLevel },
   );
+  const selectedLanguage = languageProfile ?? language;
+  const beforeLanguage = current.languageProfile ?? EFFECTIVE_DEFAULTS.language_profile;
+  const beforeFeatureProfile = current.featureProfile ?? EFFECTIVE_DEFAULTS.feature_profile;
+  const afterLanguage = selectedLanguage ?? beforeLanguage;
+  const afterFeatureProfile = featureProfile ?? beforeFeatureProfile;
+  preview.beforeLanguage = beforeLanguage;
+  preview.afterLanguage = afterLanguage;
+  preview.beforeFeatureProfile = beforeFeatureProfile;
+  preview.afterFeatureProfile = afterFeatureProfile;
+  const unchanged =
+    preview.before.executionMode === preview.after.executionMode &&
+    preview.before.autonomyLevel === preview.after.autonomyLevel &&
+    beforeLanguage === afterLanguage &&
+    beforeFeatureProfile === afterFeatureProfile;
+  if (unchanged) return { ok: true, preview, wrote: false };
   if (options.dryRun) {
     return { ok: true, preview, wrote: false };
   }
@@ -297,6 +349,19 @@ function applyPolicyMutation(
   let replaced = replaceWorkflowField(next, 'execution_mode', executionMode);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;
+  if (selectedLanguage) {
+    const languageResult = replaceConfigField(next, 'profile', selectedLanguage);
+    if (!languageResult.ok) return { ok: false, errors: [languageResult.error], wrote: false };
+    next = languageResult.content;
+    const humanResult = replaceConfigField(next, 'human_outputs', selectedLanguage);
+    if (!humanResult.ok) return { ok: false, errors: [humanResult.error], wrote: false };
+    next = humanResult.content;
+  }
+  if (featureProfile) {
+    const featureResult = replaceConfigField(next, 'feature_profile', featureProfile);
+    if (!featureResult.ok) return { ok: false, errors: [featureResult.error], wrote: false };
+    next = featureResult.content;
+  }
   replaced = replaceWorkflowField(next, 'autonomy_level', autonomyLevel);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;

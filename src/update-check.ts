@@ -5,6 +5,7 @@
 // Uses Node's built-in global `fetch` (engines >=22). Manually managed AbortController
 // timer (ref'd) so the process cannot exit before the timeout fires.
 
+import { renderCliCommand } from './cli-command';
 import { compareVersions } from './version-compat';
 
 const DEFAULT_REGISTRY_URL = 'https://registry.npmjs.org/sdd-agentic-flow/latest';
@@ -49,7 +50,7 @@ function buildUpdateResult(currentVersion: string, latest: string): UpdateCheckR
     return {
       name: 'update_check',
       status: 'WARN',
-      message: `update available: ${currentVersion} -> ${latest}. Run \`sdd-agentic-flow upgrade\`.`,
+      message: `update available: ${currentVersion} -> ${latest}. Run \`${renderCliCommand('upgrade')}\`.`,
       section: 'Package updates',
       currentVersion,
       latest,

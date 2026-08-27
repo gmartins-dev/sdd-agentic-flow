@@ -29,6 +29,9 @@ workflow:
   feature_profile: medium_feature
 language:
   profile: en-US
+  human_outputs: en-US
+  technical_tokens: canonical
+  bilingual_mode: technical-canonical
 `;
 
 test('readConfig parses policy and preset equivalent', () => {
@@ -128,6 +131,37 @@ test('policy mutation preserves comments and unrelated config content', () => {
   assert.match(content, /custom_extension: retained/);
   assert.match(content, /execution_mode: apply/);
   assert.match(content, /autonomy_level: supervised/);
+});
+
+test('policy mutation updates language and feature profile without replacing YAML', () => {
+  const file = writeConfig('extended.yml', `${SAMPLE}quality:\n  require_tdd: true\n`);
+  const before = fs.readFileSync(file, 'utf8');
+  const result = applyPolicyMutation(file, {
+    executionMode: 'guided',
+    autonomyLevel: 'manual',
+    languageProfile: 'pt-BR',
+    featureProfile: 'large_feature',
+  });
+  assert.equal(result.ok, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.notEqual(content, before);
+  assert.match(content, /profile: pt-BR/);
+  assert.match(content, /human_outputs: pt-BR/);
+  assert.match(content, /feature_profile: large_feature/);
+  assert.match(content, /require_tdd: true/);
+});
+
+test('default policy selection does not materialize absent config', () => {
+  const file = path.join(temporary, 'defaults/config.yml');
+  const result = applyPolicyMutation(file, {
+    executionMode: 'apply',
+    autonomyLevel: 'supervised',
+    languageProfile: 'en-US',
+    featureProfile: 'medium_feature',
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.wrote, false);
+  assert.equal(fs.existsSync(file), false);
 });
 
 test('resolvePolicyFromPreset maps manual', () => {

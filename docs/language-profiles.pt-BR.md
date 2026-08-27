@@ -34,8 +34,8 @@ language:
 ## Valide o perfil
 
 ```bash
-sdd-agentic-flow doctor
-sdd-agentic-flow doctor --json
+npx sdd-agentic-flow doctor
+npx sdd-agentic-flow doctor --json
 ```
 
 O `doctor` mostra uma seção `Language`. O `doctor --json` inclui um objeto

@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
-import { type AdoptionMode, adoptionModeForScope, isAdoptionMode } from './adoption';
+import { type AdoptionMode, adoptionModeForScope } from './adoption';
+import { renderCliCommand } from './cli-command';
 import { renderPolicySummary } from './config';
 import {
   AUTONOMY_LEVELS,
@@ -18,25 +19,15 @@ import {
   setupPolicyFromPreset,
 } from './config-domain';
 import { configureIntent } from './configure';
-import {
-  doctor,
-  doctorChecks,
-  languageReport,
-  officialSkillsPresence,
-  resolveSkillsRoot,
-  severity,
-} from './doctor';
+import { doctor, languageReport } from './doctor';
 import { inferInitDefaults } from './init-defaults';
 import {
-  DEFAULT_USER_TARGETS,
+  AGENT_TO_TARGETS,
   defaultInstallConfig,
   readInstallConfig,
   repositoryKey,
-  USER_TARGETS,
 } from './install-domain';
-import { USER_TARGET_LABELS } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
-import { resolveOnboardingState } from './onboarding';
 import {
   autonomyComboValid,
   FEATURE_PROFILES,
@@ -53,10 +44,23 @@ import {
   USAGE_GUIDE_PT_BR_URL,
   USAGE_GUIDE_URL,
 } from './paths';
-import { type SelectionResult, select } from './selector';
-import { setupPrecondition } from './setup-plan';
+import { select } from './selector';
+import {
+  detectSetupHosts,
+  resolveSetupPlan,
+  type SetupIntent,
+  type SetupPlan,
+  setupPlanIsCurrent,
+  setupPrecondition,
+  targetsForHosts,
+} from './setup-plan';
+import { inspectSetupState } from './setup-state';
 import { type DisplayMode, isRich, outputMode, renderStep, styleStatus } from './ui';
-import { applyWorkspaceInitialization, planWorkspaceInitialization } from './workspace';
+import {
+  applyWorkspaceInitialization,
+  planWorkspaceInitialization,
+  type WorkspaceInitializationPlan,
+} from './workspace';
 
 type InitOptions = {
   profile?: string;
@@ -71,6 +75,7 @@ type InitOptions = {
   stackedPrs?: boolean;
   executionMode?: string;
   autonomyLevel?: string;
+  workspacePlan?: WorkspaceInitializationPlan;
 };
 
 type SetupDraft = {
@@ -361,26 +366,15 @@ function printUsageGuidePointer(cwd: string, locale = 'en-US') {
   return `Skills usage guide:\n  ${USAGE_GUIDE_URL}\n`;
 }
 
-function selectionString(result: SelectionResult): string | undefined {
-  return typeof result.value === 'string' ? result.value : undefined;
-}
-
-function selectionStrings(result: SelectionResult): string[] {
-  return Array.isArray(result.value)
-    ? result.value.filter((value): value is string => typeof value === 'string')
-    : typeof result.value === 'string'
-      ? [result.value]
-      : [];
-}
-
 function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: Boolean(options.ascii) });
-  const plan = planWorkspaceInitialization(cwd);
+  const homeDir = asString(options.homeDir, os.homedir());
+  const plan = options.workspacePlan ?? planWorkspaceInitialization(cwd, homeDir);
   if (!plan.ok) return fail(plan.error || 'workspace initialization failed', 1);
-  const applied = applyWorkspaceInitialization(plan);
+  const applied = applyWorkspaceInitialization(plan, homeDir);
   if (!applied.ok) return fail(applied.error || 'workspace initialization failed', 1);
   logPassLine(`initialized ${plan.git?.projectRoot}`, { mode, quiet: options.quiet });
-  if (!options.quiet) nextStep('npx sdd-agentic-flow doctor', { quiet: options.quiet, mode });
+  if (!options.quiet) nextStep(renderCliCommand('doctor'), { quiet: options.quiet, mode });
   return true;
 }
 
@@ -389,17 +383,20 @@ function validValue(value: string, allowed: readonly string[]) {
 }
 
 function onboardingStateFor(cwd: string) {
-  const skillsRoot = resolveSkillsRoot(cwd);
-  return resolveOnboardingState({
-    hasConfig: fs.existsSync(sddJoin(cwd, 'config.yml')),
-    hasSkills: officialSkillsPresence(skillsRoot).complete,
-    hasContext: fs.existsSync(sddJoin(cwd, 'context', 'project-context.md')),
-    doctorStatus: severity(doctorChecks(cwd)),
-  });
+  const state = inspectSetupState(cwd).state;
+  return state === 'Fresh'
+    ? 'FIRST_USE'
+    : state === 'Ready'
+      ? 'READY'
+      : state === 'Attention'
+        ? 'NEEDS_ATTENTION'
+        : state === 'Blocked'
+          ? 'NEEDS_ATTENTION'
+          : 'PARTIAL';
 }
 
-function savedSetupProfile(cwd: string): Record<string, unknown> | null {
-  const saved = readInstallConfig(os.homedir()) || defaultInstallConfig();
+function savedSetupProfile(cwd: string, homeDir = os.homedir()): Record<string, unknown> | null {
+  const saved = readInstallConfig(homeDir) || defaultInstallConfig();
   const project = saved.projects[repositoryKey(cwd)];
   if (project?.adoption_mode === 'team')
     return { scope: 'project', profile: project as Record<string, unknown> };
@@ -410,21 +407,6 @@ function savedSetupProfile(cwd: string): Record<string, unknown> | null {
     };
   if (saved.user.targets.length) return { scope: 'user', profile: saved.user };
   return null;
-}
-
-function setupDraft(cwd: string, state: string): SetupDraft {
-  const saved = savedSetupProfile(cwd);
-  const profile = (saved?.profile ?? {}) as {
-    targets?: string[];
-    adoption_mode?: AdoptionMode;
-  };
-  return {
-    install: state !== 'NEW_PROJECT',
-    scope: (saved?.scope as string | undefined) || 'user',
-    targets: profile.targets || [...DEFAULT_USER_TARGETS],
-    ...(profile.adoption_mode ? { adoptionMode: profile.adoption_mode } : {}),
-    saved,
-  };
 }
 
 function printSetupStages(
@@ -494,105 +476,13 @@ function policyFromConfig(
   );
 }
 
-async function selectAdvancedPolicy(
-  locale: string,
-  options: SetupCommandOptions,
-  initial: SetupPolicyDraft | null = null,
-): Promise<SetupPolicyDraft | null> {
-  for (;;) {
-    const modeChoice = await select(
-      t(locale, 'setup.policyExecutionMode'),
-      EXECUTION_MODES.map((value) => ({ value, label: value })),
-      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-    );
-    if (modeChoice.cancelled) return null;
-    const executionMode = selectionString(modeChoice);
-    if (!executionMode) return null;
-
-    const levelChoice = await select(
-      t(locale, 'setup.policyAutonomyLevel'),
-      AUTONOMY_LEVELS.map((value) => ({ value, label: value })),
-      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-    );
-    if (levelChoice.cancelled) return null;
-    const autonomyLevel = selectionString(levelChoice);
-    if (!autonomyLevel) return null;
-
-    const resolved = setupPolicyFromPair(executionMode, autonomyLevel);
-    if (resolved) return resolved;
-    log(
-      'FAIL',
-      `Execution mode ${executionMode} cannot combine with autonomy level ${autonomyLevel}`,
-      locale,
-    );
-    if (!initial) return null;
-  }
-}
-
-async function selectOperatingPolicy(
-  locale: string,
-  options: SetupCommandOptions,
-  initial: SetupPolicyDraft | null = null,
-  honorFlags = true,
-): Promise<SetupPolicyDraft | null> {
-  if (honorFlags) {
-    const flagged = resolvePolicyFromCommandOptions(options);
-    if (flagged) return flagged;
-  }
-
-  const presetChoice = await select(
-    t(locale, 'setup.policyPrompt'),
-    [
-      { value: 'supervised', label: t(locale, 'setup.policySupervised') },
-      { value: 'manual', label: t(locale, 'setup.policyManual') },
-      { value: 'autonomous', label: t(locale, 'setup.policyAutonomous') },
-      { value: 'advanced', label: t(locale, 'setup.policyAdvanced') },
-    ],
-    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-  );
-  if (presetChoice.cancelled) return null;
-  const chosen = selectionString(presetChoice);
-  if (!chosen) return null;
-  if (chosen === 'advanced') {
-    return selectAdvancedPolicy(locale, options, initial ?? defaultOnboardingPolicy());
-  }
-  return setupPolicyFromPreset(chosen);
-}
-
 function setupLocationLabel(scope: string, options: SetupCommandOptions = {}) {
   return `official bundle ${isRich(resolveMode({ ascii: Boolean(options.ascii) })) ? '·' : '-'} ${scope}`;
 }
 
-function printSetupReview(draft: SetupDraft, locale: string, options: SetupCommandOptions = {}) {
-  process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
-  process.stdout.write(`  ${t(locale, 'setup.project')}      ${SDD_PATHS.config}\n`);
-  if (!draft.install) {
-    process.stdout.write(
-      `  ${t(locale, 'setup.location')}       ${t(locale, 'setup.existingUser')}\n`,
-    );
-    return;
-  }
-  process.stdout.write(
-    `  ${t(locale, 'setup.location')}       ${setupLocationLabel(asString(draft.scope), options)}\n`,
-  );
-  process.stdout.write(
-    `  Adoption             ${draft.adoptionMode || 'Keep current visibility'}\n`,
-  );
-  if (draft.scope === 'user')
-    process.stdout.write(
-      `  ${t(locale, 'install.targets')}      ${(draft.targets ?? []).join(', ')}\n`,
-    );
-  else
-    process.stdout.write(
-      `  ${t(locale, 'install.projectSharing')}   ${draft.projectLocalExclude ? t(locale, 'setup.local') : t(locale, 'setup.shared')}\n`,
-    );
-  process.stdout.write(`  ${t(locale, 'setup.context')}      ${SDD_PATHS.projectContext}\n`);
-  if (draft.policy) printPolicyLines(draft.policy, locale);
-}
-
-function printCurrentSetup(cwd: string, locale: string) {
+function printCurrentSetup(cwd: string, locale: string, homeDir = os.homedir()) {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
-  const saved = savedSetupProfile(cwd);
+  const saved = savedSetupProfile(cwd, homeDir);
   const state = onboardingStateFor(cwd);
   const location = saved ? setupLocationLabel(asString(saved.scope)) : t(locale, 'setup.missing');
   const context = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'))
@@ -611,92 +501,33 @@ function printCurrentSetup(cwd: string, locale: string) {
   process.stdout.write(`  ${t(locale, 'setup.health')}       ${health}\n`);
 }
 
-async function customizeSetup(draft: SetupDraft, locale: string, options: SetupCommandOptions) {
-  const adoption = await select(
-    'How will SAF be used in this project?',
-    [
-      ...(draft.adoptionMode ? [] : [{ value: 'keep', label: 'Keep current visibility' }]),
-      { value: 'personal', label: 'Just for me — recommended' },
-      { value: 'specs-shared', label: 'Share specs with the team' },
-      { value: 'team', label: 'Use SAF with the team' },
-    ],
-    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-  );
-  if (adoption.cancelled) return null;
-  const adoptionValue = selectionString(adoption);
-  if (!adoptionValue) return null;
-  const selectedAdoption = isAdoptionMode(adoptionValue) ? adoptionValue : undefined;
-  const scopeValue = selectedAdoption
-    ? adoptionModeForScope(selectedAdoption)
-    : (draft.scope as string) || 'user';
-  const baseDraft = { ...draft };
-  if (!selectedAdoption) delete baseDraft.adoptionMode;
-  const next: SetupDraft = {
-    ...baseDraft,
-    install: true,
-    scope: scopeValue,
-    ...(selectedAdoption ? { adoptionMode: selectedAdoption } : {}),
-  };
-  if (next.scope === 'user') {
-    const targets = await select(
-      t(locale, 'setup.targets'),
-      Object.entries(USER_TARGETS).map(([value, target]) => ({
-        value,
-        label:
-          target[0] === '.agents'
-            ? 'Shared Agent Skills'
-            : USER_TARGET_LABELS[value as keyof typeof USER_TARGET_LABELS],
-        selected: (next.targets ?? []).includes(value),
-      })),
-      { multiple: true, ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-    );
-    const selectedTargets = selectionStrings(targets);
-    if (targets.cancelled || !selectedTargets.length) return null;
-    next.targets = selectedTargets;
-  }
-  const policy = await selectOperatingPolicy(
-    locale,
-    options,
-    next.policy ?? defaultOnboardingPolicy(),
-    false,
-  );
-  if (!policy) return null;
-  next.policy = policy;
-  return next;
-}
-
 async function applySetup(
   cwd: string,
   draft: SetupDraft,
   options: SetupCommandOptions,
   locale: string,
+  plan?: SetupPlan,
 ) {
   const { install } = requireCommandDeps();
+  const homeDir = asString(options.homeDir, os.homedir());
   process.exitCode = undefined;
-  if (draft.precondition && draft.precondition !== setupPrecondition(cwd)) {
+  if (plan && !setupPlanIsCurrent(cwd, plan, homeDir)) {
     log('WARN', 'setup changed after review; render a new plan before applying');
     return false;
   }
-  if (draft.install && !(await preflightSetup(cwd, draft, options))) return false;
+  if (!plan && draft.precondition && draft.precondition !== setupPrecondition(cwd, homeDir)) {
+    log('WARN', 'setup changed after review; render a new plan before applying');
+    return false;
+  }
+  if (draft.install && !plan && !(await preflightSetup(cwd, draft, options))) return false;
+  if (plan && plan.installationPlan.applicability !== 'applicable') return false;
   printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
   process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
   const policy =
     draft.policy ?? resolvePolicyFromCommandOptions(options) ?? defaultOnboardingPolicy();
-  init(cwd, {
-    ...(options.language ? { profile: options.language } : {}),
-    ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
-    executionMode: policy.executionMode,
-    autonomyLevel: policy.autonomyLevel,
-    ...(policy.presetName ? { presetName: policy.presetName } : {}),
-    ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
-    quiet: true,
-    scope: draft.scope,
-    localGitExclude: Boolean(options.localGitExclude),
-    ascii: Boolean(options.ascii),
-  });
   if (draft.install) {
     configureIntent({
-      homeDir: os.homedir(),
+      homeDir,
       cwd,
       scope: draft.scope === 'project' ? 'project' : 'user',
       ...(draft.scope === 'user' && draft.targets ? { targets: draft.targets } : {}),
@@ -707,13 +538,29 @@ async function applySetup(
         ...(draft.scope ? { scope: draft.scope } : {}),
         ...(draft.targets ? { targets: draft.targets } : {}),
         ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
+        ...(plan?.installationPlan ? { resolvedPlan: plan.installationPlan } : {}),
+        homeDir,
         quiet: true,
         ascii: Boolean(options.ascii),
       }))
     )
       return false;
   }
-  const result = await doctor(cwd, { ascii: Boolean(options.ascii) });
+  init(cwd, {
+    ...(options.language ? { profile: options.language } : {}),
+    ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
+    executionMode: policy.executionMode,
+    autonomyLevel: policy.autonomyLevel,
+    ...(policy.presetName ? { presetName: policy.presetName } : {}),
+    ...(plan?.workspacePlan ? { workspacePlan: plan.workspacePlan } : {}),
+    ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
+    quiet: true,
+    homeDir,
+    scope: draft.scope,
+    localGitExclude: Boolean(options.localGitExclude),
+    ascii: Boolean(options.ascii),
+  });
+  const result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
   if ('status' in result && result.status === 'PASS') {
     log('PASS', t(locale, 'setup.ready'), locale);
     process.stdout.write(
@@ -725,6 +572,204 @@ async function applySetup(
     return true;
   }
   return false;
+}
+
+type SetupIntentResult = SetupIntent | { cancelled: true };
+
+type PersistedSetupIntent = {
+  sharing?: SetupIntent['sharing'];
+  selectedHosts?: SetupIntent['selectedHosts'];
+  workflow?: SetupIntent['workflow'];
+  executionMode?: SetupIntent['executionMode'];
+  autonomyLevel?: SetupIntent['autonomyLevel'];
+  language?: SetupIntent['language'];
+  featureProfile?: SetupIntent['featureProfile'];
+};
+
+function persistedSetupIntent(cwd: string, homeDir: string): PersistedSetupIntent {
+  let saved: ReturnType<typeof readInstallConfig> = null;
+  try {
+    saved = readInstallConfig(homeDir);
+  } catch {
+    return {};
+  }
+  const profile = saved?.projects[repositoryKey(cwd)];
+  const sharing = profile?.adoption_mode;
+  const targets = profile?.adoption_mode === 'team' ? [] : (saved?.user.targets ?? []);
+  const allHosts = Object.keys(AGENT_TO_TARGETS) as SetupIntent['selectedHosts'][number][];
+  const combinations: SetupIntent['selectedHosts'][] = [[]];
+  for (const host of allHosts) {
+    for (const set of combinations.slice()) combinations.push([...set, host]);
+  }
+  const matchingHosts = combinations.filter(
+    (set) =>
+      set.length > 0 &&
+      JSON.stringify([...targetsForHosts(set)].sort()) === JSON.stringify([...targets].sort()),
+  );
+  const selectedHosts = matchingHosts.length === 1 ? matchingHosts[0] : undefined;
+  const config = readConfig(sddJoin(cwd, 'config.yml'));
+  const workflow =
+    config.ok && config.policy?.executionMode && config.policy.autonomyLevel
+      ? setupPolicyFromPair(config.policy.executionMode, config.policy.autonomyLevel)
+      : null;
+  const presetWorkflow = workflow?.presetName;
+  return {
+    ...(sharing ? { sharing } : {}),
+    ...(selectedHosts ? { selectedHosts } : {}),
+    ...(workflow
+      ? {
+          workflow:
+            presetWorkflow === 'manual' ||
+            presetWorkflow === 'supervised' ||
+            presetWorkflow === 'autonomous'
+              ? presetWorkflow
+              : 'custom',
+          ...(workflow.kind === 'custom'
+            ? { executionMode: workflow.executionMode, autonomyLevel: workflow.autonomyLevel }
+            : {}),
+        }
+      : {}),
+    ...(config.ok && LANGUAGE_PROFILES.includes(config.languageProfile ?? '')
+      ? { language: config.languageProfile as SetupIntent['language'] }
+      : {}),
+    ...(config.ok && FEATURE_PROFILES.includes(config.featureProfile ?? '')
+      ? { featureProfile: config.featureProfile as SetupIntent['featureProfile'] }
+      : {}),
+  };
+}
+
+async function collectSetupIntent(
+  cwd: string,
+  locale: string,
+  options: SetupCommandOptions,
+  homeDir: string,
+): Promise<SetupIntentResult> {
+  const choose = async (
+    label: string,
+    values: Array<{ value: string; label: string; selected?: boolean }>,
+    multiple = false,
+  ) =>
+    select(label, values, {
+      multiple,
+      ascii: Boolean(options.ascii),
+      cancelValues: ['q', '0'],
+      locale,
+    });
+  const persisted = persistedSetupIntent(cwd, homeDir);
+  const sharing = persisted.sharing
+    ? { value: persisted.sharing }
+    : await choose('Sharing', [
+        { value: 'personal', label: 'Just for me', selected: true },
+        { value: 'specs-shared', label: 'Share specs with the team' },
+        { value: 'team', label: 'Use SAF with my team' },
+      ]);
+  if (('cancelled' in sharing && sharing.cancelled) || typeof sharing.value !== 'string')
+    return { cancelled: true };
+
+  const hints = detectSetupHosts({ cwd, homeDir });
+  let selectedHosts: SetupIntent['selectedHosts'] = persisted.selectedHosts ?? [];
+  if (!selectedHosts.length) {
+    for (;;) {
+      const hosts = await choose(
+        'Coding agents',
+        hints.map((hint) => ({
+          value: hint.host,
+          label: `${hint.host}${hint.detected ? ` (${hint.evidence.join(', ')})` : ''}`,
+          selected: hint.detected,
+        })),
+        true,
+      );
+      if (hosts.cancelled) return { cancelled: true };
+      selectedHosts = (Array.isArray(hosts.value) ? hosts.value : []).filter(
+        (host): host is SetupIntent['selectedHosts'][number] =>
+          ['codex', 'cursor', 'claude-code', 'vscode-copilot'].includes(host),
+      );
+      if (selectedHosts.length) break;
+      log('WARN', 'No coding-agent host selected; choose at least one host explicitly', locale);
+    }
+  }
+
+  const workflow = persisted.workflow
+    ? { value: persisted.workflow }
+    : await choose('Workflow', [
+        { value: 'supervised', label: 'Supervised', selected: true },
+        { value: 'manual', label: 'Manual' },
+        { value: 'autonomous', label: 'Autonomous' },
+        { value: 'custom', label: 'Custom execution/autonomy pair' },
+      ]);
+  if (('cancelled' in workflow && workflow.cancelled) || typeof workflow.value !== 'string')
+    return { cancelled: true };
+  let executionMode: SetupIntent['executionMode'] = persisted.executionMode;
+  let autonomyLevel: SetupIntent['autonomyLevel'] = persisted.autonomyLevel;
+  if (workflow.value === 'custom' && (!executionMode || !autonomyLevel)) {
+    const mode = await choose(
+      'Execution mode',
+      EXECUTION_MODES.map((value) => ({ value, label: value, selected: value === 'apply' })),
+    );
+    if (mode.cancelled || typeof mode.value !== 'string') return { cancelled: true };
+    const selectedExecutionMode = mode.value;
+    const autonomy = await choose(
+      'Autonomy level',
+      AUTONOMY_LEVELS.filter((value) => autonomyComboValid(selectedExecutionMode, value)).map(
+        (value) => ({
+          value,
+          label: value,
+          selected: value === 'supervised',
+        }),
+      ),
+    );
+    if (autonomy.cancelled || typeof autonomy.value !== 'string') return { cancelled: true };
+    executionMode = selectedExecutionMode as SetupIntent['executionMode'];
+    autonomyLevel = autonomy.value as SetupIntent['autonomyLevel'];
+  }
+  const language = persisted.language
+    ? { value: persisted.language }
+    : await choose('Language', [
+        { value: 'en-US', label: 'English', selected: locale !== 'pt-BR' },
+        { value: 'pt-BR', label: 'Português (Brasil)', selected: locale === 'pt-BR' },
+      ]);
+  if (('cancelled' in language && language.cancelled) || typeof language.value !== 'string')
+    return { cancelled: true };
+  const featureProfile = persisted.featureProfile
+    ? { value: persisted.featureProfile }
+    : await choose('Process depth', [
+        { value: 'medium_feature', label: 'Standard', selected: true },
+        { value: 'small_fix', label: 'Lightweight' },
+        { value: 'large_feature', label: 'Thorough' },
+        { value: 'epic', label: 'Epic' },
+      ]);
+  if (
+    ('cancelled' in featureProfile && featureProfile.cancelled) ||
+    typeof featureProfile.value !== 'string'
+  )
+    return { cancelled: true };
+  return {
+    sharing: sharing.value as SetupIntent['sharing'],
+    selectedHosts,
+    workflow: workflow.value as SetupIntent['workflow'],
+    ...(executionMode ? { executionMode } : {}),
+    ...(autonomyLevel ? { autonomyLevel } : {}),
+    language: language.value as SetupIntent['language'],
+    featureProfile: featureProfile.value as SetupIntent['featureProfile'],
+  };
+}
+
+function printSetupPlan(plan: SetupPlan): void {
+  process.stdout.write('\nSetup plan\n\n');
+  process.stdout.write(`  Sharing: ${plan.intent?.sharing}\n`);
+  process.stdout.write(`  Targets: ${plan.targets.join(', ') || '(none)'}\n`);
+  process.stdout.write(`  Scope: ${plan.scope}\n`);
+  for (const item of [
+    ...plan.cleanupActions,
+    ...plan.installationIntent,
+    ...plan.targetReconciliation,
+    ...plan.adoptionChanges,
+    ...plan.configMutation,
+    ...plan.workspaceInitialization,
+  ])
+    process.stdout.write(`  ${item.kind}: ${item.detail}\n`);
+  for (const warning of plan.warnings) process.stdout.write(`  Warning: ${warning}\n`);
+  for (const blocker of plan.blockers) process.stdout.write(`  Blocked: ${blocker}\n`);
 }
 
 async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupCommandOptions) {
@@ -745,10 +790,11 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   const { upgradeCommand, runCommand, runInteractiveMenu, changeInstallation } =
     requireCommandDeps();
-  const state = onboardingStateFor(cwd);
+  const homeDir = asString(options.homeDir, os.homedir());
+  const snapshot = inspectSetupState(cwd, homeDir);
   const locale = localeFor(cwd, options.language);
-  if (state === 'READY' || state === 'NEEDS_ATTENTION') {
-    printCurrentSetup(cwd, locale);
+  if (snapshot.state === 'Ready' || snapshot.state === 'Attention') {
+    printCurrentSetup(cwd, locale, homeDir);
     const action = await select(
       t(locale, 'menu.question'),
       [
@@ -765,58 +811,19 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (action.value === 'updates') return upgradeCommand(cwd, { ascii: Boolean(options.ascii) });
     if (action.value === 'changePolicy') return runCommand('config', ['policy'], cwd);
     if (action.value === 'changeInstall') return changeInstallation(cwd);
-    if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii) });
+    if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
     return runInteractiveMenu(cwd, { showSummary: false });
   }
 
   for (;;) {
-    let draft = setupDraft(cwd, state);
-    printSetupStages(locale, 'project', [], options);
-    process.stdout.write(
-      `\n${state === 'NEW_PROJECT' ? t(locale, 'setup.existingUser') : t(locale, 'setup.settings')}\n`,
-    );
-    const pathChoice = await select(
-      t(locale, 'setup.path'),
-      [
-        ...(draft.saved && state === 'PARTIAL'
-          ? [{ value: 'resume', label: t(locale, 'setup.resume') }]
-          : [{ value: 'recommended', label: t(locale, 'setup.recommended') }]),
-        { value: 'customize', label: t(locale, 'setup.customize') },
-      ],
-      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-    );
-    if (pathChoice.cancelled) return log('INFO', t(locale, 'setup.cancelled'), locale);
-    if (pathChoice.value === 'customize') {
-      const customized = await customizeSetup(draft, locale, options);
-      if (!customized) return log('INFO', t(locale, 'setup.cancelled'), locale);
-      draft = customized;
-    } else {
-      const selected = await selectOperatingPolicy(
-        locale,
-        options,
-        draft.policy ?? defaultOnboardingPolicy(),
-      );
-      if (!selected) return log('INFO', t(locale, 'setup.cancelled'), locale);
-      draft = { ...draft, policy: selected };
-    }
-    printSetupReview(draft, locale, options);
-    if (!(await preflightSetup(cwd, draft, options))) {
-      process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
-      const recovery = await select(
-        t(locale, 'menu.question'),
-        [
-          { value: 'change', label: t(locale, 'setup.changeChoices') },
-          { value: 'validate', label: t(locale, 'menu.validate') },
-          { value: 'exit', label: t(locale, 'setup.exit') },
-        ],
-        { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-      );
-      if (recovery.cancelled || recovery.value === 'exit') return;
-      if (recovery.value === 'validate') await doctor(cwd, { ascii: Boolean(options.ascii) });
+    const intent = await collectSetupIntent(cwd, locale, options, homeDir);
+    if ('cancelled' in intent) return log('INFO', t(locale, 'setup.cancelled'), locale);
+    const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
+    printSetupPlan(plan);
+    if (plan.blocked) {
+      log('FAIL', plan.blockers.join('; '), locale);
       continue;
     }
-    draft = { ...draft, precondition: setupPrecondition(cwd) };
-    printSetupStages(locale, 'skills', ['project'], options);
     const review = await select(
       t(locale, 'setup.review'),
       [
@@ -829,25 +836,45 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (review.cancelled || review.value === 'cancel')
       return log('INFO', t(locale, 'setup.cancelled'), locale);
     if (review.value === 'back') continue;
-    for (;;) {
-      if (await applySetup(cwd, draft, options, locale)) return;
-      process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
-      const recovery = await select(
-        t(locale, 'menu.question'),
-        [
-          { value: 'change', label: t(locale, 'setup.changeChoices') },
-          { value: 'validate', label: t(locale, 'menu.validate') },
-          { value: 'exit', label: t(locale, 'setup.exit') },
-        ],
-        { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
-      );
-      if (recovery.cancelled || recovery.value === 'exit') return;
-      if (recovery.value === 'change') break;
-      if (recovery.value === 'validate') {
-        await doctor(cwd, { ascii: Boolean(options.ascii) });
-        break;
-      }
+    if (!setupPlanIsCurrent(cwd, plan, homeDir)) {
+      log('WARN', 'setup changed after review; a new plan and confirmation are required', locale);
+      continue;
     }
+    const policy =
+      intent.workflow === 'custom' && intent.executionMode && intent.autonomyLevel
+        ? setupPolicyFromPair(intent.executionMode, intent.autonomyLevel)
+        : setupPolicyFromPreset(intent.workflow);
+    if (!policy) {
+      log('FAIL', `unknown workflow: ${intent.workflow}`, locale);
+      continue;
+    }
+    const draft: SetupDraft = {
+      install: true,
+      scope: adoptionModeForScope(intent.sharing),
+      targets: targetsForHosts(intent.selectedHosts),
+      adoptionMode: intent.sharing,
+      policy,
+    };
+    const applyOptions = {
+      ...options,
+      homeDir,
+      language: intent.language,
+      featureProfile: intent.featureProfile,
+    };
+    if (await applySetup(cwd, draft, applyOptions, locale, plan)) return;
+    process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
+    const recovery = await select(
+      t(locale, 'menu.question'),
+      [
+        { value: 'change', label: t(locale, 'setup.changeChoices') },
+        { value: 'validate', label: t(locale, 'menu.validate') },
+        { value: 'exit', label: t(locale, 'setup.exit') },
+      ],
+      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+    );
+    if (recovery.cancelled || recovery.value === 'exit') return;
+    if (recovery.value === 'validate')
+      await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
   }
 }
 
@@ -878,8 +905,8 @@ async function initInteractive(
     const config = readConfig(configPath);
     if (config.ok) process.stdout.write(`\n${renderPolicySummary(config, mode)}\n`);
     process.stdout.write(
-      '\nChange operating policy with: npx sdd-agentic-flow config policy\n' +
-        'Install skills with: npx sdd-agentic-flow install\n',
+      `\nChange operating policy with: ${renderCliCommand('config', 'policy')}\n` +
+        `Install skills with: ${renderCliCommand('install')}\n`,
     );
     applyInitSideEffects(cwd, {
       localGitExclude: resolveLocalGitExclude({ localGitExclude }),
@@ -1064,6 +1091,7 @@ export {
   init,
   initInteractive,
   onboardingStateFor,
+  persistedSetupIntent,
   policyFromConfig,
   policyReviewTitle,
   preflightSetup,

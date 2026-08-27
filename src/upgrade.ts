@@ -275,7 +275,7 @@ function formatCheckReport(result: UpdateCheckResult): string {
       '  network unavailable or registry unreachable',
     );
   } else if (result.updateAvailable) {
-    lines.push('', 'Suggested:', '  sdd-agentic-flow upgrade');
+    lines.push('', 'Suggested:', `  ${renderCliCommand('upgrade')}`);
   }
   return `${lines.join('\n')}\n`;
 }
@@ -295,3 +295,5 @@ export {
   runNpmGlobalInstall,
   writeInstallProvenance,
 };
+
+import { renderCliCommand } from './cli-command';

@@ -1,3 +1,4 @@
+import { renderCliCommand } from './cli-command';
 import {
   applyPolicyMutation,
   OPERATING_PRESETS,
@@ -81,6 +82,20 @@ function renderPolicyPreviewBlock(
     : `${preview.after.executionMode} + ${preview.after.autonomyLevel}`;
   lines.push(...renderKeyValue(t(locale, 'config.before'), before, mode));
   lines.push(...renderKeyValue(t(locale, 'config.after'), after, mode));
+  if (preview.beforeLanguage && preview.afterLanguage) {
+    lines.push(
+      ...renderKeyValue('Language', `${preview.beforeLanguage} -> ${preview.afterLanguage}`, mode),
+    );
+  }
+  if (preview.beforeFeatureProfile && preview.afterFeatureProfile) {
+    lines.push(
+      ...renderKeyValue(
+        'Feature profile',
+        `${preview.beforeFeatureProfile} -> ${preview.afterFeatureProfile}`,
+        mode,
+      ),
+    );
+  }
   return lines.join('\n');
 }
 
@@ -95,6 +110,8 @@ async function resolveNextPolicy(
   let preset: string | null = null;
   let executionMode: string | null = null;
   let autonomyLevel: string | null = null;
+  let languageProfile: string | null = null;
+  let featureProfile: string | null = null;
   for (let index = 0; index < args.length; index += 1) {
     const arg = typeof args[index] === 'string' ? args[index] : '';
     if (arg === '--plan' || arg === '--yes') continue;
@@ -107,19 +124,55 @@ async function resolveNextPolicy(
     } else if (arg === '--autonomy-level' && typeof args[index + 1] === 'string') {
       autonomyLevel = args[index + 1] as string;
       index += 1;
+    } else if (
+      (arg === '--language' || arg === '--language-profile') &&
+      typeof args[index + 1] === 'string'
+    ) {
+      languageProfile = args[index + 1] as string;
+      index += 1;
+    } else if (arg === '--feature-profile' && typeof args[index + 1] === 'string') {
+      featureProfile = args[index + 1] as string;
+      index += 1;
     }
   }
   if (preset) {
     const resolved = resolvePolicyFromPreset(preset);
     if (!resolved) return { ok: false, message: `unknown preset: ${preset}` };
-    return { ok: true, policy: resolved };
+    return {
+      ok: true,
+      policy: {
+        ...resolved,
+        ...(languageProfile ? { languageProfile } : {}),
+        ...(featureProfile ? { featureProfile } : {}),
+      },
+    };
   }
   if (executionMode && autonomyLevel) {
     return {
       ok: true,
-      policy: { executionMode, autonomyLevel, presetName: 'custom' } as NonNullable<
-        ReturnType<typeof resolvePolicyFromPreset>
-      >,
+      policy: {
+        executionMode,
+        autonomyLevel,
+        presetName: 'custom',
+        ...(languageProfile ? { languageProfile } : {}),
+        ...(featureProfile ? { featureProfile } : {}),
+      } as NonNullable<ReturnType<typeof resolvePolicyFromPreset>>,
+    };
+  }
+  if (
+    (languageProfile || featureProfile) &&
+    current?.policy?.executionMode &&
+    current.policy.autonomyLevel
+  ) {
+    return {
+      ok: true,
+      policy: {
+        executionMode: current.policy.executionMode,
+        autonomyLevel: current.policy.autonomyLevel,
+        presetName: current.presetEquivalent || 'custom',
+        ...(languageProfile ? { languageProfile } : {}),
+        ...(featureProfile ? { featureProfile } : {}),
+      } as NonNullable<ReturnType<typeof resolvePolicyFromPreset>>,
     };
   }
   if (process.stdin.isTTY) {
@@ -136,7 +189,48 @@ async function resolveNextPolicy(
     if ('value' in chosen && typeof chosen.value === 'string') {
       const policy = resolvePolicyFromPreset(chosen.value);
       if (!policy) return { ok: false, message: `unknown preset: ${chosen.value}` };
-      return { ok: true, policy };
+      const selectedLanguage = await select('Language', [
+        { value: 'en-US', label: 'English', selected: current?.languageProfile !== 'pt-BR' },
+        {
+          value: 'pt-BR',
+          label: 'Português (Brasil)',
+          selected: current?.languageProfile === 'pt-BR',
+        },
+      ]);
+      if ('cancelled' in selectedLanguage && selectedLanguage.cancelled)
+        return { ok: false, cancelled: true };
+      const selectedFeatureProfile = await select('Feature profile', [
+        {
+          value: 'small_fix',
+          label: 'Small fix',
+          selected: current?.featureProfile === 'small_fix',
+        },
+        {
+          value: 'medium_feature',
+          label: 'Medium feature',
+          selected: !current?.featureProfile || current.featureProfile === 'medium_feature',
+        },
+        {
+          value: 'large_feature',
+          label: 'Large feature',
+          selected: current?.featureProfile === 'large_feature',
+        },
+        { value: 'epic', label: 'Epic', selected: current?.featureProfile === 'epic' },
+      ]);
+      if ('cancelled' in selectedFeatureProfile && selectedFeatureProfile.cancelled)
+        return { ok: false, cancelled: true };
+      return {
+        ok: true,
+        policy: {
+          ...policy,
+          ...('value' in selectedLanguage && typeof selectedLanguage.value === 'string'
+            ? { languageProfile: selectedLanguage.value }
+            : {}),
+          ...('value' in selectedFeatureProfile && typeof selectedFeatureProfile.value === 'string'
+            ? { featureProfile: selectedFeatureProfile.value }
+            : {}),
+        } as NonNullable<ReturnType<typeof resolvePolicyFromPreset>>,
+      };
     }
     return { ok: false, message: 'invalid selection' };
   }
@@ -145,8 +239,8 @@ async function resolveNextPolicy(
     message:
       'Non-interactive policy change requires --yes with --preset or explicit --execution-mode and --autonomy-level',
     try: [
-      'sdd-agentic-flow config policy --plan --preset supervised',
-      'sdd-agentic-flow config policy --yes --preset manual',
+      renderCliCommand('config', 'policy', '--plan', '--preset', 'supervised'),
+      renderCliCommand('config', 'policy', '--yes', '--preset', 'manual'),
     ],
   };
 }
@@ -202,7 +296,9 @@ async function runConfigPolicy(
   }
   if (
     preview.before.executionMode === preview.after.executionMode &&
-    preview.before.autonomyLevel === preview.after.autonomyLevel
+    preview.before.autonomyLevel === preview.after.autonomyLevel &&
+    preview.beforeLanguage === preview.afterLanguage &&
+    preview.beforeFeatureProfile === preview.afterFeatureProfile
   ) {
     process.stdout.write(
       `${t(locale, 'config.alreadyUsing')} ${current.presetEquivalent || t(locale, 'config.keepCurrent')}.\n`,
@@ -217,7 +313,7 @@ async function runConfigPolicy(
         ok: false,
         exitCode: 1,
         message: t(locale, 'config.nonInteractive'),
-        try: ['sdd-agentic-flow config policy --yes --preset supervised'],
+        try: [renderCliCommand('config', 'policy', '--yes', '--preset', 'supervised')],
       };
     }
     const applied = applyPolicyMutation(configPath, resolved.policy, { dryRun: false });

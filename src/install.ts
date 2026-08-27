@@ -32,6 +32,7 @@ type InstallCommandOptions = {
   targets?: string[] | undefined;
   adoptionMode?: AdoptionMode | undefined;
   overwriteDiffers?: boolean | undefined;
+  resolvedPlan?: InstallPlan | undefined;
   yes?: boolean | undefined;
   [key: string]: unknown;
 };
@@ -255,7 +256,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
           project_relative_path: git.ok ? git.context.projectRelativePath : '.',
           adoption_mode: adoptionMode || 'team',
         };
-  const plan = planForInstallProfile({ cwd, homeDir, scope, profile });
+  const plan = options.resolvedPlan || planForInstallProfile({ cwd, homeDir, scope, profile });
   if (options.plan) {
     printInstallPlanReport(plan, options.mode, cwd);
     return plan.applicability === 'applicable';

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 7.2.0
+
+### Guided CLI contract completion
+
+Completes the guided setup contract with authoritative derived state, local host
+detection, five-field intent, declarative plan/review/apply, staged recovery,
+surgical policy updates, and truthful purge blocking. Adds focused evidence and
+release certification for the complete local flow. No new runtime dependency,
+provider invocation, telemetry, network behavior, or automatic Git/release
+mutation.
+
 ## 7.1.0
 
 ### Guided CLI setup recovery

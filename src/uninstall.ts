@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { hasManagedExcludeBlocks, removeManagedExcludeBlocksFromFile } from './adoption';
+import { renderCliCommand } from './cli-command';
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
 import { classifyInstallIntent, USER_TARGETS } from './install-domain';
@@ -232,6 +233,9 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     const targets = collectPurgeTargets(cwd, homeDir);
     const removable = targets.filter((target) => !target.preserve);
     const preserved = targets.filter((target) => target.preserve);
+    const preservedBlockers = preserved.filter((target) =>
+      /future|unknown|invalid|unsupported/i.test(target.reason ?? ''),
+    );
     const locale = localeFor(cwd);
     if (plan) {
       process.stdout.write(`${t(locale, 'uninstall.plan')} (purge)\n\n`);
@@ -244,12 +248,22 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
           `  preserved: ${describePath(cwd, target.path)} — ${target.reason ?? 'protected'}\n`,
         );
       }
+      if (preservedBlockers.length)
+        process.stdout.write(
+          `\nBlocked: ${preservedBlockers.length} SAF-owned state blocker(s) remain preserved.\n`,
+        );
       process.stdout.write(
-        `\n${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, foreign skills, unrecognized paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --yes --purge\n`,
+        `\n${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, foreign skills, unrecognized paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: ${renderCliCommand('uninstall', '--yes', '--purge')}\n`,
       );
       return;
     }
     if (apply) {
+      if (preservedBlockers.length) {
+        for (const target of preservedBlockers)
+          log('WARN', `preserved SAF-owned blocker: ${target.path} (${target.reason})`);
+        process.exitCode = 1;
+        return false;
+      }
       applyPurge(removable, cwd);
       const left = verifyPurge(cwd, homeDir);
       if (left.length) {
@@ -269,7 +283,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
   if (plan === apply || rest.length || ((includeConfig || full) && !apply))
     return fail(
       plan === apply && !plan
-        ? `${usage} — run \`sdd-agentic-flow uninstall --plan\` first; it never removes anything.`
+        ? `${usage} — run \`${renderCliCommand('uninstall', '--plan')}\` first; it never removes anything.`
         : usage,
     );
   const scopes = scope === 'all' ? ['project', 'user'] : scope ? [scope] : ['project', 'user'];
@@ -337,7 +351,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     );
     if (!existing.length) process.stdout.write(`  ${t(locale, 'uninstall.nothing')}\n\n`);
     process.stdout.write(
-      `${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, unknown/unmanaged paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: sdd-agentic-flow uninstall --yes\n`,
+      `${t(locale, 'uninstall.preserved')}\n  .specs/features/**, source code, unknown/unmanaged paths\n\n${t(locale, 'plan.noChanges')}\n${t(locale, 'uninstall.apply')}: ${renderCliCommand('uninstall', '--yes')}\n`,
     );
     return;
   }

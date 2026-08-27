@@ -164,7 +164,7 @@ function doctorFooterLines(checks: DoctorCheck[] = []): string[] {
     (config.status === 'WARN' || config.status === 'FAIL') &&
     /not found/i.test(config.message ?? '')
   ) {
-    lines.push('Fix: npx sdd-agentic-flow init');
+    lines.push(`Fix: ${renderCliCommand('init')}`);
   }
   const context = checks.find((check) => check.name === 'project_context');
   if (
@@ -173,11 +173,11 @@ function doctorFooterLines(checks: DoctorCheck[] = []): string[] {
     (/changed since generation/i.test(context.message ?? '') ||
       /not found/i.test(context.message ?? ''))
   ) {
-    lines.push('Fix: npx sdd-agentic-flow context refresh');
+    lines.push(`Fix: ${renderCliCommand('context', 'refresh')}`);
   }
   if (!problems.length) {
     lines.push('Next: use your coding agent with the installed SDD workflow');
-    lines.push('Next: npx sdd-agentic-flow doctor');
+    lines.push(`Next: ${renderCliCommand('doctor')}`);
   }
   return lines;
 }
@@ -304,3 +304,5 @@ export {
   terminalColumns,
   writeBrand,
 };
+
+import { renderCliCommand } from './cli-command';

@@ -72,7 +72,7 @@ or run agents.
 | Loop state | `.sdd-agentic-flow/autonomy/loop-state.md` | Resume point, overrides, last skill status |
 | Evidence | check/validation reports, `Status:` field | Whether "done" is believable |
 | Routing | `saf-route` + `workflow-routing.md` | Which skill is on-path |
-| Doctor | `sdd-agentic-flow doctor` | Static validation of config, skills, autonomy setup |
+| Doctor | `npx sdd-agentic-flow doctor` | Static validation of config, skills, autonomy setup |
 
 Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agentic-flow/`) belongs to **this installation** and is regenerable except hand-edited config.
 

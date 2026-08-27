@@ -179,7 +179,7 @@ The generic [task-management example](examples/golden/task-management/) shows on
 | Illustrative developer journey | [docs/developer-journey.md](docs/developer-journey.md) |
 | SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
-| All 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
+| All 12 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Agent setup | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
 | Language policy | [docs/i18n.md](docs/i18n.md) · [README em português](README.pt-BR.md) |
 | Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
@@ -240,7 +240,7 @@ Running `npx sdd-agentic-flow` with no command shows a contextual status screen 
 
 Unknown commands and agent names get a "Did you mean `<closest match>`?" suggestion under a structured `Try:` block. Colored status output (`PASS`/`WARN`/`FAIL`/...) appears automatically on a real terminal; set `NO_COLOR=1` to force plain text, or pipe/redirect output, which disables color automatically. A pipe or CI run remains deterministic human-readable text; `doctor --json` is the explicit machine contract. `FORCE_COLOR` is honored only on a real TTY; `--ascii` / `SDD_ASCII=1` forces ASCII symbols. Exit codes: `0` success, `1` a handled/validation failure, `2` an unexpected/internal error. See [CLI interaction](docs/cli-interaction.md).
 
-The official bundle contains 12 Skills and the shared layer. Language and
+The official bundle contains 12 skills and the shared layer. Language and
 policy overrides are optional project configuration; use `config policy` when
 an explicit override is needed. See [configuration](docs/configuration.md).
 
@@ -272,8 +272,8 @@ npx sdd-agentic-flow uninstall --yes
 Uninstall removes only recognized current managed assets, from both scopes by default. It preserves specs, source code, and unknown paths. Use `--scope`/`--target` to select an installation. For a recognized project-state reset, use
 `uninstall --yes --purge`. It also removes regenerable toolkit state;
 `.specs/features` is never removed by any flag. Add `--quiet` to suppress the trailing
-"preserves ..." explanatory line. Add `--include-config` to remove the project config, or
-`--full` to include regenerable usage files and autonomy loop state. See [uninstall](docs/uninstall.md) and
+"preserves ..." explanatory line. Use `--purge` for the documented cross-scope reset. See
+[uninstall](docs/uninstall.md) and
 [compatibility policy](docs/compatibility-promise.md).
 
 ## Skill map

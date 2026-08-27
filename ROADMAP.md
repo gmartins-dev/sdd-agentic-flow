@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v7.2.0 (2026-08-26):** Completes the guided CLI contract with derived setup
+  state, local host evidence, five-field intent, declarative plan/review/apply,
+  surgical policy mutation, staged recovery, and truthful purge behavior. Adds
+  focused and black-box certification without provider invocation, telemetry,
+  network behavior, or automatic Git/release mutation.
+
 - **v7.1.0 (2026-08-26):** Guided CLI setup recovery. Restores bare TTY setup
   as the human path while retaining deterministic non-TTY behavior, derives
   setup state from durable artifacts, and strengthens zero-config readiness and

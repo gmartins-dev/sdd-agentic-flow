@@ -64,12 +64,12 @@ Reason:
   Command `foo` does not exist.
 
 Try:
-  sdd-agentic-flow help
+  npx sdd-agentic-flow help
   Did you mean `help`?
 ```
 
-Did-you-mean suggestions appear under `Try:` and are never executed automatically. The CLI
-does not suggest nonexistent flags such as `init --force`.
+Did-you-mean suggestions appear under `Try:` and are never executed automatically. Suggestions
+use commands from the supported CLI surface, such as `npx sdd-agentic-flow init --plan`.
 
 ## Next steps
 
@@ -100,6 +100,12 @@ marker. Before apply, **Back** only changes in-memory choices. After apply, **Ch
 policy** runs `config policy`; **Change installation setup** runs `config installation` —
 each is a deliberate change, not a rollback. A handled failure keeps the human in the flow with
 retry, validation, change, or exit.
+
+The first-use journey records five decisions: sharing mode, explicitly selected coding-agent
+hosts, workflow mode (including a custom execution/autonomy pair), language profile, and feature
+profile. Host detection is local evidence from PATH and known host directories only; it never
+invokes a provider or contacts a network service. A missing detection is shown as a choice rather
+than silently selecting every target.
 
 Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
 navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive

@@ -105,10 +105,9 @@ outras ações externas ou irreversíveis continuam fora da delegação. A CLI n
 
 Depois, invoque `saf-route` ou abra o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md). Copie uma receita de [prompts](docs/prompt-recipes.md) ao delegar a um agente.
 
-Em um terminal real, `init` guia a configuração (inclui política operacional — **Supervisionado**
-recomendado ao pressionar Enter), instala o bundle oficial, prepara o workspace e valida o resultado.
-Altere a política com `config policy`; altere a instalação com `config installation`.
-Use `init` em scripts e CI. Veja [início rápido](docs/getting-started.md).
+Em um terminal real, `npx sdd-agentic-flow` guia a configuração de compartilhamento, hosts de
+agentes, workflow, idioma e profundidade do processo (com **Supervisionado** recomendado ao
+pressionar Enter). Para automação, use `init` e comandos `config` explícitos. Veja [início rápido](docs/getting-started.md).
 
 Ao escolher `pt-BR`, a saída humana da CLI — prompts, planos, doctor, menu e `learn-sdd` —
 passa a usar português brasileiro. Commands, paths, statuses, IDs e JSON permanecem em inglês
@@ -168,7 +167,7 @@ O toolkit usa um baseline TLC para planejamento e um baseline TDD para implement
 | Jornada ilustrativa do desenvolvedor | [docs/developer-journey.md](docs/developer-journey.md) |
 | Metodologia SDD | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
 | Arquitetura | [docs/architecture.md](docs/architecture.md) |
-| As 13 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
+| As 12 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Setup por agente | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
 | Política de idioma | [docs/i18n.md](docs/i18n.md) |
 | Contribuir | [CONTRIBUTING.md](CONTRIBUTING.md) |

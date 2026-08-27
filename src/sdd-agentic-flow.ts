@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
 import { type AdoptionMode, adoptionModeForScope, isAdoptionMode } from './adoption';
+import { renderCliCommand } from './cli-command';
 import { COMMAND_HELP, KNOWN_COMMANDS, USAGE, writeCommandHelp } from './cli-help';
 import { completionFor, isRemovedCommand, lexicalConflict } from './command-registry';
 import { renderPolicySummary, runConfigCommand } from './config';
@@ -53,7 +54,8 @@ import {
   contextStatus,
 } from './project-context';
 import { select } from './selector';
-import { guidedInit, onboardingStateFor, printCurrentSetup, setSetupCommandDeps } from './setup';
+import { guidedInit, printCurrentSetup, setSetupCommandDeps } from './setup';
+import { inspectSetupState } from './setup-state';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import {
   type DisplayMode,
@@ -285,7 +287,7 @@ function help(command?: string): boolean | undefined {
     if (isRemovedCommand(command)) {
       fail(`unknown command: ${command}.`, {
         reason: 'This command is not part of the current canonical interface.',
-        try: ['sdd-agentic-flow help'],
+        try: [renderCliCommand('help')],
       });
       return false;
     }
@@ -294,7 +296,7 @@ function help(command?: string): boolean | undefined {
       const hint = didYouMeanTry(command, KNOWN_COMMANDS);
       fail(`unknown command: ${command}.`, {
         reason: 'That name is not a CLI command topic.',
-        try: ['sdd-agentic-flow help', ...(hint ? [hint] : [])],
+        try: [renderCliCommand('help'), ...(hint ? [hint] : [])],
       });
       return false;
     }
@@ -564,14 +566,16 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
   if (options.check || (!interactive && !options.plan)) {
     process.stdout.write(formatCheckReport(result));
     if (!result.reachable) {
-      process.stdout.write('\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade\n');
+      process.stdout.write(
+        `\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade')}\n`,
+      );
       process.exitCode = 1;
       return;
     }
     if (!options.check && result.updateAvailable) {
       process.stdout.write(
         '\nThis invocation is non-interactive; no mutations were performed.\n' +
-          'Run `sdd-agentic-flow upgrade` in a TTY to confirm CLI/skills updates.\n',
+          `Run \`${renderCliCommand('upgrade')}\` in a TTY to confirm CLI/skills updates.\n`,
       );
     }
     return;
@@ -581,7 +585,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
     if (!result.reachable) {
       log('WARN', 'unable to check for updates');
       process.stdout.write(
-        '\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade --plan\n',
+        `\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade', '--plan')}\n`,
       );
       process.exitCode = 1;
       return;
@@ -615,7 +619,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
   if (!result.reachable) {
     log('WARN', 'unable to check for updates');
     process.stdout.write(
-      '\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  sdd-agentic-flow upgrade\n',
+      `\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade')}\n`,
     );
     return;
   }
@@ -643,7 +647,10 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
         cliOk = false;
         fail(`CLI upgrade failed: ${errorMessage(error)}`, {
           reason: 'npm install -g exited non-zero.',
-          try: ['npm install -g sdd-agentic-flow@latest', 'sdd-agentic-flow upgrade --skills-only'],
+          try: [
+            'npm install -g sdd-agentic-flow@latest',
+            renderCliCommand('upgrade', '--skills-only'),
+          ],
         });
       }
     } else {
@@ -673,7 +680,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
     process.stdout.write(
       '\nCLI upgrade succeeded.\nSkill refresh failed.\n\n' +
         `Result:\n  CLI: toward ${result.latest}\n  skills: previous / partial\n\n` +
-        'No automatic rollback was attempted.\n\nRecovery:\n  sdd-agentic-flow upgrade --skills-only\n',
+        `No automatic rollback was attempted.\n\nRecovery:\n  ${renderCliCommand('upgrade', '--skills-only')}\n`,
     );
     process.exitCode = 1;
   }
@@ -702,14 +709,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
   if (removedOption) {
     fail(`usage error: removed option ${removedOption}`, {
       reason: 'The current command grammar does not accept this legacy option.',
-      try: ['sdd-agentic-flow help'],
+      try: [renderCliCommand('help')],
     });
     return;
   }
   if (isRemovedCommand(command)) {
     fail(`unknown command: ${command}.`, {
       reason: 'This command is not part of the current canonical interface.',
-      try: ['sdd-agentic-flow help'],
+      try: [renderCliCommand('help')],
     });
     return;
   }
@@ -718,18 +725,18 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       if (args.length > 1) {
         fail('usage: list [--help]', {
           reason: 'The list command accepts no arguments other than --help.',
-          try: ['sdd-agentic-flow list', 'sdd-agentic-flow list --help'],
+          try: [renderCliCommand('list'), renderCliCommand('list', '--help')],
         });
       } else writeCommandHelp('list');
     } else if (args.length > 0) {
       fail('usage: list [--help]', {
         reason: `Unknown list argument: ${args[0]}.`,
-        try: ['sdd-agentic-flow list', 'sdd-agentic-flow list --help'],
+        try: [renderCliCommand('list'), renderCliCommand('list', '--help')],
       });
     } else
       fail('unknown command: list.', {
         reason: 'Packs were removed in v7; install the official bundle with `install`.',
-        try: ['sdd-agentic-flow install'],
+        try: [renderCliCommand('install')],
       });
   } else if (command === 'init') {
     const usage = USAGE.init;
@@ -740,7 +747,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       if (unknown.length) {
         fail(usage, {
           reason: `Unknown or removed init argument: ${unknown[0]}`,
-          try: ['sdd-agentic-flow init', 'sdd-agentic-flow init --plan'],
+          try: [renderCliCommand('init'), renderCliCommand('init', '--plan')],
         });
         return;
       }
@@ -783,9 +790,9 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         fail('usage: context [status|refresh|autonomy-state]', {
           reason: 'Only status, refresh, and autonomy-state subcommands are supported.',
           try: [
-            'sdd-agentic-flow context status',
-            'sdd-agentic-flow context refresh',
-            'sdd-agentic-flow context autonomy-state',
+            renderCliCommand('context', 'status'),
+            renderCliCommand('context', 'refresh'),
+            renderCliCommand('context', 'autonomy-state'),
             ...(hint ? [hint] : []),
           ],
         });
@@ -808,8 +815,8 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     if (!result.ok) {
       fail(result.message || 'config command failed', {
         try: result.try || [
-          'sdd-agentic-flow config show',
-          'sdd-agentic-flow config policy --plan',
+          renderCliCommand('config', 'show'),
+          renderCliCommand('config', 'policy', '--plan'),
         ],
       });
     }
@@ -869,7 +876,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       if (isConfigureError(result)) {
         fail(result.error, {
           reason: 'Use valid scope, adoption, and target IDs.',
-          try: ['sdd-agentic-flow config installation --interactive'],
+          try: [renderCliCommand('config', 'installation', '--interactive')],
         });
         return;
       }
@@ -962,7 +969,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     if (!valid) {
       fail(usage, {
         reason: 'v7 accepts no pack positional, --pack, or interactive install flags.',
-        try: ['sdd-agentic-flow install', 'sdd-agentic-flow install --plan'],
+        try: [renderCliCommand('install'), renderCliCommand('install', '--plan')],
       });
       return;
     }
@@ -1066,13 +1073,13 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       const hint = didYouMeanTry(asString(unknown[0]), [...flags]);
       fail(USAGE.upgrade, {
         reason: `Unknown argument: ${unknown[0]}`,
-        try: ['sdd-agentic-flow upgrade --check', ...(hint ? [hint] : [])],
+        try: [renderCliCommand('upgrade', '--check'), ...(hint ? [hint] : [])],
       });
     }
     if (args.includes('--check') && args.includes('--skills-only'))
       fail(USAGE.upgrade, {
         reason: '--check and --skills-only cannot be combined.',
-        try: ['sdd-agentic-flow upgrade --check', 'sdd-agentic-flow upgrade --skills-only'],
+        try: [renderCliCommand('upgrade', '--check'), renderCliCommand('upgrade', '--skills-only')],
       });
     await upgradeCommand(cwd, {
       check: args.includes('--check'),
@@ -1109,8 +1116,8 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       fail(usage, {
         reason: badArg ? `Unknown argument: ${badArg}` : 'Invalid arguments.',
         try: [
-          'sdd-agentic-flow autonomous-resume --force',
-          'sdd-agentic-flow autonomous-resume --override-guard=3 --reason="..."',
+          renderCliCommand('autonomous-resume', '--force'),
+          renderCliCommand('autonomous-resume', '--override-guard=3', '--reason="..."'),
           ...(hint ? [hint] : []),
         ],
       });
@@ -1118,7 +1125,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     if (overrideGuard && !reason)
       fail('--override-guard requires --reason="...".', {
         reason: 'Overrides must be audited with an explicit human reason.',
-        try: ['sdd-agentic-flow autonomous-resume --override-guard=3 --reason="..."'],
+        try: [renderCliCommand('autonomous-resume', '--override-guard=3', '--reason="..."')],
       });
     autonomousResume(cwd, { force, overrideGuard, reason });
   } else if (command === 'uninstall') {
@@ -1144,7 +1151,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     const hint = didYouMeanTry(command, KNOWN_COMMANDS);
     fail(`unknown command: ${command}.`, {
       reason: 'That name is not a CLI command.',
-      try: ['sdd-agentic-flow help', ...(hint ? [hint] : [])],
+      try: [renderCliCommand('help'), ...(hint ? [hint] : [])],
     });
   }
 }
@@ -1159,7 +1166,15 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
   for (;;) {
     const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
     const skillsInstalled = officialSkillsPresence(resolveSkillsRoot(cwd)).complete;
-    const onboardingState = onboardingStateFor(cwd);
+    const setupState = inspectSetupState(cwd, os.homedir()).state;
+    const onboardingState =
+      setupState === 'Ready'
+        ? 'READY'
+        : setupState === 'Attention' || setupState === 'Blocked'
+          ? 'NEEDS_ATTENTION'
+          : setupState === 'Fresh'
+            ? 'FIRST_USE'
+            : 'PARTIAL';
     if (options.showSummary !== false && ['READY', 'NEEDS_ATTENTION'].includes(onboardingState))
       printCurrentSetup(cwd, locale);
     const actions = menuActionsFor({
@@ -1238,6 +1253,9 @@ async function main() {
     const welcomeAscii = process.argv.includes('--ascii') || process.env.SDD_ASCII === '1';
     if (shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env)) {
       await guidedInit(cwd, { ascii: welcomeAscii });
+      process.stdin.pause();
+      (process.stdin as NodeJS.ReadStream & { unref?: () => void }).unref?.();
+      process.exit(0);
       return;
     }
     await welcome(cwd, { ascii: welcomeAscii });

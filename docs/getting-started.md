@@ -1,5 +1,10 @@
 # Getting started
 
+In a real interactive terminal, running `npx sdd-agentic-flow` opens the guided
+setup journey. It derives the current state, detects coding-agent hosts locally,
+collects sharing, workflow, language, and process-depth intent, then shows one
+reviewable plan before writing. Pipes and CI stay non-interactive.
+
 Use the explicit lifecycle in a Git workspace:
 
 ```bash

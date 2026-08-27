@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { inspectAdoption } from './adoption';
+import { renderCliCommand } from './cli-command';
 import {
   AUTONOMY_LEVELS,
   configValue,
@@ -66,6 +67,7 @@ type DoctorCommandOptions = {
   output?: string | undefined;
   harness?: boolean | undefined;
   locale?: string | undefined;
+  homeDir?: string | undefined;
 };
 
 type SmokeCheckDeps = {
@@ -131,6 +133,16 @@ function languageReport(cwd: string) {
   const content = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : effectiveConfigYaml();
+  if (!fs.existsSync(configPath) && !isPackage) {
+    return {
+      status: 'PASS',
+      profile: 'en-US',
+      human_outputs: 'en-US',
+      technical_tokens: 'canonical',
+      bilingual_mode: 'technical-canonical',
+      message: 'language uses built-in defaults',
+    };
+  }
   if (!content) {
     return {
       status: 'WARN',
@@ -229,7 +241,10 @@ function severity(checks: DoctorCheck[]): 'PASS' | 'WARN' | 'FAIL' {
   return 'PASS';
 }
 
-function doctorChecks(cwd: string, options: { harness?: boolean } = {}): InternalDoctorCheck[] {
+function doctorChecks(
+  cwd: string,
+  options: { harness?: boolean; homeDir?: string } = {},
+): InternalDoctorCheck[] {
   const checks: InternalDoctorCheck[] = [];
   const add = (name: string, status: DoctorCheck['status'], message: string, section?: string) =>
     checks.push({ name, status, message, ...(section ? { section } : {}) });
@@ -269,7 +284,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     }
   })();
   const configPath = sddJoin(cwd, 'config.yml');
-  const setupState = isPackage ? null : inspectSetupState(cwd);
+  const setupState = isPackage ? null : inspectSetupState(cwd, options.homeDir || os.homedir());
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : effectiveConfigYaml();
@@ -362,13 +377,13 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       'workspace',
       workspaceContent === null ? 'WARN' : workspaceContent === WORKSPACE_MARKER ? 'PASS' : 'FAIL',
       workspaceContent === null
-        ? `${SDD_PATHS.workspace} not found; run \`sdd-agentic-flow init\``
+        ? `${SDD_PATHS.workspace} not found; run \`${renderCliCommand('init')}\``
         : workspaceContent === WORKSPACE_MARKER
           ? `${SDD_PATHS.workspace} is current`
           : `${SDD_PATHS.workspace} is invalid or unsupported; preserved without changes`,
       'Workspace',
     );
-    const adoption = inspectAdoption(cwd, os.homedir());
+    const adoption = inspectAdoption(cwd, options.homeDir || os.homedir());
     add(
       'adoption',
       adoption.mode === 'unclassified' ? 'INFO' : adoption.drift.length ? 'WARN' : 'PASS',
@@ -417,7 +432,16 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         'Installation',
       );
     })();
-    const presence = officialSkillsPresence(skillsRoot);
+    const targetEvidence = setupState?.evidence.targetEvidence ?? [];
+    const presence = targetEvidence.length
+      ? {
+          present: targetEvidence.flatMap((target) => target.present),
+          missing: targetEvidence.flatMap((target) => target.missing),
+          complete: targetEvidence.every((target) => target.complete),
+          partial: targetEvidence.some((target) => target.present.length > 0 && !target.complete),
+          empty: targetEvidence.every((target) => target.present.length === 0),
+        }
+      : officialSkillsPresence(skillsRoot);
     (() => {
       const skillsMessage = presence.complete
         ? `installed skills present (${presence.present.length})`
@@ -440,7 +464,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     );
     add(
       'project_readiness',
-      resolvedConfig.ok && presence.complete ? 'PASS' : 'WARN',
+      setupState?.state === 'Ready' ? 'PASS' : 'WARN',
       'project readiness is based on effective policy and official skills',
       'Project readiness',
     );
@@ -454,8 +478,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         const provenance = parseProvenance(fs.readFileSync(contextArtifactPath, 'utf8'));
         const current = gitInfo(cwd);
         if (provenance?.revision && current.revision && provenance.revision !== current.revision) {
-          contextMessage +=
-            ' (repository has changed since generation; consider `sdd-agentic-flow context refresh`)';
+          contextMessage += ` (repository has changed since generation; consider \`${renderCliCommand('context', 'refresh')}\`)`;
         }
       }
       add(
@@ -631,7 +654,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
         const stale = relation !== 'current';
         const message =
           relation === 'older'
-            ? `skills provenance ${provenance.packageVersion} is older than running CLI ${VERSION} — run \`npx sdd-agentic-flow upgrade --skills-only\``
+            ? `skills provenance ${provenance.packageVersion} is older than running CLI ${VERSION} — run \`${renderCliCommand('upgrade', '--skills-only')}\``
             : relation === 'newer'
               ? `skills provenance ${provenance.packageVersion} is newer than running CLI ${VERSION} — use a compatible SAF CLI`
               : relation === 'unknown'
@@ -1104,6 +1127,7 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
   }
   const checks: InternalDoctorCheck[] = doctorChecks(cwd, {
     ...(options.harness === undefined ? {} : { harness: options.harness }),
+    ...(options.homeDir ? { homeDir: options.homeDir } : {}),
   });
   if (options.smoke) checks.push(smokeCheck());
   if (options.contracts) checks.push(contractsCheck(cwd));

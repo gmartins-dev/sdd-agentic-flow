@@ -43,8 +43,10 @@ orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `a
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
 combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. Use
 `config policy` (interactive TTY, or `--plan` / `--yes` for CI) to persist an override.
-Only `execution_mode` and
-`autonomy_level` are CLI-editable; other keys remain manual YAML edits. See
+`execution_mode`, `autonomy_level`, `profile`/`human_outputs`, and
+`workflow.feature_profile` are CLI-editable; other keys remain manual YAML edits. Use
+`config policy --plan` to preview the complete change, then `--yes` for a non-interactive
+apply. See
 [commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides`:
 documented here, not editable via `config policy` yet. `workflow.autonomy_budget`
 (`max_iterations`, `max_tokens`, `max_runtime_hours`, `pause_on_warning`) bounds how much work an
@@ -76,7 +78,7 @@ Signals detected (all presence-only checks; no file content is parsed beyond `pa
 - **Platform:** ORM config (`prisma/schema.prisma`, `drizzle.config.ts`/`.js`) and feature-flag
   config (`.launchdarkly.yml`, `unleash.yml`).
 
-Run `sdd-agentic-flow context refresh` any time to refresh it after the project changes. Skills that consult project context read it only when it exists and
+Run `npx sdd-agentic-flow context refresh` any time to refresh it after the project changes. Skills that consult project context read it only when it exists and
 treat it as optional context, the same way they treat `.sdd-agentic-flow/context/domain-glossary.md`.
 
 ### Provenance and refresh
@@ -98,14 +100,13 @@ degrade gracefully to `not a git repository` / `unknown` rather than failing dis
 
 Two commands read and act on this provenance:
 
-- `sdd-agentic-flow context status`: reports whether context exists, when it was generated, and
+- `npx sdd-agentic-flow context status`: reports whether context exists, when it was generated, and
   at which repository revision, without changing anything. If the current `HEAD` differs from the
   recorded revision, it states that fact plainly (never a heuristic "stale" verdict) and suggests
   a refresh.
-- `sdd-agentic-flow context refresh`: regenerates `project-context.md` unconditionally, whether
-  or not it already exists. It is the recommended way to refresh context going forward; `context refresh`
-  [--force]` keeps working exactly as before for existing scripts and CI.
-- `sdd-agentic-flow context autonomy-state`: read-only report of `workflow.execution_mode`/
+- `npx sdd-agentic-flow context refresh`: regenerates `project-context.md` unconditionally, whether
+  or not it already exists. It is the recommended way to refresh context going forward.
+- `npx sdd-agentic-flow context autonomy-state`: read-only report of `workflow.execution_mode`/
   `autonomy_level` plus the last recorded `.sdd-agentic-flow/autonomy/loop-state.md`, if any. See
   [autonomy levels](autonomy-levels.md).
 

@@ -144,20 +144,7 @@ function runPackedInteractive(
   const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
   if (probe.error || probe.status !== 0) return null;
   const cli = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
-  const command = [
-    'input=$(mktemp)',
-    'rm "$input"',
-    'mkfifo "$input"',
-    `script -qec ${quoteShell(cli)} /dev/null < "$input" & child=$!`,
-    'exec 3>"$input"',
-    'sleep 2',
-    'for _ in 1 2 3; do printf "\\r" >&3; sleep 1; done',
-    'exec 3>&-',
-    'wait "$child"',
-    'status=$?',
-    'rm -f "$input"',
-    'exit "$status"',
-  ].join('; ');
+  const command = `{ sleep 3; for _ in 1 2 3 4 5 6 7 8; do printf "\\r"; sleep 1; done; } | script -qec ${quoteShell(cli)} /dev/null`;
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: state.home,

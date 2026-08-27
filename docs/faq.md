@@ -42,13 +42,13 @@ No universal guarantee is made. It is Markdown-first and locally installed; see 
 
 ## How do I know if `project-context.md` is out of date?
 
-Run `sdd-agentic-flow context status`. It reports when the file was generated and at which
+Run `npx sdd-agentic-flow context status`. It reports when the file was generated and at which
 repository revision, and states plainly if the repository has changed since. No guessing, just
 a factual revision comparison.
 
 ## How do I refresh it?
 
-Run `sdd-agentic-flow context refresh`. It regenerates the project context safely. Both
+Run `npx sdd-agentic-flow context refresh`. It regenerates the project context safely. Both
 fully regenerate `project-context.md`, so copy out any manual notes first. Reading the current
 revision/branch is a local, read-only `git rev-parse` call; outside a Git repository, or without
 `git` installed, this degrades gracefully instead of failing.

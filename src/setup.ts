@@ -54,6 +54,7 @@ import {
   USAGE_GUIDE_URL,
 } from './paths';
 import { type SelectionResult, select } from './selector';
+import { setupPrecondition } from './setup-plan';
 import { type DisplayMode, isRich, outputMode, renderStep, styleStatus } from './ui';
 import { applyWorkspaceInitialization, planWorkspaceInitialization } from './workspace';
 
@@ -81,6 +82,7 @@ type SetupDraft = {
   projectLocalExclude?: boolean | undefined;
   saved?: Record<string, unknown> | null | undefined;
   policy?: SetupPolicyDraft | undefined;
+  precondition?: string | undefined;
 };
 
 type InitInteractiveState = {
@@ -671,6 +673,10 @@ async function applySetup(
 ) {
   const { install } = requireCommandDeps();
   process.exitCode = undefined;
+  if (draft.precondition && draft.precondition !== setupPrecondition(cwd)) {
+    log('WARN', 'setup changed after review; render a new plan before applying');
+    return false;
+  }
   if (draft.install && !(await preflightSetup(cwd, draft, options))) return false;
   printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
   process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
@@ -809,6 +815,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       if (recovery.value === 'validate') await doctor(cwd, { ascii: Boolean(options.ascii) });
       continue;
     }
+    draft = { ...draft, precondition: setupPrecondition(cwd) };
     printSetupStages(locale, 'skills', ['project'], options);
     const review = await select(
       t(locale, 'setup.review'),

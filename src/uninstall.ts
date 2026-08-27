@@ -254,6 +254,8 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       const left = verifyPurge(cwd, homeDir);
       if (left.length) {
         for (const entry of left) log('WARN', `recognized target remains: ${entry}`);
+        process.exitCode = 1;
+        return false;
       } else if (!quiet) log('PASS', 'purge verification complete — no recognized targets remain');
       if (!quiet) {
         log('PASS', 'preserved feature specs, source code, Git history, and foreign skills');

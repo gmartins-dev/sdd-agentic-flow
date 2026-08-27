@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {

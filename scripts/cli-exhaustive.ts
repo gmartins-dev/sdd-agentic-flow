@@ -143,7 +143,21 @@ function runPackedInteractive(
 ): SpawnSyncReturns<string> | null {
   const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
   if (probe.error || probe.status !== 0) return null;
-  const command = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)} init`;
+  const cli = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
+  const command = [
+    'input=$(mktemp)',
+    'rm "$input"',
+    'mkfifo "$input"',
+    `script -qec ${quoteShell(cli)} /dev/null < "$input" & child=$!`,
+    'exec 3>"$input"',
+    'sleep 2',
+    'for _ in 1 2 3; do printf "\\r" >&3; sleep 1; done',
+    'exec 3>&-',
+    'wait "$child"',
+    'status=$?',
+    'rm -f "$input"',
+    'exit "$status"',
+  ].join('; ');
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: state.home,
@@ -151,12 +165,10 @@ function runPackedInteractive(
     SDD_NO_UPDATE_PROMPT: '1',
   };
   delete env.CI;
-  // Feed selects through script's pty stdin — piping to npx would make stdin non-TTY.
-  return spawnSync('script', ['-qec', command, '/dev/null'], {
+  return spawnSync('sh', ['-c', command], {
     cwd: state.cwd,
     encoding: 'utf8',
     timeout: 30_000,
-    input: '\n\n\n\n\n\n',
     env,
   });
 }
@@ -598,7 +610,7 @@ function runJourneys() {
     assert.equal(doctor.stdout.includes(String.fromCharCode(27)), false);
   });
   const packedInteractive = project('11-packed-interactive');
-  record('J35', 'packaged interactive consumer', 'TTY recommended setup', () => {
+  record('J35', 'packaged interactive consumer', 'bare TTY recommended setup', () => {
     const result = runPackedInteractive(packedInteractive, tarball, cacheDir);
     if (!result) {
       return {
@@ -609,7 +621,7 @@ function runJourneys() {
       } satisfies AuditObservation;
     }
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
-    assert.match(result.stdout, /workspace initialized|workspace inicializado/);
+    assert.match(result.stdout, /PASS Ready/);
     assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
     assert.equal(
       fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')),

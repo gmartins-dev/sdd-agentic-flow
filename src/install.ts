@@ -4,6 +4,7 @@ import readline from 'node:readline/promises';
 
 import { type AdoptionMode, adoptionModeForScope, applyAdoption, isAdoptionMode } from './adoption';
 import { inspectCleanUpgrade, prepareCleanUpgrade } from './clean-upgrade';
+import { renderCliCommand } from './cli-command';
 import { type ConfigureIntentResult, configureIntent } from './configure';
 import { setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import { resolveGitContext } from './git-context';
@@ -105,14 +106,14 @@ function planForInstallProfile({
 }
 
 function installApplyCommand(plan: InstallPlan): string {
-  return `sdd-agentic-flow install --scope ${plan.scope}`;
+  return renderCliCommand('install', '--scope', plan.scope);
 }
 
 function configureCommand(
   scope: string,
   profile: InstallConfig['user'] | InstallProjectProfile,
 ): string {
-  const parts = ['sdd-agentic-flow config installation', '--scope', scope];
+  const parts = [renderCliCommand('config', 'installation'), '--scope', scope];
   if (isUserInstallProfile(profile))
     for (const target of profile.targets) parts.push('--target', target);
   else parts.push('--adoption-mode', profile.adoption_mode);

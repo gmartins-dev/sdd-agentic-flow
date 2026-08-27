@@ -53,7 +53,7 @@ import {
   contextStatus,
 } from './project-context';
 import { select } from './selector';
-import { onboardingStateFor, printCurrentSetup, setSetupCommandDeps } from './setup';
+import { guidedInit, onboardingStateFor, printCurrentSetup, setSetupCommandDeps } from './setup';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import {
   type DisplayMode,
@@ -1213,7 +1213,7 @@ async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
     }
     if (menuCommand === 'uninstall')
       process.stdout.write(
-        '\nTo actually remove these, run `sdd-agentic-flow uninstall --apply` explicitly.\n',
+        '\nTo actually remove these, run `npx sdd-agentic-flow uninstall --yes` explicitly.\n',
       );
   }
 }
@@ -1236,6 +1236,10 @@ async function main() {
       if (restCommand) return runCommand(restCommand, rest.slice(1), cwd);
     }
     const welcomeAscii = process.argv.includes('--ascii') || process.env.SDD_ASCII === '1';
+    if (shouldShowInteractiveMenu({ stdout: process.stdout, stdin: process.stdin }, process.env)) {
+      await guidedInit(cwd, { ascii: welcomeAscii });
+      return;
+    }
     await welcome(cwd, { ascii: welcomeAscii });
     return;
   }

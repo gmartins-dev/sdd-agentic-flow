@@ -1,5 +1,11 @@
 # Roadmap
 
+- **v7.1.0 (2026-08-26):** Guided CLI setup recovery. Restores bare TTY setup
+  as the human path while retaining deterministic non-TTY behavior, derives
+  setup state from durable artifacts, and strengthens zero-config readiness and
+  purge truthfulness. No runtime dependency, telemetry, provider invocation,
+  persisted onboarding marker, remote mutation, or automatic publication.
+
 - **v7.0.0 (2026-08-26):** Simplified workspace-first SAF lifecycle. Consolidates one
   official 12-Skill bundle, Git-aware per-workspace initialization, optional configuration with
   `apply + supervised` defaults, v3 state, portable sidecars, bounded pre-v7 reset, stable

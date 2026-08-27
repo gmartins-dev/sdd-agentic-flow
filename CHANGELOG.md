@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 7.1.0
+
+### Guided CLI setup recovery
+
+Bare invocation in a real TTY now enters the guided setup path, while pipes and
+CI remain read-only. Adds derived setup-state inspection, zero-config language
+defaults for consumer doctor, host-to-target planning primitives, canonical
+`npx sdd-agentic-flow` setup commands, and truthful purge failure when a
+recognized SAF target remains.
+
 ## 7.0.0
 
 ### Simplified workspace-first SAF lifecycle

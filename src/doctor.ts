@@ -42,6 +42,7 @@ import {
   VERSION,
 } from './paths';
 import { gitInfo, parseProvenance, readLoopState } from './project-context';
+import { inspectSetupState } from './setup-state';
 import { parseSkillContract } from './skill-contract';
 import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from './skill-identity';
 import { styleStatus } from './ui';
@@ -129,9 +130,7 @@ function languageReport(cwd: string) {
   })();
   const content = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
-    : isPackage
-      ? effectiveConfigYaml()
-      : null;
+    : effectiveConfigYaml();
   if (!content) {
     return {
       status: 'WARN',
@@ -270,6 +269,7 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     }
   })();
   const configPath = sddJoin(cwd, 'config.yml');
+  const setupState = isPackage ? null : inspectSetupState(cwd);
   const safetyConfig = fs.existsSync(configPath)
     ? fs.readFileSync(configPath, 'utf8')
     : effectiveConfigYaml();
@@ -331,6 +331,12 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
     );
   } else {
     const gitContext = resolveGitContext(cwd);
+    add(
+      'setup_state',
+      setupState?.state === 'Ready' ? 'PASS' : setupState?.state === 'Blocked' ? 'FAIL' : 'WARN',
+      `derived setup state: ${setupState?.state ?? 'Blocked'}`,
+      'Project readiness',
+    );
     add(
       'git_workspace',
       gitContext.ok ? 'PASS' : 'FAIL',
@@ -396,8 +402,9 @@ function doctorChecks(cwd: string, options: { harness?: boolean } = {}): Interna
       if (!gitContext.ok) return;
       const installConfig = readInstallConfig(os.homedir());
       const key = gitContext.context.adoptionKey;
-      const profile = installConfig?.projects[key] || installConfig?.user;
-      const scope = installConfig?.projects[key] ? 'project' : 'user';
+      const projectProfile = installConfig?.projects[key];
+      const scope = projectProfile?.adoption_mode === 'team' ? 'project' : 'user';
+      const profile = scope === 'project' ? projectProfile : installConfig?.user;
       if (!profile || !resolveInstallProfilePlan) return;
       const plan = resolveInstallProfilePlan({ cwd, homeDir: os.homedir(), scope, profile });
       const status = plan.blocked || !isPlanEmpty(plan) ? 'WARN' : 'PASS';

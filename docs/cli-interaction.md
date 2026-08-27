@@ -79,33 +79,33 @@ After a mutating command succeeds (`init`, `install`, `context refresh`,
 and in **machine** mode (`--json`). Welcome (bare invocation) still
 points at one next command in every mode (compact status prose in machine) and, when
 relevant, the opt-in `upgrade` / `doctor --check-updates` hint. On **human-rich** interactive
-TTY only, welcome may ask `Check for updates? [y/N]` (default **N**) before any registry
-request; machine/pipe/CI/human-plain never ask. See [trust model](trust-model.md).
+ TTY only, welcome may offer an explicit update-check action before any registry
+ request; machine/pipe/CI/human-plain never ask. See [trust model](trust-model.md).
 
 The doctor Fix/Next footer is **human-rich only** (never on `--json`, pipes, or
 human-plain).
 
 ## Interactive menu
 
-Shown only when stdout and stdin are TTYs and `CI` is unset. First use resumes guided
-setup; ready or attention states offer **Keep current setup**, **Change operating policy**,
-**Change installation setup**, **Check for updates**, **Validate setup**, and **Commands and
-advanced options**. Updates remain opt-in.
+Shown only when stdout and stdin are TTYs and `CI` is unset. First use presents a
+state-aware welcome; ready and attention states offer **Exit**, **Change settings**,
+**Check for updates**, **Validate setup**, and **Advanced options**. Nested flows expose
+**Back**, **Cancel**, or **Apply** when applicable. Updates remain opt-in.
 
 Guided setup is an inline CLI flow, not a full-screen TUI. It has one recommended path and an
 optional customization path, including an operating-policy step (Supervised recommended), then a
 single review before the first write. It derives first-use, partial, and ready state from
 configuration, installation intent, context, and `doctor`; it does not store a separate onboarding
-marker. Before apply, **Back** only changes in-memory choices. After apply, **Change operating
-policy** runs `config policy`; **Change installation setup** runs `config installation` —
-each is a deliberate change, not a rollback. A handled failure keeps the human in the flow with
-retry, validation, change, or exit.
+marker. Before apply, **Back** only changes in-memory choices. After apply, **Workflow** runs
+`config policy`; **Sharing and coding agents** runs `config installation` — each is a deliberate
+change, not a rollback. A handled failure keeps the human in the flow with retry, validation,
+change, or exit.
 
-The first-use journey records five decisions: sharing mode, explicitly selected coding-agent
-hosts, workflow mode (including a custom execution/autonomy pair), language profile, and feature
-profile. Host detection is local evidence from PATH and known host directories only; it never
-invokes a provider or contacts a network service. A missing detection is shown as a choice rather
-than silently selecting every target.
+The first-use journey records four decisions: sharing mode, explicitly selected coding-agent
+hosts, workflow mode (including a custom execution/autonomy pair), and language profile. Feature
+profile is resolved per work package by `saf-create-spec`, not by installation setup. Host detection
+is local evidence from PATH and known host directories only; it never invokes a provider or contacts
+a network service. A missing detection is shown as a choice rather than silently selecting every target.
 
 Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
 navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive

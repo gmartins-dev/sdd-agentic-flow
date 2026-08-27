@@ -75,7 +75,6 @@ test('resolves an inspectable plan with no executable callbacks', () => {
         selectedHosts: ['codex', 'cursor'],
         workflow: 'supervised',
         language: 'en-US',
-        featureProfile: 'medium_feature',
       },
       home,
     );

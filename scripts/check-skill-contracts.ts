@@ -59,6 +59,18 @@ const skills = OFFICIAL_SKILLS.map((name) => {
     produces: parseContractArray(sidecar, 'produces') ?? [],
   }))
     failures.push(`${name}: unknown ${field} contract kind '${value}'`);
+  if (name === 'saf-create-spec') {
+    for (const token of ['Feature profile', 'explicit-override', 'inferred'])
+      if (!content.includes(token))
+        failures.push(`${name}: missing feature-profile writer contract '${token}'`);
+  }
+  if (name === 'saf-implement' || name === 'saf-validate') {
+    if (
+      !content.includes('Do not re-infer profile depth') &&
+      !content.includes('Do not independently infer')
+    )
+      failures.push(`${name}: downstream profile consumers must not re-infer`);
+  }
   return { name, frontmatter: sidecar };
 });
 

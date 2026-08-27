@@ -24,24 +24,25 @@ function waitForOutput(
   transcript: () => string,
   matcher: RegExp,
   timeoutMs: number,
+  offset = 0,
 ) {
   return new Promise<void>((resolve, reject) => {
-    if (matcher.test(transcript())) {
+    if (matcher.test(transcript().slice(offset))) {
       resolve();
       return;
     }
     const timer = setTimeout(() => {
       cleanup();
-      reject(new Error(`PTY prompt timeout for ${matcher}:\n${transcript()}`));
+      reject(new Error(`PTY prompt timeout for ${matcher}:\n${transcript().slice(offset)}`));
     }, timeoutMs);
     const onData = () => {
-      if (!matcher.test(transcript())) return;
+      if (!matcher.test(transcript().slice(offset))) return;
       cleanup();
       resolve();
     };
     const onClose = () => {
       cleanup();
-      reject(new Error(`PTY process closed before ${matcher}:\n${transcript()}`));
+      reject(new Error(`PTY process closed before ${matcher}:\n${transcript().slice(offset)}`));
     };
     const cleanup = () => {
       clearTimeout(timer);
@@ -65,6 +66,7 @@ export async function runScriptPty(
   });
   let transcript = '';
   let stderr = '';
+  let cursor = 0;
   child.stdout?.setEncoding('utf8');
   child.stderr?.setEncoding('utf8');
   child.stdout?.on('data', (chunk: string) => {
@@ -74,7 +76,8 @@ export async function runScriptPty(
     stderr += chunk;
   });
   for (const step of options.steps) {
-    await waitForOutput(child, () => transcript, step.waitFor, step.timeoutMs ?? 10_000);
+    await waitForOutput(child, () => transcript, step.waitFor, step.timeoutMs ?? 10_000, cursor);
+    cursor = transcript.length;
     child.stdin?.write(step.input);
   }
   const result = await new Promise<PtyResult>((resolve) => {

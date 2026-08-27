@@ -65,6 +65,14 @@ test('selector honors defaults, numbers, multi-select, and cancellation', () => 
   assert.deepEqual(resolveSelection('', options, ['one', 'two'], true), { value: ['one', 'two'] });
 });
 
+test('multi-select navigation actions are not toggleable values', () => {
+  const options = [
+    { value: 'agents', label: 'Agents', selected: true },
+    { value: 'back', label: 'Back', action: true },
+  ];
+  assert.deepEqual(resolveSelection('2', options, ['agents'], true), { value: 'back' });
+});
+
 test('selector falls back to numbered input when a TTY cannot enter raw mode', async () => {
   const input = Readable.from(['\n']);
   setTty(input);

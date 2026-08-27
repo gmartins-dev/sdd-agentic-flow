@@ -7,7 +7,6 @@ fall back to these values.
 ```yaml effective-defaults
 execution_mode: apply
 autonomy_level: supervised
-feature_profile: medium_feature
 specs_root: .specs/features
 source_type: local-files
 language_profile: en-US
@@ -19,3 +18,7 @@ no_commit_by_default: true
 no_push_by_default: true
 no_merge_or_deploy: true
 ```
+
+`medium_feature` remains the compatibility fallback for a work package whose
+profile is not persisted and cannot be inferred. It is not a project-wide
+feature-profile setting and is not materialized into a new config by default.

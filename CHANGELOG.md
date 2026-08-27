@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 7.4.0
+
+### Human CLI UX convergence
+
+Converges the bare terminal interface into one state-aware human shell with
+consistent Exit, Back, Continue, Cancel, and Apply navigation, selector-driven
+finite choices, explicit outcomes, adaptive presentation, and localized human
+labels. Feature depth is resolved per work package by `saf-create-spec` rather
+than requested during setup; downstream skills consume the persisted profile.
+Extends behavioral certification and input audits while preserving machine
+contracts, local-first safety, and zero runtime dependencies.
+
 ## 7.3.0
 
 ### CLI behavioral certification

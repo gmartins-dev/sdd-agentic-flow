@@ -539,20 +539,11 @@ function doctorChecks(
     'Baseline compliance',
   );
   const featureProfilesRef = sharedRef('feature-profiles.md');
-  const declaresFeatureProfile = /feature_profile:\s*\S+/.test(safetyConfig);
   add(
     'adaptive-sizing',
+    fs.existsSync(featureProfilesRef) ? 'PASS' : isPackage ? 'FAIL' : 'WARN',
     fs.existsSync(featureProfilesRef)
-      ? declaresFeatureProfile
-        ? 'PASS'
-        : 'WARN'
-      : isPackage
-        ? 'FAIL'
-        : 'WARN',
-    fs.existsSync(featureProfilesRef)
-      ? declaresFeatureProfile
-        ? 'adaptive sizing guidance present and configured'
-        : 'adaptive sizing guidance present; workflow.feature_profile not set in config'
+      ? 'adaptive sizing guidance present; profiles resolve per work package'
       : 'shared/references/feature-profiles.md not found',
     'Baseline compliance',
   );

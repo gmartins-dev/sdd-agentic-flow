@@ -50,19 +50,36 @@ function renderPolicySummary(
   }
   lines.push(...renderSection(t(locale, 'config.operatingPolicy'), mode));
   if (config.presetEquivalent) {
-    lines.push(...renderKeyValue('Preset', config.presetEquivalent, mode));
-  }
-  if (policy.executionMode) {
-    lines.push(...renderKeyValue('Execution mode', policy.executionMode, mode));
-  }
-  if (policy.autonomyLevel) {
-    lines.push(...renderKeyValue('Autonomy level', policy.autonomyLevel, mode));
-  }
-  if (config.featureProfile) {
-    lines.push(...renderKeyValue('Feature profile', config.featureProfile, mode));
+    const workflowLabel =
+      config.presetEquivalent === 'autonomous'
+        ? locale === 'pt-BR'
+          ? 'Autônomo'
+          : 'Autonomous'
+        : config.presetEquivalent === 'manual'
+          ? locale === 'pt-BR'
+            ? 'Manual'
+            : 'Manual'
+          : locale === 'pt-BR'
+            ? 'Supervisionado'
+            : 'Supervised';
+    lines.push(...renderKeyValue(locale === 'pt-BR' ? 'Fluxo' : 'Workflow', workflowLabel, mode));
+  } else if (policy.executionMode && policy.autonomyLevel) {
+    lines.push(
+      ...renderKeyValue(
+        locale === 'pt-BR' ? 'Fluxo' : 'Workflow',
+        locale === 'pt-BR' ? 'Personalizado' : 'Custom',
+        mode,
+      ),
+    );
   }
   if (config.languageProfile) {
-    lines.push(...renderKeyValue('Language', config.languageProfile, mode));
+    lines.push(
+      ...renderKeyValue(
+        t(locale, 'config.language'),
+        config.languageProfile === 'pt-BR' ? 'Português (Brasil)' : 'English',
+        mode,
+      ),
+    );
   }
   return lines.join('\n');
 }
@@ -74,20 +91,34 @@ function renderPolicyPreviewBlock(
 ): string {
   const lines: string[] = [];
   lines.push(...renderSection(t(locale, 'config.policyPreview'), mode));
-  const before = preview.beforePreset
-    ? preview.beforePreset
-    : `${preview.before.executionMode} + ${preview.before.autonomyLevel}`;
-  const after = preview.afterPreset
-    ? preview.afterPreset
-    : `${preview.after.executionMode} + ${preview.after.autonomyLevel}`;
+  const workflowLabel = (preset: string | null, localeName: string) => {
+    if (preset === 'autonomous') return localeName === 'pt-BR' ? 'Autônomo' : 'Autonomous';
+    if (preset === 'manual') return 'Manual';
+    if (preset === 'supervised') return localeName === 'pt-BR' ? 'Supervisionado' : 'Supervised';
+    return localeName === 'pt-BR' ? 'Personalizado' : 'Custom';
+  };
+  const before = workflowLabel(preview.beforePreset, locale);
+  const after = workflowLabel(preview.afterPreset, locale);
   lines.push(...renderKeyValue(t(locale, 'config.before'), before, mode));
   lines.push(...renderKeyValue(t(locale, 'config.after'), after, mode));
-  if (preview.beforeLanguage && preview.afterLanguage) {
+  if (
+    preview.beforeLanguage &&
+    preview.afterLanguage &&
+    preview.beforeLanguage !== preview.afterLanguage
+  ) {
     lines.push(
-      ...renderKeyValue('Language', `${preview.beforeLanguage} -> ${preview.afterLanguage}`, mode),
+      ...renderKeyValue(
+        t(locale, 'config.language'),
+        `${preview.beforeLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'} -> ${preview.afterLanguage === 'pt-BR' ? 'Português (Brasil)' : 'English'}`,
+        mode,
+      ),
     );
   }
-  if (preview.beforeFeatureProfile && preview.afterFeatureProfile) {
+  if (
+    preview.beforeFeatureProfile &&
+    preview.afterFeatureProfile &&
+    preview.beforeFeatureProfile !== preview.afterFeatureProfile
+  ) {
     lines.push(
       ...renderKeyValue(
         'Feature profile',
@@ -189,46 +220,10 @@ async function resolveNextPolicy(
     if ('value' in chosen && typeof chosen.value === 'string') {
       const policy = resolvePolicyFromPreset(chosen.value);
       if (!policy) return { ok: false, message: `unknown preset: ${chosen.value}` };
-      const selectedLanguage = await select('Language', [
-        { value: 'en-US', label: 'English', selected: current?.languageProfile !== 'pt-BR' },
-        {
-          value: 'pt-BR',
-          label: 'Português (Brasil)',
-          selected: current?.languageProfile === 'pt-BR',
-        },
-      ]);
-      if ('cancelled' in selectedLanguage && selectedLanguage.cancelled)
-        return { ok: false, cancelled: true };
-      const selectedFeatureProfile = await select('Feature profile', [
-        {
-          value: 'small_fix',
-          label: 'Small fix',
-          selected: current?.featureProfile === 'small_fix',
-        },
-        {
-          value: 'medium_feature',
-          label: 'Medium feature',
-          selected: !current?.featureProfile || current.featureProfile === 'medium_feature',
-        },
-        {
-          value: 'large_feature',
-          label: 'Large feature',
-          selected: current?.featureProfile === 'large_feature',
-        },
-        { value: 'epic', label: 'Epic', selected: current?.featureProfile === 'epic' },
-      ]);
-      if ('cancelled' in selectedFeatureProfile && selectedFeatureProfile.cancelled)
-        return { ok: false, cancelled: true };
       return {
         ok: true,
         policy: {
           ...policy,
-          ...('value' in selectedLanguage && typeof selectedLanguage.value === 'string'
-            ? { languageProfile: selectedLanguage.value }
-            : {}),
-          ...('value' in selectedFeatureProfile && typeof selectedFeatureProfile.value === 'string'
-            ? { featureProfile: selectedFeatureProfile.value }
-            : {}),
         } as NonNullable<ReturnType<typeof resolvePolicyFromPreset>>,
       };
     }

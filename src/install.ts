@@ -1,10 +1,10 @@
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
 
 import { type AdoptionMode, adoptionModeForScope, applyAdoption, isAdoptionMode } from './adoption';
 import { inspectCleanUpgrade, prepareCleanUpgrade } from './clean-upgrade';
 import { renderCliCommand } from './cli-command';
+import { readConfig } from './config-domain';
 import { type ConfigureIntentResult, configureIntent } from './configure';
 import { setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import { resolveGitContext } from './git-context';
@@ -14,10 +14,13 @@ import {
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
   readInstallConfig,
+  repositoryKey,
   writeInstallConfig,
 } from './install-domain';
 import { applyInstallPlan, buildInstallPlan, type InstallPlan } from './install-preflight';
+import { resolveLocale, t } from './messages';
 import { PACKAGE_ROOT, userSkillsDirsForTargets, VERSION } from './paths';
+import { select } from './selector';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import type { DisplayMode } from './ui';
 import { readInstallProvenance, writeInstallProvenance } from './upgrade';
@@ -110,6 +113,33 @@ function installApplyCommand(plan: InstallPlan): string {
   return renderCliCommand('install', '--scope', plan.scope);
 }
 
+function installLocale(cwd: string): string {
+  const config = readConfig(path.join(cwd, '.sdd-agentic-flow', 'config.yml'));
+  return resolveLocale({ configured: config.ok ? config.languageProfile : null });
+}
+
+function humanTargetLabel(target: string, locale = 'en-US'): string {
+  return (
+    {
+      agents: t(locale, 'install.targetShared'),
+      cursor: 'Cursor',
+      claude: t(locale, 'install.targetClaude'),
+      copilot: t(locale, 'install.targetCopilot'),
+      'project-agents': t(locale, 'install.targetProject'),
+    }[target] || target
+  );
+}
+
+function humanAdoptionLabel(mode: string, locale = 'en-US'): string {
+  return mode === 'personal'
+    ? t(locale, 'install.adoptionPersonal')
+    : mode === 'team'
+      ? t(locale, 'install.adoptionTeam')
+      : mode === 'specs-shared'
+        ? t(locale, 'install.adoptionSpecsShared')
+        : mode;
+}
+
 function configureCommand(
   scope: string,
   profile: InstallConfig['user'] | InstallProjectProfile,
@@ -123,7 +153,7 @@ function configureCommand(
 
 function printInstallPlanReport(
   plan: InstallPlan,
-  _mode: DisplayMode | undefined,
+  mode: DisplayMode | undefined,
   _cwd: string,
   { applyCommand }: { applyCommand?: string } = {},
 ): void {
@@ -131,7 +161,7 @@ function printInstallPlanReport(
     'Installation plan',
     '',
     `Scope: ${plan.requestedScope || plan.scope} (${plan.modeLabel})`,
-    `Targets: ${plan.targetIds.join(', ') || '(unresolved)'}`,
+    `Targets: ${mode === 'machine' ? plan.targetIds.join(', ') : plan.targetIds.map((target) => humanTargetLabel(target)).join(', ') || '(unresolved)'}`,
     `Official skills: ${OFFICIAL_SKILLS.length} + shared layer`,
     '',
     `Create: ${plan.totals.CREATE}`,
@@ -251,10 +281,12 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   const profile =
     scope === 'user'
       ? { targets }
-      : storedProject || {
-          git_common_dir: git.ok ? git.context.gitCommonDir : '',
-          project_relative_path: git.ok ? git.context.projectRelativePath : '.',
-          adoption_mode: adoptionMode || 'team',
+      : {
+          git_common_dir: git.ok ? git.context.gitCommonDir : storedProject?.git_common_dir || '',
+          project_relative_path: git.ok
+            ? git.context.projectRelativePath
+            : storedProject?.project_relative_path || '.',
+          adoption_mode: adoptionMode || storedProject?.adoption_mode || 'team',
         };
   const plan = options.resolvedPlan || planForInstallProfile({ cwd, homeDir, scope, profile });
   if (options.plan) {
@@ -313,6 +345,7 @@ async function installInteractive(
   cwd: string,
   options: InstallCommandOptions = {},
 ): Promise<boolean> {
+  const locale = installLocale(cwd);
   const preview = planForInstallProfile({
     cwd,
     homeDir: options.homeDir || os.homedir(),
@@ -323,14 +356,17 @@ async function installInteractive(
   });
   printInstallPlanReport(preview, options.mode, cwd);
   if (preview.blocked) return false;
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await rl.question('Apply this installation? [y/N] ');
-    if (!/^y(es)?$/i.test(answer.trim())) return false;
-    return install(cwd, { ...options, overwriteDiffers: true });
-  } finally {
-    rl.close();
-  }
+  const confirmation = await select(
+    t(locale, 'install.applyQuestion'),
+    [
+      { value: 'apply', label: t(locale, 'setup.apply') },
+      { value: 'back', label: t(locale, 'setup.back'), action: true },
+      { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
+    ],
+    { locale },
+  );
+  if (confirmation.cancelled || confirmation.value !== 'apply') return false;
+  return install(cwd, { ...options, overwriteDiffers: true });
 }
 
 async function configureInteractive(
@@ -338,23 +374,107 @@ async function configureInteractive(
   homeDir = os.homedir(),
   { persist = true }: { persist?: boolean } = {},
 ): Promise<ConfigureInteractiveResult> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await rl.question('Adoption mode [personal/specs-shared/team]: ');
-    const adoptionMode = answer.trim() as AdoptionMode;
-    if (!isAdoptionMode(adoptionMode)) return { error: 'unknown adoption mode' };
-    const scope = adoptionModeForScope(adoptionMode);
-    return configureIntent({
-      homeDir,
-      cwd,
-      scope,
-      adoptionMode,
-      ...(scope === 'user' ? { targets: [...DEFAULT_USER_TARGETS] } : {}),
-      plan: !persist,
-    });
-  } finally {
-    rl.close();
+  const locale = installLocale(cwd);
+  const saved = readInstallConfig(homeDir) || defaultInstallConfig();
+  const project = (() => {
+    try {
+      return saved.projects[repositoryKey(cwd)];
+    } catch {
+      return undefined;
+    }
+  })();
+  const adoption = await select(
+    t(locale, 'install.sharingPrompt'),
+    [
+      {
+        value: 'personal',
+        label: t(locale, 'install.adoptionPersonal'),
+        selected: project?.adoption_mode === 'personal',
+      },
+      {
+        value: 'specs-shared',
+        label: t(locale, 'install.adoptionSpecsShared'),
+        selected: project?.adoption_mode === 'specs-shared',
+      },
+      {
+        value: 'team',
+        label: t(locale, 'setup.shared'),
+        selected: project?.adoption_mode === 'team',
+      },
+      { value: 'back', label: t(locale, 'setup.back'), action: true },
+    ],
+    { locale },
+  );
+  if (adoption.cancelled || adoption.value === 'back') return { cancelled: true };
+  if (typeof adoption.value !== 'string' || !isAdoptionMode(adoption.value))
+    return { error: 'unknown adoption mode' };
+  const adoptionMode = adoption.value as AdoptionMode;
+  const scope = adoptionModeForScope(adoptionMode);
+  let targets = [...(saved.user.targets.length ? saved.user.targets : DEFAULT_USER_TARGETS)];
+  if (scope === 'user') {
+    const selected = await select(
+      t(locale, 'install.agentsPrompt'),
+      [
+        {
+          value: 'agents',
+          label: t(locale, 'install.targetShared'),
+          selected: targets.includes('agents'),
+        },
+        { value: 'cursor', label: 'Cursor', selected: targets.includes('cursor') },
+        {
+          value: 'claude',
+          label: t(locale, 'install.targetClaude'),
+          selected: targets.includes('claude'),
+        },
+        {
+          value: 'copilot',
+          label: t(locale, 'install.targetCopilot'),
+          selected: targets.includes('copilot'),
+        },
+        { value: 'back', label: t(locale, 'setup.back'), action: true },
+      ],
+      { multiple: true, locale },
+    );
+    if (selected.cancelled || selected.value === 'back') return { cancelled: true };
+    if (!Array.isArray(selected.value) || !selected.value.length)
+      return { error: 'at least one coding-agent target must be selected' };
+    targets = selected.value.filter((target): target is string => typeof target === 'string');
   }
+  const planned = configureIntent({
+    homeDir,
+    cwd,
+    scope,
+    adoptionMode,
+    ...(scope === 'user' ? { targets } : {}),
+    plan: true,
+  });
+  if (!persist) return planned;
+  process.stdout.write('\nReview installation changes\n\n');
+  process.stdout.write(
+    `  ${t(locale, 'install.sharingPrompt')}  ${humanAdoptionLabel(adoptionMode, locale)}\n`,
+  );
+  if (scope === 'user')
+    process.stdout.write(
+      `  ${t(locale, 'install.agentsPrompt')}   ${targets.map((target) => humanTargetLabel(target, locale)).join(', ')}\n`,
+    );
+  const confirmation = await select(
+    t(locale, 'install.applyChangesQuestion'),
+    [
+      { value: 'apply', label: t(locale, 'setup.apply') },
+      { value: 'back', label: t(locale, 'setup.back'), action: true },
+      { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
+    ],
+    { locale },
+  );
+  if (confirmation.cancelled || confirmation.value !== 'apply') return { cancelled: true };
+  return configureIntent({
+    homeDir,
+    cwd,
+    scope,
+    adoptionMode,
+    ...(scope === 'user' ? { targets } : {}),
+    plan: false,
+  });
 }
 
 async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()) {

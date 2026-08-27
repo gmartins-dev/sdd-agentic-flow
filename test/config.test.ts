@@ -33,8 +33,8 @@ test('config show prints policy summary', () => {
   initConfig(temporary);
   const result = run(['config', 'show'], temporary);
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /execution_mode=guided|Execution mode/);
-  assert.match(result.stdout, /guided/);
+  assert.match(result.stdout, /Workflow/);
+  assert.match(result.stdout, /Manual/);
 });
 
 test('config policy --plan never writes', () => {

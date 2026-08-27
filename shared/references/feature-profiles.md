@@ -1,16 +1,36 @@
 # Feature profiles
 
-`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` adaptively sizes SDD rigor to the
-**uncertainty and risk** of the work, not only the size of the diff. Skills that read this value
-scale specification depth, task granularity, and evidence rigor accordingly; the underlying TLC
-and TDD baselines never change, only how much of them is invoked explicitly. Unset or
-unrecognized values fall back to `medium_feature` behavior.
+`feature_profile` adaptively sizes SDD rigor to the **uncertainty and risk** of the work, not
+only the size of the diff. It is a property of the work package, not a preference that silently
+sizes every future feature. Skills that consume this value scale specification depth, task
+granularity, and evidence rigor accordingly; the underlying TLC and TDD baselines never change.
+
+The canonical writer, `saf-create-spec`, owns classification and reassessment. It records the
+result in the feature package context using these exact fields:
+
+```text
+Feature profile: <small_fix|medium_feature|large_feature|epic>
+Feature profile source: <inferred|explicit-override>
+Profile rationale: <concise explanation>
+```
+
+Resolution precedence:
+
+1. During an intentional create or update, a physically present valid
+   `workflow.feature_profile` in project config is an `explicit-override`.
+2. Without that field, `saf-create-spec` infers from the current request and repository
+   evidence and records `inferred`. A prior persisted value is history during this rewrite.
+3. Downstream skills use the persisted context field first, then an explicit legacy config
+   field, then `medium_feature` as a compatibility fallback. They never infer independently.
+
+An effective built-in `medium_feature` is not an explicit override and must not be materialized
+by an unrelated workflow or language mutation.
 
 Selection rule:
 
 > Upsize when uncertainty or risk is high even if the diff is small.
 > Downsize when the behavior is obvious and gates would be theater.
-> Default remains `medium_feature`.
+> The compatibility fallback remains `medium_feature`; normal feature creation infers depth.
 
 Example: a 5-line change in authentication can be `medium_feature` or `large_feature`; a
 500-line well-known CRUD can stay `small_fix` / `medium_feature`. Same artifact family, variable
@@ -42,3 +62,9 @@ contract, not a fifth profile and not a CLI `--type`.
 - `epic`: spans multiple features or a long-lived initiative. Full spec package, explicit
   decomposition into feature-sized sub-scopes, and validation gates enforced per sub-scope
   rather than deferred to the end.
+
+Semantic classification is not a CLI certification responsibility. CLI certification verifies
+the human shell, persistence, advanced override behavior, and absence of implicit profile
+materialization. Classification quality is validated by the actual Agent Skill execution and
+the normal SDD review/validation chain; do not create a duplicate runtime classifier solely for
+the CLI certifier.

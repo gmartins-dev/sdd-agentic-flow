@@ -94,10 +94,11 @@ export function createDistAdapter(repoRoot: string): CliExecutionAdapter {
         env: environment(sandbox),
       });
     },
-    ptyCommand: () => `${shellQuote(process.execPath)} ${shellQuote(cli)}`,
+    ptyCommand: () => `stty -isig -echo; exec ${shellQuote(process.execPath)} ${shellQuote(cli)}`,
     ptyEnvironment: (sandbox) => {
       const env = environment(sandbox);
       delete env.CI;
+      env.TERM = 'xterm-256color';
       return env;
     },
   };
@@ -134,11 +135,13 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
         env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
       });
     },
-    ptyCommand: () => `npx --yes --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
+    ptyCommand: () =>
+      `stty -isig -echo; exec npx --yes --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
     ptyEnvironment: (sandbox) => {
       const env = environment(sandbox);
       delete env.CI;
       env.SDD_NO_UPDATE_PROMPT = '1';
+      env.TERM = 'xterm-256color';
       return env;
     },
   };

@@ -12,7 +12,6 @@ type OperatingPresetName = keyof typeof OPERATING_PRESETS;
 const EFFECTIVE_DEFAULTS = Object.freeze({
   execution_mode: 'apply',
   autonomy_level: 'supervised',
-  feature_profile: 'medium_feature',
   specs_root: '.specs/features',
   source_type: 'local-files',
   language_profile: 'en-US',
@@ -43,7 +42,6 @@ source:
 
 workflow:
   default_flow: single
-  feature_profile: ${EFFECTIVE_DEFAULTS.feature_profile}
   commit_policy: manual
   execution_mode: ${EFFECTIVE_DEFAULTS.execution_mode}
   autonomy_level: ${EFFECTIVE_DEFAULTS.autonomy_level}
@@ -95,6 +93,7 @@ type ReadConfigResult = {
   content: string | null;
   policy?: Policy;
   featureProfile?: string | null;
+  featureProfileExplicit?: boolean;
   languageProfile?: string | null;
   presetEquivalent?: string | null;
   errors: string[];
@@ -162,7 +161,8 @@ function readConfig(configPath: string): ReadConfigResult {
         executionMode: EFFECTIVE_DEFAULTS.execution_mode,
         autonomyLevel: EFFECTIVE_DEFAULTS.autonomy_level,
       },
-      featureProfile: EFFECTIVE_DEFAULTS.feature_profile,
+      featureProfile: 'medium_feature',
+      featureProfileExplicit: false,
       languageProfile: EFFECTIVE_DEFAULTS.language_profile,
       presetEquivalent: 'supervised',
     };
@@ -207,6 +207,7 @@ function readConfig(configPath: string): ReadConfigResult {
     content,
     policy: { executionMode, autonomyLevel },
     featureProfile,
+    featureProfileExplicit: featureProfile !== null,
     languageProfile,
     presetEquivalent:
       executionMode && autonomyLevel ? presetEquivalentFor(executionMode, autonomyLevel) : null,
@@ -265,6 +266,11 @@ function replaceConfigField(
   const pattern = new RegExp(`^(\\s+${key}:\\s*).+$`, 'm');
   if (!pattern.test(content)) return { ok: false, error: `field ${key} not found` };
   return { ok: true, content: content.replace(pattern, `$1${value}`) };
+}
+
+function addWorkflowField(content: string, key: string, value: string): string {
+  const marker = /^( {2}autonomy_level:\s*.+)$/m;
+  return marker.test(content) ? content.replace(marker, `$1\n  ${key}: ${value}`) : content;
 }
 
 function buildPolicyPreview(
@@ -329,7 +335,7 @@ function applyPolicyMutation(
   );
   const selectedLanguage = languageProfile ?? language;
   const beforeLanguage = current.languageProfile ?? EFFECTIVE_DEFAULTS.language_profile;
-  const beforeFeatureProfile = current.featureProfile ?? EFFECTIVE_DEFAULTS.feature_profile;
+  const beforeFeatureProfile = current.featureProfile ?? 'medium_feature';
   const afterLanguage = selectedLanguage ?? beforeLanguage;
   const afterFeatureProfile = featureProfile ?? beforeFeatureProfile;
   preview.beforeLanguage = beforeLanguage;
@@ -359,8 +365,11 @@ function applyPolicyMutation(
   }
   if (featureProfile) {
     const featureResult = replaceConfigField(next, 'feature_profile', featureProfile);
-    if (!featureResult.ok) return { ok: false, errors: [featureResult.error], wrote: false };
-    next = featureResult.content;
+    next = featureResult.ok
+      ? featureResult.content
+      : addWorkflowField(next, 'feature_profile', featureProfile);
+    if (!next.includes(`feature_profile: ${featureProfile}`))
+      return { ok: false, errors: ['field feature_profile not found'], wrote: false };
   }
   replaced = replaceWorkflowField(next, 'autonomy_level', autonomyLevel);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };

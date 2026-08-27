@@ -43,8 +43,10 @@ orthogonal axes: `execution_mode` answers "what is a skill authorized to do," `a
 answers "does a skill need a human between it and the next one." `plan` and `guided` never
 combine with `autonomous`. `doctor --autonomy` flags either combination as `FAIL`. Use
 `config policy` (interactive TTY, or `--plan` / `--yes` for CI) to persist an override.
-`execution_mode`, `autonomy_level`, `profile`/`human_outputs`, and
-`workflow.feature_profile` are CLI-editable; other keys remain manual YAML edits. Use
+`execution_mode`, `autonomy_level`, and `profile`/`human_outputs` are CLI-editable. The
+`workflow.feature_profile` field is an advanced explicit project override; normal guided setup
+does not ask for it and feature creation normally infers a profile in the feature context. Other
+keys remain manual YAML edits. Use
 `config policy --plan` to preview the complete change, then `--yes` for a non-interactive
 apply. See
 [commands.md](commands.md). Optional per-skill overrides live under `workflow.skill_overrides`:

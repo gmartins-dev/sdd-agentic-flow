@@ -101,15 +101,15 @@ scope, or was partially removed.
 **Fix:** `npx sdd-agentic-flow install` again (idempotent; fills in only what's missing) in
 the scope you're checking against.
 
-### `adaptive-sizing`: "workflow.feature_profile not set in config"
+### `adaptive-sizing`: shared profile guidance is unavailable
 
-**Cause:** `.sdd-agentic-flow/config.yml` predates feature profiles, or was hand-edited without one.
+**Cause:** the installed shared layer is missing `shared/references/feature-profiles.md`.
 
 **Diagnose:** `npx sdd-agentic-flow doctor`.
 
-**Fix:** add `workflow.feature_profile: <small_fix|medium_feature|large_feature|epic>` to
-`.sdd-agentic-flow/config.yml`, or set it with `npx sdd-agentic-flow config policy
---feature-profile <profile> --yes`.
+**Fix:** run `npx sdd-agentic-flow install` again. Feature profiles are normally inferred per
+work package by `saf-create-spec`; `config policy --feature-profile` remains an advanced explicit
+project override.
 
 ### `evidence-first`: "quality.require_evidence_before_completion is not set to true"
 

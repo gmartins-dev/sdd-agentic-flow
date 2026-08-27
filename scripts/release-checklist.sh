@@ -8,32 +8,35 @@ version="$(node -e "console.log(require('./package.json').version)")"
 
 echo "== release-checklist: $version =="
 
-echo "-- 1/9: npm run check --"
+echo "-- 1/10: npm run check --"
 npm run check
 
-echo "-- 2/9: npm run pack:dry --"
+echo "-- 2/10: npm run pack:dry --"
 npm run pack:dry
 
-echo "-- 3/9: cli:certify --"
+echo "-- 3/10: cli:certify --"
 npm run cli:certify
 
-echo "-- 4/9: cli:certify:packed --"
+echo "-- 4/10: cli:certify:packed --"
 npm run cli:certify:packed
 
-echo "-- 5/9: doctor --smoke --"
+echo "-- 5/10: doctor --smoke --"
 node dist/sdd-agentic-flow.js doctor --smoke
 
-echo "-- 6/9: version consistency (package.json vs package-lock roots vs dist/) --"
+echo "-- 6/10: human CLI input audit --"
+npm run cli:human-audit
+
+echo "-- 7/10: version consistency (package.json vs package-lock roots vs dist/) --"
 npx tsx scripts/check-version-consistency.ts
 
-echo "-- 7/9: no pinned sdd-agentic-flow@<version> examples remaining --"
+echo "-- 8/10: no pinned sdd-agentic-flow@<version> examples remaining --"
 if grep -rEn 'sdd-agentic-flow@[0-9]' README.md README.pt-BR.md docs/ 2>/dev/null; then
   echo "found a pinned sdd-agentic-flow@<version> reference above — examples must stay unpinned" >&2
   exit 1
 fi
 echo "no pinned sdd-agentic-flow@<version> references found"
 
-echo "-- 8/9: documented CLI commands exist in dist/sdd-agentic-flow.js --"
+echo "-- 9/10: documented CLI commands exist in dist/sdd-agentic-flow.js --"
 node <<'NODE'
 const fs = require('node:fs');
 
@@ -68,5 +71,5 @@ if (missing.length) {
 console.log(`all ${cited.size} documented command(s) exist in the CLI dispatch`);
 NODE
 
-echo "-- 9/9: summary --"
+echo "-- 10/10: summary --"
 echo "PASS release-checklist: v${version} pronta para tag/publish"

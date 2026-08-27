@@ -20,7 +20,6 @@ type SetupIntent = {
   executionMode?: ExecutionMode;
   autonomyLevel?: AutonomyLevel;
   language: 'en-US' | 'pt-BR';
-  featureProfile: 'small_fix' | 'medium_feature' | 'large_feature' | 'epic';
 };
 
 type HostDetection = {

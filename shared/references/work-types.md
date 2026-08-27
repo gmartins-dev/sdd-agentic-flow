@@ -4,8 +4,9 @@ Work **intent** is inferred from the user request or source item and stated in p
 top of `spec.md` or `context.md` (example: `Work intent: bugfix`). It is not a
 `workflow.work_type` config key, not a CLI `--type`, and not a fifth `feature_profile`.
 
-Combine inferred intent with existing `workflow.feature_profile` (how much of TLC/TDD is
-invoked explicitly). Intent decides *what kind of truth* the artifacts must capture. Profile
+Combine inferred intent with the feature package's persisted `feature_profile` (how much of
+TLC/TDD is invoked explicitly). A project `workflow.feature_profile` is only an explicit
+advanced override used by the canonical spec writer, never an implicit global default. Intent decides *what kind of truth* the artifacts must capture. Profile
 decides *how much ceremony*. A 5-line authentication change can outrank a 500-line well-known
 CRUD in rigor.
 

@@ -1,7 +1,8 @@
 # Choosing a feature profile
 
-`workflow.feature_profile` in `.sdd-agentic-flow/config.yml` sizes SDD rigor to the
-**uncertainty and risk** of the work, not only the size of the diff. See
+`feature_profile` sizes SDD rigor to the **uncertainty and risk** of the work, not only the size
+of the diff. It belongs to the feature package created by `saf-create-spec`, not normal
+interactive setup. See
 [feature profiles](../../shared/references/feature-profiles.md) for the full contract each
 value implies, and [work types](../../shared/references/work-types.md) for inferred intent
 (`feature` / `bugfix` / `refactor` / `investigation` / `maintenance`). Intent and profile are
@@ -11,7 +12,11 @@ Selection rule:
 
 > Upsize when uncertainty or risk is high even if the diff is small.
 > Downsize when the behavior is obvious and gates would be theater.
-> Default remains `medium_feature`.
+> The compatibility fallback remains `medium_feature`; normal feature creation infers depth.
+
+An explicit `workflow.feature_profile` in valid project config is an advanced project-level
+override. It is not the same as the effective built-in fallback, and workflow/language changes
+must not create it implicitly.
 
 Example: a 5-line change in authentication can be `medium_feature` or `large_feature`; a
 500-line well-known CRUD can stay `small_fix` / `medium_feature`.

@@ -6,7 +6,7 @@ Network access has **three explicit entry points** (never silent/background):
 
 1. **`doctor --check-updates`** — diagnostic read-only check (one npm registry request).
 2. **`upgrade`** (including `--check` / `--plan`) — upgrade-specific operations; mutations only after interactive confirms. `--skills-only` does not use the network.
-3. **Interactive bare welcome opt-in** — on human-rich TTY only (stdin+stdout TTY, no `CI`), the CLI may ask `Check for updates? [y/N]` (default **N**). Declining keeps zero network; accepting starts the same check path as `upgrade`. Set `SDD_NO_UPDATE_PROMPT=1` to skip the question.
+3. **Interactive bare welcome opt-in** — on human-rich TTY only (stdin+stdout TTY, no `CI`), the CLI may offer an explicit update-check action. Declining keeps zero network; choosing it starts the same check path as `upgrade`. Set `SDD_NO_UPDATE_PROMPT=1` to skip update prompts.
 
 Machine / pipe / CI / `--quiet` / human-plain bare welcome never prompt and never call the registry unless you pass an explicit flag or command above. Offline is never reported as “up to date”. See `src/update-check.ts` and `src/upgrade.ts`.
 

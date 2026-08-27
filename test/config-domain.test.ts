@@ -7,6 +7,7 @@ import { after, test } from 'node:test';
 import {
   applyPolicyMutation,
   autonomyComboValid,
+  effectiveConfigYaml,
   readConfig,
   resolvePolicyFromPreset,
   validatePolicyMutation,
@@ -42,6 +43,7 @@ test('readConfig parses policy and preset equivalent', () => {
   assert.equal(config.policy.executionMode, 'guided');
   assert.equal(config.policy.autonomyLevel, 'manual');
   assert.equal(config.presetEquivalent, 'manual');
+  assert.equal(config.featureProfileExplicit, true);
 });
 
 test('readConfig treats missing config as healthy built-in defaults', () => {
@@ -49,7 +51,12 @@ test('readConfig treats missing config as healthy built-in defaults', () => {
   assert.equal(config.ok, true);
   assert.equal(config.state, 'absent');
   assert.equal(config.origin, 'built-in-defaults');
+  assert.equal(config.featureProfileExplicit, false);
   assert.deepEqual(config.policy, { executionMode: 'apply', autonomyLevel: 'supervised' });
+});
+
+test('effective defaults do not materialize a feature profile', () => {
+  assert.doesNotMatch(effectiveConfigYaml(), /feature_profile:/);
 });
 
 test('readConfig rejects unsupported v5 schema before policy mutation', () => {
@@ -117,6 +124,18 @@ test('applyPolicyMutation materializes config only when an absent default is cha
   });
   assert.equal(result.ok, true);
   assert.equal(readConfig(file).presetEquivalent, 'autonomous');
+});
+
+test('explicit feature profile can be materialized without an existing config field', () => {
+  const file = path.join(temporary, 'explicit-profile/config.yml');
+  const result = applyPolicyMutation(file, {
+    executionMode: 'full',
+    autonomyLevel: 'autonomous',
+    featureProfile: 'large_feature',
+  });
+  assert.equal(result.ok, true);
+  assert.match(fs.readFileSync(file, 'utf8'), /feature_profile: large_feature/);
+  assert.equal(readConfig(file).featureProfileExplicit, true);
 });
 
 test('policy mutation preserves comments and unrelated config content', () => {

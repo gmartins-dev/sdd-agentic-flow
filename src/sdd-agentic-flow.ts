@@ -3,7 +3,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
 import { type AdoptionMode, adoptionModeForScope, isAdoptionMode } from './adoption';
 import { renderCliCommand } from './cli-command';
 import { COMMAND_HELP, KNOWN_COMMANDS, USAGE, writeCommandHelp } from './cli-help';
@@ -37,7 +36,7 @@ import {
 } from './install';
 import { DEFAULT_USER_TARGETS, shouldUseInteractiveInstall, USER_TARGETS } from './install-domain';
 import { targetLabelFor } from './install-preflight';
-import { menuActionsFor, shouldShowInteractiveMenu } from './menu';
+import { shouldShowInteractiveMenu } from './menu';
 import { resolveLocale, t, translateText } from './messages';
 import {
   PACKAGE_ROOT,
@@ -54,8 +53,7 @@ import {
   contextStatus,
 } from './project-context';
 import { select } from './selector';
-import { guidedInit, printCurrentSetup, setSetupCommandDeps } from './setup';
-import { inspectSetupState } from './setup-state';
+import { guidedInit, setSetupCommandDeps } from './setup';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import {
   type DisplayMode,
@@ -176,16 +174,11 @@ function didYouMeanTry(input: string, candidates: string[]) {
 }
 
 async function askYesNo(question: string) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const raw = await rl.question(question);
-    const trimmed = String(raw ?? '')
-      .trim()
-      .toLowerCase();
-    return trimmed === 'y' || trimmed === 'yes';
-  } finally {
-    rl.close();
-  }
+  const result = await select(question.replace(/\s*\[[^\]]+\]\s*$/, ''), [
+    { value: 'continue', label: 'Continue' },
+    { value: 'cancel', label: 'Cancel' },
+  ]);
+  return !result.cancelled && result.value === 'continue';
 }
 
 function canPromptInteractively(mode: DisplayMode = resolveMode()) {
@@ -306,16 +299,14 @@ function help(command?: string): boolean | undefined {
   process.stdout.write(
     `sdd-agentic-flow ${VERSION}
 
-Spec Driven Development toolkit for AI coding agents.
+Spec-Driven Agentic Workflow Harness for coding agents.
 
 QUICK START
   npx sdd-agentic-flow
-  npx sdd-agentic-flow init
-  npx sdd-agentic-flow install
-  npx sdd-agentic-flow doctor
+  Starts the guided human interface.
 
 START
-  init [--interactive] [--language en-US|pt-BR] [--feature-profile ...] [--preset ...] [--execution-mode ...] [--autonomy-level ...] [--local-git-exclude] [--quiet]  Guided setup or local configuration
+  init [--plan] [--json] [--quiet] [--yes]  Initialize the current workspace
   install [--scope user|project] [--target agents|cursor|claude|copilot] [--plan] [--quiet]  Install the official bundle
   doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
 
@@ -521,7 +512,7 @@ async function refreshInstalledSkills(cwd: string, options: CommandOptions = {})
     for (const line of allDiffers.slice(0, 20)) process.stdout.write(`  ${line}\n`);
     if (interactive)
       overwriteDiffers = await askYesNo(
-        'Overwrite differing managed files with the bundled package? [y/N] ',
+        'Overwrite differing managed files with the bundled package?',
       );
     else log('WARN', 'non-interactive: never overwriting differing managed files');
   }
@@ -626,20 +617,20 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
 
   if (!result.updateAvailable) {
     log('PASS', `up to date (${VERSION})`);
-    const refreshAnyway = await askYesNo(
-      'Refresh installed skills from this package anyway? [y/N] ',
+    process.stdout.write('\nNo update is required.\n');
+    process.stdout.write(
+      `To refresh skills deliberately, run ${renderCliCommand('upgrade', '--skills-only')}.\n`,
     );
-    if (refreshAnyway) await refreshInstalledSkills(cwd, { mode, interactive: true });
     return;
   }
 
   log('WARN', `update available: ${VERSION} -> ${result.latest}`);
   let cliOk = null;
-  const upgradeCli = await askYesNo(`Upgrade CLI to ${result.latest} now? [y/N] `);
+  const upgradeCli = await askYesNo(`Upgrade CLI to ${result.latest} now?`);
   if (upgradeCli) {
     if (execMode === 'global') {
       try {
-        process.stdout.write(`Running: npm install -g sdd-agentic-flow@latest\n`);
+        process.stdout.write(`Updating the global SAF installation...\n`);
         runNpmGlobalInstall();
         log('PASS', `CLI upgraded toward ${result.latest}`);
         cliOk = true;
@@ -664,7 +655,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
     }
   }
 
-  const refreshSkills = await askYesNo('Refresh installed skills from this package? [y/N] ');
+  const refreshSkills = await askYesNo('Refresh installed skills from this package?');
   let skillsOk = null;
   if (refreshSkills) {
     try {
@@ -1162,75 +1153,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
 // runCommand() a typed command uses; the "uninstall" entry is structurally --plan only (see
 // bin/menu.js's MENU_ACTIONS), so the menu can never trigger a destructive action directly.
 async function runInteractiveMenu(cwd: string, options: CommandOptions = {}) {
-  const locale = localeFor(cwd);
-  for (;;) {
-    const configFound = fs.existsSync(sddJoin(cwd, 'config.yml'));
-    const skillsInstalled = officialSkillsPresence(resolveSkillsRoot(cwd)).complete;
-    const setupState = inspectSetupState(cwd, os.homedir()).state;
-    const onboardingState =
-      setupState === 'Ready'
-        ? 'READY'
-        : setupState === 'Attention' || setupState === 'Blocked'
-          ? 'NEEDS_ATTENTION'
-          : setupState === 'Fresh'
-            ? 'FIRST_USE'
-            : 'PARTIAL';
-    if (options.showSummary !== false && ['READY', 'NEEDS_ATTENTION'].includes(onboardingState))
-      printCurrentSetup(cwd, locale);
-    const actions = menuActionsFor({
-      hasConfig: configFound,
-      hasSkills: skillsInstalled,
-      onboardingState,
-      installationBlocker: options.installationBlocker || null,
-    });
-    process.stdout.write(`\n${t(locale, 'menu.question')}\n`);
-    const choice = await select(
-      t(locale, 'menu.select'),
-      actions.map((action: import('./menu').MenuAction) => {
-        const key =
-          action.command[0] === 'upgrade'
-            ? 'menu.updates'
-            : action.command[0] === 'configure'
-              ? 'menu.change'
-              : action.command[0] === 'doctor'
-                ? 'menu.validate'
-                : action.command[0] === 'help'
-                  ? 'menu.more'
-                  : action.command.length === 0
-                    ? 'menu.keep'
-                    : null;
-        return { value: action, label: key ? t(locale, key) : action.label };
-      }),
-      { cancelValues: ['q', '0'], locale },
-    );
-    if (choice.cancelled) return;
-    const selection = choice.value as unknown as import('./menu').MenuAction;
-    if (!selection.command.length) return;
-    process.stdout.write(
-      `\n${t(locale, 'menu.running')}: sdd-agentic-flow ${selection.command.join(' ')}\n\n`,
-    );
-    const menuCommand = selection.command[0];
-    if (!menuCommand) return;
-    if (selection.command.join(' ') === 'config installation --interactive') {
-      await changeInstallationInteractive(cwd, os.homedir());
-      continue;
-    }
-    await runCommand(menuCommand, selection.command.slice(1), cwd);
-    if (menuCommand === 'uninstall' && selection.command.includes('--purge')) {
-      const confirmation = await select('Purge all recognized SAF assets? [Y/n]', [
-        { value: 'apply', label: 'Continue' },
-        { value: 'cancel', label: 'Cancel' },
-      ]);
-      if (!confirmation.cancelled && confirmation.value === 'apply')
-        uninstall(['--yes', '--purge'], cwd);
-      else process.stdout.write('INFO purge cancelled\n');
-      continue;
-    }
-    if (menuCommand === 'uninstall')
-      process.stdout.write(
-        '\nTo actually remove these, run `npx sdd-agentic-flow uninstall --yes` explicitly.\n',
-      );
-  }
+  return guidedInit(cwd, options);
 }
 
 setSetupCommandDeps({

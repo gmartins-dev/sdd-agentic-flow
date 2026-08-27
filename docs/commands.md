@@ -8,7 +8,7 @@
 | `init` | Initialize the exact current Git workspace |
 | `init --plan` | Preview the same workspace plan without writes |
 | `config show` | Show effective policy and its origin |
-| `config policy [--preset ...] [--language ...] [--feature-profile ...]` | Preview or persist workflow, language, and feature-profile overrides |
+| `config policy [--preset ...] [--language ...] [--feature-profile ...]` | Preview or persist workflow, language, and advanced feature-profile overrides |
 | `config installation` | Save scope, targets, and project adoption intent |
 | `doctor` | Report Installation, Workspace, and Policy readiness |
 | `doctor --json` | Emit machine schema 2 |

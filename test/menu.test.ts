@@ -79,11 +79,12 @@ test('menuActionsFor filters by config/skills state', () => {
   );
 });
 
-test('ready menu uses the explicit advanced-options label', () => {
+test('ready menu uses the canonical shell labels', () => {
   const actions = menuActionsFor({ onboardingState: 'READY' });
-  const last = actions.at(-1);
-  assert.ok(last);
-  assert.equal(last.label, 'Commands and advanced options');
+  assert.deepEqual(
+    actions.map((action) => action.label),
+    ['Exit', 'Change settings', 'Check for updates', 'Validate setup', 'Advanced options'],
+  );
 });
 
 test('needs-attention menu is repair-first and keeps current setup non-default', () => {

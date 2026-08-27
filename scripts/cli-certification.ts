@@ -116,7 +116,7 @@ function readOnlyScenario(): Scenario {
       expectSuccess(adapter.run(['init'], sandbox));
       const before = observeSandbox(sandbox);
       expectSuccess(adapter.run(['doctor'], sandbox));
-      expectSuccess(adapter.run(['config', 'show'], sandbox), /Execution mode/i);
+      expectSuccess(adapter.run(['config', 'show'], sandbox), /Workflow|Language/i);
       expectSuccess(adapter.run(['help', 'install'], sandbox));
       expectUnchanged(before, observeSandbox(sandbox));
     },
@@ -188,7 +188,11 @@ function configurationScenario(): Scenario {
         ),
         /saved|pass|already/i,
       );
-      expectSuccess(adapter.run(['config', 'show'], sandbox), /supervised|pt-BR|medium_feature/i);
+      expectSuccess(adapter.run(['config', 'show'], sandbox), /Supervised|Português \(Brasil\)/i);
+      assert.match(
+        fs.readFileSync(path.join(sandbox.cwd, '.sdd-agentic-flow', 'config.yml'), 'utf8'),
+        /feature_profile: medium_feature/,
+      );
       expectSuccess(
         adapter.run(
           ['config', 'installation', '--plan', '--scope', 'project', '--adoption-mode', 'team'],
@@ -358,11 +362,12 @@ function cancellationScenario(): Scenario {
       const result = await runScriptPty(adapter.ptyCommand(sandbox), {
         cwd: sandbox.cwd,
         env: adapter.ptyEnvironment(sandbox),
-        steps: [{ waitFor: /Sharing/, input: '\u0003' }],
+        steps: [{ waitFor: /Enter selects the first option/, input: '\u0003' }],
       });
-      assert.notEqual(result.status, 0, `${result.stderr}\n${result.transcript}`);
+      assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
       expectUnchanged(before, observeSandbox(sandbox));
-      assert.doesNotMatch(result.transcript, /PASS Ready/);
+      assert.match(result.transcript, /Cancelled|Cancelado/i);
+      assert.doesNotMatch(result.transcript, /FAIL Aborted with Ctrl\+C/);
     },
   };
 }
@@ -440,18 +445,86 @@ function ptyScenario(): Scenario {
         cwd: sandbox.cwd,
         env: adapter.ptyEnvironment(sandbox),
         steps: [
-          { waitFor: /Sharing/, input: '\r' },
+          { waitFor: /Enter selects the first option/, input: '1' },
+          { waitFor: /Sharing/, input: '1' },
           { waitFor: /Coding agents/, input: '\r' },
-          { waitFor: /Setup plan/, input: '\r' },
-          { waitFor: /Ready to set up SAF/, input: '\r' },
+          { waitFor: /Workflow/, input: '\r' },
+          { waitFor: /Language/, input: '\r' },
+          { waitFor: /Ready to set up SAF/, input: '1\n' },
           { waitFor: /PASS Ready/, input: '' },
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
       assert.match(result.transcript, /PASS Ready/);
+      assert.doesNotMatch(
+        result.transcript,
+        /Feature profile|\[personal\/specs-shared\/team\]|\[y\/N\]|Running:/i,
+      );
       const state = observeSandbox(sandbox);
       assert.ok(
         state.entries.some((entry) => entry.path === 'project/.sdd-agentic-flow/workspace.yml'),
+      );
+    },
+  };
+}
+
+function installationPreservationScenario(): Scenario {
+  return {
+    id: 'C016',
+    name: 'scope changes preserve unrelated user targets',
+    requirement: 'mandatory',
+    async run(adapter, sandbox) {
+      expectSuccess(
+        adapter.run(['install', '--target', 'claude'], sandbox),
+        /installed|preserved/i,
+      );
+      expectSuccess(
+        adapter.run(
+          ['config', 'installation', '--yes', '--scope', 'project', '--adoption-mode', 'team'],
+          sandbox,
+        ),
+        /saved|pass/i,
+      );
+      expectSuccess(
+        adapter.run(['config', 'installation', '--yes', '--scope', 'user'], sandbox),
+        /saved|pass/i,
+      );
+      const content = fs.readFileSync(
+        path.join(sandbox.home, '.sdd-agentic-flow', 'install.yml'),
+        'utf8',
+      );
+      assert.match(content, /- claude/);
+    },
+  };
+}
+
+function readySettingsScenario(): Scenario {
+  return {
+    id: 'C017',
+    name: 'ready settings use one human shell without profile prompts',
+    requirement: 'mandatory',
+    async run(adapter, sandbox) {
+      expectSuccess(adapter.run(['init'], sandbox));
+      expectSuccess(
+        adapter.run(['install', '--scope', 'project', '--adoption-mode', 'team'], sandbox),
+      );
+      const result = await runScriptPty(adapter.ptyCommand(sandbox), {
+        cwd: sandbox.cwd,
+        env: adapter.ptyEnvironment(sandbox),
+        steps: [
+          { waitFor: /What would you like to do/, input: '2\n' },
+          { waitFor: /Change settings|Alterar configurações/, input: '1\n' },
+          { waitFor: /Workflow|Fluxo de trabalho/, input: '1\n' },
+          {
+            waitFor: /Already using|Já usando/,
+            input: '5\n',
+          },
+        ],
+      });
+      assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
+      assert.doesNotMatch(
+        result.transcript,
+        /Feature profile|medium_feature|personal\/specs-shared\/team|Running:/i,
       );
     },
   };
@@ -472,6 +545,8 @@ const scenarios = [
   machineJsonScenario(),
   ptyScenario(),
   cancellationScenario(),
+  installationPreservationScenario(),
+  readySettingsScenario(),
 ];
 
 async function runScenario(

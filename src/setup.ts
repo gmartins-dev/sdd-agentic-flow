@@ -9,7 +9,6 @@ import {
   AUTONOMY_LEVELS,
   defaultOnboardingPolicy,
   EXECUTION_MODES,
-  formatPolicyPair,
   ONBOARDING_DEFAULT_PRESET,
   onboardingPresetOrder,
   policyDisplayTitle,
@@ -30,12 +29,10 @@ import {
 import { resolveLocale, t, translateText } from './messages';
 import {
   autonomyComboValid,
-  FEATURE_PROFILES,
   gitInfoExcludePath,
   LANGUAGE_PROFILES,
   LOCAL_GIT_EXCLUDE_COMMENT,
   LOCAL_GIT_EXCLUDE_ENTRY,
-  OPERATING_PRESETS,
   PACKAGE_ROOT,
   resolveOperatingPreset,
   SDD_PATHS,
@@ -43,6 +40,7 @@ import {
   sddJoin,
   USAGE_GUIDE_PT_BR_URL,
   USAGE_GUIDE_URL,
+  VERSION,
 } from './paths';
 import { select } from './selector';
 import {
@@ -211,6 +209,9 @@ function errorMessage(error: unknown): string {
 function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const inferred = inferInitDefaults(cwd);
   const profile = options.profile || options.language || 'en-US';
+  const featureProfile = options.featureProfile
+    ? `  feature_profile: ${options.featureProfile}\n`
+    : '';
   return `schema: saf-config/v3
 
 project:
@@ -240,8 +241,7 @@ source:
 
 workflow:
   default_flow: ${options.flow || 'single'}
-  feature_profile: ${options.featureProfile || 'medium_feature'}
-  allow_multi_worktree: ${options.multiWorktree || false}
+${featureProfile}  allow_multi_worktree: ${options.multiWorktree || false}
   allow_stacked_prs: ${options.stackedPrs || false}
   commit_policy: manual
   execution_mode: ${options.executionMode || 'guided'}
@@ -455,9 +455,7 @@ function printPolicyLines(draft: SetupPolicyDraft, locale: string, indent = '  '
   process.stdout.write(
     `${indent}${t(locale, 'setup.policy')}        ${policyReviewTitle(draft, locale)}\n`,
   );
-  process.stdout.write(
-    `${indent}                ${formatPolicyPair(draft.executionMode, draft.autonomyLevel)}\n`,
-  );
+  process.stdout.write(`${indent}                ${policyReviewTitle(draft, locale)}\n`);
 }
 
 function policyFromConfig(
@@ -476,29 +474,59 @@ function policyFromConfig(
   );
 }
 
-function setupLocationLabel(scope: string, options: SetupCommandOptions = {}) {
-  return `official bundle ${isRich(resolveMode({ ascii: Boolean(options.ascii) })) ? '·' : '-'} ${scope}`;
-}
-
 function printCurrentSetup(cwd: string, locale: string, homeDir = os.homedir()) {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const saved = savedSetupProfile(cwd, homeDir);
-  const state = onboardingStateFor(cwd);
-  const location = saved ? setupLocationLabel(asString(saved.scope)) : t(locale, 'setup.missing');
-  const context = fs.existsSync(sddJoin(cwd, 'context', 'project-context.md'))
-    ? t(locale, 'setup.ready')
-    : t(locale, 'setup.missing');
-  const health =
-    state === 'READY'
-      ? t(locale, 'setup.ready')
-      : state === 'PARTIAL'
-        ? t(locale, 'setup.partial')
-        : t(locale, 'setup.attention');
+  const state = inspectSetupState(cwd, homeDir);
+  const profile = saved?.profile;
+  const adoption =
+    profile && typeof profile === 'object' && 'adoption_mode' in profile
+      ? String(profile.adoption_mode)
+      : null;
+  const targets =
+    profile && typeof profile === 'object' && 'targets' in profile && Array.isArray(profile.targets)
+      ? profile.targets
+      : [];
+  const targetLabels = (targets as string[]).map(
+    (target) =>
+      ({
+        agents:
+          locale === 'pt-BR' ? 'Skills compatíveis com agentes' : 'Shared agent-compatible skills',
+        cursor: 'Cursor',
+        claude: 'Claude Code',
+        copilot: locale === 'pt-BR' ? 'GitHub Copilot' : 'GitHub Copilot',
+      })[target] || target,
+  );
   process.stdout.write(`\n${t(locale, 'setup.current')}\n\n`);
-  process.stdout.write(`  ${t(locale, 'setup.location')}       ${location}\n`);
-  if (config.ok) printPolicyLines(policyFromConfig(config, locale), locale);
-  process.stdout.write(`  ${t(locale, 'setup.context')}      ${context}\n`);
-  process.stdout.write(`  ${t(locale, 'setup.health')}       ${health}\n`);
+  process.stdout.write(`  ${locale === 'pt-BR' ? 'Status' : 'Status'}     ${state.state}\n`);
+  if (adoption)
+    process.stdout.write(
+      `  ${locale === 'pt-BR' ? 'Compartilhamento' : 'Sharing'}  ${
+        adoption === 'personal'
+          ? locale === 'pt-BR'
+            ? 'Apenas para mim'
+            : 'Just for me'
+          : adoption === 'team'
+            ? (locale === 'pt-BR' ? 'Com a equipe' : 'With the team')
+            : (locale === 'pt-BR' ? 'Specs compartilhadas' : 'Specs shared')
+      }\n`,
+    );
+  if (targetLabels.length)
+    process.stdout.write(
+      `  ${locale === 'pt-BR' ? 'Agentes' : 'Agents'}     ${targetLabels.join(', ')}\n`,
+    );
+  if (config.ok) {
+    const policy = policyFromConfig(config, locale);
+    process.stdout.write(
+      `  ${locale === 'pt-BR' ? 'Fluxo' : 'Workflow'}    ${policyReviewTitle(policy, locale)}\n`,
+    );
+    process.stdout.write(
+      `  ${locale === 'pt-BR' ? 'Idioma' : 'Language'}    ${config.languageProfile === 'pt-BR' ? 'Português (Brasil)' : 'English'}\n`,
+    );
+  }
+  if (state.state === 'Attention')
+    process.stdout.write(`\n${t(locale, 'welcome.attentionTitle')}\n`);
+  if (state.state === 'Blocked') process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
 }
 
 async function applySetup(
@@ -566,7 +594,6 @@ async function applySetup(
     process.stdout.write(
       `\n${t(locale, 'setup.policyReady', {
         preset: policyReviewTitle(policy, locale),
-        pair: formatPolicyPair(policy.executionMode, policy.autonomyLevel),
       })}\n${t(locale, 'setup.policyChangeHint')}\n`,
     );
     return true;
@@ -583,7 +610,6 @@ type PersistedSetupIntent = {
   executionMode?: SetupIntent['executionMode'];
   autonomyLevel?: SetupIntent['autonomyLevel'];
   language?: SetupIntent['language'];
-  featureProfile?: SetupIntent['featureProfile'];
 };
 
 function persistedSetupIntent(cwd: string, homeDir: string): PersistedSetupIntent {
@@ -609,7 +635,7 @@ function persistedSetupIntent(cwd: string, homeDir: string): PersistedSetupInten
   const selectedHosts = matchingHosts.length === 1 ? matchingHosts[0] : undefined;
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const workflow =
-    config.ok && config.policy?.executionMode && config.policy.autonomyLevel
+    config.state === 'valid' && config.policy?.executionMode && config.policy.autonomyLevel
       ? setupPolicyFromPair(config.policy.executionMode, config.policy.autonomyLevel)
       : null;
   const presetWorkflow = workflow?.presetName;
@@ -629,11 +655,8 @@ function persistedSetupIntent(cwd: string, homeDir: string): PersistedSetupInten
             : {}),
         }
       : {}),
-    ...(config.ok && LANGUAGE_PROFILES.includes(config.languageProfile ?? '')
+    ...(config.state === 'valid' && LANGUAGE_PROFILES.includes(config.languageProfile ?? '')
       ? { language: config.languageProfile as SetupIntent['language'] }
-      : {}),
-    ...(config.ok && FEATURE_PROFILES.includes(config.featureProfile ?? '')
-      ? { featureProfile: config.featureProfile as SetupIntent['featureProfile'] }
       : {}),
   };
 }
@@ -667,6 +690,12 @@ async function collectSetupIntent(
     return { cancelled: true };
 
   const hints = detectSetupHosts({ cwd, homeDir });
+  const hostLabels: Record<string, string> = {
+    codex: 'Codex',
+    cursor: 'Cursor',
+    'claude-code': 'Claude Code',
+    'vscode-copilot': 'GitHub Copilot',
+  };
   let selectedHosts: SetupIntent['selectedHosts'] = persisted.selectedHosts ?? [];
   if (!selectedHosts.length) {
     for (;;) {
@@ -674,7 +703,7 @@ async function collectSetupIntent(
         'Coding agents',
         hints.map((hint) => ({
           value: hint.host,
-          label: `${hint.host}${hint.detected ? ` (${hint.evidence.join(', ')})` : ''}`,
+          label: `${hostLabels[hint.host] || hint.host}${hint.detected ? ' (detected)' : ''}`,
           selected: hint.detected,
         })),
         true,
@@ -730,19 +759,6 @@ async function collectSetupIntent(
       ]);
   if (('cancelled' in language && language.cancelled) || typeof language.value !== 'string')
     return { cancelled: true };
-  const featureProfile = persisted.featureProfile
-    ? { value: persisted.featureProfile }
-    : await choose('Process depth', [
-        { value: 'medium_feature', label: 'Standard', selected: true },
-        { value: 'small_fix', label: 'Lightweight' },
-        { value: 'large_feature', label: 'Thorough' },
-        { value: 'epic', label: 'Epic' },
-      ]);
-  if (
-    ('cancelled' in featureProfile && featureProfile.cancelled) ||
-    typeof featureProfile.value !== 'string'
-  )
-    return { cancelled: true };
   return {
     sharing: sharing.value as SetupIntent['sharing'],
     selectedHosts,
@@ -750,15 +766,47 @@ async function collectSetupIntent(
     ...(executionMode ? { executionMode } : {}),
     ...(autonomyLevel ? { autonomyLevel } : {}),
     language: language.value as SetupIntent['language'],
-    featureProfile: featureProfile.value as SetupIntent['featureProfile'],
   };
 }
 
-function printSetupPlan(plan: SetupPlan): void {
-  process.stdout.write('\nSetup plan\n\n');
-  process.stdout.write(`  Sharing: ${plan.intent?.sharing}\n`);
-  process.stdout.write(`  Targets: ${plan.targets.join(', ') || '(none)'}\n`);
-  process.stdout.write(`  Scope: ${plan.scope}\n`);
+function printSetupPlan(plan: SetupPlan, locale = 'en-US'): void {
+  const sharing = plan.intent?.sharing;
+  const sharingLabel =
+    sharing === 'personal'
+      ? locale === 'pt-BR'
+        ? 'Apenas para mim'
+        : 'Just for me'
+      : sharing === 'team'
+        ? locale === 'pt-BR'
+          ? 'Com a equipe'
+          : 'With the team'
+        : locale === 'pt-BR'
+          ? 'Specs compartilhadas com a equipe'
+          : 'Specs shared with the team';
+  const targetLabels = plan.targets.map((target) =>
+    target === 'agents'
+      ? locale === 'pt-BR'
+        ? 'Shared agent-compatible skills'
+        : 'Shared agent-compatible skills'
+      : target === 'claude'
+        ? 'Claude Code'
+        : target === 'copilot'
+          ? 'GitHub Copilot'
+          : target === 'cursor'
+            ? 'Cursor'
+            : target,
+  );
+  process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
+  process.stdout.write(
+    `  ${locale === 'pt-BR' ? 'Compartilhamento' : 'Sharing'}  ${sharingLabel}\n`,
+  );
+  process.stdout.write(
+    `  ${locale === 'pt-BR' ? 'Agentes' : 'Agents'}   ${targetLabels.join(', ') || '(none)'}\n`,
+  );
+  process.stdout.write(
+    `  ${locale === 'pt-BR' ? 'Escopo' : 'Scope'}    ${plan.scope === 'project' ? (locale === 'pt-BR' ? 'Projeto' : 'Project') : locale === 'pt-BR' ? 'Usuário' : 'User'}\n`,
+  );
+  process.stdout.write('\nChanges\n');
   for (const item of [
     ...plan.cleanupActions,
     ...plan.installationIntent,
@@ -767,7 +815,7 @@ function printSetupPlan(plan: SetupPlan): void {
     ...plan.configMutation,
     ...plan.workspaceInitialization,
   ])
-    process.stdout.write(`  ${item.kind}: ${item.detail}\n`);
+    process.stdout.write(`  - ${item.detail}\n`);
   for (const warning of plan.warnings) process.stdout.write(`  Warning: ${warning}\n`);
   for (const blocker of plan.blockers) process.stdout.write(`  Blocked: ${blocker}\n`);
 }
@@ -788,38 +836,150 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
 }
 
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
-  const { upgradeCommand, runCommand, runInteractiveMenu, changeInstallation } =
-    requireCommandDeps();
+  const { upgradeCommand, runCommand, changeInstallation } = requireCommandDeps();
   const homeDir = asString(options.homeDir, os.homedir());
-  const snapshot = inspectSetupState(cwd, homeDir);
   const locale = localeFor(cwd, options.language);
-  if (snapshot.state === 'Ready' || snapshot.state === 'Attention') {
-    printCurrentSetup(cwd, locale, homeDir);
-    const action = await select(
-      t(locale, 'menu.question'),
-      [
-        { value: 'keep', label: t(locale, 'menu.keep') },
-        { value: 'changePolicy', label: t(locale, 'menu.changePolicy') },
-        { value: 'changeInstall', label: t(locale, 'menu.changeInstall') },
+  const choose = (
+    question: string,
+    values: Array<{ value: string; label: string; action?: boolean }>,
+  ) =>
+    select(question, values, {
+      ascii: Boolean(options.ascii),
+      cancelValues: ['q', '0'],
+      locale,
+    });
+
+  const runSettings = async (): Promise<'back' | 'exit'> => {
+    for (;;) {
+      const choice = await choose(t(locale, 'menu.settings'), [
+        { value: 'workflow', label: t(locale, 'menu.workflow') },
+        { value: 'language', label: t(locale, 'menu.language') },
+        { value: 'installation', label: t(locale, 'menu.installation') },
+        { value: 'back', label: t(locale, 'menu.back'), action: true },
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+      ]);
+      if (choice.cancelled || choice.value === 'exit') return 'exit';
+      if (choice.value === 'back') return 'back';
+      if (choice.value === 'workflow') {
+        const workflow = await choose(t(locale, 'menu.workflow'), [
+          { value: 'supervised', label: 'Supervised' },
+          { value: 'manual', label: 'Manual' },
+          { value: 'autonomous', label: 'Autonomous' },
+          { value: 'back', label: t(locale, 'menu.back'), action: true },
+          { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+        ]);
+        if (workflow.cancelled || workflow.value === 'exit') return 'exit';
+        if (workflow.value && workflow.value !== 'back')
+          await runCommand('config', ['policy', '--preset', String(workflow.value)], cwd);
+      } else if (choice.value === 'language') {
+        const language = await choose(t(locale, 'menu.language'), [
+          { value: 'en-US', label: 'English' },
+          { value: 'pt-BR', label: 'Português (Brasil)' },
+          { value: 'back', label: t(locale, 'menu.back'), action: true },
+          { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+        ]);
+        if (language.cancelled || language.value === 'exit') return 'exit';
+        if (language.value && language.value !== 'back')
+          await runCommand('config', ['policy', '--language', String(language.value)], cwd);
+      } else if (choice.value === 'installation') {
+        await changeInstallation(cwd);
+      }
+    }
+  };
+
+  const runAdvanced = async (): Promise<'back' | 'exit'> => {
+    for (;;) {
+      const choice = await choose(t(locale, 'menu.advanced'), [
+        { value: 'help', label: t(locale, 'menu.commandReference') },
+        { value: 'config', label: t(locale, 'menu.configDetails') },
+        { value: 'context', label: t(locale, 'menu.refreshContext') },
+        { value: 'install', label: t(locale, 'menu.installPlan') },
+        { value: 'uninstall', label: t(locale, 'menu.uninstallPlan') },
+        { value: 'back', label: t(locale, 'menu.back'), action: true },
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+      ]);
+      if (choice.cancelled || choice.value === 'exit') return 'exit';
+      if (choice.value === 'back') return 'back';
+      const commands: Record<string, [string, string[]]> = {
+        help: ['help', []],
+        config: ['config', ['show']],
+        context: ['context', ['refresh']],
+        install: ['install', ['--plan']],
+        uninstall: ['uninstall', ['--plan']],
+      };
+      const command = commands[String(choice.value)];
+      if (command) await runCommand(command[0], command[1], cwd);
+    }
+  };
+
+  for (;;) {
+    const snapshot = inspectSetupState(cwd, homeDir);
+    if (snapshot.state === 'Ready' || snapshot.state === 'Attention') {
+      printCurrentSetup(cwd, locale, homeDir);
+      const action = await choose(t(locale, 'menu.question'), [
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+        { value: 'settings', label: t(locale, 'menu.settings') },
         { value: 'updates', label: t(locale, 'menu.updates') },
         { value: 'validate', label: t(locale, 'menu.validate') },
-        { value: 'more', label: t(locale, 'menu.more') },
-      ],
-      { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+        { value: 'advanced', label: t(locale, 'menu.advanced') },
+      ]);
+      if (action.cancelled || action.value === 'exit') {
+        if (action.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
+        return;
+      }
+      if (action.value === 'settings') {
+        if ((await runSettings()) === 'exit') return;
+      } else if (action.value === 'updates') {
+        await upgradeCommand(cwd, { ascii: Boolean(options.ascii), interactive: true, homeDir });
+      } else if (action.value === 'validate') {
+        await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+      } else if (action.value === 'advanced') {
+        if ((await runAdvanced()) === 'exit') return;
+      }
+      continue;
+    }
+    if (snapshot.state === 'Blocked') {
+      process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
+      const action = await choose(t(locale, 'menu.question'), [
+        { value: 'validate', label: t(locale, 'menu.validate') },
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+      ]);
+      if (action.cancelled || action.value === 'exit') return;
+      await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+      continue;
+    }
+    process.stdout.write(
+      `\nsdd-agentic-flow ${VERSION}\n${t(locale, 'welcome.product')}\n${t(locale, 'welcome.tagline')}\n\n` +
+        `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
+        `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshBody') : t(locale, 'welcome.incompleteBody')}\n\n`,
     );
-    if (action.cancelled || action.value === 'keep') return;
-    if (action.value === 'updates') return upgradeCommand(cwd, { ascii: Boolean(options.ascii) });
-    if (action.value === 'changePolicy') return runCommand('config', ['policy'], cwd);
-    if (action.value === 'changeInstall') return changeInstallation(cwd);
-    if (action.value === 'validate') return doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
-    return runInteractiveMenu(cwd, { showSummary: false });
+    const entry = await choose(t(locale, 'menu.question'), [
+      {
+        value: 'start',
+        label:
+          snapshot.state === 'Fresh'
+            ? t(locale, 'menu.startSetup')
+            : t(locale, 'menu.continueSetup'),
+      },
+      { value: 'learn', label: t(locale, 'menu.learn') },
+      { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+    ]);
+    if (entry.cancelled || entry.value === 'exit') {
+      if (entry.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
+      return;
+    }
+    if (entry.value === 'learn') {
+      await runCommand('learn-sdd', [], cwd);
+      continue;
+    }
+    break;
   }
 
   for (;;) {
     const intent = await collectSetupIntent(cwd, locale, options, homeDir);
     if ('cancelled' in intent) return log('INFO', t(locale, 'setup.cancelled'), locale);
     const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
-    printSetupPlan(plan);
+    printSetupPlan(plan, locale);
     if (plan.blocked) {
       log('FAIL', plan.blockers.join('; '), locale);
       continue;
@@ -859,7 +1019,6 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       ...options,
       homeDir,
       language: intent.language,
-      featureProfile: intent.featureProfile,
     };
     if (await applySetup(cwd, draft, applyOptions, locale, plan)) return;
     process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
@@ -881,7 +1040,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
 async function initInteractive(
   cwd: string,
   languageDefault = 'en-US',
-  featureProfileDefault = 'medium_feature',
+  _featureProfileDefault = 'medium_feature',
   quiet = false,
   executionModeDefault = 'guided',
   autonomyLevelDefault = 'manual',
@@ -893,11 +1052,7 @@ async function initInteractive(
     const existing = fs.readFileSync(configPath, 'utf8');
     const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
     if (schema !== 'saf-config/v2') {
-      fs.writeFileSync(
-        configPath,
-        configFor(cwd, { language: languageDefault, featureProfile: featureProfileDefault }),
-        'utf8',
-      );
+      fs.writeFileSync(configPath, configFor(cwd, { language: languageDefault }), 'utf8');
       log('INFO', `${SDD_PATHS.config} replaced with the current configuration contract`);
       return;
     }
@@ -926,19 +1081,60 @@ async function initInteractive(
     allowed: readonly string[] | null,
     kind: 'text' | 'branch' = 'text',
   ): Promise<string> => {
+    if (allowed) {
+      const labels: Record<string, string> = {
+        'en-US': 'English',
+        'pt-BR': 'Português (Brasil)',
+        generic: 'Any coding agent',
+        codex: 'Codex',
+        cursor: 'Cursor',
+        'claude-code': 'Claude Code',
+        'vscode-copilot': 'GitHub Copilot',
+        supervised: 'Supervised',
+        manual: 'Manual',
+        autonomous: 'Autonomous',
+        advanced: 'Advanced policy',
+        'local-files': 'Local files',
+        single: 'Single feature',
+        multi: 'Multiple features',
+        true: 'Yes',
+        false: 'No',
+        plan: 'Plan',
+        guided: 'Guided',
+        apply: 'Apply',
+        review: 'Review',
+        full: 'Full',
+      };
+      if (pipedAnswers) {
+        process.stdout.write(`${label}: `);
+        const answer = (pipedAnswers[answerIndex++] || fallback).trim() || fallback;
+        if (!validValue(answer, allowed)) throw new Error(`${label} must be a listed choice`);
+        return answer;
+      }
+      const selected = await select(
+        label,
+        allowed.map((value) => ({
+          value,
+          label: labels[value] || value,
+          selected: value === fallback,
+        })),
+        { locale },
+      );
+      if (selected.cancelled || typeof selected.value !== 'string') throw new Error('cancelled');
+      return selected.value;
+    }
     const prompt = `${label} [${fallback}]: `;
     let raw: string | undefined;
     if (pipedAnswers) {
       process.stdout.write(prompt);
       raw = pipedAnswers[answerIndex++];
+      // human-input-allowlist: free-form project name/branch only
     } else if (rl) {
       raw = await rl.question(prompt);
     } else {
       raw = fallback;
     }
     const answer = (raw || '').trim() || fallback;
-    if (allowed && !validValue(answer, allowed))
-      throw new Error(`${label} must be one of: ${allowed.join(', ')}`);
     if (!allowed) {
       const valid =
         kind === 'branch' ? /^[A-Za-z0-9][A-Za-z0-9._/-]*$/ : /^[A-Za-z0-9][A-Za-z0-9 ._-]*$/;
@@ -948,10 +1144,7 @@ async function initInteractive(
   };
   try {
     process.stdout.write(
-      `\n${renderStep(1, 7, t(locale, 'init.language'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    process.stdout.write(
-      '  en-US — English human output\n  pt-BR — Saída humana em português do Brasil\n',
+      `\n${renderStep(1, 6, t(locale, 'init.language'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     const language = await ask(
       t(locale, 'init.languagePrompt'),
@@ -966,7 +1159,7 @@ async function initInteractive(
     };
 
     process.stdout.write(
-      `\n${renderStep(2, 7, t(locale, 'init.identity'), mode, t(locale, 'step')).join('\n')}\n`,
+      `\n${renderStep(2, 6, t(locale, 'init.identity'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     initOptions.name = await ask(t(locale, 'init.projectName'), inferred.name, null);
     initOptions.branch = await ask(
@@ -977,7 +1170,7 @@ async function initInteractive(
     );
 
     process.stdout.write(
-      `\n${renderStep(3, 7, t(locale, 'init.agent'), mode, t(locale, 'step')).join('\n')}\n`,
+      `\n${renderStep(3, 6, t(locale, 'init.agent'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     process.stdout.write(`  ${t(locale, 'init.agentHint')}\n`);
     initOptions.agent = await ask(t(locale, 'init.agentPrompt'), inferred.agent, [
@@ -989,32 +1182,12 @@ async function initInteractive(
     ]);
 
     process.stdout.write(
-      `\n${renderStep(4, 7, t(locale, 'init.profile'), mode, t(locale, 'step')).join('\n')}\n`,
+      `\n${renderStep(4, 6, t(locale, 'init.policy'), mode, t(locale, 'step')).join('\n')}\n`,
     );
-    process.stdout.write(`  ${FEATURE_PROFILES.join(', ')}\n`);
-    initOptions.featureProfile = await ask(
-      t(locale, 'init.featurePrompt'),
-      featureProfileDefault,
-      FEATURE_PROFILES,
-    );
-
-    process.stdout.write(
-      `\n${renderStep(5, 7, t(locale, 'init.policy'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    for (const name of onboardingPresetOrder()) {
-      const preset = OPERATING_PRESETS[name];
-      if (!preset) continue;
-      process.stdout.write(`  ${name}: ${preset.executionMode} + ${preset.autonomyLevel}\n`);
-    }
-    const presetPrompt = `${t(locale, 'init.presetPrompt')} [${ONBOARDING_DEFAULT_PRESET}]: `;
-    let presetRaw: string | undefined;
-    if (pipedAnswers) {
-      process.stdout.write(presetPrompt);
-      presetRaw = pipedAnswers[answerIndex++];
-    } else {
-      presetRaw = rl ? await rl.question(presetPrompt) : ONBOARDING_DEFAULT_PRESET;
-    }
-    const presetChoice = (presetRaw || ONBOARDING_DEFAULT_PRESET).trim();
+    const presetChoice = await ask(t(locale, 'init.presetPrompt'), ONBOARDING_DEFAULT_PRESET, [
+      ...onboardingPresetOrder(),
+      'advanced',
+    ]);
     if (presetChoice === 'advanced') {
       initOptions.executionMode = await ask(
         'Execution mode',
@@ -1033,7 +1206,7 @@ async function initInteractive(
       initOptions.autonomyLevel = resolved.autonomyLevel;
     }
     process.stdout.write(
-      `\n${renderStep(6, 7, t(locale, 'init.workflow'), mode, t(locale, 'step')).join('\n')}\n`,
+      `\n${renderStep(5, 6, t(locale, 'init.workflow'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     initOptions.source = await ask(t(locale, 'init.sourcePrompt'), 'local-files', ['local-files']);
     initOptions.flow = await ask(t(locale, 'init.flowPrompt'), 'single', ['single', 'multi']);
@@ -1042,14 +1215,13 @@ async function initInteractive(
     initOptions.stackedPrs =
       (await ask(t(locale, 'init.stackedPrompt'), 'false', ['true', 'false'])) === 'true';
     process.stdout.write(
-      `\n${renderStep(7, 7, t(locale, 'init.review'), mode, t(locale, 'step')).join('\n')}\n`,
+      `\n${renderStep(6, 6, t(locale, 'init.review'), mode, t(locale, 'step')).join('\n')}\n`,
     );
     process.stdout.write(
       `  ${t(locale, 'init.reviewProject')}: ${initOptions.name}\n` +
         `  ${t(locale, 'init.reviewBranch')}: ${initOptions.branch}\n` +
         `  ${t(locale, 'init.reviewAgent')}: ${initOptions.agent}\n` +
         `  ${t(locale, 'init.reviewLanguage')}: ${initOptions.language}\n` +
-        `  ${t(locale, 'init.reviewProfile')}: ${initOptions.featureProfile}\n` +
         `  ${t(locale, 'init.reviewPolicy')}: ${initOptions.executionMode} + ${initOptions.autonomyLevel}\n` +
         `  ${t(locale, 'init.reviewSource')}: ${initOptions.source}\n` +
         `  ${t(locale, 'init.reviewFlow')}: ${initOptions.flow}\n` +
@@ -1061,14 +1233,22 @@ async function initInteractive(
         `Execution mode ${initOptions.executionMode} cannot combine with autonomy level ${initOptions.autonomyLevel}`,
       );
     const confirmPrompt = t(locale, 'init.confirm');
-    let confirmRaw: string | undefined;
+    let confirmed = true;
     if (pipedAnswers) {
-      process.stdout.write(confirmPrompt);
-      confirmRaw = pipedAnswers[answerIndex++];
+      process.stdout.write(`${confirmPrompt}: `);
+      confirmed = !/^(no|n)$/i.test(String(pipedAnswers[answerIndex++] || '').trim());
     } else {
-      confirmRaw = rl ? await rl.question(confirmPrompt) : 'yes';
+      const confirmation = await select(
+        confirmPrompt,
+        [
+          { value: 'apply', label: 'Apply' },
+          { value: 'cancel', label: 'Cancel' },
+        ],
+        { locale },
+      );
+      confirmed = !confirmation.cancelled && confirmation.value === 'apply';
     }
-    if (/^(no|n)$/i.test(String(confirmRaw || '').trim())) {
+    if (!confirmed) {
       log('INFO', t(locale, 'init.cancelled'));
       return;
     }

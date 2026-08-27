@@ -67,11 +67,11 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
   }
   if (state.onboardingState === 'READY') {
     return [
-      { label: 'Keep current setup', command: [] },
+      { label: 'Exit', command: [] },
+      { label: 'Change settings', command: [] },
       { label: 'Check for updates', command: ['upgrade'] },
-      { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
       { label: 'Validate setup', command: ['doctor'] },
-      { label: 'Commands and advanced options', command: ['help'] },
+      { label: 'Advanced options', command: ['help'] },
     ];
   }
   if (state.onboardingState === 'NEEDS_ATTENTION') {
@@ -79,9 +79,9 @@ function menuActionsFor(state: MenuState = {}): MenuAction[] {
       { label: 'Resolve installation issue', command: ['install', '--plan'] },
       { label: 'Review diagnostics', command: ['doctor'] },
       { label: 'Review full SAF purge', command: ['uninstall', '--plan', '--purge'] },
-      { label: 'Change setup', command: ['config', 'installation', '--interactive'] },
-      { label: 'Keep current setup', command: [] },
-      { label: 'Commands and advanced options', command: ['help'] },
+      { label: 'Change settings', command: [] },
+      { label: 'Exit', command: [] },
+      { label: 'Advanced options', command: ['help'] },
     ];
   }
   const hasConfig = Boolean(state.hasConfig);

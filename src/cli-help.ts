@@ -2,7 +2,7 @@ import { renderCliCommand } from './cli-command';
 import { CANONICAL_COMMANDS } from './command-registry';
 
 export const USAGE = {
-  init: 'usage: init [--plan] [--json] [--quiet] [--ascii] [--yes]',
+  init: 'usage: init [--plan] [--json] [--quiet] [--yes]',
   install:
     'usage: install [--scope user|project] [--target agents|cursor|claude|copilot] [--adoption-mode personal|specs-shared|team] [--plan|--yes] [--quiet]',
   config:
@@ -25,7 +25,7 @@ const shared =
 
 export const COMMAND_HELP: Record<string, string> = {
   init: `${renderCliCommand('init')}\n\nInitialize the exact current Git workspace without creating policy config or reinstalling skills.\n\nUSAGE\n  ${USAGE.init}\n\n--plan previews the same deterministic plan used by apply. --json emits machine schema 2.\n${shared}`,
-  config: `${renderCliCommand('config')}\n\nInspect or change workflow policy and desired installation intent.\n\nUSAGE\n  ${renderCliCommand('config', 'show')}\n  ${renderCliCommand('config', 'policy')} [--plan|--yes] [--preset ...] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  ${renderCliCommand('config', 'installation')} [--plan|--yes]\n\nconfig policy changes workflow, language, and feature profile. config installation saves intent only; it never installs skills. adoption_mode selects personal, specs-shared, or team project visibility. It does not change scope and never edits .gitignore, global excludes, or Git history.\n${shared}`,
+  config: `${renderCliCommand('config')}\n\nInspect or change workflow policy and desired installation intent.\n\nUSAGE\n  ${renderCliCommand('config', 'show')}\n  ${renderCliCommand('config', 'policy')} [--plan|--yes] [--preset ...] [--language en-US|pt-BR] [--feature-profile small_fix|medium_feature|large_feature|epic]\n  ${renderCliCommand('config', 'installation')} [--plan|--yes]\n\nconfig policy changes workflow or language. --feature-profile is an advanced explicit project override. config installation saves intent only; it never installs skills. adoption_mode selects personal, specs-shared, or team project visibility. It does not change scope and never edits .gitignore, global excludes, or Git history.\n${shared}`,
   install: `${renderCliCommand('install')}\n\nInstall the 12 official engineering skills and shared layer.\n\nUSAGE\n  ${USAGE.install}\n\n--target is repeatable for user scope: agents | cursor | claude | copilot.\n--adoption-mode selects personal, specs-shared, or team project adoption.\n${shared}`,
   doctor: `${renderCliCommand('doctor')}\n\nRead-only health and contract checks.\n\nUSAGE\n  ${USAGE.doctor}\n\n--json emits one versioned machine document and never prompts.\n${shared}`,
   context: `${renderCliCommand('context')}\n\nInspect or regenerate project context and autonomy state.\n\nUSAGE\n  ${USAGE.context}\n${shared}`,

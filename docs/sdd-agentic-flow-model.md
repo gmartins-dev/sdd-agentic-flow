@@ -86,7 +86,7 @@ terms most useful when operating this toolkit.
 | --- | --- |
 | **Skill** | Markdown contract (`SKILL.md`) the agent reads and follows |
 | **Capability contract** | Frontmatter fields (`requires`, `consumes`, `produces`, …) linking skills |
-| **Feature profile** | Uncertainty/risk sizing hint (`small_fix` … `epic`) in config; independent of inferred work intent |
+| **Feature profile** | Uncertainty/risk sizing hint (`small_fix` … `epic`) persisted with a work package; an explicit project config value is an advanced override |
 | **Execution mode** | Authorization axis: what work type is allowed |
 | **Autonomy level** | Advance axis: manual / supervised / autonomous |
 | **Guardrail** | Deterministic gate before auto-advancing to the next skill |

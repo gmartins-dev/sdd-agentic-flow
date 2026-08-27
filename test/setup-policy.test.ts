@@ -135,7 +135,6 @@ test('guided resume reconstructs persisted intent without re-asking it', () => {
       selectedHosts: ['codex', 'claude-code', 'vscode-copilot'],
       workflow: 'supervised',
       language: 'pt-BR',
-      featureProfile: 'large_feature',
     });
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });

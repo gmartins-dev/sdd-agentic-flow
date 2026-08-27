@@ -359,7 +359,7 @@ function runJourneys() {
   const policy = project('03-policy');
   expect(run(['init'], policy), 0);
   record('J10', 'policy configuration', 'config show', () =>
-    expect(run(['config', 'show'], policy), 0, /Execution mode/),
+    expect(run(['config', 'show'], policy), 0, /Workflow|Language/),
   );
   record('J11', 'policy configuration', 'config policy --plan --preset autonomous', () => {
     const before = snapshotPersistentState([{ name: 'project', path: policy.cwd }]);

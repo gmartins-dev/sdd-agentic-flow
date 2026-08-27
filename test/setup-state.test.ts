@@ -23,6 +23,16 @@ test('classifies setup from durable facts without requiring config', () => {
     classifySetupState({
       config: 'valid',
       workspace: 'valid',
+      skills: 'partial',
+      context: true,
+      warnings: ['target is incomplete'],
+    }),
+    'Incomplete',
+  );
+  assert.equal(
+    classifySetupState({
+      config: 'valid',
+      workspace: 'valid',
       skills: 'complete',
       context: true,
       attention: true,

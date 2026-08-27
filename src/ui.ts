@@ -194,8 +194,22 @@ function renderSection(title: string, mode: DisplayMode = 'human-rich'): string[
 
 function renderKeyValue(key: string, value: string, mode: DisplayMode = 'human-rich'): string[] {
   if (mode === 'machine') return [];
-  const padding = Math.max(1, 14 - key.length);
-  return [`${key}${' '.repeat(padding)}${value}`];
+  const width = terminalColumns();
+  const available = Math.max(20, width - key.length - 4);
+  if (value.length <= available)
+    return [`${key}${' '.repeat(Math.max(2, 12 - key.length))}${value}`];
+  const words = value.split(/\s+/).filter(Boolean);
+  const lines: string[] = [key];
+  let current = '';
+  for (const word of words) {
+    if (current && current.length + word.length + 1 > available) {
+      lines.push(`  ${current}`);
+      current = '';
+    }
+    current = current ? `${current} ${word}` : word;
+  }
+  if (current) lines.push(`  ${current}`);
+  return lines;
 }
 
 function renderStep(

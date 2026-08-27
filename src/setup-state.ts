@@ -67,10 +67,9 @@ function classifySetupState(facts: SetupStateFacts): SetupState {
     !facts.context
   )
     return 'Fresh';
-  if (facts.attention || (facts.warnings?.length ?? 0) > 0) return 'Attention';
-  return facts.workspace === 'valid' && facts.skills === 'complete' && facts.context
-    ? 'Ready'
-    : 'Incomplete';
+  const ready = facts.workspace === 'valid' && facts.skills === 'complete' && facts.context;
+  if (!ready) return 'Incomplete';
+  return facts.attention || (facts.warnings?.length ?? 0) > 0 ? 'Attention' : 'Ready';
 }
 
 function hasSkill(root: string, skill: string): boolean {

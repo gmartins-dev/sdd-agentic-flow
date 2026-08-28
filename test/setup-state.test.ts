@@ -14,10 +14,13 @@ import {
 import { classifySetupState, collectSetupFacts, inspectSetupState } from '../src/setup-state';
 import { writeInstallProvenance } from '../src/upgrade';
 
-test('Fresh shell asks bilingually only without a reliable locale', () => {
+test('Fresh and incomplete recovery ask bilingually only without a reliable locale', () => {
   assert.equal(needsSessionLanguageSelection('Fresh', false), true);
   assert.equal(needsSessionLanguageSelection('Fresh', true), false);
-  assert.equal(needsSessionLanguageSelection('Incomplete', false), false);
+  assert.equal(needsSessionLanguageSelection('Incomplete', false), true);
+  assert.equal(needsSessionLanguageSelection('Blocked', false), true);
+  assert.equal(needsSessionLanguageSelection('Ready', false), false);
+  assert.equal(needsSessionLanguageSelection('Attention', false), false);
 });
 
 test('Fresh language selection is bilingual, defaults to English, and stays session-local', async () => {
@@ -37,11 +40,13 @@ test('Fresh language selection is bilingual, defaults to English, and stays sess
   assert.equal(await chooseSessionLocale(async () => ({ cancelled: true })), null);
 });
 
-test('operation result pages expose state, summary, and next action', () => {
+test('operation result pages expose state, summary, and truthful recovery guidance', () => {
   const page = renderOperationResult('Installation details', 'error', 'apply failed');
   assert.match(page, /Installation details/);
   assert.match(page, /Error: apply failed/);
   assert.match(page, /Next action:/);
+  assert.match(page, /durable state may have been applied/);
+  assert.doesNotMatch(page, /no pending intent was confirmed/i);
 });
 
 test('invocation welcome owns localized identity and state greeting', () => {
@@ -76,6 +81,16 @@ test('classifies setup from durable facts without requiring config', () => {
   assert.equal(
     classifySetupState({ config: 'absent', workspace: 'absent', skills: 'absent', context: false }),
     'Fresh',
+  );
+  assert.equal(
+    classifySetupState({
+      config: 'absent',
+      workspace: 'absent',
+      skills: 'absent',
+      context: false,
+      installationIntent: 'current',
+    }),
+    'Incomplete',
   );
   assert.equal(
     classifySetupState({ config: 'absent', workspace: 'valid', skills: 'complete', context: true }),
@@ -159,7 +174,25 @@ test('recognized managed roots outside user intent cannot classify as Ready', ()
   fs.mkdirSync(cwd, { recursive: true });
   writeInstallConfig({ ...defaultInstallConfig(), user: { targets: ['agents'] } }, homeDir);
   const cursorRoot = path.join(homeDir, '.cursor', 'skills');
-  writeInstallProvenance(cursorRoot, { packageVersion: '7.5.0', scope: 'user', target: 'cursor' });
+  writeInstallProvenance(cursorRoot, { packageVersion: '7.5.1', scope: 'user', target: 'cursor' });
   assert.equal(inspectSetupState(cwd, homeDir).state, 'Blocked');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('recognized project target outside user adoption cannot classify as Ready', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-extra-project-target-'));
+  const homeDir = path.join(root, 'home');
+  const cwd = path.join(root, 'project');
+  fs.mkdirSync(cwd, { recursive: true });
+  writeInstallConfig({ ...defaultInstallConfig(), user: { targets: ['agents'] } }, homeDir);
+  const projectRoot = path.join(cwd, '.agents', 'skills');
+  writeInstallProvenance(projectRoot, {
+    packageVersion: '7.5.1',
+    scope: 'project',
+    target: 'project-agents',
+  });
+  const snapshot = inspectSetupState(cwd, homeDir);
+  assert.equal(snapshot.state, 'Blocked');
+  assert.match(snapshot.evidence.blockers.join('\n'), /project-agents target is outside/);
   fs.rmSync(root, { recursive: true, force: true });
 });

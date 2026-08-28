@@ -11,8 +11,11 @@ type SelectOption = {
   selected?: boolean;
 };
 
+type SelectionCancelReason = 'escape' | 'interrupt' | 'cancel-value' | 'eof';
+
 type SelectionResult = {
   cancelled?: boolean;
+  cancelReason?: SelectionCancelReason;
   invalid?: boolean;
   value?: unknown;
   pending?: boolean;
@@ -43,7 +46,9 @@ function resolveSelection(
   cancelValues: string[] = [],
 ): SelectionResult {
   const value = String(raw ?? '').trim();
-  if (value === '\u001b' || cancelValues.includes(value.toLowerCase())) return { cancelled: true };
+  if (value === '\u001b') return { cancelled: true, cancelReason: 'escape' };
+  if (cancelValues.includes(value.toLowerCase()))
+    return { cancelled: true, cancelReason: 'cancel-value' };
   if (!multiple) {
     const index = value === '' ? 0 : Number(value) - 1;
     const option = options[index];
@@ -138,15 +143,14 @@ async function select(
   const output = settings.output || process.stdout;
   const multiple = Boolean(settings.multiple);
   const cancelValues = (settings.cancelValues || []).map((entry) => String(entry).toLowerCase());
+  const locale = settings.locale ?? 'en-US';
   const capabilities = terminalCapabilities(
     { stdin: input, stdout: output },
     process.env,
     settings.ascii === undefined ? {} : { ascii: settings.ascii },
   );
   const plain = !capabilities.interactive || !capabilities.rawInput || process.env.TERM === 'dumb';
-  output.write(
-    `${renderSelector(question, options, { multiple, locale: settings.locale, plain })}\n`,
-  );
+  output.write(`${renderSelector(question, options, { multiple, locale, plain })}\n`);
   if (plain) {
     const rl = readline.createInterface({ input, output, terminal: false });
     try {
@@ -155,7 +159,7 @@ async function select(
         .map((option) => option.value);
       for (;;) {
         const result = resolveSelection(
-          await new Promise<string>((resolve) => rl.question('Select: ', resolve)),
+          await new Promise<string>((resolve) => rl.question(t(locale, 'selector.prompt'), resolve)),
           options,
           selected,
           multiple,
@@ -163,7 +167,7 @@ async function select(
         );
         if (result.cancelled || (!result.invalid && !result.pending)) return result;
         if (!result.invalid && Array.isArray(result.value)) selected = result.value;
-        else output.write('Choose a listed number.\n');
+        else output.write(`${t(locale, 'selector.invalid')}\n`);
       }
     } finally {
       rl.close();
@@ -178,7 +182,7 @@ async function select(
       .map((option) => option.value);
     const renderedLines = renderSelector(question, options, {
       multiple,
-      locale: settings.locale,
+      locale,
     }).split('\n').length;
     const redraw = () => {
       output.write(
@@ -186,7 +190,7 @@ async function select(
           multiple,
           activeIndex: index,
           selected,
-          locale: settings.locale,
+          locale,
         })}\n`,
       );
     };
@@ -199,14 +203,13 @@ async function select(
       output.write('\n');
       resolve(result);
     };
-    const onSignal = () => done({ cancelled: true });
+    const onSignal = () => done({ cancelled: true, cancelReason: 'interrupt' });
     const onKeypress = (char: string | undefined, key: readline.Key = {}) => {
-      if (
-        (key.ctrl && key.name === 'c') ||
-        key.name === 'escape' ||
-        cancelValues.includes(String(char || '').toLowerCase())
-      )
-        return done({ cancelled: true });
+      if (key.ctrl && key.name === 'c')
+        return done({ cancelled: true, cancelReason: 'interrupt' });
+      if (key.name === 'escape') return done({ cancelled: true, cancelReason: 'escape' });
+      if (cancelValues.includes(String(char || '').toLowerCase()))
+        return done({ cancelled: true, cancelReason: 'cancel-value' });
       if (key.name === 'return') {
         const option = options[index];
         if (option?.action) return done({ value: option.value });
@@ -233,8 +236,9 @@ async function select(
         if (options[choice]) {
           index = choice;
           const option = options[index];
+          if (option?.action) return done({ value: option.value });
           if (!multiple && option) return done({ value: option.value });
-          if (multiple && option && !option.action) {
+          if (multiple && option) {
             const keyValue = optionValueKey(option.value);
             const selectedKeys = new Set(selected.map(optionValueKey));
             selected = selectedKeys.has(keyValue)
@@ -249,10 +253,15 @@ async function select(
     input.resume();
     input.on('keypress', onKeypress);
     process.once('SIGINT', onSignal);
-    const onEnd = () => done({ cancelled: true });
+    const onEnd = () => done({ cancelled: true, cancelReason: 'eof' });
     input.once('end', onEnd);
   });
 }
 
-export type { SelectionResult, SelectOption, SelectSettings };
+export type {
+  SelectionCancelReason,
+  SelectionResult,
+  SelectOption,
+  SelectSettings,
+};
 export { renderSelector, resolveSelection, select };

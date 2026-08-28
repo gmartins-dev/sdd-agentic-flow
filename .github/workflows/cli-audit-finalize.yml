@@ -1,0 +1,35 @@
+name: CLI audit finalize
+
+on:
+  push:
+    branches:
+      - fix/cli-flow-audit-v7-5-2
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/cli-flow-audit-v7-5-2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node scripts/apply-cli-audit-finalize.mjs
+      - run: npm ci
+      - run: npm run check
+      - name: Commit validated corrections
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/install.ts src/setup.ts .github/workflows/ci.yml docs/cli-interaction.md scripts/check-cli-human-input.ts
+          if git diff --cached --quiet; then
+            echo 'No corrections to commit.'
+            exit 0
+          fi
+          git commit -m 'fix: complete audited canonical CLI flow corrections'
+          git push origin HEAD:fix/cli-flow-audit-v7-5-2

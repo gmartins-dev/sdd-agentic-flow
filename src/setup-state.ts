@@ -65,7 +65,8 @@ function classifySetupState(facts: SetupStateFacts): SetupState {
     facts.config === 'absent' &&
     facts.workspace === 'absent' &&
     facts.skills === 'absent' &&
-    !facts.context
+    !facts.context &&
+    (facts.installationIntent === undefined || facts.installationIntent === 'none')
   )
     return 'Fresh';
   const ready = facts.workspace === 'valid' && facts.skills === 'complete' && facts.context;
@@ -119,6 +120,13 @@ function targetRoots(cwd: string, homeDir: string, configContent: string | null)
     .filter((target): target is { id: string; root: string } => Boolean(target.root));
 }
 
+function recognizedSafProvenance(root: string) {
+  const provenance = readInstallProvenance(root);
+  return provenance?.package === 'sdd-agentic-flow' && provenance.schema === 'saf-install-provenance/v3'
+    ? provenance
+    : null;
+}
+
 function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const workspacePath = path.join(cwd, SDD_PATHS.workspace);
@@ -147,17 +155,22 @@ function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts
     for (const id of Object.keys(USER_TARGETS)) {
       if (selected.has(id)) continue;
       const root = userSkillsDirsForTargets([id], homeDir)[0];
-      const provenance = root ? readInstallProvenance(root) : null;
-      if (
-        provenance?.package === 'sdd-agentic-flow' &&
-        provenance.schema === 'saf-install-provenance/v3'
-      )
+      const provenance = root ? recognizedSafProvenance(root) : null;
+      if (provenance)
         blockers.push(
           provenance.applyState === 'applying'
             ? `${id} target has an interrupted apply`
             : `${id} target is outside the authoritative selection`,
         );
     }
+    const projectRoot = path.join(cwd, '.agents', 'skills');
+    const projectProvenance = recognizedSafProvenance(projectRoot);
+    if (projectProvenance)
+      blockers.push(
+        projectProvenance.applyState === 'applying'
+          ? 'project-agents target has an interrupted apply'
+          : 'project-agents target is outside the authoritative adoption mode',
+      );
   }
   if (installState.kind === 'future' || installState.kind === 'unknown')
     blockers.push(`installation state ${installState.schema} is not recognized`);

@@ -144,7 +144,7 @@ function runPackedInteractive(
   const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
   if (probe.error || probe.status !== 0) return null;
   const cli = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
-  const command = `{ sleep 3; for _ in 1 2 3 4 5 6 7 8; do printf "\\r"; sleep 1; done; } | script -qec ${quoteShell(cli)} /dev/null`;
+  const command = `{ sleep 5; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf " "; sleep 0.2; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 10; } | script -qec ${quoteShell(cli)} /dev/null`;
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: state.home,

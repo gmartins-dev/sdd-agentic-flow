@@ -97,6 +97,11 @@ function quoteShell(value: string): string {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
 }
 
+function stripAnsi(value: string): string {
+  const ansiEscape = String.fromCharCode(27);
+  return value.replace(new RegExp(`${ansiEscape}\\[[0-?]*[ -/]*[@-~]`, 'g'), '');
+}
+
 function packTarball() {
   const packDir = path.join(runRoot, 'pack');
   const cacheDir = path.join(runRoot, 'npm-cache');
@@ -611,7 +616,7 @@ function runJourneys() {
       } satisfies AuditObservation;
     }
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
-    assert.match(result.stdout, /PASS Ready/);
+    assert.match(stripAnsi(result.stdout), /PASS Ready/);
     assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
     assert.equal(
       fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')),

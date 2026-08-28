@@ -155,7 +155,7 @@ function runPackedInteractive(
   return spawnSync('sh', ['-c', command], {
     cwd: state.cwd,
     encoding: 'utf8',
-    timeout: 60_000,
+    timeout: 120_000,
     env,
   });
 }

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-
+import { defaultInstallConfig, writeInstallConfig } from '../src/install-domain';
+import { PACKAGE_ROOT } from '../src/paths';
 import {
   detectSetupHosts,
   resolveSetupPlan,
@@ -11,6 +13,8 @@ import {
   setupPrecondition,
   targetsForHosts,
 } from '../src/setup-plan';
+import { OFFICIAL_SKILLS } from '../src/skill-identity';
+import { writeInstallProvenance } from '../src/upgrade';
 
 test('maps selected hosts to deduplicated persisted targets', () => {
   assert.deepEqual(targetsForHosts(['codex', 'cursor', 'claude-code']), [
@@ -78,7 +82,11 @@ test('resolves an inspectable plan with no executable callbacks', () => {
       },
       home,
     );
+    assert.equal(plan.operation, 'user-install');
+    assert.equal(plan.installationPlan.applicability, 'applicable');
+    assert.equal(plan.workspacePlan.applicability, 'not_applicable');
     assert.equal(plan.blocked, false);
+    assert.doesNotMatch(plan.blockers.join('\n'), /Git repository metadata is required/);
     assert.deepEqual(plan.targets, ['agents', 'cursor']);
     assert.equal(plan.preconditions.inputs.includes('unrelated home data'), false);
     assert.equal(
@@ -90,4 +98,49 @@ test('resolves an inspectable plan with no executable callbacks', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
     fs.rmSync(home, { recursive: true, force: true });
   }
+});
+
+test('switches from user installation to workspace setup inside Git', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-transition-'));
+  const home = path.join(root, 'home');
+  fs.mkdirSync(home, { recursive: true });
+  execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+  writeInstallConfig({ ...defaultInstallConfig(), user: { targets: ['agents'] } }, home);
+  const targetRoot = path.join(home, '.agents', 'skills');
+  for (const skill of OFFICIAL_SKILLS) {
+    fs.cpSync(path.join(PACKAGE_ROOT, 'skills', skill), path.join(targetRoot, skill), {
+      recursive: true,
+    });
+  }
+  fs.cpSync(path.join(PACKAGE_ROOT, 'shared'), path.join(targetRoot, 'sdd-agentic-flow-shared'), {
+    recursive: true,
+  });
+  writeInstallProvenance(targetRoot, {
+    packageVersion: '7.6.0',
+    scope: 'user',
+    target: 'agents',
+    managedSkills: [...OFFICIAL_SKILLS],
+    applyState: 'complete',
+  });
+  const state = {
+    config: 'absent',
+    workspace: 'absent',
+    skills: 'complete',
+    context: false,
+    homeDir: home,
+    evidence: { warnings: [], blockers: [], targetSet: [], targetEvidence: [] },
+    state: 'Incomplete',
+    installationIntent: 'current',
+  } as unknown as Parameters<typeof resolveSetupPlan>[1];
+  const plan = resolveSetupPlan(
+    root,
+    state,
+    { sharing: 'personal', selectedHosts: ['codex'], workflow: 'supervised', language: 'en-US' },
+    home,
+  );
+  assert.equal(plan.operation, 'workspace-setup');
+  assert.equal(plan.installRequired, false);
+  assert.equal(plan.workspacePlan.applicability, 'applicable');
+  assert.equal(plan.blocked, false);
+  fs.rmSync(root, { recursive: true, force: true });
 });

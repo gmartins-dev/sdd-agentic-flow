@@ -20,6 +20,7 @@ type ConfigureIntentInput = {
   scope: 'user' | 'project';
   targets?: string[];
   adoptionMode?: AdoptionMode;
+  specsVisibility?: 'local' | 'shared';
   plan?: boolean;
   [key: string]: unknown;
 };
@@ -48,8 +49,12 @@ function configureIntent({
   scope,
   targets,
   adoptionMode,
+  specsVisibility,
   plan = false,
 }: ConfigureIntentInput): ConfigureIntentResult {
+  // An adoption mode describes a workspace profile, even when its skills are
+  // installed in the user scope. A plain user installation omits it and is
+  // therefore valid outside Git.
   const git = adoptionMode || scope === 'project' ? resolveGitContext(cwd) : null;
   if (git && !git.ok) throw new Error(git.error);
   const config = readInstallConfig(homeDir) || defaultInstallConfig();
@@ -70,6 +75,7 @@ function configureIntent({
           git_common_dir: git?.ok ? git.context.gitCommonDir : '',
           project_relative_path: git?.ok ? git.context.projectRelativePath : '.',
           adoption_mode: adoptionMode,
+          ...(specsVisibility ? { specs_visibility: specsVisibility } : {}),
         };
       }
       writeInstallConfig(config, homeDir);
@@ -85,6 +91,7 @@ function configureIntent({
       ? git.context.projectRelativePath
       : resolved.profile?.project_relative_path || '.',
     adoption_mode: mode,
+    ...(specsVisibility ? { specs_visibility: specsVisibility } : {}),
   };
   if (!plan) {
     config.projects[resolved.key] = after;

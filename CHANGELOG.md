@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 7.6.0
+
+- Make the CLI setup lifecycle recoverable, including bounded clean reinstall
+  from incompatible SAF state and explicit in-process continuation.
+- Write `saf-install-intent/v4` with safe v3 compatibility and Team-local
+  working specs by default.
+- Keep generated SAF working state local by default, detect tracked visibility
+  drift, and preserve foreign content and Git history.
+- Improve language-first onboarding, localized setup copy, operation results,
+  remediation commands, path deduplication, and release certification gates.
+
 ## 7.5.1
 
 ### Bare shell welcome lifecycle

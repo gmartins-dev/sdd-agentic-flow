@@ -156,7 +156,9 @@ those files evolve?” Git history is for targeted investigation (`evidence wins
 over a stale snapshot`), **not** default `git log --all -- .specs` context.
 
 This toolkit repository gitignores `.specs/` for local dogfooding only.
-Consumers should version `.specs/features/`.
+SAF working specs are local by default. A consumer may explicitly choose
+repository visibility through `specs-shared` or Team's working-spec setting.
+SAF never stages or commits those files automatically.
 
 ## Validation does not archive
 
@@ -170,6 +172,8 @@ PASS is still not a correctness verdict.
 
 When a validated feature changes durable project truth (architecture, glossary, operational
 docs, or relationships between packages), reconcile the appropriate existing project knowledge.
+An active SAF spec is the working contract for its change; after acceptance and merge, source,
+tests, contracts, and intentionally maintained project documentation become durable truth.
 Do not add a global system-spec database, delta-spec engine, archive tree, or mandatory ADR folder.
 
 ## Living specs (pointer)

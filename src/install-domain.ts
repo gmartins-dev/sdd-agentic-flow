@@ -33,16 +33,17 @@ type InstallProjectProfile = {
   git_common_dir: string;
   project_relative_path: string;
   adoption_mode: 'personal' | 'specs-shared' | 'team';
+  specs_visibility?: 'local' | 'shared';
 };
 type InstallConfig = {
-  schema: 'saf-install-intent/v3';
+  schema: 'saf-install-intent/v3' | 'saf-install-intent/v4';
   user: { targets: string[] };
   projects: Record<string, InstallProjectProfile>;
 };
 type ParseTargetResult = { ok: true; targets: string[] } | { ok: false; message: string };
 type InstallIntentState =
   | { kind: 'none'; schema: null }
-  | { kind: 'current'; schema: 'saf-install-intent/v3' }
+  | { kind: 'current'; schema: 'saf-install-intent/v3' | 'saf-install-intent/v4' }
   | { kind: 'legacy'; schema: string }
   | { kind: 'future' | 'unknown'; schema: string };
 type InstallationKind = 'none' | 'current' | 'legacy' | 'future' | 'unknown';
@@ -98,7 +99,8 @@ function classifyInstallIntent(homeDir: string = os.homedir()): InstallIntentSta
   if (!fs.existsSync(file)) return { kind: 'none', schema: null };
   const firstLine = fs.readFileSync(file, 'utf8').split(/\r?\n/, 1)[0] || '';
   const schema = firstLine.replace(/^schema:\s*/, '').trim();
-  if (schema === 'saf-install-intent/v3') return { kind: 'current', schema };
+  if (schema === 'saf-install-intent/v3' || schema === 'saf-install-intent/v4')
+    return { kind: 'current', schema };
   if (schema === 'saf-install-intent/v1' || schema === 'saf-install-intent/v2')
     return { kind: 'legacy', schema };
   if (/^saf-install-intent\/v\d+$/.test(schema)) return { kind: 'future', schema };
@@ -154,7 +156,7 @@ function repositoryKey(root: string): string {
 }
 
 function defaultInstallConfig(): InstallConfig {
-  return { schema: 'saf-install-intent/v3', user: { targets: [] }, projects: {} };
+  return { schema: 'saf-install-intent/v4', user: { targets: [] }, projects: {} };
 }
 
 function yamlList(lines: string[], indent: number, values: string[]): void {
@@ -162,7 +164,7 @@ function yamlList(lines: string[], indent: number, values: string[]): void {
 }
 
 function serializeInstallConfig(config: InstallConfig): string {
-  const lines = ['schema: saf-install-intent/v3', '', 'user:', '  targets:'];
+  const lines = ['schema: saf-install-intent/v4', '', 'user:', '  targets:'];
   yamlList(lines, 4, config.user.targets || []);
   lines.push('', 'projects:');
   for (const [key, profile] of Object.entries(config.projects || {})) {
@@ -171,6 +173,7 @@ function serializeInstallConfig(config: InstallConfig): string {
       `    git_common_dir: "${profile.git_common_dir}"`,
       `    project_relative_path: "${profile.project_relative_path}"`,
       `    adoption_mode: ${profile.adoption_mode}`,
+      ...(profile.specs_visibility ? [`    specs_visibility: ${profile.specs_visibility}`] : []),
     );
   }
   return `${lines.join('\n')}\n`;
@@ -180,9 +183,15 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
   const file = installConfigPath(homeDir);
   if (!fs.existsSync(file)) return null;
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
-  if (lines[0] !== 'schema: saf-install-intent/v3')
+  const schemaLine = lines[0];
+  const schema = schemaLine?.replace(/^schema:\s*/, '').trim();
+  if (schema !== 'saf-install-intent/v3' && schema !== 'saf-install-intent/v4')
     throw new Error('unsupported installation intent; clean reinstall required');
-  const config = defaultInstallConfig();
+  const config: InstallConfig = {
+    schema: schema as InstallConfig['schema'],
+    user: { targets: [] },
+    projects: {},
+  };
   let section: 'user' | 'projects' | null = null;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? '';
@@ -213,6 +222,9 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
           git_common_dir: values.git_common_dir,
           project_relative_path: values.project_relative_path,
           adoption_mode: values.adoption_mode as InstallProjectProfile['adoption_mode'],
+          ...(values.specs_visibility === 'local' || values.specs_visibility === 'shared'
+            ? { specs_visibility: values.specs_visibility }
+            : {}),
         };
       }
     }

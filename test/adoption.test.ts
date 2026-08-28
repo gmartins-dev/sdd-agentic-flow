@@ -16,7 +16,7 @@ import {
 } from '../src/adoption';
 import { configureIntent } from '../src/configure';
 import { readInstallConfig } from '../src/install-domain';
-import { collectPurgeTargets } from '../src/uninstall';
+import { collectPurgeTargets, purgeKnownSafState } from '../src/uninstall';
 
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-adoption-'));
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
@@ -79,21 +79,110 @@ test('specs-shared exposes specs while hiding toolkit state', () => {
   const cwd = project('specs-shared');
   applyAdoption(cwd, 'specs-shared', path.join(cwd, 'home'));
   const content = fs.readFileSync(path.join(cwd, '.git/info/exclude'), 'utf8');
-  assert.doesNotMatch(content, /specs\/features/);
+  assert.doesNotMatch(content, /managed excludes: specs[\s\S]*specs\/features/);
   assert.match(content, /managed excludes: state/);
   assert.match(content, /foreign-pattern/);
 });
 
-test('team keeps official project assets visible and hides only derived state', () => {
+test('team keeps official project assets visible and hides generated state', () => {
   const cwd = project('team');
   const result = applyAdoption(cwd, 'team', path.join(cwd, 'home'));
   const content = fs.readFileSync(path.join(cwd, '.git/info/exclude'), 'utf8');
   assert.equal(result.expected.includes('.agents/skills/'), false);
   assert.doesNotMatch(content, /\.agents\/skills\//);
-  assert.match(content, /context\/project-context\.md/);
-  assert.match(content, /workspace\.yml/);
-  assert.match(content, /reports\//);
+  assert.match(content, /\.sdd-agentic-flow\/\*/);
+  assert.match(content, /!\.sdd-agentic-flow\/config\.yml/);
   assert.match(content, /foreign-pattern/);
+});
+
+test('new Team profiles keep specs local unless explicitly shared', () => {
+  const cwd = project('team-local');
+  const home = path.join(cwd, 'home');
+  configureIntent({
+    homeDir: home,
+    cwd,
+    scope: 'project',
+    adoptionMode: 'team',
+    specsVisibility: 'local',
+  });
+  const result = inspectAdoption(cwd, home);
+  assert.equal(result.specsVisibility, 'local');
+  assert.ok(result.expected.some((entry) => entry.endsWith('specs/features/')));
+  assert.match(fs.readFileSync(path.join(cwd, '.git/info/exclude'), 'utf8'), /specs\/features\//);
+  const ignored = execFileSync(
+    'git',
+    ['check-ignore', '--no-index', '--', 'specs/features/checkout/spec.md'],
+    { cwd, encoding: 'utf8' },
+  );
+  assert.match(ignored, /specs\/features\/checkout\/spec\.md/);
+});
+
+test('tracked specs block a reconciled local visibility result', () => {
+  const cwd = project('tracked-specs');
+  const home = path.join(cwd, 'home');
+  const spec = path.join(cwd, 'specs/features/checkout/spec.md');
+  fs.mkdirSync(path.dirname(spec), { recursive: true });
+  fs.writeFileSync(spec, '# tracked\n', 'utf8');
+  execFileSync('git', ['add', 'specs/features/checkout/spec.md'], { cwd });
+  configureIntent({
+    homeDir: home,
+    cwd,
+    scope: 'project',
+    adoptionMode: 'team',
+    specsVisibility: 'local',
+  });
+  const result = inspectAdoption(cwd, home);
+  assert.equal(result.sourceControlVisibilityDrift, true);
+  assert.match(result.warning || '', /tracked SAF specs/);
+});
+
+test('tracked transient SAF state blocks local visibility while preserving durable config', () => {
+  const cwd = project('tracked-transient');
+  const home = path.join(cwd, 'home');
+  const report = path.join(cwd, '.sdd-agentic-flow/reports/old.md');
+  fs.mkdirSync(path.dirname(report), { recursive: true });
+  fs.writeFileSync(report, 'historical\n', 'utf8');
+  fs.writeFileSync(
+    path.join(cwd, '.sdd-agentic-flow/config.yml'),
+    'schema: saf-config/v3\n',
+    'utf8',
+  );
+  execFileSync('git', ['add', '.sdd-agentic-flow/reports/old.md', '.sdd-agentic-flow/config.yml'], {
+    cwd,
+  });
+  configureIntent({
+    homeDir: home,
+    cwd,
+    scope: 'project',
+    adoptionMode: 'team',
+    specsVisibility: 'local',
+  });
+  const result = inspectAdoption(cwd, home);
+  assert.deepEqual(result.trackedTransientState, ['.sdd-agentic-flow/reports/old.md']);
+  assert.equal(result.sourceControlVisibilityDrift, true);
+  assert.match(result.warning || '', /generated state/);
+});
+
+test('shared specs roots inside generated state are rejected', () => {
+  const cwd = project('reserved-specs-root', '.sdd-agentic-flow/specs');
+  const result = applyAdoption(cwd, 'team', path.join(cwd, 'home'), 'shared');
+  assert.match(result.warning || '', /outside \.sdd-agentic-flow/);
+  assert.equal(result.changed, false);
+});
+
+test('known-state purge removes an incompatible control file without deleting user content', () => {
+  const root = path.join(temporary, 'known-reset');
+  const home = path.join(root, 'home');
+  const target = path.join(home, '.agents/skills/saf-route/SKILL.md');
+  const intent = path.join(home, '.sdd-agentic-flow/install.yml');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, 'managed\n', 'utf8');
+  fs.mkdirSync(path.dirname(intent), { recursive: true });
+  fs.writeFileSync(intent, 'schema: saf-install-intent/v99\n', 'utf8');
+  const result = purgeKnownSafState(root, home, { quiet: true });
+  assert.equal(result.ok, true);
+  assert.equal(fs.existsSync(intent), false);
+  assert.equal(fs.existsSync(path.join(home, '.agents/skills/saf-route')), false);
 });
 
 test('subprojects anchor specs and local state to the SAF project root', () => {

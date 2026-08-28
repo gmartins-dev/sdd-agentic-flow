@@ -74,7 +74,10 @@ or run agents.
 | Routing | `saf-route` + `workflow-routing.md` | Which skill is on-path |
 | Doctor | `npx sdd-agentic-flow doctor` | Static validation of config, skills, autonomy setup |
 
-Specs (`.specs/features/`) belong to **your project**. Toolkit state (`.sdd-agentic-flow/`) belongs to **this installation** and is regenerable except hand-edited config.
+Specs (`.specs/features/`) are active-change working artifacts. Toolkit state
+(`.sdd-agentic-flow/`) belongs to **this installation** and is regenerable except
+hand-edited durable config. Source, tests, contracts, and intentionally promoted
+project documentation become durable truth after the change is accepted.
 
 ## Glossary (12 terms)
 

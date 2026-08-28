@@ -40,6 +40,7 @@ type InstallCommandOptions = {
   scope?: string | undefined;
   targets?: string[] | undefined;
   adoptionMode?: AdoptionMode | undefined;
+  specsVisibility?: 'local' | 'shared' | undefined;
   overwriteDiffers?: boolean | undefined;
   resolvedPlan?: InstallPlan | undefined;
   yes?: boolean | undefined;
@@ -327,6 +328,16 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   const git = resolveGitContext(cwd);
   const storedProject = git.ok ? config.projects[git.context.adoptionKey] : undefined;
   const adoptionMode = options.adoptionMode || storedProject?.adoption_mode;
+  const specsVisibility = options.specsVisibility || storedProject?.specs_visibility;
+  const resolvedSpecsVisibility =
+    adoptionMode === 'personal'
+      ? 'local'
+      : adoptionMode === 'specs-shared'
+        ? 'shared'
+        : specsVisibility ||
+          (adoptionMode === 'team' && storedProject && config.schema === 'saf-install-intent/v3'
+            ? 'shared'
+            : 'local');
   const scope =
     options.scope ||
     (adoptionMode ? adoptionModeForScope(adoptionMode) : storedProject ? 'project' : 'user');
@@ -337,7 +348,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     return fail(
       `adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`,
     );
-  if ((scope === 'project' || adoptionMode) && !git.ok) return fail(git.error);
+  if ((scope === 'project' || adoptionMode === 'team') && !git.ok) return fail(git.error);
   const targets =
     scope === 'project'
       ? [path.join(cwd, '.agents', 'skills')]
@@ -361,6 +372,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
             ? git.context.projectRelativePath
             : storedProject?.project_relative_path || '.',
           adoption_mode: adoptionMode || storedProject?.adoption_mode || 'team',
+          ...(resolvedSpecsVisibility ? { specs_visibility: resolvedSpecsVisibility } : {}),
         };
   const plan = options.resolvedPlan || planForInstallProfile({ cwd, homeDir, scope, profile });
   if (options.plan) {
@@ -402,8 +414,8 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   }
   const appliedPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
   if (!isPlanEmpty(appliedPlan)) return fail('installation verification failed');
-  if (adoptionMode) {
-    const adoption = applyAdoption(cwd, adoptionMode, homeDir);
+  if (adoptionMode && git.ok) {
+    const adoption = applyAdoption(cwd, adoptionMode, homeDir, resolvedSpecsVisibility);
     if (adoption.warning || adoption.drift.length) return fail('adoption verification failed');
   }
   if (scope === 'user' && !cleanupDeselectedUserTargets(previousUserTargets, targets, homeDir))
@@ -418,6 +430,14 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   if (!isPlanEmpty(cleanedPlan)) return fail('installation cleanup verification failed');
   if (scope === 'user') {
     config.user.targets = targets;
+    if (adoptionMode && git.ok) {
+      config.projects[git.context.adoptionKey] = {
+        git_common_dir: git.context.gitCommonDir,
+        project_relative_path: git.context.projectRelativePath,
+        adoption_mode: adoptionMode,
+        ...(resolvedSpecsVisibility ? { specs_visibility: resolvedSpecsVisibility } : {}),
+      };
+    }
     if (leavingTeamProject && git.ok) delete config.projects[git.context.adoptionKey];
   } else {
     const project = profile as InstallProjectProfile;

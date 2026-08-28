@@ -14,7 +14,7 @@ test('doctor view groups the missing-install symptoms behind one fix', () => {
       message: 'language profile is configured but not installed',
     },
   ];
-  assert.equal(primaryRemediation(checks), 'npx sdd-agentic-flow');
+  assert.equal(primaryRemediation(checks), 'npx sdd-agentic-flow install');
   const view = buildDoctorView(checks);
   assert.equal(view.title, 'Needs action');
   assert.equal(view.shown.length, 3);
@@ -23,6 +23,6 @@ test('doctor view groups the missing-install symptoms behind one fix', () => {
 test('doctor view routes provenance drift through the canonical entry point', () => {
   assert.equal(
     primaryRemediation([{ name: 'installation_provenance', status: 'WARN' }]),
-    'npx sdd-agentic-flow',
+    'npx sdd-agentic-flow upgrade --skills-only',
   );
 });

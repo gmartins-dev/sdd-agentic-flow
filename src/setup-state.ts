@@ -52,6 +52,12 @@ type SetupStateSnapshot = SetupStateFacts & {
   evidence: ReadinessEvidence;
 };
 
+type UserInstallationSnapshot = {
+  state: 'absent' | 'healthy' | 'needs_repair';
+  targets: string[];
+  reason?: string;
+};
+
 function classifySetupState(facts: SetupStateFacts): SetupState {
   if (
     facts.config === 'invalid' ||
@@ -65,7 +71,8 @@ function classifySetupState(facts: SetupStateFacts): SetupState {
     facts.config === 'absent' &&
     facts.workspace === 'absent' &&
     facts.skills === 'absent' &&
-    !facts.context
+    !facts.context &&
+    (facts.installationIntent ?? 'none') === 'none'
   )
     return 'Fresh';
   const ready = facts.workspace === 'valid' && facts.skills === 'complete' && facts.context;
@@ -86,6 +93,52 @@ function targetEvidence(id: string, root: string): SetupTargetEvidence {
     missing: OFFICIAL_SKILLS.filter((skill) => !present.includes(skill)),
     complete: present.length === OFFICIAL_SKILLS.length,
   };
+}
+
+function inspectUserInstallation(homeDir = os.homedir()): UserInstallationSnapshot {
+  const intent = classifyInstallIntent(homeDir);
+  if (intent.kind === 'none') return { state: 'absent', targets: [] };
+  if (intent.kind !== 'current') {
+    return {
+      state: 'needs_repair',
+      targets: [],
+      reason: `installation intent ${intent.schema} is not compatible with this CLI`,
+    };
+  }
+  let config: ReturnType<typeof readInstallConfig>;
+  try {
+    config = readInstallConfig(homeDir);
+  } catch {
+    return {
+      state: 'needs_repair',
+      targets: [],
+      reason: 'the user installation intent could not be read',
+    };
+  }
+  const targets = [...(config?.user.targets || [])];
+  if (!targets.length) return { state: 'absent', targets };
+  const roots = userSkillsDirsForTargets(targets, homeDir);
+  const healthy =
+    roots.length === targets.length &&
+    targets.every((target, index) => {
+      const root = roots[index];
+      const provenance = root ? readInstallProvenance(root) : null;
+      return Boolean(
+        root &&
+          targetEvidence(target, root).complete &&
+          provenance?.package === 'sdd-agentic-flow' &&
+          provenance.schema === 'saf-install-provenance/v3' &&
+          provenance.scope === 'user' &&
+          provenance.applyState === 'complete',
+      );
+    });
+  return healthy
+    ? { state: 'healthy', targets }
+    : {
+        state: 'needs_repair',
+        targets,
+        reason: 'one or more selected user skill targets are incomplete',
+      };
 }
 
 function targetRoots(cwd: string, homeDir: string, configContent: string | null) {
@@ -200,5 +253,12 @@ export type {
   SetupStateFacts,
   SetupStateSnapshot,
   SetupTargetEvidence,
+  UserInstallationSnapshot,
 };
-export { classifySetupState, collectSetupFacts, evaluateSetupReadiness, inspectSetupState };
+export {
+  classifySetupState,
+  collectSetupFacts,
+  evaluateSetupReadiness,
+  inspectSetupState,
+  inspectUserInstallation,
+};

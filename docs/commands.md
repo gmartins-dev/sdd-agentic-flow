@@ -2,10 +2,10 @@
 
 | Command | Purpose |
 | --- | --- |
-| `install` | Install the 12-skill official bundle and shared layer |
+| `install` | Install the 12-skill official bundle and shared layer for the user or current project |
 | `install --plan` | Preview installation or a bounded pre-v7 reset |
 | `install --yes` | Explicitly authorize a displayed pre-v7 reset before installation |
-| `init` | Initialize the exact current Git workspace |
+| `init` | Initialize the exact current Git workspace (Git required) |
 | `init --plan` | Preview the same workspace plan without writes |
 | `config show` | Show effective policy and its origin |
 | `config policy [--preset ...] [--language ...] [--feature-profile ...]` | Preview or persist workflow, language, and advanced feature-profile overrides |
@@ -13,7 +13,7 @@
 | `doctor` | Report Installation, Workspace, and Policy readiness |
 | `doctor --json` | Emit machine schema 2 |
 | `context status\|refresh\|autonomy-state` | Inspect project context or autonomy state |
-| `upgrade --skills-only` | Reconcile current v3 managed assets from the local package |
+| `upgrade --skills-only` | Reconcile current managed assets from the local package |
 | `upgrade --check\|--plan` | Check for updates without applying them |
 | `autonomous-resume` | Resume a recorded autonomy workflow after its guardrail is cleared |
 | `uninstall --plan` | Preview bounded SAF-owned cleanup |
@@ -23,8 +23,9 @@
 | `version` | Show the package version |
 
 `install` accepts no positional bundle selector or `--pack`. `init` accepts no
-policy/setup flags. Missing config uses built-in defaults; invalid or future
-state is preserved and fails closed.
+policy/setup flags. Missing config uses built-in defaults. Invalid or future
+state fails closed for automatic mutation; an interactive shell may offer a
+bounded reset of known SAF paths and then continue setup.
 
 See [CLI interaction](cli-interaction.md), [installation](installation.md),
 [configuration](configuration.md), and [trust model](trust-model.md).

@@ -22,13 +22,14 @@ installed locally, and read no vendor-specific API. This matrix separates two di
 Skills and toolkit state are **agent-neutral by construction**:
 
 - `.sdd-agentic-flow/config.yml`, `context/project-context.md`, and `autonomy/loop-state.md` contain no vendor-specific fields.
-- `.specs/features/` is plain Markdown versioned with your repo.
+- `.specs/features/` is plain Markdown working state. It stays local by default;
+  explicit Specs shared or Team visibility may expose the configured root.
 - Only **install paths** differ per agent (see [installation scope](installation-scope.md)); the installed `SKILL.md` files are identical.
 
 **Mid-flow agent swap** (e.g. start in Cursor, resume in Codex CLI) should work when the agent reads repo files—not chat history:
 
 1. `install --scope project` + `init` in a test repo.
-2. Agent A: produce spec artifacts under `.specs/features/` and record progress in `.sdd-agentic-flow/autonomy/loop-state.md` if using autonomy.
+2. Agent A: produce spec artifacts under `.specs/features/` and record progress in `.sdd-agentic-flow/autonomy/loop-state.md` if using autonomy. These are active-change working artifacts, not automatically durable project knowledge.
 3. End the session.
 4. Agent B: read `loop-state.md` and `.specs/`; continue without re-init.
 5. Confirm no critical state existed only in Agent A's chat.

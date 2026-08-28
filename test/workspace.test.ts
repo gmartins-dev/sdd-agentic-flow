@@ -20,7 +20,9 @@ function git(cwd: string, ...args: string[]): void {
 test('workspace plan is Git-gated, non-mutating, and apply preserves config', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-workspace-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-home-'));
-  assert.equal(planWorkspaceInitialization(root, home).ok, false);
+  const outsideGit = planWorkspaceInitialization(root, home);
+  assert.equal(outsideGit.ok, false);
+  assert.equal(outsideGit.applicability, 'not_applicable');
   git(root, 'init');
   fs.mkdirSync(path.join(root, '.sdd-agentic-flow'), { recursive: true });
   const config = 'schema: saf-config/v3\n';
@@ -28,6 +30,7 @@ test('workspace plan is Git-gated, non-mutating, and apply preserves config', ()
 
   const plan = planWorkspaceInitialization(root, home);
   assert.equal(plan.ok, true);
+  assert.equal(plan.applicability, 'applicable');
   assert.equal(fs.existsSync(path.join(root, '.sdd-agentic-flow', 'workspace.yml')), false);
   assert.equal(applyWorkspaceInitialization(plan, home).ok, true);
   assert.equal(
@@ -76,5 +79,21 @@ test('workspace plan keeps Team excludes relative to a nested project', () => {
   configureIntent({ homeDir: home, cwd: project, scope: 'project', adoptionMode: 'team' });
   const plan = planWorkspaceInitialization(project, home);
   assert.equal(plan.ok, true);
-  assert.ok(plan.excludes.includes('apps/payments/.sdd-agentic-flow/workspace.yml'));
+  assert.ok(plan.excludes.includes('apps/payments/.sdd-agentic-flow/*'));
+});
+
+test('workspace plan preserves v4 Team-local specs visibility', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-workspace-team-local-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-workspace-team-local-home-'));
+  git(root, 'init');
+  configureIntent({
+    homeDir: home,
+    cwd: root,
+    scope: 'project',
+    adoptionMode: 'team',
+    specsVisibility: 'local',
+  });
+  const plan = planWorkspaceInitialization(root, home);
+  assert.equal(plan.ok, true);
+  assert.ok(plan.excludes.includes('.specs/features/'));
 });

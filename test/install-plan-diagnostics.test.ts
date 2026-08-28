@@ -41,6 +41,30 @@ test('blocked install plan is diagnostic, non-mutating, and does not become appl
   assert.equal(fs.existsSync(path.join(target, 'saf-route')), false);
 });
 
+test('user installation with personal adoption works outside Git', () => {
+  const homeDir = path.join(temporary, 'no-git-home');
+  const cwd = path.join(temporary, 'no-git-cwd');
+  fs.mkdirSync(cwd, { recursive: true });
+  process.exitCode = undefined;
+
+  assert.equal(
+    install(cwd, {
+      homeDir,
+      scope: 'user',
+      targets: ['agents'],
+      adoptionMode: 'personal',
+      quiet: true,
+    }),
+    true,
+  );
+  const intent = fs.readFileSync(path.join(homeDir, '.sdd-agentic-flow', 'install.yml'), 'utf8');
+  assert.match(intent, /schema: saf-install-intent\/v4/);
+  assert.match(intent, /- agents/);
+  assert.match(intent, /projects:\n/);
+  assert.equal(fs.existsSync(path.join(cwd, '.git')), false);
+  assert.equal(fs.existsSync(path.join(cwd, '.sdd-agentic-flow')), false);
+});
+
 test('user target removal cleans only SAF-owned content', () => {
   const homeDir = path.join(temporary, 'switch-home');
   const cwd = path.join(temporary, 'switch-project');

@@ -24,10 +24,12 @@ reconciles the matching installation intent. `--scope user` selects user install
 implies user scope when no scope is supplied. Repeat `--target` to select multiple targets. A target
 cannot be combined with `--scope project` or `--scope all`.
 
-Foreign paths, historical paths, source, and `.specs/features` are preserved. `--purge` remains
-the cross-scope clean reset and cannot be combined with `--scope` or `--target`; it removes only
-recognized project control state: config, generated context, snapshots, reports, explanations,
-autonomy loop state, usage, and localized usage guides.
+Foreign paths, historical paths, source, and `.specs/features` are preserved. `--purge` is the
+explicit cross-scope clean reset and cannot be combined with `--scope` or `--target`; it removes
+only recognized SAF control state, generated context, snapshots, reports, explanations, autonomy
+loop state, usage, localized usage guides, managed skills, and the exact SAF install-intent file.
+An unknown or future install-intent file is not interpreted to discover more paths. From a
+non-Git directory, purge repairs user state only; project state requires a valid Git workspace.
 
 `--purge` is the only cross-scope reset. It requires `--yes` and cannot be combined with
 `--scope` or `--target`. `--apply` is not a valid confirmation flag. Use `--yes`.

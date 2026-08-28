@@ -5,7 +5,7 @@ import path from 'node:path';
 import { type AdoptionMode, expectedExcludes, inspectAdoption } from './adoption';
 import { configureIntent } from './configure';
 import { type GitContext, resolveGitContext } from './git-context';
-import { readInstallConfig } from './install-domain';
+import { classifyInstallIntent, readInstallConfig } from './install-domain';
 import { SDD_PATHS } from './paths';
 import { discoverProject } from './project-context';
 
@@ -13,6 +13,7 @@ const WORKSPACE_MARKER = 'schema: saf-workspace/v1\n';
 
 export type WorkspaceInitializationPlan = {
   ok: boolean;
+  applicability: 'applicable' | 'not_applicable' | 'blocked';
   error?: string;
   git?: GitContext;
   adoptionMode?: AdoptionMode;
@@ -30,6 +31,7 @@ export function planWorkspaceInitialization(
   if (!resolved.ok)
     return {
       ok: false,
+      applicability: 'not_applicable',
       error: resolved.error,
       create: [],
       preserve: [],
@@ -41,6 +43,7 @@ export function planWorkspaceInitialization(
   if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') !== WORKSPACE_MARKER) {
     return {
       ok: false,
+      applicability: 'blocked',
       error: `${SDD_PATHS.workspace} is invalid or unsupported; preserved without changes`,
       git: resolved.context,
       create: [],
@@ -49,12 +52,27 @@ export function planWorkspaceInitialization(
       createsConfig: false,
     };
   }
+  const intentState = classifyInstallIntent(homeDir);
+  if (intentState.kind !== 'none' && intentState.kind !== 'current') {
+    return {
+      ok: false,
+      applicability: 'blocked',
+      error: `installation intent ${intentState.schema} is incompatible; repair the SAF installation before initializing this workspace`,
+      git: resolved.context,
+      create: [],
+      preserve: [],
+      excludes: [],
+      createsConfig: false,
+    };
+  }
   const intent = readInstallConfig(homeDir);
   const profile = intent?.projects[resolved.context.adoptionKey];
   const adoptionMode = profile?.adoption_mode || 'personal';
+  const adoption = inspectAdoption(cwd, homeDir);
   const contextExists = fs.existsSync(path.join(cwd, SDD_PATHS.projectContext));
   return {
     ok: true,
+    applicability: 'applicable',
     git: resolved.context,
     adoptionMode,
     create: [
@@ -69,8 +87,9 @@ export function planWorkspaceInitialization(
     ],
     excludes: expectedExcludes(
       adoptionMode,
-      inspectAdoption(cwd, homeDir).specsRoot,
+      adoption.specsRoot,
       resolved.context.projectRelativePath,
+      adoption.specsVisibility,
     ),
     createsConfig: false,
   };

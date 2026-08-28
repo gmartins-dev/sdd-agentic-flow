@@ -415,7 +415,18 @@ function doctorChecks(
     })();
     (() => {
       if (!gitContext.ok) return;
-      const installConfig = readInstallConfig(os.homedir());
+      let installConfig: ReturnType<typeof readInstallConfig> = null;
+      try {
+        installConfig = readInstallConfig(os.homedir());
+      } catch (error: unknown) {
+        add(
+          'installation_intent',
+          'FAIL',
+          error instanceof Error ? error.message : String(error),
+          'Installation',
+        );
+        return;
+      }
       const key = gitContext.context.adoptionKey;
       const projectProfile = installConfig?.projects[key];
       const scope = projectProfile?.adoption_mode === 'team' ? 'project' : 'user';

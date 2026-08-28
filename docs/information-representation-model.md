@@ -172,11 +172,13 @@ those fields. Unknown content is retained by targeted mutation; missing or inval
 fields fail closed. The current guarantee is **semantic for supported policy fields and structural
 for the surrounding document**, not lossless normalization of every possible YAML construct.
 
-### Install intent / saf-install-intent/v3
+### Install intent / saf-install-intent/v4
 
 `src/install-domain.ts` accepts one document with `schema`, `user.targets`, and
-project profiles containing canonical `git_common_dir`, `project_relative_path`, and
-`adoption_mode`. It emits stable ordering and rejects non-current schemas before operational reuse.
+project profiles containing canonical `git_common_dir`, `project_relative_path`,
+`adoption_mode`, and optional Team `specs_visibility`. It emits stable ordering
+and rejects non-current schemas before operational reuse. v3 is readable as a
+bounded previous state and is not rewritten until a reviewed mutation.
 
 ### Install provenance / saf-install-provenance/v3
 
@@ -284,7 +286,7 @@ unknown value.
 | Prompts and handoffs | bounded execution transfer | prompt/implementation skills / coding agents | prompt or handoff artifact / agent-authored + human constraints / feature-workspace | producing skill writes; later skill reads | L1 / structural / stale when task/spec changes | regenerable from spec/tasks, not authority | file or file-set / atomic or composite / derived handoff / persistent | Markdown / none / prompt and handoff standards |
 | Checks, reviews, fixes, validations | current evidence and decision support | check/review/fix/validate skills / later gates and humans | each report for its result; spec remains oracle / repository-derived + agent-authored / feature or report scope | producing skill writes; no report-only mutation authority | L1 / structural / evidence contract controls freshness | rerunnable from current state; reports are snapshots | file or repository-state / atomic or composite / evidence projection / persistent | Markdown landmarks / none / evidence/artifact contracts |
 | Project config | optional workflow policy and feature profile | config / CLI and doctor | config domain / human-authored / project-control | targeted config-domain mutation | L3 narrow / semantic supported fields, structural surroundings / read before mutation | absent config resolves to built-in defaults | file / atomic / source / persistent | constrained YAML-compatible text / none / saf-config/v3 |
-| Install intent | user/project installation intent | configure / install, upgrade, uninstall | install-domain serializer/reader / human-authored + SAF-authored / user | install-domain writer; temp-file/rename | L3 narrow / semantic supported fields, structural serialization / schema or intent change | serializer can rewrite canonical form | file / atomic / source / persistent | constrained YAML-compatible text / none / saf-install-intent/v3 |
+| Install intent | user/project installation intent | configure / install, upgrade, uninstall | install-domain serializer/reader / human-authored + SAF-authored / user | install-domain writer; temp-file/rename | L3 narrow / semantic supported fields, structural serialization / schema or intent change | serializer can rewrite canonical form | file / atomic / source / persistent | constrained YAML-compatible text / none / saf-install-intent/v4 |
 | Install provenance | ownership and managed-path record | install/upgrade / doctor, uninstall, cleanup | provenance writer/reader / SAF-authored + host-produced / host-installation | upgrade/install writer; temp-file/rename | L3 narrow / semantic supported fields, structural serialization / package or apply-state change | writer can regenerate from install result | file / atomic / source / persistent | constrained YAML-compatible text / none / saf-install-provenance/v3 |
 | Loop state | autonomous resume and guardrail control | host runtime / resume and doctor | host loop-state writer / human + host-produced / project-control | human/host edit; append-oriented control pattern | L1 / none beyond named fields / invalidated by new execution state | not disposable during an active run; no migration | file / atomic / source / persistent | Markdown control text / none / autonomy guardrails reference |
 | Packs, evals, manifests | exact machine loading and packaging | package source / CLI and test loaders | JSON source files / SAF-authored + repository-derived / package or host | maintainer/source update | L3 / lossless within JSON contract / package version change | regenerated from source only when explicitly owned | file / atomic / source / persistent | JSON / none / RFC 8259 boundary |

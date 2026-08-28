@@ -20,31 +20,33 @@ import {
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-install-domain-'));
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
-test('v3 intent persistence contains targets and project adoption without packs', () => {
+test('v4 intent persistence contains targets, adoption, and visibility without packs', () => {
   const config: InstallConfig = {
-    schema: 'saf-install-intent/v3',
+    schema: 'saf-install-intent/v4',
     user: { targets: [...DEFAULT_USER_TARGETS] },
     projects: {
       abc: {
         git_common_dir: '/repo/.git',
         project_relative_path: 'apps/api',
         adoption_mode: 'team',
+        specs_visibility: 'local',
       },
     },
   };
   writeInstallConfig(config, temporary);
   assert.deepEqual(readInstallConfig(temporary), config);
   const content = fs.readFileSync(path.join(temporary, '.sdd-agentic-flow', 'install.yml'), 'utf8');
-  assert.match(content, /^schema: saf-install-intent\/v3/);
+  assert.match(content, /^schema: saf-install-intent\/v4/);
+  assert.match(content, /specs_visibility: local/);
   assert.doesNotMatch(content, /packs:|sharing:|root:/);
 });
 
-test('only v3 intent is current and older schemas are cleanup-only', () => {
+test('v3 and v4 intent are current while older schemas are cleanup-only', () => {
   for (const [schema, kind] of [
     ['saf-install-intent/v1', 'legacy'],
     ['saf-install-intent/v2', 'legacy'],
     ['saf-install-intent/v3', 'current'],
-    ['saf-install-intent/v4', 'future'],
+    ['saf-install-intent/v4', 'current'],
   ] as const) {
     const home = path.join(temporary, schema.replaceAll('/', '-'));
     const file = path.join(home, '.sdd-agentic-flow', 'install.yml');
@@ -53,6 +55,31 @@ test('only v3 intent is current and older schemas are cleanup-only', () => {
     assert.equal(classifyInstallIntent(home).kind, kind);
     if (kind !== 'current') assert.throws(() => readInstallConfig(home), /clean reinstall/);
   }
+});
+
+test('v3 intent can be read without rewriting its schema or optional fields', () => {
+  const home = path.join(temporary, 'v3-readable');
+  const file = path.join(home, '.sdd-agentic-flow', 'install.yml');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const original = [
+    'schema: saf-install-intent/v3',
+    '',
+    'user:',
+    '  targets:',
+    '    - agents',
+    '',
+    'projects:',
+    '  "repo":',
+    '    git_common_dir: "/repo/.git"',
+    '    project_relative_path: "."',
+    '    adoption_mode: team',
+    '',
+  ].join('\n');
+  fs.writeFileSync(file, original, 'utf8');
+  const parsed = readInstallConfig(home);
+  assert.equal(parsed?.schema, 'saf-install-intent/v3');
+  assert.equal(parsed?.projects.repo?.adoption_mode, 'team');
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
 });
 
 test('repository keys and interactive eligibility are deterministic', () => {

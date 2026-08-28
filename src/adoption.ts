@@ -11,6 +11,7 @@ import { HISTORICAL_SKILLS, OFFICIAL_SKILLS } from './skill-identity';
 const ADOPTION_MODES = ['personal', 'specs-shared', 'team'] as const;
 type AdoptionMode = (typeof ADOPTION_MODES)[number];
 type AdoptionState = AdoptionMode | 'unclassified';
+type SpecsVisibility = 'local' | 'shared';
 
 const BLOCKS = {
   specs: {
@@ -27,17 +28,8 @@ const BLOCKS = {
   },
 } as const;
 
-const LOCAL_TEAM_ARTIFACTS = [
-  '.sdd-agentic-flow/workspace.yml',
-  '.sdd-agentic-flow/context/project-context.md',
-  '.sdd-agentic-flow/reports/',
-  '.sdd-agentic-flow/snapshots/',
-  '.sdd-agentic-flow/autonomy/',
-  '.sdd-agentic-flow/explanations/',
-  '.sdd-agentic-flow/usage.md',
-  '.sdd-agentic-flow/saf-skills-usage-guide.md',
-  '.sdd-agentic-flow/saf-skills-usage-guide.pt-BR.md',
-] as const;
+const TEAM_LOCAL_STATE = '.sdd-agentic-flow/*';
+const TEAM_DURABLE_CONFIG = '!.sdd-agentic-flow/config.yml';
 
 type AdoptionInspection = {
   mode: AdoptionState;
@@ -46,6 +38,10 @@ type AdoptionInspection = {
   expected: string[];
   managed: string[];
   drift: string[];
+  tracked: string[];
+  trackedTransientState: string[];
+  specsVisibility: SpecsVisibility;
+  sourceControlVisibilityDrift: boolean;
   warning?: string;
 };
 
@@ -97,31 +93,67 @@ function specsRootFor(cwd: string): ReturnType<typeof normalizeSpecsRoot> {
 }
 
 function projectAdoptionMode(cwd: string, homeDir: string): AdoptionState {
+  const profile = projectAdoptionProfile(cwd, homeDir);
+  return isAdoptionMode(profile?.adoption_mode) ? profile.adoption_mode : 'unclassified';
+}
+
+function projectAdoptionProfile(cwd: string, homeDir: string) {
   try {
     const config = readInstallConfig(homeDir);
-    const profile = config?.projects[repositoryKey(cwd)];
-    return isAdoptionMode(profile?.adoption_mode) ? profile.adoption_mode : 'unclassified';
+    return config?.projects[repositoryKey(cwd)];
   } catch {
-    return 'unclassified';
+    return undefined;
   }
 }
 
-function gitExcludeEntry(projectRelativePath: string, entry: string): string {
-  return projectRelativePath === '.' ? entry : `${projectRelativePath}/${entry}`;
+function gitExcludeEntry(projectRelativePath: string, entry: string, literal = false): string {
+  const negated = entry.startsWith('!');
+  const value = negated ? entry.slice(1) : entry;
+  const prefixed = projectRelativePath === '.' ? value : `${projectRelativePath}/${value}`;
+  return `${negated ? '!' : ''}${literal ? escapeGitLiteral(prefixed) : prefixed}`;
+}
+
+function escapeGitLiteral(value: string): string {
+  const metacharacters = new Set(['\\', '*', '?', '[', ']', '#']);
+  return [...value]
+    .map((character) => (metacharacters.has(character) ? `\\${character}` : character))
+    .join('');
+}
+
+function specsVisibilityFor(
+  mode: AdoptionMode,
+  profile: { specs_visibility?: SpecsVisibility } | undefined,
+  schema: string | undefined,
+  override?: SpecsVisibility,
+): SpecsVisibility {
+  if (override) return override;
+  if (mode === 'personal') return 'local';
+  if (mode === 'specs-shared') return 'shared';
+  if (profile?.specs_visibility) return profile.specs_visibility;
+  return schema === 'saf-install-intent/v3' ? 'shared' : 'local';
 }
 
 function expectedExcludes(
   mode: AdoptionMode,
   specsRoot: string,
   projectRelativePath = '.',
+  specsVisibility: SpecsVisibility = 'shared',
 ): string[] {
   const entries =
     mode === 'personal'
       ? ['.sdd-agentic-flow/', `${specsRoot}/`]
       : mode === 'specs-shared'
         ? ['.sdd-agentic-flow/']
-        : [...LOCAL_TEAM_ARTIFACTS];
-  return entries.map((entry) => gitExcludeEntry(projectRelativePath, entry));
+        : [
+            TEAM_LOCAL_STATE,
+            TEAM_DURABLE_CONFIG,
+            ...(specsVisibility === 'local' ? [`${specsRoot}/`] : []),
+          ];
+  return entries.map((entry) =>
+    entry === `${specsRoot}/`
+      ? gitExcludeEntry(projectRelativePath, entry, true)
+      : gitExcludeEntry(projectRelativePath, entry),
+  );
 }
 
 function blockText(block: (typeof BLOCKS)[keyof typeof BLOCKS], entries: string[]): string {
@@ -162,8 +194,32 @@ function managedEntries(content: string): string[] {
   return [...entries];
 }
 
+function trackedFilesUnder(cwd: string, relativeRoot: string): string[] {
+  if (!resolveGitContext(cwd).ok) return [];
+  try {
+    return execFileSync('git', ['ls-files', '--', `${relativeRoot}/`], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .split(/\r?\n/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
   const mode = projectAdoptionMode(cwd, homeDir);
+  const profile = projectAdoptionProfile(cwd, homeDir);
+  const install = (() => {
+    try {
+      return readInstallConfig(homeDir);
+    } catch {
+      return undefined;
+    }
+  })();
   const normalized = specsRootFor(cwd);
   const repoRoot = repositoryRoot(cwd);
   const git = resolveGitContext(cwd);
@@ -176,7 +232,29 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
       expected: [],
       managed: [],
       drift: [normalized.error],
+      tracked: [],
+      trackedTransientState: [],
+      specsVisibility: 'local',
+      sourceControlVisibilityDrift: false,
       warning: normalized.error,
+    };
+  }
+  const specsVisibility =
+    mode === 'unclassified' ? 'local' : specsVisibilityFor(mode, profile, install?.schema);
+  if (specsVisibility === 'shared' && normalized.relative.startsWith('.sdd-agentic-flow/')) {
+    const error = 'shared specs.root must remain outside .sdd-agentic-flow';
+    return {
+      mode,
+      specsRoot: normalized.relative,
+      repoRoot,
+      expected: [],
+      managed: [],
+      drift: [error],
+      tracked: [],
+      trackedTransientState: [],
+      specsVisibility,
+      sourceControlVisibilityDrift: false,
+      warning: error,
     };
   }
   const excludePath = git.ok ? git.context.excludePath : gitInfoExcludePath(cwd);
@@ -184,7 +262,18 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
     excludePath && fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const managed = managedEntries(content);
   const expected =
-    mode === 'unclassified' ? [] : expectedExcludes(mode, normalized.relative, projectRelativePath);
+    mode === 'unclassified'
+      ? []
+      : expectedExcludes(mode, normalized.relative, projectRelativePath, specsVisibility);
+  const tracked = mode === 'unclassified' ? [] : trackedFilesUnder(repoRoot, normalized.relative);
+  const trackedTransientState =
+    mode === 'unclassified'
+      ? []
+      : trackedFilesUnder(repoRoot, '.sdd-agentic-flow').filter(
+          (entry) => entry !== '.sdd-agentic-flow/config.yml',
+        );
+  const sourceControlVisibilityDrift =
+    (specsVisibility === 'local' && tracked.length > 0) || trackedTransientState.length > 0;
   const drift =
     mode === 'unclassified'
       ? []
@@ -192,6 +281,16 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
           ...new Set([
             ...expected.filter((entry) => !managed.includes(entry)),
             ...managed.filter((entry) => !expected.includes(entry)),
+            ...(sourceControlVisibilityDrift
+              ? [
+                  ...(specsVisibility === 'local' && tracked.length > 0
+                    ? ['tracked SAF specs conflict with local visibility']
+                    : []),
+                  ...(trackedTransientState.length
+                    ? ['tracked SAF generated state conflicts with local visibility']
+                    : []),
+                ]
+              : []),
           ]),
         ];
   if (!excludePath && mode !== 'unclassified') drift.push('Git metadata is unavailable');
@@ -202,11 +301,20 @@ function inspectAdoption(cwd: string, homeDir: string): AdoptionInspection {
     expected,
     managed,
     drift,
+    tracked,
+    trackedTransientState,
+    specsVisibility,
+    sourceControlVisibilityDrift,
     ...(drift.length ? { warning: drift.join('; ') } : {}),
   };
 }
 
-function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): AdoptionResult {
+function applyAdoption(
+  cwd: string,
+  mode: AdoptionMode,
+  homeDir: string,
+  specsVisibility?: SpecsVisibility,
+): AdoptionResult {
   const inspection = inspectAdoption(cwd, homeDir);
   if (inspection.warning && inspection.specsRoot === '(invalid)') {
     return { ...inspection, changed: false };
@@ -220,6 +328,7 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
         mode,
         inspection.specsRoot,
         git.ok ? git.context.projectRelativePath : '.',
+        specsVisibility,
       ),
       changed: false,
       warning: 'Git metadata is unavailable',
@@ -227,14 +336,41 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
   const current = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
   const preserved = removeManagedBlocks(current).trimEnd();
   const projectRelativePath = git.ok ? git.context.projectRelativePath : '.';
+  const visibility =
+    specsVisibility ||
+    (mode === 'personal'
+      ? 'local'
+      : mode === 'specs-shared'
+        ? 'shared'
+        : inspection.mode === 'unclassified'
+          ? 'shared'
+          : inspection.specsVisibility);
+  if (visibility === 'shared' && inspection.specsRoot.startsWith('.sdd-agentic-flow/'))
+    return {
+      ...inspection,
+      expected: [],
+      drift: ['shared specs.root must remain outside .sdd-agentic-flow'],
+      warning: 'shared specs.root must remain outside .sdd-agentic-flow',
+      changed: false,
+    };
   const specs =
-    mode === 'personal' ? [gitExcludeEntry(projectRelativePath, `${inspection.specsRoot}/`)] : [];
+    visibility === 'local'
+      ? [gitExcludeEntry(projectRelativePath, `${inspection.specsRoot}/`, true)]
+      : [];
   const state =
     mode === 'personal' || mode === 'specs-shared'
       ? [gitExcludeEntry(projectRelativePath, '.sdd-agentic-flow/')]
       : [];
   const derived =
-    mode === 'team' ? expectedExcludes(mode, inspection.specsRoot, projectRelativePath) : [];
+    mode === 'team'
+      ? [
+          gitExcludeEntry(projectRelativePath, TEAM_LOCAL_STATE),
+          gitExcludeEntry(projectRelativePath, TEAM_DURABLE_CONFIG),
+          ...(visibility === 'local'
+            ? [gitExcludeEntry(projectRelativePath, `${inspection.specsRoot}/`, true)]
+            : []),
+        ]
+      : [];
   const blocks = [
     specs.length ? blockText(BLOCKS.specs, specs) : '',
     state.length ? blockText(BLOCKS.state, state) : '',
@@ -247,7 +383,7 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
     else fs.rmSync(excludePath, { force: true });
   }
   const refreshed = inspectAdoption(cwd, homeDir);
-  const expected = expectedExcludes(mode, inspection.specsRoot, projectRelativePath);
+  const expected = expectedExcludes(mode, inspection.specsRoot, projectRelativePath, visibility);
   const drift = [
     ...new Set([
       ...expected.filter((entry) => !refreshed.managed.includes(entry)),
@@ -261,7 +397,13 @@ function applyAdoption(cwd: string, mode: AdoptionMode, homeDir: string): Adopti
     managed: refreshed.managed,
     expected,
     drift,
-    ...(drift.length ? { warning: drift.join('; ') } : {}),
+    tracked: refreshed.tracked,
+    trackedTransientState: refreshed.trackedTransientState,
+    specsVisibility: visibility,
+    sourceControlVisibilityDrift: refreshed.sourceControlVisibilityDrift,
+    ...(drift.length || refreshed.sourceControlVisibilityDrift
+      ? { warning: [...new Set([...drift, ...refreshed.drift])].join('; ') }
+      : {}),
     changed: next !== current.trimEnd(),
   };
 }
@@ -313,7 +455,7 @@ function removeUntrackedProjectAssets(cwd: string): string[] {
   return removed;
 }
 
-export type { AdoptionInspection, AdoptionMode, AdoptionResult, AdoptionState };
+export type { AdoptionInspection, AdoptionMode, AdoptionResult, AdoptionState, SpecsVisibility };
 export {
   ADOPTION_MODES,
   adoptionModeForScope,

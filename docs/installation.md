@@ -1,7 +1,8 @@
 # Installation
 
 Requires Node.js 22 or newer for the CLI. Git is required for project-scoped
-workspace operations; the toolkit never runs `git init`.
+workspace operations; user-scoped installation works without Git. The toolkit
+never runs `git init`.
 
 ```bash
 npx sdd-agentic-flow install
@@ -13,6 +14,11 @@ npx sdd-agentic-flow doctor
 There is one bundle and no bundle selector. User scope is the default; project
 scope writes `.agents/skills/` in the current project. Repeat `--target` to
 select user hosts and use `--plan` for a read-only preview.
+
+The lifecycle is intentionally split: install the SAF bundle once for the
+user, then initialize/adopt each Git workspace separately. Running the bare
+CLI outside Git can finish a user installation and leaves `projects: {}` until
+the CLI is run from a repository.
 
 `init` prepares only the exact current Git workspace. It writes a minimal local
 `saf-workspace/v1` marker, creates project context only when absent, and

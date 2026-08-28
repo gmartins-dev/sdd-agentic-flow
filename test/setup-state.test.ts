@@ -11,13 +11,19 @@ import {
   renderLanguagePrelude,
   renderOperationResult,
 } from '../src/setup';
-import { classifySetupState, collectSetupFacts, inspectSetupState } from '../src/setup-state';
+import {
+  classifySetupState,
+  collectSetupFacts,
+  inspectSetupState,
+  inspectUserInstallation,
+} from '../src/setup-state';
+import { OFFICIAL_SKILLS } from '../src/skill-identity';
 import { writeInstallProvenance } from '../src/upgrade';
 
 test('Fresh shell asks bilingually only without a reliable locale', () => {
   assert.equal(needsSessionLanguageSelection('Fresh', false), true);
   assert.equal(needsSessionLanguageSelection('Fresh', true), false);
-  assert.equal(needsSessionLanguageSelection('Incomplete', false), false);
+  assert.equal(needsSessionLanguageSelection('Incomplete', false), true);
 });
 
 test('Fresh language selection is bilingual, defaults to English, and stays session-local', async () => {
@@ -114,6 +120,16 @@ test('classifies setup from durable facts without requiring config', () => {
     }),
     'Blocked',
   );
+  assert.equal(
+    classifySetupState({
+      config: 'absent',
+      workspace: 'absent',
+      skills: 'absent',
+      context: false,
+      installationIntent: 'current',
+    }),
+    'Incomplete',
+  );
 });
 
 test('inspects every required target with an injected home directory', () => {
@@ -137,6 +153,32 @@ test('inspects every required target with an injected home directory', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
     fs.rmSync(home, { recursive: true, force: true });
   }
+});
+
+test('recognizes a healthy user installation without requiring a Git workspace', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-user-install-'));
+  const homeDir = path.join(root, 'home');
+  const cwd = path.join(root, 'cwd');
+  fs.mkdirSync(cwd, { recursive: true });
+  writeInstallConfig({ ...defaultInstallConfig(), user: { targets: ['agents'] } }, homeDir);
+  const targetRoot = path.join(homeDir, '.agents', 'skills');
+  for (const skill of OFFICIAL_SKILLS) {
+    fs.mkdirSync(path.join(targetRoot, skill), { recursive: true });
+    fs.writeFileSync(path.join(targetRoot, skill, 'SKILL.md'), '# skill\n');
+  }
+  writeInstallProvenance(targetRoot, {
+    packageVersion: '7.6.0',
+    scope: 'user',
+    target: 'agents',
+    managedSkills: [...OFFICIAL_SKILLS],
+    applyState: 'complete',
+  });
+  assert.deepEqual(inspectUserInstallation(homeDir), {
+    state: 'healthy',
+    targets: ['agents'],
+  });
+  assert.equal(inspectSetupState(cwd, homeDir).state, 'Incomplete');
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('interrupted target apply cannot classify the setup as Ready', () => {

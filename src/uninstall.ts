@@ -5,7 +5,8 @@ import { hasManagedExcludeBlocks, removeManagedExcludeBlocksFromFile } from './a
 import { renderCliCommand } from './cli-command';
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
-import { classifyInstallIntent, USER_TARGETS } from './install-domain';
+import { resolveGitContext } from './git-context';
+import { USER_TARGETS } from './install-domain';
 import { targetLabelFor } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
@@ -52,7 +53,13 @@ function describePath(cwd: string, target: string) {
 function skillsRoots(cwd: string, homeDir: string): string[] {
   const projectRoot = path.join(cwd, '.agents', 'skills');
   const userRoots = DEFAULT_USER_DIR_SEGMENTS.map((parts) => path.join(homeDir, ...parts));
-  return [projectRoot, ...userRoots];
+  const roots = [...(resolveGitContext(cwd).ok ? [projectRoot] : []), ...userRoots];
+  return [...new Map(roots.map((root) => [canonicalPathKey(root), root])).values()];
+}
+
+function canonicalPathKey(value: string): string {
+  const normalized = path.resolve(value).replaceAll('\\', '/');
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
 }
 
 function collectSkillTargets(root: string): PurgeTarget[] {
@@ -78,45 +85,42 @@ function legacySddOwnershipProven(cwd: string): boolean {
 
 export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir()): PurgeTarget[] {
   const targets: PurgeTarget[] = [];
+  const gitAvailable = resolveGitContext(cwd).ok;
   for (const root of skillsRoots(cwd, homeDir)) {
     targets.push(...collectSkillTargets(root));
   }
-  const projectState = projectSddRoot(cwd);
-  for (const relative of [
-    'config.yml',
-    'usage.md',
-    'saf-skills-usage-guide.md',
-    'saf-skills-usage-guide.pt-BR.md',
-    path.join('context', 'project-context.md'),
-    path.join('autonomy', 'loop-state.md'),
-    'reports',
-    'snapshots',
-    'explanations',
-  ]) {
-    const file = path.join(projectState, relative);
-    if (fs.existsSync(file)) targets.push({ path: file, kind: 'project-install-state' });
-  }
-  const workspace = path.join(projectState, 'workspace.yml');
-  if (fs.existsSync(workspace)) {
-    const current = fs.readFileSync(workspace, 'utf8') === 'schema: saf-workspace/v1\n';
-    targets.push({
-      path: workspace,
-      kind: 'workspace-marker',
-      ...(!current ? { preserve: true, reason: 'future or invalid workspace marker' } : {}),
-    });
+  if (gitAvailable) {
+    const projectState = projectSddRoot(cwd);
+    for (const relative of [
+      'config.yml',
+      'usage.md',
+      'saf-skills-usage-guide.md',
+      'saf-skills-usage-guide.pt-BR.md',
+      path.join('context', 'project-context.md'),
+      path.join('autonomy', 'loop-state.md'),
+      'reports',
+      'snapshots',
+      'explanations',
+    ]) {
+      const file = path.join(projectState, relative);
+      if (fs.existsSync(file)) targets.push({ path: file, kind: 'project-install-state' });
+    }
+    const workspace = path.join(projectState, 'workspace.yml');
+    if (fs.existsSync(workspace)) {
+      targets.push({
+        path: workspace,
+        kind: 'workspace-marker',
+      });
+    }
   }
   const userInstall = userInstallConfigPath(homeDir);
   if (fs.existsSync(userInstall)) {
-    const state = classifyInstallIntent(homeDir);
     targets.push({
       path: userInstall,
       kind: 'user-install-intent',
-      ...(state.kind === 'future' || state.kind === 'unknown'
-        ? { preserve: true, reason: 'future or unknown schema' }
-        : {}),
     });
   }
-  const gitExclude = gitInfoExcludePath(cwd);
+  const gitExclude = gitAvailable ? gitInfoExcludePath(cwd) : null;
   if (gitExclude && fs.existsSync(gitExclude)) {
     if (hasManagedExcludeBlocks(gitExclude)) {
       targets.push({ path: gitExclude, kind: 'git-exclude-block' });
@@ -143,6 +147,27 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
     }
   }
   return targets;
+}
+
+export function purgeKnownSafState(
+  cwd: string,
+  homeDir: string = os.homedir(),
+  options: { quiet?: boolean } = {},
+): { ok: boolean; removed: string[]; remaining: string[] } {
+  const targets = collectPurgeTargets(cwd, homeDir);
+  const removable = targets.filter((target) => !target.preserve);
+  applyPurge(removable, cwd);
+  const remaining = verifyPurge(cwd, homeDir);
+  if (remaining.length) {
+    for (const entry of remaining) log('WARN', `recognized target remains: ${entry}`);
+  } else if (!options.quiet) {
+    log('PASS', 'known SAF state was removed');
+  }
+  return {
+    ok: remaining.length === 0,
+    removed: removable.map((target) => target.path),
+    remaining,
+  };
 }
 
 function removeGitExcludeBlock(filePath: string) {
@@ -264,10 +289,9 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
         process.exitCode = 1;
         return false;
       }
-      applyPurge(removable, cwd);
-      const left = verifyPurge(cwd, homeDir);
-      if (left.length) {
-        for (const entry of left) log('WARN', `recognized target remains: ${entry}`);
+      const result = purgeKnownSafState(cwd, homeDir, { quiet: true });
+      if (!result.ok) {
+        for (const entry of result.remaining) log('WARN', `recognized target remains: ${entry}`);
         process.exitCode = 1;
         return false;
       } else if (!quiet) log('PASS', 'purge verification complete — no recognized targets remain');
@@ -288,15 +312,16 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     );
   const scopes = scope === 'all' ? ['project', 'user'] : scope ? [scope] : ['project', 'user'];
   const projectRoot = path.join(cwd, '.agents', 'skills');
-  const roots = [];
-  if (scopes.includes('project')) roots.push(projectRoot);
+  const roots: string[] = [];
+  if (scopes.includes('project') && resolveGitContext(cwd).ok) roots.push(projectRoot);
   if (scopes.includes('user')) {
     const userDirs = targetIds.length
       ? userSkillsDirsForTargets([...new Set(targetIds)], os.homedir())
       : userSkillsDirsFor(agent);
     if (userDirs) roots.push(...userDirs);
   }
-  const targets = roots.flatMap((root: string) => {
+  const uniqueRoots = [...new Map(roots.map((root) => [canonicalPathKey(root), root])).values()];
+  const targets = uniqueRoots.flatMap((root: string) => {
     const hasOwnedSkill = OFFICIAL_SKILLS.some((skill: string) =>
       fs.existsSync(path.join(root, skill, 'SKILL.md')),
     );
@@ -323,7 +348,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     const grouped = new Map<string, string[]>();
     for (const target of existing) {
       const root =
-        roots.find(
+        uniqueRoots.find(
           (candidate: unknown) =>
             target === candidate || target.startsWith(`${candidate}${path.sep}`),
         ) || path.dirname(target);

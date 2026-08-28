@@ -22,6 +22,13 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run check
       - run: npm run pack:dry
+      - name: Run mandatory CLI certification on Node 24
+        if: matrix.node == 24
+        run: |
+          npm run cli:human-audit
+          npm run cli:exhaustive
+          npm run cli:certify
+          npm run cli:certify:packed
 
   check-platforms:
     strategy:

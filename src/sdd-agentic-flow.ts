@@ -64,7 +64,7 @@ import {
   styleStatus,
   writeBrand,
 } from './ui';
-import { uninstall } from './uninstall';
+import { purgeKnownSafState, uninstall } from './uninstall';
 import { checkForUpdate } from './update-check';
 import {
   applyManagedPairs,
@@ -749,6 +749,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: plan.ok, data: plan })}\n`,
         );
       } else if (!plan.ok) {
+        const canRecoverInteractively =
+          !args.includes('--plan') &&
+          Boolean(process.stdin.isTTY && process.stdout.isTTY) &&
+          !process.env.CI;
+        if (canRecoverInteractively) {
+          await guidedInit(cwd, { ascii });
+          return;
+        }
         fail(plan.error || 'workspace initialization failed');
         return;
       } else {
@@ -1162,6 +1170,7 @@ setSetupCommandDeps({
   runCommand,
   runInteractiveMenu,
   changeInstallation: (cwd) => changeInstallationInteractive(cwd, os.homedir()),
+  purgeKnownSafState,
 });
 
 async function main() {

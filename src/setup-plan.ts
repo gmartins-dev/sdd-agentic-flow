@@ -3,12 +3,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { type AdoptionMode, adoptionModeForScope } from './adoption';
+import { type AdoptionMode, adoptionModeForScope, inspectAdoption } from './adoption';
 import type { AutonomyLevel, ExecutionMode } from './config-domain';
+import { resolveGitContext } from './git-context';
 import { AGENT_TO_TARGETS } from './install-domain';
 import { buildInstallPlan, type InstallPlan } from './install-preflight';
 import { PACKAGE_ROOT, userSkillsDirsForTargets } from './paths';
-import type { SetupStateSnapshot } from './setup-state';
+import { planRecovery, type RecoveryAction } from './recovery';
+import { inspectUserInstallation, type SetupStateSnapshot } from './setup-state';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import { planWorkspaceInitialization, type WorkspaceInitializationPlan } from './workspace';
 
@@ -19,6 +21,7 @@ type SetupIntent = {
   workflow: 'manual' | 'supervised' | 'autonomous' | 'custom';
   executionMode?: ExecutionMode;
   autonomyLevel?: AutonomyLevel;
+  specsVisibility?: 'local' | 'shared';
   language: 'en-US' | 'pt-BR';
 };
 
@@ -34,11 +37,15 @@ type SetupPlanAction = {
   detail: string;
 };
 
+type SetupOperation = 'user-install' | 'workspace-setup' | 'combined';
+
 type SetupPlan = {
+  operation: SetupOperation;
+  installRequired: boolean;
   blocked: boolean;
   scope: 'user' | 'project';
   targets: string[];
-  expectedState: 'Ready';
+  expectedState: 'Ready' | 'UserInstallationReady';
   precondition: string;
   homeDir?: string;
   intent?: SetupIntent;
@@ -54,6 +61,7 @@ type SetupPlan = {
   blockers: string[];
   preconditions: { fingerprint: string; inputs: string[] };
   expectedPostconditions: string[];
+  recoveryActions: RecoveryAction[];
 };
 
 type HostDetectionOptions = {
@@ -157,11 +165,18 @@ function resolveSetupPlan(
   homeDir = state.homeDir || os.homedir(),
 ): SetupPlan {
   const targets = targetsForHosts(intent.selectedHosts);
-  const scope = adoptionModeForScope(intent.sharing);
+  const git = resolveGitContext(cwd);
+  const userInstallation = inspectUserInstallation(homeDir);
+  const operation: SetupOperation = !git.ok
+    ? 'user-install'
+    : userInstallation.state === 'healthy'
+      ? 'workspace-setup'
+      : 'combined';
+  const scope = !git.ok ? 'user' : adoptionModeForScope(intent.sharing);
   const blockers = [...state.evidence.blockers];
   if (!targets.length && scope === 'user')
     blockers.push('at least one coding-agent host must be selected');
-  if (state.state === 'Blocked' && !blockers.length)
+  if (state.state === 'Blocked' && !blockers.length && operation !== 'user-install')
     blockers.push('current setup state is blocked');
   const precondition = setupPrecondition(cwd, homeDir, intent);
   const installationPlan = buildInstallPlan({
@@ -178,14 +193,35 @@ function resolveSetupPlan(
   });
   const plannedWorkspace = planWorkspaceInitialization(cwd, homeDir);
   const workspacePlan = { ...plannedWorkspace, adoptionMode: intent.sharing };
+  if (installationPlan.blocked && installationPlan.blockerReason)
+    blockers.push(installationPlan.blockerReason);
+  if (workspacePlan.applicability === 'blocked' && workspacePlan.error)
+    blockers.push(workspacePlan.error);
+  const installRequired =
+    operation !== 'workspace-setup' ||
+    installationPlan.totals.CREATE > 0 ||
+    installationPlan.totals.UPDATE > 0 ||
+    installationPlan.totals.REMOVE > 0;
+  const adoption = inspectAdoption(cwd, homeDir);
+  const recovery = planRecovery({
+    setupState: state.state,
+    ...(state.installationIntent ? { installationKind: state.installationIntent } : {}),
+    installationDrift: installationPlan.blocked,
+    projectDrift: workspacePlan.applicability === 'blocked',
+    sourceControlVisibilityDrift: adoption.sourceControlVisibilityDrift,
+    collision: installationPlan.totals.COLLISION > 0,
+    gitAvailable: Boolean(workspacePlan.git),
+  });
   const targetReconciliation = targets.map((target) =>
-    action('reconcile-target', target, 'install or update the official skill bundle'),
+    action('reconcile-target', target, `install or update the official skill bundle for ${target}`),
   );
   return {
+    operation,
+    installRequired,
     blocked: blockers.length > 0,
     scope,
     targets,
-    expectedState: 'Ready',
+    expectedState: operation === 'user-install' ? 'UserInstallationReady' : 'Ready',
     precondition,
     homeDir,
     intent,
@@ -209,9 +245,16 @@ function resolveSetupPlan(
       ),
     ],
     targetReconciliation,
-    adoptionChanges: [
-      action('adoption', scope, 'synchronize managed Git visibility for the selected sharing mode'),
-    ],
+    adoptionChanges:
+      workspacePlan.applicability === 'applicable'
+        ? [
+            action(
+              'adoption',
+              scope,
+              'synchronize managed Git visibility for the selected sharing mode',
+            ),
+          ]
+        : [],
     configMutation: [
       action(
         'config',
@@ -219,13 +262,16 @@ function resolveSetupPlan(
         'persist only selected non-default managed values',
       ),
     ],
-    workspaceInitialization: [
-      action(
-        'workspace',
-        '.sdd-agentic-flow/workspace.yml',
-        'initialize workspace and generated context',
-      ),
-    ],
+    workspaceInitialization:
+      workspacePlan.applicability === 'applicable'
+        ? [
+            action(
+              'workspace',
+              '.sdd-agentic-flow/workspace.yml',
+              'initialize workspace and generated context',
+            ),
+          ]
+        : [],
     warnings: [...state.evidence.warnings],
     blockers,
     preconditions: {
@@ -240,9 +286,14 @@ function resolveSetupPlan(
     },
     expectedPostconditions: [
       'all selected target roots contain the official skill bundle',
-      'workspace marker and project context are valid',
-      'setup inspection returns Ready or Attention without blockers',
+      ...(operation === 'user-install'
+        ? ['user-scoped installation is complete and projects remain unconfigured']
+        : ['workspace marker and project context are valid']),
+      ...(operation === 'user-install'
+        ? []
+        : ['setup inspection returns Ready or Attention without blockers']),
     ],
+    recoveryActions: recovery.actions,
   };
 }
 
@@ -259,6 +310,7 @@ export type {
   HostDetectionOptions,
   SetupHost,
   SetupIntent,
+  SetupOperation,
   SetupPlan,
   SetupPlanAction,
 };

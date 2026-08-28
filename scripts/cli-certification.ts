@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { decideCertification, type ScenarioEvidence } from './cli-audit-model.js';
@@ -220,6 +221,10 @@ function upgradeScenario(): Scenario {
     requirement: 'mandatory',
     async run(adapter, sandbox) {
       expectSuccess(adapter.run(['init'], sandbox));
+      expectSuccess(
+        adapter.run(['config', 'policy', '--yes', '--language', 'en-US'], sandbox),
+        /updated|already|language/i,
+      );
       expectSuccess(
         adapter.run(['install', '--scope', 'project', '--adoption-mode', 'team'], sandbox),
       );
@@ -545,14 +550,19 @@ function readySettingsScenario(): Scenario {
         cwd: sandbox.cwd,
         env: { ...adapter.ptyEnvironment(sandbox), SDD_BRAND_ANIMATE: '0' },
         steps: [
-          { waitFor: /What would you like to do/, input: '1\n' },
-          { waitFor: /Change settings|Alterar configurações/, input: '1\n' },
-          { waitFor: /Workflow|Fluxo de trabalho/, input: '1\n' },
+          { waitFor: /Choose your language|Escolha o idioma/, input: '1\n' },
           {
-            waitFor: /policy updated|política atualizada|Already using|Já usando/,
+            waitFor: /What would you like to do[\s\S]*1\.\s*Change settings/i,
             input: '1\n',
           },
-          { waitFor: /What would you like to do|O que você gostaria de fazer/, input: '5\n' },
+          { waitFor: /1\.\s*Workflow/i, input: '1\n' },
+          { waitFor: /1\.\s*Supervised/i, input: '1\n' },
+          {
+            waitFor: /Success: operation completed[\s\S]*What would you like to do/i,
+            input: '1\n',
+          },
+          { waitFor: /Change settings[\s\S]*4\.\s*Back/i, input: '4\n' },
+          { waitFor: /What would you like to do[\s\S]*5\.\s*Exit/i, input: '5\n' },
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
@@ -581,6 +591,50 @@ function readySettingsScenario(): Scenario {
   };
 }
 
+function userInstallThenWorkspaceScenario(): Scenario {
+  const mandatory = process.platform === 'linux';
+  return {
+    id: 'C018',
+    name: 'user installation works without Git and initializes a later Git workspace',
+    requirement: mandatory ? 'mandatory' : 'optional',
+    async run(adapter, sandbox) {
+      if (!hasScriptPty()) throw new Error('script PTY wrapper unavailable');
+      fs.rmSync(path.join(sandbox.cwd, '.git'), { recursive: true, force: true });
+      expectSuccess(
+        adapter.run(['install', '--scope', 'user', '--target', 'agents'], sandbox),
+        /installed|preserved/i,
+      );
+      const intentPath = path.join(sandbox.home, '.sdd-agentic-flow', 'install.yml');
+      assert.match(fs.readFileSync(intentPath, 'utf8'), /projects:\n/);
+      const repository = path.join(sandbox.root, 'later-repository');
+      fs.mkdirSync(repository, { recursive: true });
+      execFileSync('git', ['init', '--quiet'], { cwd: repository });
+      sandbox.cwd = repository;
+      const result = await runScriptPty(adapter.ptyCommand(sandbox), {
+        cwd: sandbox.cwd,
+        env: { ...adapter.ptyEnvironment(sandbox), SDD_BRAND_ANIMATE: '0' },
+        steps: [
+          { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\n' },
+          { waitFor: /Set up this repository/, input: '1\n' },
+          { waitFor: /Sharing/, input: '1\n' },
+          { waitFor: /Workflow/, input: '1\n' },
+          { waitFor: /Ready to set up SAF/, input: '1\n' },
+          { waitFor: /PASS Ready/, input: '' },
+        ],
+      });
+      assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
+      assert.match(result.transcript, /SAF is already installed|Set up this repository/i);
+      assert.match(result.transcript, /PASS Ready/);
+      assert.ok(fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'workspace.yml')));
+      assert.ok(
+        fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'context', 'project-context.md')),
+      );
+      assert.equal(fs.existsSync(path.join(repository, '.agents', 'skills')), false);
+      assert.match(fs.readFileSync(intentPath, 'utf8'), /adoption_mode: personal/);
+    },
+  };
+}
+
 const scenarios = [
   lifecycleScenario(),
   readOnlyScenario(),
@@ -598,6 +652,7 @@ const scenarios = [
   cancellationScenario(),
   installationPreservationScenario(),
   readySettingsScenario(),
+  userInstallThenWorkspaceScenario(),
 ];
 
 async function runScenario(

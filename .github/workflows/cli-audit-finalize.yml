@@ -20,13 +20,19 @@ jobs:
         with:
           node-version: 24
       - run: node scripts/apply-cli-audit-finalize.mjs
+      - run: if [ -f scripts/apply-cli-audit-typecheck-fix.mjs ]; then node scripts/apply-cli-audit-typecheck-fix.mjs; fi
+      - run: if [ -f scripts/apply-cli-certification-audit.mjs ]; then node scripts/apply-cli-certification-audit.mjs; fi
       - run: npm ci
       - run: npm run check
+      - run: npm run cli:human-audit
+      - run: npm run cli:exhaustive
+      - run: npm run cli:certify
+      - run: npm run cli:certify:packed
       - name: Commit validated corrections
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/install.ts src/setup.ts .github/workflows/ci.yml docs/cli-interaction.md scripts/check-cli-human-input.ts
+          git add src/install.ts src/setup.ts .github/workflows/ci.yml docs/cli-interaction.md scripts/check-cli-human-input.ts scripts/cli-certification.ts
           if git diff --cached --quiet; then
             echo 'No corrections to commit.'
             exit 0

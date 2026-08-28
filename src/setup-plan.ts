@@ -150,6 +150,20 @@ function action(kind: string, target: string, detail: string): SetupPlanAction {
   return { kind, target, detail };
 }
 
+function installationBlockers(plan: InstallPlan): string[] {
+  if (!plan.blocked) return [];
+  const blockers: string[] = [];
+  for (const target of plan.targets) {
+    if (target.legacy) blockers.push(`${target.label}: unsupported legacy SAF-managed state`);
+    if (target.foreignSkills.length)
+      blockers.push(
+        `${target.label}: unowned skill directories conflict with SAF (${target.foreignSkills.join(', ')})`,
+      );
+  }
+  if (!blockers.length) blockers.push(plan.blockerReason || 'installation plan is blocked');
+  return blockers;
+}
+
 function resolveSetupPlan(
   cwd: string,
   state: SetupStateSnapshot,
@@ -176,8 +190,15 @@ function resolveSetupPlan(
         ? [path.join(cwd, '.agents', 'skills')]
         : userSkillsDirsForTargets(targets, homeDir),
   });
+  blockers.push(...installationBlockers(installationPlan));
+  const warnings = [...state.evidence.warnings];
+  if (installationPlan.totals.MANAGED_MODIFIED > 0)
+    warnings.push(
+      `${installationPlan.totals.MANAGED_MODIFIED} SAF-managed file(s) differ and will be replaced if you apply this setup`,
+    );
   const plannedWorkspace = planWorkspaceInitialization(cwd, homeDir);
   const workspacePlan = { ...plannedWorkspace, adoptionMode: intent.sharing };
+  if (!workspacePlan.ok) blockers.push(workspacePlan.error || 'workspace initialization is blocked');
   const targetReconciliation = targets.map((target) =>
     action('reconcile-target', target, 'install or update the official skill bundle'),
   );
@@ -205,7 +226,7 @@ function resolveSetupPlan(
       action(
         'persist-intent',
         path.join(homeDir, '.sdd-agentic-flow', 'install.yml'),
-        'persist selected targets and adoption',
+        'persist the final installation intent after successful reconciliation',
       ),
     ],
     targetReconciliation,
@@ -226,7 +247,7 @@ function resolveSetupPlan(
         'initialize workspace and generated context',
       ),
     ],
-    warnings: [...state.evidence.warnings],
+    warnings,
     blockers,
     preconditions: {
       fingerprint: precondition,

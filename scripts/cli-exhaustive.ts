@@ -168,6 +168,7 @@ function record(id: string, journey: string, command: string, fn: () => unknown)
     const observation = normalizeObservation(fn());
     cases.push({ id, journey, command, ...observation, duration: Date.now() - started });
   } catch (error) {
+    console.error(`CLI exhaustive scenario ${id} failed: ${error instanceof Error ? error.message : String(error)}`);
     cases.push({
       id,
       journey,

@@ -56,8 +56,14 @@ test('selector honors defaults, numbers, multi-select, and cancellation', () => 
   const options = [{ value: 'one' }, { value: 'two' }];
   assert.deepEqual(resolveSelection('', options), { value: 'one' });
   assert.deepEqual(resolveSelection('2', options), { value: 'two' });
-  assert.deepEqual(resolveSelection('\u001b', options), { cancelled: true });
-  assert.deepEqual(resolveSelection('q', options, null, false, ['q', '0']), { cancelled: true });
+  assert.deepEqual(resolveSelection('\u001b', options), {
+    cancelled: true,
+    cancelReason: 'escape',
+  });
+  assert.deepEqual(resolveSelection('q', options, null, false, ['q', '0']), {
+    cancelled: true,
+    cancelReason: 'cancel-value',
+  });
   assert.deepEqual(resolveSelection('2', options, ['one'], true), {
     value: ['one', 'two'],
     pending: true,
@@ -83,6 +89,21 @@ test('selector falls back to numbered input when a TTY cannot enter raw mode', a
   });
   assert.deepEqual(selected, { value: 'default' });
   assert.match(output.read().toString(), /Enter selects the default; 1-9 selects; q\/0 cancels/);
+});
+
+test('plain selector localizes its line prompt and invalid-choice feedback', async () => {
+  const input = Readable.from(['x\n', '1\n']);
+  setTty(input);
+  const output = setTty(new PassThrough());
+  const result = await select('Escolha', [{ value: 'one', label: 'Um' }], {
+    input,
+    output,
+    locale: 'pt-BR',
+  });
+  assert.deepEqual(result, { value: 'one' });
+  const rendered = output.read().toString();
+  assert.match(rendered, /Selecione:/);
+  assert.match(rendered, /Escolha um número listado/);
 });
 
 test('NO_COLOR keeps the complete numbered selector without ANSI output', async () => {
@@ -167,6 +188,27 @@ test('raw multi-select numbers toggle the numbered value before Enter confirms',
   assert.deepEqual(await pending, { value: ['two'] });
 });
 
+test('raw multi-select numbers execute navigation action rows', async () => {
+  const input = new PassThrough();
+  setTty(input);
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+  };
+  const output = setTty(new PassThrough());
+  const pending = select(
+    'Choose',
+    [
+      { value: 'one', label: 'One', selected: true },
+      { value: 'back', label: 'Back', action: true },
+    ],
+    { input, output, multiple: true },
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  input.emit('keypress', '2', { name: '2' });
+  assert.deepEqual(await pending, { value: 'back' });
+});
+
 test('raw selector accepts configured menu exits', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
@@ -185,29 +227,46 @@ test('raw selector accepts configured menu exits', async () => {
     });
     await new Promise((resolve) => setImmediate(resolve));
     input.emit('keypress', 'q', { name: 'q' });
-    assert.deepEqual(await pending, { cancelled: true });
+    assert.deepEqual(await pending, { cancelled: true, cancelReason: 'cancel-value' });
   } finally {
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;
   }
 });
 
-test('raw selector treats Ctrl+C as cancellation and restores raw mode', async () => {
+test('raw selector distinguishes Ctrl+C from Escape and restores raw mode', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
-  const input = new PassThrough();
-  setTty(input);
-  input.isRaw = false;
-  input.setRawMode = (value) => {
-    input.isRaw = value;
-  };
   const output = setTty(new PassThrough());
   try {
-    const pending = select('Choose', [{ value: 'one', label: 'One' }], { input, output });
+    const interruptInput = new PassThrough();
+    setTty(interruptInput);
+    interruptInput.isRaw = false;
+    interruptInput.setRawMode = (value) => {
+      interruptInput.isRaw = value;
+    };
+    const interrupted = select('Choose', [{ value: 'one', label: 'One' }], {
+      input: interruptInput,
+      output,
+    });
     await new Promise((resolve) => setImmediate(resolve));
-    input.emit('keypress', '\u0003', { ctrl: true, name: 'c' });
-    assert.deepEqual(await pending, { cancelled: true });
-    assert.equal(input.isRaw, false);
+    interruptInput.emit('keypress', '\u0003', { ctrl: true, name: 'c' });
+    assert.deepEqual(await interrupted, { cancelled: true, cancelReason: 'interrupt' });
+    assert.equal(interruptInput.isRaw, false);
+
+    const escapeInput = new PassThrough();
+    setTty(escapeInput);
+    escapeInput.isRaw = false;
+    escapeInput.setRawMode = (value) => {
+      escapeInput.isRaw = value;
+    };
+    const escaped = select('Choose', [{ value: 'one', label: 'One' }], {
+      input: escapeInput,
+      output,
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    escapeInput.emit('keypress', '\u001b', { name: 'escape' });
+    assert.deepEqual(await escaped, { cancelled: true, cancelReason: 'escape' });
   } finally {
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;
@@ -246,7 +305,7 @@ test('raw selector cancels on EOF and ignores terminal resize without changing s
     const pending = select('Choose', [{ value: 'one', label: 'One' }], { input: eof, output });
     await new Promise((resolve) => setImmediate(resolve));
     eof.end();
-    assert.deepEqual(await pending, { cancelled: true });
+    assert.deepEqual(await pending, { cancelled: true, cancelReason: 'eof' });
   } finally {
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;

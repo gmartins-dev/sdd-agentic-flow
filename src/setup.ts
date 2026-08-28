@@ -17,7 +17,6 @@ import {
   setupPolicyFromPair,
   setupPolicyFromPreset,
 } from './config-domain';
-import { configureIntent } from './configure';
 import { doctor, languageReport } from './doctor';
 import { inferInitDefaults } from './init-defaults';
 import {
@@ -58,6 +57,7 @@ import {
   type DisplayMode,
   isRich,
   outputMode,
+  renderKeyValue,
   renderStep,
   styleStatus,
   symbol,
@@ -454,9 +454,11 @@ function resolvePolicyFromCommandOptions(options: SetupCommandOptions): SetupPol
 }
 
 function policyReviewTitle(draft: SetupPolicyDraft, locale: string): string {
-  if (draft.kind === 'custom' || !draft.presetName) {
-    return t(locale, 'setup.policyCustom');
-  }
+  if (draft.kind === 'custom' || !draft.presetName) return t(locale, 'setup.policyCustom');
+  if (draft.presetName === 'supervised')
+    return t(locale, 'setup.policySupervised').replace(/\s+[—-]\s+.*$/, '');
+  if (draft.presetName === 'manual') return t(locale, 'setup.policyManual');
+  if (draft.presetName === 'autonomous') return t(locale, 'setup.policyAutonomous');
   return policyDisplayTitle(draft);
 }
 
@@ -554,33 +556,33 @@ async function applySetup(
     return false;
   }
   if (draft.install && !plan && !(await preflightSetup(cwd, draft, options))) return false;
-  if (plan && plan.installationPlan.applicability !== 'applicable') return false;
-  printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
-  process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
+  if (plan && plan.installationPlan.applicability !== 'applicable') {
+    log('WARN', plan.blockers.join('; ') || 'installation plan is not applicable', locale);
+    return false;
+  }
+  process.stdout.write(`\n${t(locale, 'setup.apply')}\n\n`);
   const policy =
     draft.policy ?? resolvePolicyFromCommandOptions(options) ?? defaultOnboardingPolicy();
   if (draft.install) {
-    configureIntent({
-      homeDir,
-      cwd,
-      scope: draft.scope === 'project' ? 'project' : 'user',
-      ...(draft.scope === 'user' && draft.targets ? { targets: draft.targets } : {}),
-      ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
-    });
+    process.stdout.write(`${t(locale, 'menu.running')}: ${t(locale, 'setup.skills')}\n`);
     if (
       !(await install(cwd, {
         ...(draft.scope ? { scope: draft.scope } : {}),
         ...(draft.targets ? { targets: draft.targets } : {}),
         ...(draft.adoptionMode ? { adoptionMode: draft.adoptionMode } : {}),
         ...(plan?.installationPlan ? { resolvedPlan: plan.installationPlan } : {}),
+        overwriteDiffers: Boolean(plan?.installationPlan.totals.MANAGED_MODIFIED),
         homeDir,
         quiet: true,
         ascii: Boolean(options.ascii),
       }))
     )
       return false;
+    process.stdout.write(
+      `${symbol('success', resolveMode({ ascii: Boolean(options.ascii) }))} ${t(locale, 'setup.skills')}\n`,
+    );
   }
-  init(cwd, {
+  const initialized = init(cwd, {
     ...(options.language ? { profile: options.language } : {}),
     ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
     executionMode: policy.executionMode,
@@ -594,8 +596,14 @@ async function applySetup(
     localGitExclude: Boolean(options.localGitExclude),
     ascii: Boolean(options.ascii),
   });
-  const result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
-  if ('status' in result && result.status === 'PASS') {
+  if (!initialized) return false;
+  await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+  const finalState = inspectSetupState(cwd, homeDir);
+  if (
+    (finalState.state === 'Ready' || finalState.state === 'Attention') &&
+    finalState.evidence.blockers.length === 0
+  ) {
+    process.exitCode = undefined;
     log('PASS', t(locale, 'setup.ready'), locale);
     process.stdout.write(
       `\n${t(locale, 'setup.policyReady', {
@@ -675,7 +683,7 @@ async function collectSetupIntent(
 ): Promise<SetupIntentResult> {
   const choose = async (
     label: string,
-    values: Array<{ value: string; label: string; selected?: boolean }>,
+    values: Array<{ value: string; label: string; selected?: boolean; action?: boolean }>,
     multiple = false,
   ) =>
     select(label, values, {
@@ -685,15 +693,25 @@ async function collectSetupIntent(
       locale,
     });
   const persisted = persistedSetupIntent(cwd, homeDir);
-  const sharing = persisted.sharing
-    ? { value: persisted.sharing }
-    : await choose('Sharing', [
-        { value: 'personal', label: 'Just for me', selected: true },
-        { value: 'specs-shared', label: 'Share specs with the team' },
-        { value: 'team', label: 'Use SAF with my team' },
-      ]);
-  if (('cancelled' in sharing && sharing.cancelled) || typeof sharing.value !== 'string')
-    return { cancelled: true };
+  const sharingDefault = persisted.sharing ?? 'personal';
+  const sharing = await choose(t(locale, 'install.sharingPrompt'), [
+    {
+      value: 'personal',
+      label: t(locale, 'install.adoptionPersonal'),
+      selected: sharingDefault === 'personal',
+    },
+    {
+      value: 'specs-shared',
+      label: t(locale, 'install.adoptionSpecsShared'),
+      selected: sharingDefault === 'specs-shared',
+    },
+    {
+      value: 'team',
+      label: t(locale, 'install.adoptionTeam'),
+      selected: sharingDefault === 'team',
+    },
+  ]);
+  if (sharing.cancelled || typeof sharing.value !== 'string') return { cancelled: true };
 
   const hints = detectSetupHosts({ cwd, homeDir });
   const hostLabels: Record<string, string> = {
@@ -702,54 +720,80 @@ async function collectSetupIntent(
     'claude-code': 'Claude Code',
     'vscode-copilot': 'GitHub Copilot',
   };
-  let selectedHosts: SetupIntent['selectedHosts'] = persisted.selectedHosts ?? [];
-  if (!selectedHosts.length) {
-    for (;;) {
-      const hosts = await choose(
-        'Coding agents',
-        hints.map((hint) => ({
-          value: hint.host,
-          label: `${hostLabels[hint.host] || hint.host}${hint.detected ? ' (detected)' : ''}`,
-          selected: hint.detected,
-        })),
-        true,
-      );
-      if (hosts.cancelled) return { cancelled: true };
-      selectedHosts = (Array.isArray(hosts.value) ? hosts.value : []).filter(
-        (host): host is SetupIntent['selectedHosts'][number] =>
-          ['codex', 'cursor', 'claude-code', 'vscode-copilot'].includes(host),
-      );
-      if (selectedHosts.length) break;
-      log('WARN', 'No coding-agent host selected; choose at least one host explicitly', locale);
-    }
+  const persistedHosts = new Set(persisted.selectedHosts ?? []);
+  const hasPersistedHosts = persistedHosts.size > 0;
+  let selectedHosts: SetupIntent['selectedHosts'] = [];
+  for (;;) {
+    const hosts = await choose(
+      t(locale, 'install.agentsPrompt'),
+      hints.map((hint) => ({
+        value: hint.host,
+        label: `${hostLabels[hint.host] || hint.host}${
+          hint.detected ? (locale === 'pt-BR' ? ' (detectado)' : ' (detected)') : ''
+        }`,
+        selected: hasPersistedHosts ? persistedHosts.has(hint.host) : hint.detected,
+      })),
+      true,
+    );
+    if (hosts.cancelled) return { cancelled: true };
+    selectedHosts = (Array.isArray(hosts.value) ? hosts.value : []).filter(
+      (host): host is SetupIntent['selectedHosts'][number] =>
+        ['codex', 'cursor', 'claude-code', 'vscode-copilot'].includes(host),
+    );
+    if (selectedHosts.length) break;
+    log(
+      'WARN',
+      locale === 'pt-BR'
+        ? 'Selecione pelo menos um agente de código.'
+        : 'Select at least one coding-agent host.',
+      locale,
+    );
   }
 
-  const workflow = persisted.workflow
-    ? { value: persisted.workflow }
-    : await choose('Workflow', [
-        { value: 'supervised', label: 'Supervised', selected: true },
-        { value: 'manual', label: 'Manual' },
-        { value: 'autonomous', label: 'Autonomous' },
-        { value: 'custom', label: 'Custom execution/autonomy pair' },
-      ]);
-  if (('cancelled' in workflow && workflow.cancelled) || typeof workflow.value !== 'string')
-    return { cancelled: true };
+  const workflowDefault = persisted.workflow ?? 'supervised';
+  const workflow = await choose(t(locale, 'menu.workflow'), [
+    {
+      value: 'supervised',
+      label: t(locale, 'setup.policySupervised'),
+      selected: workflowDefault === 'supervised',
+    },
+    {
+      value: 'manual',
+      label: t(locale, 'setup.policyManual'),
+      selected: workflowDefault === 'manual',
+    },
+    {
+      value: 'autonomous',
+      label: t(locale, 'setup.policyAutonomous'),
+      selected: workflowDefault === 'autonomous',
+    },
+    {
+      value: 'custom',
+      label: t(locale, 'setup.policyCustom'),
+      selected: workflowDefault === 'custom',
+    },
+  ]);
+  if (workflow.cancelled || typeof workflow.value !== 'string') return { cancelled: true };
   let executionMode: SetupIntent['executionMode'] = persisted.executionMode;
   let autonomyLevel: SetupIntent['autonomyLevel'] = persisted.autonomyLevel;
-  if (workflow.value === 'custom' && (!executionMode || !autonomyLevel)) {
+  if (workflow.value === 'custom') {
     const mode = await choose(
-      'Execution mode',
-      EXECUTION_MODES.map((value) => ({ value, label: value, selected: value === 'apply' })),
+      t(locale, 'setup.policyExecutionMode'),
+      EXECUTION_MODES.map((value) => ({
+        value,
+        label: value,
+        selected: value === (executionMode ?? 'apply'),
+      })),
     );
     if (mode.cancelled || typeof mode.value !== 'string') return { cancelled: true };
     const selectedExecutionMode = mode.value;
     const autonomy = await choose(
-      'Autonomy level',
+      t(locale, 'setup.policyAutonomyLevel'),
       AUTONOMY_LEVELS.filter((value) => autonomyComboValid(selectedExecutionMode, value)).map(
         (value) => ({
           value,
           label: value,
-          selected: value === 'supervised',
+          selected: value === (autonomyLevel ?? 'supervised'),
         }),
       ),
     );
@@ -761,7 +805,7 @@ async function collectSetupIntent(
     ? { value: options.language }
     : persisted.language
       ? { value: persisted.language }
-      : await choose('Language', [
+      : await choose(t(locale, 'menu.language'), [
           { value: 'en-US', label: 'English', selected: locale !== 'pt-BR' },
           { value: 'pt-BR', label: 'Português (Brasil)', selected: locale === 'pt-BR' },
         ]);
@@ -781,51 +825,75 @@ function printSetupPlan(plan: SetupPlan, locale = 'en-US'): void {
   const sharing = plan.intent?.sharing;
   const sharingLabel =
     sharing === 'personal'
-      ? locale === 'pt-BR'
-        ? 'Apenas para mim'
-        : 'Just for me'
+      ? t(locale, 'install.adoptionPersonal')
       : sharing === 'team'
-        ? locale === 'pt-BR'
-          ? 'Com a equipe'
-          : 'With the team'
-        : locale === 'pt-BR'
-          ? 'Specs compartilhadas com a equipe'
-          : 'Specs shared with the team';
+        ? t(locale, 'install.adoptionTeam')
+        : t(locale, 'install.adoptionSpecsShared');
   const targetLabels = plan.targets.map((target) =>
     target === 'agents'
-      ? locale === 'pt-BR'
-        ? 'Shared agent-compatible skills'
-        : 'Shared agent-compatible skills'
+      ? t(locale, 'install.targetShared')
       : target === 'claude'
-        ? 'Claude Code'
+        ? t(locale, 'install.targetClaude')
         : target === 'copilot'
-          ? 'GitHub Copilot'
+          ? t(locale, 'install.targetCopilot')
           : target === 'cursor'
             ? 'Cursor'
             : target,
   );
+  const workflow = plan.intent?.workflow
+    ? plan.intent.workflow === 'supervised'
+      ? t(locale, 'setup.policySupervised').replace(/\s+[—-]\s+.*$/, '')
+      : plan.intent.workflow === 'manual'
+        ? t(locale, 'setup.policyManual')
+        : plan.intent.workflow === 'autonomous'
+          ? t(locale, 'setup.policyAutonomous')
+          : t(locale, 'setup.policyCustom')
+    : '-';
+  const language = plan.intent?.language === 'pt-BR' ? 'Português (Brasil)' : 'English';
+  const mode = resolveMode();
   process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
-  process.stdout.write(
-    `  ${locale === 'pt-BR' ? 'Compartilhamento' : 'Sharing'}  ${sharingLabel}\n`,
-  );
-  process.stdout.write(
-    `  ${locale === 'pt-BR' ? 'Agentes' : 'Agents'}   ${targetLabels.join(', ') || '(none)'}\n`,
-  );
-  process.stdout.write(
-    `  ${locale === 'pt-BR' ? 'Escopo' : 'Scope'}    ${plan.scope === 'project' ? (locale === 'pt-BR' ? 'Projeto' : 'Project') : locale === 'pt-BR' ? 'Usuário' : 'User'}\n`,
-  );
-  process.stdout.write('\nChanges\n');
-  for (const item of [
+  const rows = [
+    [locale === 'pt-BR' ? 'Compartilhamento' : 'Sharing', sharingLabel],
+    [locale === 'pt-BR' ? 'Agentes' : 'Coding agents', targetLabels.join(', ') || '(none)'],
+    [t(locale, 'menu.workflow'), workflow],
+    [t(locale, 'menu.language'), language],
+    [locale === 'pt-BR' ? 'Escopo' : 'Scope', plan.scope === 'project' ? t(locale, 'setup.project') : locale === 'pt-BR' ? 'Usuário' : 'User'],
+  ] as const;
+  for (const [key, value] of rows)
+    process.stdout.write(`  ${renderKeyValue(key, value, mode).join('\n  ')}\n`);
+
+  process.stdout.write(`\n${locale === 'pt-BR' ? 'Alterações' : 'Changes'}\n`);
+  const orderedActions = [
     ...plan.cleanupActions,
-    ...plan.installationIntent,
     ...plan.targetReconciliation,
     ...plan.adoptionChanges,
+    ...plan.installationIntent,
     ...plan.configMutation,
     ...plan.workspaceInitialization,
-  ])
-    process.stdout.write(`  - ${item.detail}\n`);
-  for (const warning of plan.warnings) process.stdout.write(`  Warning: ${warning}\n`);
-  for (const blocker of plan.blockers) process.stdout.write(`  Blocked: ${blocker}\n`);
+  ];
+  for (const item of orderedActions) {
+    const detail =
+      locale !== 'pt-BR'
+        ? item.detail
+        : item.kind === 'cleanup-legacy'
+          ? 'remover somente estado legado reconhecido e pertencente ao SAF'
+          : item.kind === 'reconcile-target'
+            ? 'instalar ou atualizar o bundle oficial de skills'
+            : item.kind === 'adoption'
+              ? 'sincronizar a visibilidade Git gerenciada para o compartilhamento escolhido'
+              : item.kind === 'persist-intent'
+                ? 'persistir a intenção final de instalação após a reconciliação bem-sucedida'
+                : item.kind === 'config'
+                  ? 'persistir somente valores gerenciados não padrão selecionados'
+                  : item.kind === 'workspace'
+                    ? 'inicializar o workspace e o contexto gerado'
+                    : item.detail;
+    process.stdout.write(`  - ${detail}\n`);
+  }
+  for (const warning of plan.warnings)
+    process.stdout.write(`  ${locale === 'pt-BR' ? 'Aviso' : 'Warning'}: ${translateText(locale, warning)}\n`);
+  for (const blocker of plan.blockers)
+    process.stdout.write(`  ${locale === 'pt-BR' ? 'Bloqueado' : 'Blocked'}: ${translateText(locale, blocker)}\n`);
 }
 
 async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupCommandOptions) {
@@ -844,7 +912,7 @@ async function preflightSetup(cwd: string, draft: SetupDraft, options: SetupComm
 }
 
 function needsSessionLanguageSelection(state: string, hasReliableLocale: boolean): boolean {
-  return state === 'Fresh' && !hasReliableLocale;
+  return !hasReliableLocale && ['Fresh', 'Incomplete', 'Blocked'].includes(state);
 }
 
 type OperationResultState = 'success' | 'error' | 'cancelled';
@@ -873,23 +941,26 @@ function renderOperationResult(
           recovery: 'Recovery',
           next: 'Next action',
         };
-  const action = labels.next;
   const recovery =
     state === 'success'
       ? locale === 'pt-BR'
         ? 'o estado aplicado pode ser revisado no menu Validar'
         : 'review the applied state from the Validate menu'
-      : locale === 'pt-BR'
-        ? 'nenhuma intenção pendente foi confirmada; tente novamente quando estiver pronto'
-        : 'no pending intent was confirmed; retry from the menu when ready';
-  return `\n${title}\n\n${labels[state]}: ${summary}\n${labels.details}: ${summary}\n${labels.recovery}: ${recovery}\n\n${action}: ${
+      : state === 'cancelled'
+        ? locale === 'pt-BR'
+          ? 'nenhuma nova ação será iniciada até você escolher continuar'
+          : 'no new action will start until you choose to continue'
+        : locale === 'pt-BR'
+          ? 'revise o estado atual antes de tentar novamente; alguma alteração durável pode ter sido aplicada'
+          : 'review the current state before retrying; some durable state may have been applied';
+  return `\n${title}\n\n${labels[state]}: ${summary}\n${labels.details}: ${summary}\n${labels.recovery}: ${recovery}\n\n${labels.next}: ${
     state === 'success'
       ? locale === 'pt-BR'
         ? 'retorne ao menu ou revise o estado atual'
         : 'return to the menu or review the current state'
       : locale === 'pt-BR'
-        ? 'retorne ao menu para tentar novamente'
-        : 'return to the menu to try again'
+        ? 'retorne ao menu para revisar antes de tentar novamente'
+        : 'return to the menu and review before retrying'
   }\n`;
 }
 
@@ -989,7 +1060,8 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       { value: 'back', label: t(locale, 'menu.back'), action: true },
       { value: 'exit', label: t(locale, 'menu.exit'), action: true },
     ]);
-    return next.cancelled || next.value === 'exit';
+    if (next.cancelled) return next.cancelReason === 'interrupt';
+    return next.value === 'exit';
   };
 
   const runSettings = async (): Promise<'back' | 'exit'> => {
@@ -1002,7 +1074,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         { value: 'back', label: t(locale, 'menu.back'), action: true },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
-      if (choice.cancelled || choice.value === 'exit') return 'exit';
+      if (choice.cancelled)
+        return choice.cancelReason === 'escape' ? 'back' : 'exit';
+      if (choice.value === 'exit') return 'exit';
       if (choice.value === 'back') return 'back';
       if (choice.value === 'workflow') {
         const workflow = await choose(t(locale, 'menu.workflow'), [
@@ -1012,7 +1086,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
           { value: 'back', label: t(locale, 'menu.back'), action: true },
           { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         ]);
-        if (workflow.cancelled || workflow.value === 'exit') return 'exit';
+        if (workflow.cancelled) {
+          if (workflow.cancelReason === 'interrupt') return 'exit';
+          continue;
+        }
+        if (workflow.value === 'exit') return 'exit';
         if (workflow.value && workflow.value !== 'back') {
           let result: unknown;
           try {
@@ -1033,7 +1111,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
           { value: 'back', label: t(locale, 'menu.back'), action: true },
           { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         ]);
-        if (language.cancelled || language.value === 'exit') return 'exit';
+        if (language.cancelled) {
+          if (language.cancelReason === 'interrupt') return 'exit';
+          continue;
+        }
+        if (language.value === 'exit') return 'exit';
         if (language.value && language.value !== 'back') {
           let result: unknown;
           try {
@@ -1072,7 +1154,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         { value: 'back', label: t(locale, 'menu.back'), action: true },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
-      if (choice.cancelled || choice.value === 'exit') return 'exit';
+      if (choice.cancelled)
+        return choice.cancelReason === 'escape' ? 'back' : 'exit';
+      if (choice.value === 'exit') return 'exit';
       if (choice.value === 'back') return 'back';
       const commands: Record<string, [string, string[]]> = {
         help: ['help', []],
@@ -1136,10 +1220,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         { value: 'advanced', label: t(locale, 'menu.advanced') },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
-      if (action.cancelled || action.value === 'exit') {
-        if (action.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
-        return;
+      if (action.cancelled) {
+        if (action.cancelReason === 'interrupt') return;
+        continue;
       }
+      if (action.value === 'exit') return;
       initialScreen = false;
       if (action.value === 'settings') {
         if ((await runSettings()) === 'exit') return;
@@ -1177,7 +1262,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         { value: 'validate', label: t(locale, 'menu.validate') },
         { value: 'exit', label: t(locale, 'menu.exit'), action: true },
       ]);
-      if (action.cancelled || action.value === 'exit') return;
+      if (action.cancelled) {
+        if (action.cancelReason === 'interrupt') return;
+        continue;
+      }
+      if (action.value === 'exit') return;
       initialScreen = false;
       let result: unknown;
       try {
@@ -1206,10 +1295,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       { value: 'learn', label: t(locale, 'menu.learn') },
       { value: 'exit', label: t(locale, 'menu.exit'), action: true },
     ]);
-    if (entry.cancelled || entry.value === 'exit') {
-      if (entry.cancelled) process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
-      return;
+    if (entry.cancelled) {
+      if (entry.cancelReason === 'interrupt') return;
+      continue;
     }
+    if (entry.value === 'exit') return;
     initialScreen = false;
     if (entry.value === 'learn') {
       let result: unknown;
@@ -1230,21 +1320,42 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
     printSetupPlan(plan, locale);
     if (plan.blocked) {
-      log('FAIL', plan.blockers.join('; '), locale);
+      const blockedChoice = await select(
+        locale === 'pt-BR'
+          ? 'Esta configuração ainda não pode ser aplicada.'
+          : 'This setup cannot be applied yet.',
+        [
+          { value: 'change', label: t(locale, 'setup.changeChoices'), action: true },
+          { value: 'validate', label: t(locale, 'menu.validate'), action: true },
+          { value: 'exit', label: t(locale, 'setup.exit'), action: true },
+        ],
+        { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
+      );
+      if (blockedChoice.cancelled) {
+        if (blockedChoice.cancelReason === 'interrupt') return;
+        continue;
+      }
+      if (blockedChoice.value === 'exit') return;
+      if (blockedChoice.value === 'validate')
+        await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
       continue;
     }
     const review = await select(
-      t(locale, 'setup.review'),
+      locale === 'pt-BR' ? 'Aplicar esta configuração?' : 'Apply this setup?',
       [
-        { value: 'continue', label: t(locale, 'setup.continue') },
-        { value: 'back', label: t(locale, 'setup.back') },
-        { value: 'cancel', label: t(locale, 'setup.cancel') },
+        {
+          value: 'apply',
+          label: locale === 'pt-BR' ? 'Instalar e configurar' : 'Install and configure',
+        },
+        { value: 'back', label: t(locale, 'setup.back'), action: true },
+        { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
       ],
       { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
     );
     if (review.cancelled || review.value === 'cancel')
       return log('INFO', t(locale, 'setup.cancelled'), locale);
     if (review.value === 'back') continue;
+    if (review.value !== 'apply') continue;
     if (!setupPlanIsCurrent(cwd, plan, homeDir)) {
       log('WARN', 'setup changed after review; a new plan and confirmation are required', locale);
       continue;
@@ -1270,7 +1381,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       language: intent.language,
     };
     if (await applySetup(cwd, draft, applyOptions, locale, plan)) return;
-    process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);
+    const failedState = inspectSetupState(cwd, homeDir);
+    process.stdout.write(
+      `\n${t(locale, 'setup.failed')}\n` +
+        `${locale === 'pt-BR' ? 'Estado observado' : 'Observed state'}: ${failedState.state}\n`,
+    );
     const recovery = await select(
       t(locale, 'menu.question'),
       [
@@ -1280,7 +1395,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       ],
       { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
     );
-    if (recovery.cancelled || recovery.value === 'exit') return;
+    if (recovery.cancelled) {
+      if (recovery.cancelReason === 'interrupt') return;
+      continue;
+    }
+    if (recovery.value === 'exit') return;
     if (recovery.value === 'validate')
       await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
   }

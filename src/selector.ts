@@ -159,7 +159,9 @@ async function select(
         .map((option) => option.value);
       for (;;) {
         const result = resolveSelection(
-          await new Promise<string>((resolve) => rl.question(t(locale, 'selector.prompt'), resolve)),
+          await new Promise<string>((resolve) =>
+            rl.question(locale === 'pt-BR' ? 'Selecione: ' : 'Select: ', resolve),
+          ),
           options,
           selected,
           multiple,
@@ -167,7 +169,10 @@ async function select(
         );
         if (result.cancelled || (!result.invalid && !result.pending)) return result;
         if (!result.invalid && Array.isArray(result.value)) selected = result.value;
-        else output.write(`${t(locale, 'selector.invalid')}\n`);
+        else
+          output.write(
+            `${locale === 'pt-BR' ? 'Escolha um número listado.' : 'Choose a listed number.'}\n`,
+          );
       }
     } finally {
       rl.close();

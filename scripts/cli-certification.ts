@@ -48,6 +48,11 @@ function expectSuccess(result: ReturnType<CliExecutionAdapter['run']>, pattern?:
   if (pattern) assert.match(`${result.stdout}\n${result.stderr}`, pattern);
 }
 
+function stripAnsi(value: string): string {
+  const ansiEscape = String.fromCharCode(27);
+  return value.replace(new RegExp(`${ansiEscape}\\[[0-?]*[ -/]*[@-~]`, 'g'), '');
+}
+
 function expectUnchanged(
   before: ReturnType<typeof observeSandbox>,
   after: ReturnType<typeof observeSandbox>,
@@ -458,11 +463,11 @@ function ptyScenario(): Scenario {
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
           { waitFor: /Ready to set up SAF/, input: '1\n' },
-          { waitFor: /PASS Ready/, input: '' },
+          { waitFor: /Ready/, input: '' },
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
-      assert.match(result.transcript, /PASS Ready/);
+      assert.match(stripAnsi(result.transcript), /PASS Ready/);
       const languagePrompt = result.transcript.indexOf('Choose your language / Escolha o idioma');
       assert.ok(languagePrompt >= 0);
       const languagePrelude = result.transcript.slice(0, languagePrompt);
@@ -619,12 +624,12 @@ function userInstallThenWorkspaceScenario(): Scenario {
           { waitFor: /Sharing/, input: '1\n' },
           { waitFor: /Workflow/, input: '1\n' },
           { waitFor: /Ready to set up SAF/, input: '1\n' },
-          { waitFor: /PASS Ready/, input: '' },
+          { waitFor: /Ready/, input: '' },
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
       assert.match(result.transcript, /SAF is already installed|Set up this repository/i);
-      assert.match(result.transcript, /PASS Ready/);
+      assert.match(stripAnsi(result.transcript), /PASS Ready/);
       assert.ok(fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'workspace.yml')));
       assert.ok(
         fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'context', 'project-context.md')),

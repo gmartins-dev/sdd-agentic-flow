@@ -11,6 +11,7 @@ import {
   setupPrecondition,
   targetsForHosts,
 } from '../src/setup-plan';
+import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 test('maps selected hosts to deduplicated persisted targets', () => {
   assert.deepEqual(targetsForHosts(['codex', 'cursor', 'claude-code']), [
@@ -86,6 +87,43 @@ test('resolves an inspectable plan with no executable callbacks', () => {
       false,
     );
     assert.equal(setupPlanIsCurrent(cwd, plan, home), true);
+    assert.match(plan.installationIntent[0]?.detail ?? '', /after successful reconciliation/);
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('setup review is blocked when the authoritative installation plan has a collision', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-plan-collision-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-plan-collision-home-'));
+  try {
+    const conflictingSkill = path.join(home, '.agents', 'skills', OFFICIAL_SKILLS[0]);
+    fs.mkdirSync(conflictingSkill, { recursive: true });
+    fs.writeFileSync(path.join(conflictingSkill, 'SKILL.md'), '# foreign\n', 'utf8');
+    const snapshot = {
+      config: 'absent',
+      workspace: 'absent',
+      skills: 'partial',
+      context: false,
+      homeDir: home,
+      evidence: { warnings: [], blockers: [], targetSet: [], targetEvidence: [] },
+      state: 'Incomplete',
+    } as unknown as Parameters<typeof resolveSetupPlan>[1];
+    const plan = resolveSetupPlan(
+      cwd,
+      snapshot,
+      {
+        sharing: 'personal',
+        selectedHosts: ['codex'],
+        workflow: 'supervised',
+        language: 'en-US',
+      },
+      home,
+    );
+    assert.equal(plan.installationPlan.blocked, true);
+    assert.equal(plan.blocked, true);
+    assert.match(plan.blockers.join('\n'), /unowned skill directories conflict with SAF/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
     fs.rmSync(home, { recursive: true, force: true });

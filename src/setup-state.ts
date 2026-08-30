@@ -2,16 +2,19 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { inspectAdoption } from './adoption';
 import { configValue, readConfig } from './config-domain';
 import { resolveGitContext } from './git-context';
 import {
   classifyInstallIntent,
+  classifyProvenanceVersion,
   DEFAULT_USER_TARGETS,
   readInstallConfig,
   repositoryKey,
   USER_TARGETS,
 } from './install-domain';
-import { SDD_PATHS, sddJoin, userSkillsDirsForTargets } from './paths';
+import { buildInstallProfilePlan, isPlanEmpty } from './install-preflight';
+import { SDD_PATHS, sddJoin, userSkillsDirsForTargets, VERSION } from './paths';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import { readInstallProvenance } from './upgrade';
 import { WORKSPACE_MARKER } from './workspace';
@@ -59,9 +62,10 @@ type UserInstallationSnapshot = {
 };
 
 function classifySetupState(facts: SetupStateFacts): SetupState {
+  const projectArtifactsBlock =
+    facts.git !== 'unavailable' && (facts.config === 'invalid' || facts.workspace === 'invalid');
   if (
-    facts.config === 'invalid' ||
-    facts.workspace === 'invalid' ||
+    projectArtifactsBlock ||
     facts.installationIntent === 'future' ||
     facts.installationIntent === 'unknown' ||
     (facts.blockers?.length ?? 0) > 0
@@ -172,6 +176,32 @@ function targetRoots(cwd: string, homeDir: string, configContent: string | null)
     .filter((target): target is { id: string; root: string } => Boolean(target.root));
 }
 
+function installationReconciliationPending(
+  cwd: string,
+  homeDir: string,
+  installationIntent: SetupStateFacts['installationIntent'],
+): boolean {
+  if (installationIntent !== 'current') return false;
+  let install: ReturnType<typeof readInstallConfig>;
+  try {
+    install = readInstallConfig(homeDir);
+  } catch {
+    return false;
+  }
+  const projectProfile = (() => {
+    try {
+      return install?.projects[repositoryKey(cwd)];
+    } catch {
+      return undefined;
+    }
+  })();
+  const scope = projectProfile?.adoption_mode === 'team' ? 'project' : 'user';
+  const profile = scope === 'project' ? projectProfile : install?.user;
+  if (!profile) return false;
+  const plan = buildInstallProfilePlan({ cwd, homeDir, scope, profile });
+  return plan.blocked || !isPlanEmpty(plan);
+}
+
 function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   const workspacePath = path.join(cwd, SDD_PATHS.workspace);
@@ -189,6 +219,19 @@ function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts
   const warnings = targets
     .filter((target) => target.present.length > 0 && !target.complete)
     .map((target) => `${target.id} target is incomplete`);
+  const adoption = resolveGitContext(cwd).ok ? inspectAdoption(cwd, homeDir) : null;
+  if (adoption?.drift.length)
+    warnings.push(`adoption visibility drift: ${adoption.drift.join('; ')}`);
+  if (installationReconciliationPending(cwd, homeDir, installState.kind))
+    warnings.push('installation intent has pending reconciliation');
+  for (const target of targets) {
+    const provenance = readInstallProvenance(target.root);
+    if (
+      provenance?.packageVersion &&
+      classifyProvenanceVersion(provenance.packageVersion, VERSION) !== 'current'
+    )
+      warnings.push(`${target.id} target provenance is stale`);
+  }
   const blockers: string[] = [];
   for (const target of targets) {
     if (readInstallProvenance(target.root)?.applyState === 'applying')

@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { isLegacySkillName } from './skill-identity';
+import {
+  DEFAULT_USER_TARGETS,
+  type InstallConfig,
+  type InstallProjectProfile,
+} from './install-domain';
+import { PACKAGE_ROOT, userSkillsDirsForTargets } from './paths';
+import { isLegacySkillName, OFFICIAL_SKILLS } from './skill-identity';
 import {
   type ClassifiedPairs,
   classifyManagedPairs,
@@ -65,6 +71,13 @@ type BuildInstallPlanInput = {
   modeLabel?: string;
   selectedTargets?: string[] | null;
   targetIds?: string[];
+};
+
+type InstallProfilePlanInput = {
+  cwd: string;
+  homeDir: string;
+  scope: string;
+  profile: InstallConfig['user'] | InstallProjectProfile;
 };
 
 type ApplyInstallSummary = {
@@ -215,6 +228,28 @@ function buildInstallPlan({
   };
 }
 
+function buildInstallProfilePlan({ cwd, homeDir, scope, profile }: InstallProfilePlanInput) {
+  const userProfile = 'targets' in profile;
+  const targetIds =
+    scope === 'project'
+      ? ['project-agents']
+      : userProfile && profile.targets.length
+        ? profile.targets
+        : [...DEFAULT_USER_TARGETS];
+  return buildInstallPlan({
+    packageRoot: PACKAGE_ROOT,
+    skills: OFFICIAL_SKILLS,
+    targets:
+      scope === 'project'
+        ? [path.join(cwd, '.agents', 'skills')]
+        : userSkillsDirsForTargets(targetIds, homeDir),
+    officialSkills: OFFICIAL_SKILLS,
+    scope: scope === 'project' ? 'project' : 'user',
+    modeLabel: scope === 'project' ? 'Project / Team' : 'Local / User',
+    targetIds,
+  });
+}
+
 function applyInstallPlan(
   packageRoot: string,
   skills: readonly string[],
@@ -259,10 +294,17 @@ function isPlanEmpty(plan: InstallPlan): boolean {
   );
 }
 
-export type { ActionTotals, ApplyInstallResult, InstallPlan, TargetReport };
+export type {
+  ActionTotals,
+  ApplyInstallResult,
+  InstallPlan,
+  InstallProfilePlanInput,
+  TargetReport,
+};
 export {
   applyInstallPlan,
   buildInstallPlan,
+  buildInstallProfilePlan,
   classifyTargetRoot,
   isPlanEmpty,
   skillDirPartial,

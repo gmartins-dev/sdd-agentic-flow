@@ -32,14 +32,15 @@ function summarizeChecks(checks: DoctorCheck[] = []): StatusCounts {
 
 function primaryRemediation(checks: DoctorCheck[] = []): string | null {
   const byName = new Map(checks.map((check) => [check.name, check]));
+  if (byName.get('git_workspace')?.status === 'FAIL') return 'npx sdd-agentic-flow install';
   if (['WARN', 'FAIL'].includes(byName.get('config')?.status ?? ''))
     return 'npx sdd-agentic-flow init';
   if (['WARN', 'FAIL'].includes(byName.get('skills')?.status ?? ''))
     return 'npx sdd-agentic-flow install';
-  if (['WARN', 'FAIL'].includes(byName.get('installation_intent')?.status ?? ''))
-    return 'npx sdd-agentic-flow uninstall --purge --yes';
   if (['WARN', 'FAIL'].includes(byName.get('installation_provenance')?.status ?? ''))
     return 'npx sdd-agentic-flow upgrade --skills-only';
+  if (['WARN', 'FAIL'].includes(byName.get('installation_intent')?.status ?? ''))
+    return 'npx sdd-agentic-flow uninstall --purge --yes';
   if (['WARN', 'FAIL'].includes(byName.get('language_profile')?.status ?? '')) {
     return 'npx sdd-agentic-flow config policy --language <profile>';
   }

@@ -260,6 +260,7 @@ function doctorChecks(
         return false;
       }
     })();
+  const gitWorkspaceAvailable = isPackage || resolveGitContext(cwd).ok;
   (() => {
     const roots = [path.join(cwd, '.agents', 'skills')];
     for (const root of roots) {
@@ -285,9 +286,12 @@ function doctorChecks(
   })();
   const configPath = sddJoin(cwd, 'config.yml');
   const setupState = isPackage ? null : inspectSetupState(cwd, options.homeDir || os.homedir());
-  const safetyConfig = fs.existsSync(configPath)
-    ? fs.readFileSync(configPath, 'utf8')
-    : effectiveConfigYaml();
+  const safetyConfig =
+    !gitWorkspaceAvailable && !isPackage
+      ? effectiveConfigYaml()
+      : fs.existsSync(configPath)
+        ? fs.readFileSync(configPath, 'utf8')
+        : effectiveConfigYaml();
   const specsRoot = configValue(safetyConfig, 'root');
   const language = languageReport(cwd);
   const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd);
@@ -346,27 +350,39 @@ function doctorChecks(
     );
   } else {
     const gitContext = resolveGitContext(cwd);
+    const homeDir = options.homeDir || os.homedir();
+    const projectScoped = gitWorkspaceAvailable;
     add(
       'setup_state',
-      setupState?.state === 'Ready' ? 'PASS' : setupState?.state === 'Blocked' ? 'FAIL' : 'WARN',
-      `derived setup state: ${setupState?.state ?? 'Blocked'}`,
+      !projectScoped
+        ? 'INFO'
+        : setupState?.state === 'Ready'
+          ? 'PASS'
+          : setupState?.state === 'Blocked'
+            ? 'FAIL'
+            : 'WARN',
+      !projectScoped
+        ? 'user installation can be managed without a Git workspace'
+        : `derived setup state: ${setupState?.state ?? 'Blocked'}`,
       'Project readiness',
     );
     add(
       'git_workspace',
-      gitContext.ok ? 'PASS' : 'FAIL',
+      gitContext.ok ? 'PASS' : 'INFO',
       gitContext.ok ? `Git workspace found at ${gitContext.context.gitRoot}` : gitContext.error,
       'Workspace',
     );
     const resolvedConfig = readConfig(configPath);
     add(
       'config',
-      resolvedConfig.ok ? 'PASS' : 'FAIL',
-      resolvedConfig.ok
-        ? resolvedConfig.state === 'absent'
-          ? `${SDD_PATHS.config} absent; using built-in defaults`
-          : `${SDD_PATHS.config} found`
-        : resolvedConfig.errors.join('; '),
+      !projectScoped ? 'INFO' : resolvedConfig.ok ? 'PASS' : 'FAIL',
+      !projectScoped
+        ? 'project configuration is not evaluated outside a Git workspace'
+        : resolvedConfig.ok
+          ? resolvedConfig.state === 'absent'
+            ? `${SDD_PATHS.config} absent; using built-in defaults`
+            : `${SDD_PATHS.config} found`
+          : resolvedConfig.errors.join('; '),
       'Policy',
     );
     const workspacePath = path.join(cwd, SDD_PATHS.workspace);
@@ -375,15 +391,23 @@ function doctorChecks(
       : null;
     add(
       'workspace',
-      workspaceContent === null ? 'WARN' : workspaceContent === WORKSPACE_MARKER ? 'PASS' : 'FAIL',
-      workspaceContent === null
-        ? `${SDD_PATHS.workspace} not found; run \`${renderCliCommand('init')}\``
-        : workspaceContent === WORKSPACE_MARKER
-          ? `${SDD_PATHS.workspace} is current`
-          : `${SDD_PATHS.workspace} is invalid or unsupported; preserved without changes`,
+      !projectScoped
+        ? 'INFO'
+        : workspaceContent === null
+          ? 'WARN'
+          : workspaceContent === WORKSPACE_MARKER
+            ? 'PASS'
+            : 'FAIL',
+      !projectScoped
+        ? 'workspace initialization requires a Git repository'
+        : workspaceContent === null
+          ? `${SDD_PATHS.workspace} not found; run \`${renderCliCommand('init')}\``
+          : workspaceContent === WORKSPACE_MARKER
+            ? `${SDD_PATHS.workspace} is current`
+            : `${SDD_PATHS.workspace} is invalid or unsupported; preserved without changes`,
       'Workspace',
     );
-    const adoption = inspectAdoption(cwd, options.homeDir || os.homedir());
+    const adoption = inspectAdoption(cwd, homeDir);
     add(
       'adoption',
       adoption.mode === 'unclassified' ? 'INFO' : adoption.drift.length ? 'WARN' : 'PASS',
@@ -432,7 +456,7 @@ function doctorChecks(
       const scope = projectProfile?.adoption_mode === 'team' ? 'project' : 'user';
       const profile = scope === 'project' ? projectProfile : installConfig?.user;
       if (!profile || !resolveInstallProfilePlan) return;
-      const plan = resolveInstallProfilePlan({ cwd, homeDir: os.homedir(), scope, profile });
+      const plan = resolveInstallProfilePlan({ cwd, homeDir, scope, profile });
       const status = plan.blocked || !isPlanEmpty(plan) ? 'WARN' : 'PASS';
       add(
         'installation_intent',
@@ -475,8 +499,10 @@ function doctorChecks(
     );
     add(
       'project_readiness',
-      setupState?.state === 'Ready' ? 'PASS' : 'WARN',
-      'project readiness is based on effective policy and official skills',
+      !projectScoped ? 'INFO' : setupState?.state === 'Ready' ? 'PASS' : 'WARN',
+      !projectScoped
+        ? 'project readiness is deferred until a Git workspace is available'
+        : 'project readiness is based on effective policy and official skills',
       'Project readiness',
     );
     {
@@ -587,8 +613,12 @@ function doctorChecks(
   );
   add(
     'language_profile',
-    language.status as DoctorCheck['status'],
-    language.message ?? '',
+    !gitWorkspaceAvailable && language.status !== 'PASS'
+      ? 'INFO'
+      : (language.status as DoctorCheck['status']),
+    !gitWorkspaceAvailable && language.status !== 'PASS'
+      ? 'project language configuration is not evaluated outside a Git workspace'
+      : (language.message ?? ''),
     'Language',
   );
   const safe =
@@ -631,7 +661,7 @@ function doctorChecks(
       'Installation',
     );
     for (const [targetId, segments] of Object.entries(USER_TARGETS)) {
-      const target = path.join(os.homedir(), ...segments);
+      const target = path.join(options.homeDir || os.homedir(), ...segments);
       const installed = installationStatus(target);
       add(
         `installation_user_${targetId}`,

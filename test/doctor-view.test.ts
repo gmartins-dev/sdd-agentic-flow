@@ -26,3 +26,23 @@ test('doctor view routes provenance drift through the canonical entry point', ()
     'npx sdd-agentic-flow upgrade --skills-only',
   );
 });
+
+test('doctor recommends user installation outside Git', () => {
+  assert.equal(
+    primaryRemediation([
+      { name: 'git_workspace', status: 'FAIL' },
+      { name: 'config', status: 'FAIL' },
+    ]),
+    'npx sdd-agentic-flow install',
+  );
+});
+
+test('doctor prefers non-destructive skill refresh over purge when both drift', () => {
+  assert.equal(
+    primaryRemediation([
+      { name: 'installation_intent', status: 'WARN' },
+      { name: 'installation_provenance', status: 'WARN' },
+    ]),
+    'npx sdd-agentic-flow upgrade --skills-only',
+  );
+});

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 7.6.1
+
+- Fix setup-state detection outside Git workspaces, non-destructive doctor
+  remediation, and pending installation reconciliation reporting.
+- Keep installation planning and onboarding validation on the same plan logic.
+- Add regression coverage for the corrected setup and doctor flows.
+
 ## 7.6.0
 
 - Make the CLI setup lifecycle recoverable, including bounded clean reinstall

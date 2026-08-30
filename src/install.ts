@@ -20,8 +20,9 @@ import {
 } from './install-domain';
 import {
   applyInstallPlan,
-  buildInstallPlan,
+  buildInstallProfilePlan,
   type InstallPlan,
+  type InstallProfilePlanInput,
   isPlanEmpty,
 } from './install-preflight';
 import { resolveLocale, t } from './messages';
@@ -47,12 +48,7 @@ type InstallCommandOptions = {
   [key: string]: unknown;
 };
 
-type PlanForInstallProfileInput = {
-  cwd: string;
-  homeDir: string;
-  scope: string;
-  profile: InstallConfig['user'] | InstallProjectProfile;
-};
+type PlanForInstallProfileInput = InstallProfilePlanInput;
 
 type ConfigureInteractiveResult =
   | ConfigureIntentResult
@@ -90,30 +86,8 @@ function isProjectInstallProfile(
   return 'adoption_mode' in profile;
 }
 
-function planForInstallProfile({
-  cwd,
-  homeDir,
-  scope,
-  profile,
-}: PlanForInstallProfileInput): InstallPlan {
-  const targetIds =
-    scope === 'project'
-      ? ['project-agents']
-      : isUserInstallProfile(profile) && profile.targets.length
-        ? profile.targets
-        : [...DEFAULT_USER_TARGETS];
-  return buildInstallPlan({
-    packageRoot: PACKAGE_ROOT,
-    skills: OFFICIAL_SKILLS,
-    targets:
-      scope === 'project'
-        ? [path.join(cwd, '.agents', 'skills')]
-        : userSkillsDirsForTargets(targetIds, homeDir),
-    officialSkills: OFFICIAL_SKILLS,
-    scope: scope === 'project' ? 'project' : 'user',
-    modeLabel: scope === 'project' ? 'Project / Team' : 'Local / User',
-    targetIds,
-  });
+function planForInstallProfile(input: PlanForInstallProfileInput): InstallPlan {
+  return buildInstallProfilePlan(input);
 }
 
 function installApplyCommand(plan: InstallPlan): string {

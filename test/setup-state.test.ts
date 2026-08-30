@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -132,6 +133,17 @@ test('classifies setup from durable facts without requiring config', () => {
   );
 });
 
+test('invalid project artifacts do not block user setup outside Git', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-no-git-state-'));
+  try {
+    fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
+    fs.writeFileSync(path.join(cwd, '.sdd-agentic-flow', 'config.yml'), 'schema: saf-config/v2\n');
+    assert.equal(inspectSetupState(cwd, cwd).state, 'Incomplete');
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 test('inspects every required target with an injected home directory', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-state-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-home-'));
@@ -179,6 +191,42 @@ test('recognizes a healthy user installation without requiring a Git workspace',
   });
   assert.equal(inspectSetupState(cwd, homeDir).state, 'Incomplete');
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('pending installation reconciliation surfaces as onboarding attention', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-pending-install-'));
+  const homeDir = path.join(root, 'home');
+  const cwd = path.join(root, 'project');
+  fs.mkdirSync(cwd, { recursive: true });
+  execFileSync('git', ['init', '--quiet'], { cwd });
+  writeInstallConfig({ ...defaultInstallConfig(), user: { targets: ['agents'] } }, homeDir);
+  const skillsRoot = path.join(homeDir, '.agents', 'skills');
+  fs.mkdirSync(skillsRoot, { recursive: true });
+  for (const skill of OFFICIAL_SKILLS) {
+    fs.mkdirSync(path.join(skillsRoot, skill), { recursive: true });
+    fs.writeFileSync(path.join(skillsRoot, skill, 'SKILL.md'), '# stale skill\n');
+  }
+  writeInstallProvenance(skillsRoot, {
+    packageVersion: '7.6.0',
+    scope: 'user',
+    target: 'agents',
+    managedSkills: [...OFFICIAL_SKILLS],
+    applyState: 'complete',
+  });
+  fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow', 'context'), { recursive: true });
+  fs.writeFileSync(
+    path.join(cwd, '.sdd-agentic-flow', 'workspace.yml'),
+    'schema: saf-workspace/v1\n',
+  );
+  fs.writeFileSync(
+    path.join(cwd, '.sdd-agentic-flow', 'context', 'project-context.md'),
+    '# context\n',
+  );
+  try {
+    assert.equal(inspectSetupState(cwd, homeDir).state, 'Attention');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('interrupted target apply cannot classify the setup as Ready', () => {

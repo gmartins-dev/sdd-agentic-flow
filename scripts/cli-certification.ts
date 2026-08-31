@@ -462,7 +462,7 @@ function ptyScenario(): Scenario {
           { waitFor: /Sharing/, input: '1' },
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
-          { waitFor: /Ready to set up SAF/, input: '1\n' },
+          { waitFor: /Ready to set up SAF/, input: '\r' },
           { waitFor: /Ready/, input: '' },
         ],
       });

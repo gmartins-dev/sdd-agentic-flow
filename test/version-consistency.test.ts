@@ -24,9 +24,9 @@ function writeFixture(version = '0.0.1', cliSource?: string) {
     path.join(root, 'package-lock.json'),
     `${JSON.stringify({ name: 'fixture', version, lockfileVersion: 3, packages: { '': { name: 'fixture', version }, 'node_modules/demo': { version: '1.0.0' } } }, null, 2)}\n`,
   );
-  fs.mkdirSync(path.join(root, 'dist'));
+  fs.mkdirSync(path.join(root, 'src'));
   fs.writeFileSync(
-    path.join(root, 'dist', 'sdd-agentic-flow.js'),
+    path.join(root, 'src', 'paths.ts'),
     cliSource ||
       "const VERSION = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')).version;\n",
   );

@@ -1,6 +1,6 @@
 # Trust model
 
-`sdd-agentic-flow` is inspectable local tooling: its CLI, skills, configuration, docs, and validation scripts are part of the package. It has zero runtime dependencies and no telemetry, postinstall hook, or outbound CLI network access by default.
+`sdd-agentic-flow` is inspectable local tooling: its CLI, skills, configuration, docs, and validation scripts are part of the package. It has zero external runtime npm dependencies (build-time libraries may be bundled), and no telemetry, postinstall hook, or outbound CLI network access by default.
 
 Network access has **three explicit entry points** (never silent/background):
 

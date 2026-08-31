@@ -46,7 +46,8 @@ import { gitInfo, parseProvenance, readLoopState } from './project-context';
 import { inspectSetupState } from './setup-state';
 import { parseSkillContract } from './skill-contract';
 import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from './skill-identity';
-import { styleStatus } from './ui';
+import { terminalLog, terminalNote } from './terminal-ui';
+import { outputMode } from './ui';
 import { checkForUpdate } from './update-check';
 import { readInstallProvenance } from './upgrade';
 import { satisfiesRange } from './version-compat';
@@ -1058,10 +1059,13 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
   return checks;
 }
 
-function doctorLog(status: string, message: string, locale: string): void {
-  process.stdout.write(
-    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
-  );
+function doctorLog(
+  status: string,
+  message: string,
+  locale: string,
+  mode: ReturnType<typeof outputMode>,
+): void {
+  terminalLog(status, translateText(locale, message), { mode });
 }
 
 function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {}): void {
@@ -1070,6 +1074,34 @@ function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {})
     verbose: Boolean(options.verbose),
     locale,
   });
+  const mode = outputMode({ stdin: process.stdin, stdout: process.stdout }, process.env, {
+    ...(options.ascii === undefined ? {} : { ascii: options.ascii }),
+    ...(options.json === undefined ? {} : { json: options.json }),
+  });
+  if (mode === 'human-rich') {
+    terminalLog('INFO', view.title, { mode });
+    terminalNote(
+      'Setup health',
+      [
+        ['Status', view.hasProblems ? t(locale, 'doctor.needsAction') : t(locale, 'doctor.passed')],
+        [
+          'Checks',
+          t(locale, 'doctor.summary', {
+            pass: view.counts.PASS,
+            info: view.counts.INFO,
+            warn: view.counts.WARN,
+            fail: view.counts.FAIL,
+          }),
+        ],
+        ...(view.primaryFix ? [['Next action', view.primaryFix] as const] : []),
+      ],
+      { mode },
+    );
+    for (const check of view.shown) doctorLog(check.status, check.message ?? '', locale, mode);
+    if (!view.hasProblems)
+      terminalLog('INFO', `${t(locale, 'doctor.next')}: ${t(locale, 'ready.next')}`, { mode });
+    return;
+  }
   process.stdout.write(
     `\n${view.title}${view.hasProblems ? '' : ` — ${t(locale, 'doctor.passed')}`}\n`,
   );
@@ -1087,7 +1119,7 @@ function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {})
     process.stdout.write(
       `\n${view.hasProblems ? t(locale, 'doctor.related') : t(locale, 'doctor.checks')}\n`,
     );
-    for (const check of view.shown) doctorLog(check.status, check.message ?? '', locale);
+    for (const check of view.shown) doctorLog(check.status, check.message ?? '', locale, mode);
   }
   if (!view.hasProblems)
     process.stdout.write(`\n${t(locale, 'doctor.next')}\n  ${t(locale, 'ready.next')}\n`);

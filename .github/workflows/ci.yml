@@ -22,6 +22,7 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run check
       - run: npm run pack:dry
+      - run: npm run cli:packed-smoke
       - name: Run mandatory CLI certification on Node 24
         if: matrix.node == 24
         run: |
@@ -43,3 +44,4 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run pack:dry
+      - run: npm run cli:packed-smoke

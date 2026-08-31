@@ -1,5 +1,21 @@
 # Roadmap
 
+- **Next release after 7.7.1 — v7.8.0:** SAF Terminal Design System and Human CLI UX.
+  Replace log-oriented rich output with a coherent guided terminal journey, bundled
+  Clack/Picocolors primitives, cell-aware layout, inert terminal-text sanitization,
+  responsive notes and summaries, transient rich-TTY progress, and representative
+  packed/cross-platform evidence. Preserve selector semantics, machine schema 2,
+  safety boundaries, local-first behavior, and zero external runtime npm dependencies.
+  No new command semantics, workflow authority, telemetry, implicit network behavior,
+  automatic Git mutation, or release publication authority.
+
+- **v7.7.1 (current baseline):** Removes the local-only `release-saf` skill from the
+  published package and republishes the corrected package contents.
+
+- **v7.7.0:** Hardens canonical CLI grammar, fail-fast dispatch,
+  zero-delta rejection, Team authorization, atomic machine JSON, and dist/packed
+  certification for contract and mutation regressions.
+
 - **v7.3.0 (2026-08-27):** CLI behavioral certification with independent
   sandbox observation, bidirectional mutation evidence, output-driven PTY
   journeys, fail-closed recovery coverage, packed-artifact verification, and a

@@ -6,6 +6,12 @@ Run `npm run release:check` first. It chains `npm run check`, `npm run pack:dry`
 manual command list this section used to carry, so this doc never needs an edit on a routine
 version bump again.
 
+The published CLI is self-contained: `package.json` has no external runtime npm dependencies, and
+the CommonJS bundle contains the build-time terminal UI libraries it uses. The generated
+`dist/third-party-notices.txt` artifact carries the bundled notices, while `npm run licenses:check`
+verifies both its contents and coverage before release. A normal build writes only generated
+`dist/` files; it does not rewrite tracked licensing files.
+
 ## Version bump
 
 `package.json` `version` is the only number to edit by hand. Then:

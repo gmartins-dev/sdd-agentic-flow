@@ -30,9 +30,10 @@ function getLockfileVersions(root = process.cwd()) {
 }
 
 function listCliVersion(root = process.cwd()) {
-  const candidates = ['src/paths.ts', 'dist/paths.js', 'dist/sdd-agentic-flow.js'];
-  const file = candidates.find((candidate) => fs.existsSync(path.join(root, candidate)));
-  if (!file) return { file: candidates[0], version: null, derived: false };
+  // The source module is the stable version contract. Generated output may be
+  // bundled, renamed, or split differently by the selected build tool.
+  const file = 'src/paths.ts';
+  if (!fs.existsSync(path.join(root, file))) return { file, version: null, derived: false };
   const content = fs.readFileSync(path.join(root, file), 'utf8');
   const hardcoded =
     content.match(/^const VERSION = ['"](\d+\.\d+\.\d+)['"];/m) ||

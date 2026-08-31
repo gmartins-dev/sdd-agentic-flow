@@ -13,17 +13,21 @@ Gate order in `npm run check` is:
 tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell gates → tests
 ```
 
-| Command | Role |
-| --- | --- |
-| `npm run typecheck` | Strict TypeScript on `src/`, `test/`, `scripts/` (`tsconfig.json`) |
-| `npm run build` | Clean emit of `src/` → `dist/` (`tsconfig.build.json`) |
-| `npm run lint:biome` | Biome format + lint (no type semantics — that is `tsc`) |
-| `npm run lint:biome:fix` | Apply Biome fixes and organize imports |
-| `npm run lint` | `typecheck` then `lint:biome` |
-| `npm run lint:fix:all` | Biome fix + YAML Prettier + markdown fix |
+| Command                  | Role                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `npm run typecheck`      | Strict TypeScript on `src/`, `test/`, `scripts/` (`tsconfig.json`)           |
+| `npm run build`          | Clean, non-minified self-contained bundle of the CLI entrypoint into `dist/` |
+| `npm run lint:biome`     | Biome format + lint (no type semantics — that is `tsc`)                      |
+| `npm run lint:biome:fix` | Apply Biome fixes and organize imports                                       |
+| `npm run lint`           | `typecheck` then `lint:biome`                                                |
+| `npm run lint:fix:all`   | Biome fix + YAML Prettier + markdown fix                                     |
 
 Biome config: `biome.json` (ignores `dist/`, `.specs/`, `.local/`; TypeScript uses the same
 formatter rules as JavaScript). Do not reintroduce retired `node --check` file lists.
+
+The package has zero external runtime npm dependencies. Build-time libraries used by the human-rich
+terminal adapter are bundled into the published artifact; `npm run licenses:check` verifies the
+corresponding notices.
 
 ### Where new CLI code belongs
 

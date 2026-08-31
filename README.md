@@ -198,7 +198,8 @@ Quick one-off scripts, fully autonomous no-review agents, automatic deploy/relea
 ## Why trust this toolkit?
 
 - The source, CLI, docs, skills, and checks are open source and inspectable.
-- The CLI is small, local-first, and has zero runtime dependencies.
+- The CLI is small, local-first, and has zero external runtime npm dependencies. Build-time
+  libraries used by the human-rich terminal UI are bundled into the published artifact.
 - It has no telemetry, postinstall script, or outbound CLI network access by default. Network
   access is limited to three explicit entry points: `doctor --check-updates`, `upgrade` (and
   `--check`/`--plan`), and an interactive bare-welcome ask (human-rich TTY, default N). See

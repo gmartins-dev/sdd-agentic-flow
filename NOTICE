@@ -17,3 +17,7 @@ endorsement. See `LICENSING.md`.
 Both upstream version references are tracked in `shared/baselines/registry.yml`
 (`upstream_version`) and are updated deliberately, never silently, when the upstream skill
 changes — see docs/baselines.md.
+
+The human-rich CLI bundle includes build-time copies of `@clack/prompts`, `@clack/core`,
+`picocolors`, and `sisteransi`. Their licenses are reproduced in
+`LICENSES/CLI-UI-BUNDLED.txt`.

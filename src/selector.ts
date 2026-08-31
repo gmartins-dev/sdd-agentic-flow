@@ -1,5 +1,7 @@
 import readline from 'node:readline';
 import { t } from './messages';
+import { physicalRows } from './terminal-geometry';
+import { sanitizeTerminalText } from './terminal-safety';
 import { terminalCapabilities } from './ui';
 
 type SelectOption = {
@@ -103,7 +105,8 @@ function renderSelector(
       options.filter((option) => option.selected && !option.action).map((option) => option.value)
     ).map(optionValueKey),
   );
-  const lines = [`\n${question}\n`];
+  const safeQuestion = sanitizeTerminalText(question);
+  const lines = [`\n${safeQuestion}\n`];
   options.forEach((option, index) => {
     const marker = index === activeIndex ? '>' : ' ';
     const state =
@@ -111,8 +114,8 @@ function renderSelector(
         ? ` ${selectedValues.has(optionValueKey(option.value)) ? '[x]' : '[ ]'}`
         : '';
     const suffix = option.recommended ? ' (recommended)' : '';
-    lines.push(` ${marker}${state} ${index + 1}. ${option.label}${suffix}`);
-    if (option.description) lines.push(`      ${option.description}`);
+    lines.push(` ${marker}${state} ${index + 1}. ${sanitizeTerminalText(option.label)}${suffix}`);
+    if (option.description) lines.push(`      ${sanitizeTerminalText(option.description)}`);
   });
   lines.push(
     `\n${t(
@@ -176,10 +179,11 @@ async function select(
     let selected = options
       .filter((option) => option.selected && !option.action)
       .map((option) => option.value);
-    const renderedLines = renderSelector(question, options, {
+    const rendered = renderSelector(question, options, {
       multiple,
       locale: settings.locale,
-    }).split('\n').length;
+    });
+    const renderedLines = physicalRows(rendered, terminalCapabilities({ stdout: output }).width);
     const redraw = () => {
       output.write(
         `\x1b[${renderedLines}F\x1b[J${renderSelector(question, options, {

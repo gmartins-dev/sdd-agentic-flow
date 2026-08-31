@@ -6,4 +6,11 @@ Normal TTY sessions use human-rich output and prompts. `NO_COLOR`, `--ascii`, an
 
 Selectors use raw arrows only when interactive raw input and cursor capabilities are present. Enter, numeric shortcuts, Space for multi-select, Escape, and Ctrl-C are supported; EOF cancels deterministically and restores terminal state. `--interactive` requires TTY stdin/stdout and an unset `CI`.
 
-Human content wraps at the detected terminal width. The supported evidence matrix covers 40, 60, 80, and 120 columns in `en-US` and `pt-BR`; long command and path tokens remain intact on continuation lines. The CLI uses durable stage lines only: no spinner, alternate buffer, mouse, dashboard, or persistent UI state.
+Human content wraps at the detected terminal width using visible terminal-cell geometry. The
+supported evidence matrix covers 40, 60, 80, and 120 columns in `en-US` and `pt-BR`; long command
+and path tokens remain intact on continuation lines. Rich TTY operations may use a transient
+spinner and leave one durable result. Plain, CI, pipe, and machine output do not animate. The CLI
+does not use an alternate buffer, mouse, dashboard, or persistent UI state.
+
+Untrusted terminal text is rendered inert or visibly escaped before styling. ANSI stripping is a
+layout helper only; it is not the sanitization boundary.

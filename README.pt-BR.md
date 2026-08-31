@@ -185,7 +185,7 @@ Scripts descartáveis, agentes sem revisão humana, pipelines automáticos de re
 
 A referência completa de comandos, bundle oficial, modos de execução, níveis de autonomia, mapa de skills, vocabulário de domínio e limites de segurança está no [README em inglês](README.md) (seção colapsável **Technical reference**).
 
-Resumo de confiança: código inspecionável, zero dependências runtime, sem telemetria ou rede por padrão. As exceções de rede são `doctor --check-updates`, `upgrade` e a pergunta opcional do welcome interativo. O toolkit não faz commit, push, merge, deploy ou publish automaticamente. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
+Resumo de confiança: código inspecionável, zero dependências npm externas em runtime, sem telemetria ou rede por padrão. As bibliotecas de build usadas pela UI rica do terminal são incorporadas ao artefato publicado. As exceções de rede são `doctor --check-updates`, `upgrade` e a pergunta opcional do welcome interativo. O toolkit não faz commit, push, merge, deploy ou publish automaticamente. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
 
 Desinstalação:
 

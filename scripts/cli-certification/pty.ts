@@ -89,7 +89,12 @@ export async function runScriptPty(
       step.timeoutMs ?? 10_000,
       cursor,
     );
-    if (step.input) child.stdin?.write(step.input);
+    if (step.input) {
+      // npx may flush the prompt before the child has finished registering
+      // its raw-input listener; let the interactive process settle first.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      child.stdin?.write(step.input);
+    }
   }
   const result = await new Promise<PtyResult>((resolve) => {
     const timer = setTimeout(() => {

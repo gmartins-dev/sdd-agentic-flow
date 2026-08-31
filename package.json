@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "7.7.1",
+  "version": "7.8.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -32,13 +32,14 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsdown src/sdd-agentic-flow.ts --format cjs --out-dir dist --target es2022 --platform node --no-dts --no-sourcemap --no-report && node -e \"require('node:fs').renameSync('dist/sdd-agentic-flow.cjs','dist/sdd-agentic-flow.js'); require('node:fs').copyFileSync('LICENSES/CLI-UI-BUNDLED.txt','dist/third-party-notices.txt')\"",
     "lint:biome": "biome check .",
     "lint:biome:fix": "biome check . --write",
     "lint": "npm run typecheck && npm run lint:biome",
     "test": "npm run build && tsx --test --experimental-test-coverage test/**/*.test.ts",
     "skills:lint": "bash ./scripts/check-skills.sh",
-    "check": "npm run typecheck && npm run build && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && bash ./scripts/check-sdd-paths.sh && npm test",
+    "licenses:check": "tsx scripts/check-bundled-licenses.ts",
+    "check": "npm run typecheck && npm run build && npm run licenses:check && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && bash ./scripts/check-sdd-paths.sh && npm test",
     "lint:check": "npm run lint:biome",
     "lint:fix": "npm run lint:biome:fix",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
@@ -58,6 +59,7 @@
     "cli:full-matrix:packed": "SAF_FULL_MATRIX_SOURCE=packed node scripts/cli-full-matrix.mjs",
     "cli:certify": "tsx scripts/cli-certification.ts --profile dist",
     "cli:certify:packed": "tsx scripts/cli-certification.ts --profile packed",
+    "cli:packed-smoke": "tsx scripts/cli-sandbox.ts --clean doctor --json",
     "cli:sandbox": "tsx scripts/cli-sandbox.ts",
     "release:check": "bash scripts/release-checklist.sh",
     "version:stamp": "tsx scripts/check-version-consistency.ts --stamp"
@@ -80,11 +82,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",
+    "@clack/prompts": "^1.0.1",
     "@mermaid-js/mermaid-cli": "^11.16.0",
     "@types/node": "^26.2.0",
     "markdown-link-check": "^3.15.0",
     "markdownlint-cli": "^0.49.1",
+    "picocolors": "^1.1.1",
     "prettier": "^3.9.6",
+    "tsdown": "^0.22.14",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
   }

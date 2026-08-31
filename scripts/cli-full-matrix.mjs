@@ -40,6 +40,9 @@ function env(ci = true) {
     HOME: home,
     USERPROFILE: home,
     NPM_CONFIG_CACHE: cache,
+    // Keep the matrix independent from registry availability while still
+    // exercising the update-check and upgrade-plan paths.
+    SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: expectedVersion,
     ...(ci ? { CI: '1' } : { TERM: 'xterm-256color' }),
     SDD_NO_UPDATE_PROMPT: '1',
   };

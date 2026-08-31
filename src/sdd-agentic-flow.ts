@@ -1033,6 +1033,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       yes,
       quiet,
       ascii,
+      mode: resolveMode({ quiet, ascii }),
     };
     if (automaticInteractive) await installInteractive(cwd, options);
     else install(cwd, options);

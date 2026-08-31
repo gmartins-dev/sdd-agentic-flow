@@ -11,11 +11,11 @@ colors, and small brand marks are not.
 
 One command, three modes — decided by `outputMode(streams, env, flags)` in `src/ui.ts`:
 
-| Mode | When | Brand / connectors | ANSI | Symbols |
-| --- | --- | --- | --- | --- |
-| **human-rich** | stdout TTY, stdin TTY, not `CI`, no `--quiet`, no `--json` | full chevron art | yes | Unicode blocks + `✓` / `│` |
-| **human-plain** | `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, pipe/redirect, CI, or no usable TTY color | full chevron art (`#`/`+`/`=`) | no | ASCII (`OK`, `->`, …) |
-| **machine** | explicit structured output (`--json`) | no | no | ASCII / status words |
+| Mode            | When                                                                            | Brand / connectors                 | ANSI | Symbols                    |
+| --------------- | ------------------------------------------------------------------------------- | ---------------------------------- | ---- | -------------------------- |
+| **human-rich**  | stdout TTY, stdin TTY, not `CI`, no `--quiet`, no `--json`                      | SAF chevron art and guided journey | yes  | Unicode blocks + `✓` / `│` |
+| **human-plain** | `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, pipe/redirect, CI, or no usable TTY color | full chevron art (`#`/`+`/`=`)     | no   | ASCII (`OK`, `->`, …)      |
+| **machine**     | explicit structured output (`--json`)                                           | no                                 | no   | ASCII / status words       |
 
 Rules:
 
@@ -26,8 +26,8 @@ Rules:
   suppress `FAIL` lines on stderr.
 - `--json` never carries art and never changes the existing check object shape (additive
   rows only when an opt-in flag is passed — see the compatibility promise).
-- Unicode is assumed for human-rich. Force ASCII with `--ascii` or `SDD_ASCII=1`. The CLI
-  does not try to detect “whether Unicode works”.
+- Human-rich uses the SAF terminal journey symbols. Force ASCII with `--ascii` or
+  `SDD_ASCII=1`; every structural symbol has a readable fallback.
 
 ## Colors
 
@@ -36,6 +36,8 @@ Rules:
   a pipe (CLIG / picocolors convention).
 - Status words (`PASS` / `WARN` / `FAIL` / …) may be colored; symbols are optional extras
   in human modes only.
+- Rich status, note, and spinner primitives are provided by the bundled terminal UI adapter;
+  command semantics and terminal mode selection remain SAF-owned.
 - Welcome prints a **compact** three-chevron brand mark (~8–10 lines, ≤52 columns) in
   human-rich / human-plain only (embedded in `src/brand-art.ts` so it ships in the npm
   package — no runtime read of `public/`). In human-rich TTY, the three bands reveal
@@ -46,10 +48,10 @@ Rules:
 
 ## stdout vs stderr
 
-| Stream | Content |
-| --- | --- |
+| Stream     | Content                                                          |
+| ---------- | ---------------------------------------------------------------- |
 | **stdout** | Status lines, doctor report, help, welcome, suggested next steps |
-| **stderr** | Structured failures (`FAIL` + optional Reason / Try) |
+| **stderr** | Structured failures (`FAIL` + optional Reason / Try)             |
 
 Handled failures use exit code `1`. Unexpected/internal errors use `2`. Success is `0`.
 
@@ -79,8 +81,8 @@ After a mutating command succeeds (`init`, `install`, `context refresh`,
 and in **machine** mode (`--json`). Welcome (bare invocation) still
 points at one next command in every mode (compact status prose in machine) and, when
 relevant, the opt-in `upgrade` / `doctor --check-updates` hint. On **human-rich** interactive
- TTY only, welcome may offer an explicit update-check action before any registry
- request; machine/pipe/CI/human-plain never ask. See [trust model](trust-model.md).
+TTY only, welcome may offer an explicit update-check action before any registry
+request; machine/pipe/CI/human-plain never ask. See [trust model](trust-model.md).
 
 The doctor Fix/Next footer is **human-rich only** (never on `--json`, pipes, or
 human-plain).
@@ -109,8 +111,12 @@ a network service. A missing detection is shown as a choice rather than silently
 
 Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
 navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive
-the complete numbered/plain interaction. Progress uses durable stage lines rather than spinners
-or cursor-dependent status.
+the complete numbered/plain interaction. Rich TTY operations may use a transient spinner that
+collapses to one durable result; plain, CI, pipe, and machine output never animate.
+
+Rich layout measures terminal cells rather than JavaScript string length. SAF sanitizes untrusted
+paths and metadata as inert display text before styling them; canonical values used for planning
+and mutation are unchanged.
 
 Bare welcome may show **Operating policy** and **Installation** blocks when config
 and skills are present. Copy does not claim the CLI invokes skills.

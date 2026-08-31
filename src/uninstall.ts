@@ -20,7 +20,8 @@ import {
   userSkillsDirsForTargets,
 } from './paths';
 import { listManagedSkillDirNames, OFFICIAL_SKILLS } from './skill-identity';
-import { shortenPath, styleStatus } from './ui';
+import { terminalLog, terminalNote } from './terminal-ui';
+import { outputMode, shortenPath, styleStatus } from './ui';
 
 type PurgeTarget = { path: string; kind: string; preserve?: boolean; reason?: string };
 
@@ -34,9 +35,9 @@ function localeFor(cwd: string, explicit?: string) {
 
 function log(status: string, message: string, explicitLocale?: string) {
   const locale = explicitLocale || localeFor(process.cwd());
-  process.stdout.write(
-    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
-  );
+  terminalLog(status, translateText(locale, message), {
+    mode: outputMode({ stdin: process.stdin, stdout: process.stdout }, process.env),
+  });
 }
 
 function fail(message: string, code = 1) {
@@ -264,6 +265,19 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     );
     const locale = localeFor(cwd);
     if (plan) {
+      const mode = outputMode({ stdin: process.stdin, stdout: process.stdout }, process.env);
+      if (mode === 'human-rich') {
+        terminalNote(
+          `${t(locale, 'uninstall.plan')} (purge)`,
+          [
+            ['Remove', `${removable.length} recognized SAF targets`],
+            ['Preserve', `${preserved.length} protected paths`],
+            ['Apply', renderCliCommand('uninstall', '--purge', '--apply')],
+          ],
+          { mode },
+        );
+        return;
+      }
       process.stdout.write(`${t(locale, 'uninstall.plan')} (purge)\n\n`);
       for (const target of removable) {
         process.stdout.write(`  ${target.kind}: ${describePath(cwd, target.path)}\n`);
@@ -346,6 +360,19 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
   const existing = targets.filter((target: string) => fs.existsSync(target));
   const locale = localeFor(cwd);
   if (plan) {
+    const mode = outputMode({ stdin: process.stdin, stdout: process.stdout }, process.env);
+    if (mode === 'human-rich') {
+      terminalNote(
+        t(locale, 'uninstall.plan'),
+        [
+          ['Remove', `${existing.length} managed paths`],
+          ['Preserve', '.specs/features/**, source code, unknown/unmanaged paths'],
+          ['Apply', renderCliCommand('uninstall', '--yes')],
+        ],
+        { mode },
+      );
+      return;
+    }
     const grouped = new Map<string, string[]>();
     for (const target of existing) {
       const root =

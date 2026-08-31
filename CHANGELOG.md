@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 7.8.0
+
+- Add a SAF-native human-rich terminal design system with guided journey
+  output, summaries, progress, and actionable results.
+- Bundle the rich terminal UI libraries into a self-contained CLI with zero
+  external runtime npm dependencies and deterministic license notices.
+- Preserve machine output, selector semantics, safety contracts, and the
+  7.7.1 installation and mutation behavior.
+
 ## 7.7.1
 
 - Remove the local-only `release-saf` skill from the published package.

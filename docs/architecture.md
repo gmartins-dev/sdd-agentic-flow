@@ -1,6 +1,8 @@
 # Architecture
 
-`sdd-agentic-flow` is a local-first, zero-runtime-dependency toolkit.
+`sdd-agentic-flow` is a local-first toolkit with zero external runtime npm dependencies. The
+published CommonJS CLI may contain bundled build-time libraries, while requiring only Node.js at
+runtime.
 
 ```text
 CLI domain
@@ -25,16 +27,17 @@ host owns agent execution, concurrency, branches, and worktrees.
 
 ## Maintainer source layout
 
-| Module | Responsibility |
-| --- | --- |
-| `sdd-agentic-flow.ts` | CLI dispatch and presentation |
-| `install.ts`, `install-domain.ts`, `install-preflight.ts` | Official bundle plan/apply, user installation, and v4 state |
-| `workspace.ts`, `git-context.ts` | Git-aware workspace plan/apply and identity; never a prerequisite for user install |
-| `config.ts`, `config-domain.ts`, `configure.ts` | Effective defaults and explicit overrides |
-| `clean-upgrade.ts`, `uninstall.ts` | Bounded reset and removal |
-| `recovery.ts` | Pure remediation planning from observed facts |
-| `doctor.ts` | Installation, Workspace, and Policy readiness |
-| `skill-contract.ts`, `contract-graph.ts` | Sidecar parsing and contract validation |
+| Module                                                    | Responsibility                                                                           |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `sdd-agentic-flow.ts`                                     | CLI dispatch and presentation bootstrap                                                  |
+| `ui.ts`, `selector.ts`, `terminal-ui.ts`                  | Terminal capabilities, SAF-owned input semantics, and rich/plain presentation primitives |
+| `install.ts`, `install-domain.ts`, `install-preflight.ts` | Official bundle plan/apply, user installation, and v4 state                              |
+| `workspace.ts`, `git-context.ts`                          | Git-aware workspace plan/apply and identity; never a prerequisite for user install       |
+| `config.ts`, `config-domain.ts`, `configure.ts`           | Effective defaults and explicit overrides                                                |
+| `clean-upgrade.ts`, `uninstall.ts`                        | Bounded reset and removal                                                                |
+| `recovery.ts`                                             | Pure remediation planning from observed facts                                            |
+| `doctor.ts`                                               | Installation, Workspace, and Policy readiness                                            |
+| `skill-contract.ts`, `contract-graph.ts`                  | Sidecar parsing and contract validation                                                  |
 
 ## Capability contracts
 

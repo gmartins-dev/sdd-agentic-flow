@@ -53,6 +53,7 @@ import {
   targetsForHosts,
 } from './setup-plan';
 import { inspectSetupState, inspectUserInstallation, type SetupStateSnapshot } from './setup-state';
+import { terminalLog, terminalNote } from './terminal-ui';
 import {
   clearViewport,
   type DisplayMode,
@@ -179,9 +180,7 @@ function resolveMode(flags: SetupCommandOptions = {}) {
 
 function log(status: string, message: string, explicitLocale?: string) {
   const locale = explicitLocale || localeFor(process.cwd());
-  process.stdout.write(
-    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
-  );
+  terminalLog(status, translateText(locale, message), { mode: resolveMode() });
 }
 
 function fail(message: string, codeOrOptions: number | { code?: number } = 1) {
@@ -194,8 +193,7 @@ function fail(message: string, codeOrOptions: number | { code?: number } = 1) {
 function logPassLine(message: string, options: SetupCommandOptions = {}) {
   const mode = options.mode ?? resolveMode(options);
   if (isRich(mode)) {
-    process.stdout.write(`│\n`);
-    process.stdout.write(`${styleStatus('PASS', process.stdout)} ${message}\n`);
+    terminalLog('PASS', message, { mode });
     return;
   }
   log('PASS', message);
@@ -431,7 +429,7 @@ function printSetupStages(
   options: SetupCommandOptions = {},
 ) {
   const stages = ['project', 'skills', 'context', 'validation'];
-  const rich = isRich(resolveMode({ ascii: Boolean(options.ascii) }));
+  const rich = isRich(options.mode ?? resolveMode({ ascii: Boolean(options.ascii) }));
   process.stdout.write(`\n${t(locale, 'setup.title')}\n\n`);
   for (const stage of stages) {
     const marker = complete.includes(stage)
@@ -578,6 +576,7 @@ async function applySetup(
         homeDir,
         quiet: true,
         ascii: Boolean(options.ascii),
+        mode: options.mode,
       }))
     )
       return false;
@@ -811,7 +810,11 @@ async function collectSetupIntent(
   };
 }
 
-function printSetupPlan(plan: SetupPlan, locale = 'en-US'): void {
+function printSetupPlan(
+  plan: SetupPlan,
+  locale = 'en-US',
+  mode: DisplayMode = 'human-plain',
+): void {
   const sharing = plan.intent?.sharing;
   const sharingLabel =
     sharing === 'personal'
@@ -836,6 +839,49 @@ function printSetupPlan(plan: SetupPlan, locale = 'en-US'): void {
             ? 'Cursor'
             : target,
   );
+  if (mode === 'human-rich') {
+    const operations = [
+      ...plan.cleanupActions,
+      ...plan.installationIntent,
+      ...plan.targetReconciliation,
+      ...plan.adoptionChanges,
+      ...plan.configMutation,
+      ...plan.workspaceInitialization,
+    ];
+    terminalNote(
+      t(locale, 'setup.review'),
+      [
+        [t(locale, 'install.sharingPrompt'), sharingLabel],
+        [t(locale, 'install.agentsPrompt'), targetLabels.join(', ') || '(none)'],
+        ...(sharing === 'team'
+          ? [
+              [
+                t(locale, 'setup.featureSpecs'),
+                plan.intent?.specsVisibility === 'shared'
+                  ? t(locale, 'setup.shareSpecs')
+                  : t(locale, 'setup.keepSpecsLocal'),
+              ] as const,
+            ]
+          : []),
+        [
+          t(locale, 'plan.scope'),
+          plan.scope === 'project' ? t(locale, 'setup.scopeProject') : t(locale, 'setup.scopeUser'),
+        ],
+        [
+          t(locale, 'plan.fileOperations'),
+          operations.map((item) => item.detail).join('\n') || 'None',
+        ],
+        ...(plan.warnings.length
+          ? [[t(locale, 'doctor.related'), plan.warnings.join('\n')] as const]
+          : []),
+        ...(plan.blockers.length
+          ? [[t(locale, 'plan.blocked'), plan.blockers.join('\n')] as const]
+          : []),
+      ],
+      { mode },
+    );
+    return;
+  }
   process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
   process.stdout.write(`  ${t(locale, 'install.sharingPrompt')}  ${sharingLabel}\n`);
   process.stdout.write(
@@ -1374,7 +1420,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     const intent = await collectSetupIntent(cwd, locale, { ...options, language: locale }, homeDir);
     if ('cancelled' in intent) return log('INFO', t(locale, 'setup.cancelled'), locale);
     const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
-    printSetupPlan(plan, locale);
+    printSetupPlan(plan, locale, mode);
     if (plan.blocked) {
       log('FAIL', plan.blockers.join('; '), locale);
       const installationState = inspectSetupState(cwd, homeDir).installationIntent;
@@ -1439,6 +1485,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       ...options,
       homeDir,
       language: intent.language,
+      mode,
     };
     if (await applySetup(cwd, draft, applyOptions, locale, plan)) return;
     process.stdout.write(`\n${t(locale, 'setup.failed')}\n`);

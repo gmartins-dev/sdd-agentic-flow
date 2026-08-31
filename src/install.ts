@@ -29,6 +29,7 @@ import { resolveLocale, t } from './messages';
 import { PACKAGE_ROOT, userSkillsDirsForTargets, VERSION } from './paths';
 import { select } from './selector';
 import { OFFICIAL_SKILLS } from './skill-identity';
+import { terminalNote, terminalSpinner } from './terminal-ui';
 import type { DisplayMode } from './ui';
 import { readInstallProvenance, writeInstallProvenance } from './upgrade';
 
@@ -138,6 +139,24 @@ function printInstallPlanReport(
   _cwd: string,
   { applyCommand }: { applyCommand?: string } = {},
 ): void {
+  const resolvedMode = mode || 'human-plain';
+  if (resolvedMode === 'human-rich') {
+    const changes = `+ ${plan.totals.CREATE} create\n~ ${plan.totals.UPDATE} update\n- ${plan.totals.REMOVE} remove\n  ${plan.totals.PRESERVE} preserve`;
+    const details = [
+      ['Scope', `${plan.requestedScope || plan.scope} (${plan.modeLabel})`],
+      [
+        'Targets',
+        plan.targetIds.map((target) => humanTargetLabel(target)).join(', ') || '(unresolved)',
+      ],
+      ['Official skills', `${OFFICIAL_SKILLS.length} + shared layer`],
+      ['Changes', changes],
+      ...(plan.applicability === 'blocked'
+        ? [['Blocked', plan.blockerReason || 'unsafe installation state'] as const]
+        : [['Apply', applyCommand || installApplyCommand(plan)] as const]),
+    ] as const;
+    terminalNote('Installation plan', details, { mode: resolvedMode });
+    return;
+  }
   const lines = [
     'Installation plan',
     '',
@@ -379,10 +398,16 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       managedPaths: target.pairs.map((pair) => pair.rel),
       applyState: 'applying',
     });
+    const progress = terminalSpinner({ mode: options.mode || 'human-plain' });
+    progress.start(`Installing skills for ${plan.targetIds[index] || 'project'}`);
     const applied = applyInstallPlan(PACKAGE_ROOT, OFFICIAL_SKILLS, target.targetRoot, {
       officialSkills: OFFICIAL_SKILLS,
     });
-    if (!applied.ok) return fail('installation apply failed');
+    if (!applied.ok) {
+      progress.error('Installation failed');
+      return fail('installation apply failed');
+    }
+    progress.stop(`Installed skills for ${plan.targetIds[index] || 'project'}`);
     writeInstallProvenance(target.targetRoot, {
       packageVersion: VERSION,
       scope,

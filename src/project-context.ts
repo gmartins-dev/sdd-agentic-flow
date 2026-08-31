@@ -217,7 +217,7 @@ export function discoverProject(cwd: string, options: ProjectContextOptions = {}
   const provenance = { generatedAt: new Date().toISOString(), ...gitInfo(cwd) };
   fs.mkdirSync(path.dirname(contextPath), { recursive: true });
   fs.writeFileSync(contextPath, projectContextFor(scanProjectSignals(cwd), provenance), 'utf8');
-  log('PASS', `created ${SDD_PATHS.projectContext}`);
+  if (!options.quiet) log('PASS', `created ${SDD_PATHS.projectContext}`);
   if (!options.quiet) nextStep(renderCliCommand('doctor'), { quiet: options.quiet });
   return true;
 }

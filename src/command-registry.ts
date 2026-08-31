@@ -4,35 +4,44 @@ export type CommandDefinition = {
   path: readonly string[];
   authority: CommandAuthority;
   supportsPlan: boolean;
-  supportsInteractive: boolean;
+  supportsAutomaticPrompt: boolean;
+  supportsInteractiveFlag: boolean;
   supportsJson: boolean;
 };
 
 const definitions = [
-  ['init', 'local-mutation', true, true, true],
-  ['install', 'local-mutation', true, true, true],
-  ['config show', 'read-only', false, false, true],
-  ['config policy', 'local-mutation', true, true, true],
-  ['config installation', 'local-mutation', true, true, true],
-  ['context status', 'read-only', false, false, true],
-  ['context refresh', 'local-mutation', true, true, true],
-  ['context autonomy-state', 'read-only', false, false, true],
-  ['doctor', 'read-only', false, false, true],
-  ['upgrade', 'human-authority', true, false, false],
-  ['autonomous-resume', 'human-authority', false, false, false],
-  ['uninstall', 'local-mutation', true, true, true],
-  ['learn-sdd', 'read-only', false, false, false],
-  ['help', 'read-only', false, false, false],
-  ['version', 'read-only', false, false, true],
-  ['completion', 'read-only', false, false, false],
+  ['init', 'local-mutation', true, true, false, true],
+  ['install', 'local-mutation', true, true, false, false],
+  ['config show', 'read-only', false, false, false, false],
+  ['config policy', 'local-mutation', true, true, true, false],
+  ['config installation', 'local-mutation', true, true, true, false],
+  ['context status', 'read-only', false, false, false, false],
+  ['context refresh', 'local-mutation', false, false, false, false],
+  ['context autonomy-state', 'read-only', false, false, false, false],
+  ['doctor', 'read-only', false, false, false, true],
+  ['upgrade', 'human-authority', true, false, false, false],
+  ['autonomous-resume', 'human-authority', false, false, false, false],
+  ['uninstall', 'local-mutation', true, true, false, false],
+  ['learn-sdd', 'read-only', false, false, false, false],
+  ['help', 'read-only', false, false, false, false],
+  ['version', 'read-only', false, false, false, false],
+  ['completion', 'read-only', false, false, false, false],
 ] as const;
 
 export const COMMAND_REGISTRY: readonly CommandDefinition[] = definitions.map(
-  ([path, authority, supportsPlan, supportsInteractive, supportsJson]) => ({
+  ([
+    path,
+    authority,
+    supportsPlan,
+    supportsAutomaticPrompt,
+    supportsInteractiveFlag,
+    supportsJson,
+  ]) => ({
     path: path.split(' '),
     authority,
     supportsPlan,
-    supportsInteractive,
+    supportsAutomaticPrompt,
+    supportsInteractiveFlag,
     supportsJson,
   }),
 );

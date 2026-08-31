@@ -15,9 +15,13 @@ Git is valid even when no workspace profile exists yet.
 
 ```bash
 npx sdd-agentic-flow install
-npx sdd-agentic-flow install --scope project
+npx sdd-agentic-flow install --scope project --adoption-mode team
 npx sdd-agentic-flow install --plan
 ```
+
+Project scope requires persisted Team adoption or the explicit
+`--adoption-mode team` flag. A project install with Personal, Specs Shared, or
+an unspecified adoption mode is rejected before any files are written.
 
 Supported user targets are `agents`, `cursor`, `claude`, and `copilot`.
 `--target` is repeatable. SAF does not persist credentials or contact a provider

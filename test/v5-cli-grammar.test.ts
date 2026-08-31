@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import fs, { mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -98,4 +98,88 @@ test('init plan and doctor use machine schema 2 without bundle-selection data', 
     'workspace',
   ]);
   assert.equal('config_origin' in doctorReport.data, true);
+});
+
+test('unsupported machine flags and invalid tails fail before durable work', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-contract-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const invoke = (args: string[]) =>
+    spawnSync(process.execPath, [cli, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: cwd },
+    });
+
+  for (const args of [
+    ['version', '--json'],
+    ['version', 'extra'],
+    ['learn-sdd', 'extra'],
+    ['help', 'install', 'extra'],
+    ['config', 'show', '--unknown'],
+  ]) {
+    const result = invoke(args);
+    assert.equal(result.status, 1, args.join(' '));
+  }
+
+  const contextPlan = invoke(['context', 'refresh', '--plan']);
+  assert.equal(contextPlan.status, 1);
+  assert.equal(
+    fs.existsSync(path.join(cwd, '.sdd-agentic-flow/context/project-context.md')),
+    false,
+  );
+
+  const configJson = invoke(['config', 'policy', '--json', '--yes', '--preset', 'manual']);
+  assert.equal(configJson.status, 1);
+  assert.equal(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/config.yml')), false);
+});
+
+test('invalid autonomous resume preserves an active loop state byte-for-byte', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-autonomy-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const loopState = path.join(cwd, '.sdd-agentic-flow/autonomy/loop-state.md');
+  fs.mkdirSync(path.dirname(loopState), { recursive: true });
+  fs.writeFileSync(
+    loopState,
+    '# Loop state\n\nExecution mode: full\nAutonomy level: autonomous\n\n## Current State\n- Skill: saf-implement\n- Status: paused\n- Human override: pause=true, stop=false\n',
+  );
+  const before = fs.readFileSync(loopState);
+  const result = spawnSync(process.execPath, [cli, 'autonomous-resume', '--override-guard=8'], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: cwd },
+  });
+  assert.equal(result.status, 1);
+  assert.deepEqual(fs.readFileSync(loopState), before);
+});
+
+test('project installation rejects user-only targets without mutation', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-project-target-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const invoke = (args: string[]) =>
+    spawnSync(process.execPath, [cli, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: cwd },
+    });
+  assert.equal(invoke(['init']).status, 0);
+  const result = invoke(['install', '--scope', 'project', '--target', 'agents']);
+  assert.equal(result.status, 1);
+  assert.equal(fs.existsSync(path.join(cwd, '.agents/skills')), false);
+});
+
+test('init JSON is one final document after apply', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-init-json-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const result = spawnSync(process.execPath, [cli, 'init', '--json'], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: cwd },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const report = JSON.parse(result.stdout.trim());
+  assert.equal(report.ok, true);
+  assert.equal(report.data.applied, true);
+  assert.equal(result.stdout.trim().split('\n').length, 1);
+  assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/workspace.yml')));
 });

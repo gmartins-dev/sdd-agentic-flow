@@ -232,7 +232,7 @@ help [command]                        Show the command reference, or one command
 
 `doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the compatibility policy](docs/compatibility-promise.md).
 
-`install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project` to install into `.agents/skills/` inside the project instead. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
+`install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project --adoption-mode team` to install into `.agents/skills/` inside the project; project scope requires persisted or explicit Team adoption. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
 
 If `doctor` reports a `WARN`/`FAIL` you do not understand, see [troubleshooting](docs/troubleshooting.md). Every command also accepts `--help` (equivalent to `help <command>`) for its full usage and examples. Add `--quiet` to `init`/`install`/`uninstall` to suppress decorative success output.
 

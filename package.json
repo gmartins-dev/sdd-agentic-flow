@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "7.6.1",
+  "version": "7.7.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -54,6 +54,8 @@
     "cli:audit-source": "tsx scripts/cli-audit-source.ts",
     "cli:human-audit": "tsx scripts/check-cli-human-input.ts",
     "cli:exhaustive": "tsx scripts/cli-exhaustive.ts",
+    "cli:full-matrix:dist": "SAF_FULL_MATRIX_SOURCE=dist node scripts/cli-full-matrix.mjs",
+    "cli:full-matrix:packed": "SAF_FULL_MATRIX_SOURCE=packed node scripts/cli-full-matrix.mjs",
     "cli:certify": "tsx scripts/cli-certification.ts --profile dist",
     "cli:certify:packed": "tsx scripts/cli-certification.ts --profile packed",
     "cli:sandbox": "tsx scripts/cli-sandbox.ts",

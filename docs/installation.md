@@ -13,7 +13,9 @@ npx sdd-agentic-flow doctor
 `install` copies the 12 official engineering skills and shared references.
 There is one bundle and no bundle selector. User scope is the default; project
 scope writes `.agents/skills/` in the current project. Repeat `--target` to
-select user hosts and use `--plan` for a read-only preview.
+select user hosts and use `--plan` for a read-only preview. Project scope also
+requires Team adoption: use `--adoption-mode team` or configure persisted Team
+adoption before installing into the project.
 
 The lifecycle is intentionally split: install the SAF bundle once for the
 user, then initialize/adopt each Git workspace separately. Running the bare

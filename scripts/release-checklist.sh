@@ -8,38 +8,44 @@ version="$(node -e "console.log(require('./package.json').version)")"
 
 echo "== release-checklist: $version =="
 
-echo "-- 1/11: npm run check --"
+echo "-- 1/13: npm run check --"
 npm run check
 
-echo "-- 2/11: npm run pack:dry --"
+echo "-- 2/13: npm run pack:dry --"
 npm run pack:dry
 
-echo "-- 3/11: cli:exhaustive --"
+echo "-- 3/13: cli:exhaustive --"
 npm run cli:exhaustive
 
-echo "-- 4/11: cli:certify --"
+echo "-- 4/13: full 99-scenario matrix: dist --"
+npm run cli:full-matrix:dist
+
+echo "-- 5/13: full 99-scenario matrix: packed-npx --"
+npm run cli:full-matrix:packed
+
+echo "-- 6/13: cli:certify --"
 npm run cli:certify
 
-echo "-- 5/11: cli:certify:packed --"
+echo "-- 7/13: cli:certify:packed --"
 npm run cli:certify:packed
 
-echo "-- 6/11: doctor --smoke --"
+echo "-- 8/13: doctor --smoke --"
 node dist/sdd-agentic-flow.js doctor --smoke
 
-echo "-- 7/11: human CLI input audit --"
+echo "-- 9/13: human CLI input audit --"
 npm run cli:human-audit
 
-echo "-- 8/11: version consistency (package.json vs package-lock roots vs dist/) --"
+echo "-- 10/13: version consistency (package.json vs package-lock roots vs dist/) --"
 npx tsx scripts/check-version-consistency.ts
 
-echo "-- 9/11: no pinned sdd-agentic-flow@<version> examples remaining --"
+echo "-- 11/13: no pinned sdd-agentic-flow@<version> examples remaining --"
 if grep -rEn 'sdd-agentic-flow@[0-9]' README.md README.pt-BR.md docs/ 2>/dev/null; then
   echo "found a pinned sdd-agentic-flow@<version> reference above — examples must stay unpinned" >&2
   exit 1
 fi
 echo "no pinned sdd-agentic-flow@<version> references found"
 
-echo "-- 10/11: documented CLI commands exist in dist/sdd-agentic-flow.js --"
+echo "-- 12/13: documented CLI commands exist in dist/sdd-agentic-flow.js --"
 node <<'NODE'
 const fs = require('node:fs');
 
@@ -74,5 +80,5 @@ if (missing.length) {
 console.log(`all ${cited.size} documented command(s) exist in the CLI dispatch`);
 NODE
 
-echo "-- 11/11: summary --"
+echo "-- 13/13: summary --"
 echo "PASS release-checklist: v${version} pronta para tag/publish"

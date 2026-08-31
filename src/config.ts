@@ -260,6 +260,26 @@ async function runConfigPolicy(
   args: string[],
   options: ConfigCommandOptions = {},
 ): Promise<CommandResult> {
+  const valueFlags = new Set([
+    '--preset',
+    '--execution-mode',
+    '--autonomy-level',
+    '--language',
+    '--language-profile',
+    '--feature-profile',
+  ]);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--plan' || arg === '--yes') continue;
+    if (valueFlags.has(arg ?? '')) {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--'))
+        return { ok: false, exitCode: 1, message: `missing value for ${arg}` };
+      index += 1;
+      continue;
+    }
+    return { ok: false, exitCode: 1, message: `unknown argument: ${arg}` };
+  }
   const mode =
     options.mode ||
     outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, options);
@@ -342,7 +362,11 @@ async function runConfigCommand(
 ): Promise<CommandResult> {
   const sub = args[0] === 'show' || args[0] === 'policy' ? args[0] : null;
   const tail = sub ? args.slice(1) : args;
-  if (!sub || sub === 'show') return runConfigShow(configPath, options);
+  if (!sub) return { ok: false, exitCode: 1, message: 'usage: config [show|policy]' };
+  if (sub === 'show') {
+    if (tail.length) return { ok: false, exitCode: 1, message: 'usage: config show' };
+    return runConfigShow(configPath, options);
+  }
   if (sub === 'policy') return runConfigPolicy(configPath, tail, options);
   return { ok: false, exitCode: 1, message: 'usage: config [show|policy]' };
 }

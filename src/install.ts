@@ -322,6 +322,12 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     return fail(
       `adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`,
     );
+  if (scope === 'project' && options.targets?.length)
+    return fail('project installation does not accept user-only --target values');
+  if (scope === 'project' && adoptionMode !== 'team')
+    return fail(
+      'blocked: project installation requires Team adoption; retry with --adoption-mode team or configure persisted Team adoption',
+    );
   if ((scope === 'project' || adoptionMode === 'team') && !git.ok) return fail(git.error);
   const targets =
     scope === 'project'

@@ -62,7 +62,7 @@ test('PTY driver reports transcript on prompt timeout', async (t) => {
     runScriptPty('printf READY', {
       cwd: process.cwd(),
       env: { ...process.env, TERM: 'dumb' },
-      steps: [{ waitFor: /MISSING/, input: '', timeoutMs: 50 }],
+      steps: [{ waitFor: /MISSING/, input: '', timeoutMs: 250 }],
     }),
     /PTY (prompt timeout|process closed).*READY/s,
   );

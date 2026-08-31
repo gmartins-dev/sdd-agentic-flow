@@ -149,7 +149,7 @@ function runPackedInteractive(
   const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
   if (probe.error || probe.status !== 0) return null;
   const cli = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
-  const command = `{ sleep 5; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf " "; sleep 0.2; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 10; } | script -qec ${quoteShell(cli)} /dev/null`;
+  const command = `{ sleep 5; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf " "; sleep 0.2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; } | script -qec ${quoteShell(cli)} /dev/null`;
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: state.home,
@@ -664,8 +664,15 @@ function runJourneys() {
   });
 
   const allScopeRemoval = project('13-all-scope-removal');
-  expect(run(['install', '--scope', 'project'], allScopeRemoval), 0);
-  expect(run(['install', '--target', 'agents'], allScopeRemoval), 0);
+  expect(run(['install', '--scope', 'project'], allScopeRemoval), 1, /blocked|Team adoption/i);
+  expect(run(['install', '--scope', 'project', '--adoption-mode', 'team'], allScopeRemoval), 0);
+  expect(
+    run(
+      ['install', '--scope', 'user', '--target', 'agents', '--adoption-mode', 'personal'],
+      allScopeRemoval,
+    ),
+    0,
+  );
   record('J42', 'scoped uninstall', 'uninstall --plan --scope all', () => {
     const before = snapshotPersistentState([
       { name: 'project', path: allScopeRemoval.cwd },

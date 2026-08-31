@@ -33,6 +33,16 @@ test('v7 command registry contains only the canonical hierarchy', () => {
     COMMAND_REGISTRY.find((command) => command.path.join(' ') === 'uninstall')?.supportsPlan,
     true,
   );
+  assert.deepEqual(
+    COMMAND_REGISTRY.filter((command) => command.supportsJson).map((command) =>
+      command.path.join(' '),
+    ),
+    ['init', 'doctor'],
+  );
+  assert.equal(
+    COMMAND_REGISTRY.find((command) => command.path.join(' ') === 'init')?.supportsAutomaticPrompt,
+    true,
+  );
   assert.match(completionFor('bash') ?? '', /completion/);
   assert.match(completionFor('zsh') ?? '', /#compdef/);
   assert.match(completionFor('fish') ?? '', /complete -c/);

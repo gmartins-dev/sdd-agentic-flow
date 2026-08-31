@@ -704,6 +704,13 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     });
     return;
   }
+  if (rawArgs.includes('--json') && command !== 'init' && command !== 'doctor') {
+    fail(`usage error: ${command} does not support --json`, {
+      reason: 'Machine JSON is supported only by init and doctor in v7.7.0.',
+      try: [renderCliCommand('init', '--json'), renderCliCommand('doctor', '--json')],
+    });
+    return;
+  }
   if (isRemovedCommand(command)) {
     fail(`unknown command: ${command}.`, {
       reason: 'This command is not part of the current canonical interface.',
@@ -744,12 +751,9 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       }
       const plan = planWorkspaceInitialization(cwd);
       const json = args.includes('--json');
-      if (json) {
-        process.stdout.write(
-          `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: plan.ok, data: plan })}\n`,
-        );
-      } else if (!plan.ok) {
+      if (!plan.ok) {
         const canRecoverInteractively =
+          !json &&
           !args.includes('--plan') &&
           Boolean(process.stdin.isTTY && process.stdout.isTTY) &&
           !process.env.CI;
@@ -757,26 +761,45 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           await guidedInit(cwd, { ascii });
           return;
         }
-        fail(plan.error || 'workspace initialization failed');
+        if (json) {
+          process.stdout.write(
+            `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: false, error: { code: 'runtime_error', details: {}, message: plan.error || 'workspace initialization failed' } })}\n`,
+          );
+          process.exitCode = 1;
+        } else fail(plan.error || 'workspace initialization failed');
         return;
       } else {
-        log('INFO', `Project root: ${plan.git?.projectRoot}`);
-        log('INFO', `Git root: ${plan.git?.gitRoot}`);
-        for (const file of plan.create) log('INFO', `Create: ${file}`);
-        for (const file of plan.preserve) log('INFO', `Preserve: ${file}`);
-        for (const entry of plan.excludes) log('INFO', `Git exclude: ${entry}`);
-        log('INFO', 'No saf-config/v3 file will be created.');
+        if (!json) {
+          log('INFO', `Project root: ${plan.git?.projectRoot}`);
+          log('INFO', `Git root: ${plan.git?.gitRoot}`);
+          for (const file of plan.create) log('INFO', `Create: ${file}`);
+          for (const file of plan.preserve) log('INFO', `Preserve: ${file}`);
+          for (const entry of plan.excludes) log('INFO', `Git exclude: ${entry}`);
+          log('INFO', 'No saf-config/v3 file will be created.');
+        }
       }
-      if (!plan.ok) {
-        process.exitCode = 1;
+      if (args.includes('--plan')) {
+        if (json)
+          process.stdout.write(
+            `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: true, data: plan })}\n`,
+          );
         return;
       }
       if (!args.includes('--plan')) {
         const applied = applyWorkspaceInitialization(plan);
         if (!applied.ok) {
           if (!json) fail(applied.error || 'workspace initialization failed');
-          else process.exitCode = 1;
+          else {
+            process.stdout.write(
+              `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: false, error: { code: 'runtime_error', details: {}, message: applied.error || 'workspace initialization failed' } })}\n`,
+            );
+            process.exitCode = 1;
+          }
         } else if (!json && !args.includes('--quiet')) log('PASS', 'workspace initialized');
+        else if (json)
+          process.stdout.write(
+            `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'init', ok: true, data: { ...plan, applied: true } })}\n`,
+          );
       }
       return;
     }
@@ -795,6 +818,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
             ...(hint ? [hint] : []),
           ],
         });
+        return;
       }
       if (sub === 'status') contextStatus(cwd);
       else if (sub === 'refresh') contextRefresh(cwd, { ascii });
@@ -818,6 +842,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           renderCliCommand('config', 'policy', '--plan'),
         ],
       });
+      return;
     }
   } else if (command === '__config-installation') {
     if (args.includes('--help')) {
@@ -844,13 +869,26 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         targets.push(asString(args[++index]));
       else if (arg === '--adoption-mode' && isAdoptionMode(args[index + 1]))
         adoptionMode = args[++index] as AdoptionMode;
-      else fail(USAGE.config);
+      else {
+        fail(USAGE.config);
+        return;
+      }
     }
     if (scope && adoptionMode && adoptionModeForScope(adoptionMode) !== scope) {
       fail(`adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`);
       return;
     }
-    if (interactive && plan) fail('config installation --interactive cannot combine with --plan');
+    const effectiveScope = adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user';
+    if (targets.length && effectiveScope === 'project') {
+      fail(`${USAGE.config} — --target requires --scope user or no explicit scope`, {
+        reason: 'Project installation has one project skill root; user-only targets are invalid.',
+      });
+      return;
+    }
+    if (interactive && plan) {
+      fail('config installation --interactive cannot combine with --plan');
+      return;
+    }
     const canInteract = shouldUseInteractiveInstall({
       stdinIsTTY: process.stdin.isTTY,
       stdoutIsTTY: process.stdout.isTTY,
@@ -895,9 +933,7 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
     const result = configureIntent({
       homeDir: os.homedir(),
       cwd,
-      scope: (adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user') as
-        | 'user'
-        | 'project',
+      scope: effectiveScope as 'user' | 'project',
       ...(targets.length ? { targets } : {}),
       ...(adoptionMode ? { adoptionMode } : {}),
       plan,
@@ -934,7 +970,10 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       );
   } else if (command === 'learn-sdd') {
     if (args.includes('--help')) writeCommandHelp('learn-sdd');
-    else learnSdd(cwd);
+    else if (args.length) {
+      fail('usage: learn-sdd', { reason: 'learn-sdd accepts no positional arguments.' });
+      return;
+    } else learnSdd(cwd);
   } else if (command === 'install') {
     const usage = USAGE.install;
     if (args.includes('--help')) {
@@ -969,6 +1008,12 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       fail(usage, {
         reason: 'v7 accepts no pack positional, --pack, or interactive install flags.',
         try: [renderCliCommand('install'), renderCliCommand('install', '--plan')],
+      });
+      return;
+    }
+    if (scope === 'project' && targets.length) {
+      fail(`${usage} — --target requires --scope user or no explicit scope`, {
+        reason: 'Project installation has one project skill root; user-only targets are invalid.',
       });
       return;
     }
@@ -1074,12 +1119,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         reason: `Unknown argument: ${unknown[0]}`,
         try: [renderCliCommand('upgrade', '--check'), ...(hint ? [hint] : [])],
       });
+      return;
     }
     if (args.includes('--check') && args.includes('--skills-only'))
       fail(USAGE.upgrade, {
         reason: '--check and --skills-only cannot be combined.',
         try: [renderCliCommand('upgrade', '--check'), renderCliCommand('upgrade', '--skills-only')],
       });
+    if (args.includes('--check') && args.includes('--skills-only')) return;
     await upgradeCommand(cwd, {
       check: args.includes('--check'),
       plan: args.includes('--plan'),
@@ -1120,12 +1167,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
           ...(hint ? [hint] : []),
         ],
       });
+      return;
     }
     if (overrideGuard && !reason)
       fail('--override-guard requires --reason="...".', {
         reason: 'Overrides must be audited with an explicit human reason.',
         try: [renderCliCommand('autonomous-resume', '--override-guard=3', '--reason="..."')],
       });
+    if (overrideGuard && !reason) return;
     autonomousResume(cwd, { force, overrideGuard, reason });
   } else if (command === 'uninstall') {
     if (args.includes('--help')) writeCommandHelp('uninstall');
@@ -1142,10 +1191,20 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       return;
     }
     process.stdout.write(completion);
-  } else if (command === 'help' || command === '--help' || command === '-h') help(args[0]);
-  else if (command === 'version' || command === '--version' || command === '-v') {
-    if (args.includes('--help')) writeCommandHelp('version');
-    else process.stdout.write(`${VERSION}\n`);
+  } else if (command === 'help' || command === '--help' || command === '-h') {
+    if (args.length > 1) {
+      fail('usage: help [command]', { reason: 'help accepts at most one command topic.' });
+      return;
+    }
+    help(args[0]);
+  } else if (command === 'version' || command === '--version' || command === '-v') {
+    if (args.includes('--help')) {
+      if (args.length !== 1) fail('usage: version [--help]');
+      else writeCommandHelp('version');
+    } else if (args.length) {
+      fail('usage: version', { reason: 'version accepts no arguments.' });
+      return;
+    } else process.stdout.write(`${VERSION}\n`);
   } else {
     const hint = didYouMeanTry(command, KNOWN_COMMANDS);
     fail(`unknown command: ${command}.`, {

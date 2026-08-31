@@ -240,6 +240,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
 
   if (invalidScope) return fail(`${usage} — unknown scope: ${invalidScope}`);
   if (invalidTarget) return fail(`${usage} — unknown target: ${invalidTarget}`);
+  if (rest.length) return fail(`${usage} — unknown argument: ${rest[0]}`);
   if (targetIds.length && agent) return fail(`${usage} — use either --target or --agent, not both`);
   if (targetIds.length && (scope === 'project' || scope === 'all'))
     return fail(`${usage} — --target requires --scope user or no explicit scope`);

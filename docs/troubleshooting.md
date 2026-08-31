@@ -24,7 +24,8 @@ project. SAF uses only its own `.git/info/exclude` blocks; project-scope install
 `npx sdd-agentic-flow config installation --plan`. Confirm both skill scope (`user` vs `project`)
 and adoption (`personal`, `specs-shared`, or `team`).
 
-**Fix:** Re-run guided setup and choose the intended adoption preset. SAF does not alter
+**Fix:** Re-run guided setup and choose the intended adoption preset. For project scope, use
+`--adoption-mode team`. SAF does not alter
 `.gitignore`, global excludes, foreign exclude lines, or tracked files.
 
 ### `skills` / `shared_layer`: official skills or shared layer not fully installed
@@ -37,7 +38,7 @@ the project's `.agents/skills/` — this is expected, not a bug, unless you inte
 separately whether a project-scope and each user-scope installation exist.
 
 **Fix:** `npx sdd-agentic-flow install` (user scope, global) or
-`npx sdd-agentic-flow install --scope project` (writes into this project). See
+`npx sdd-agentic-flow install --scope project --adoption-mode team` (writes into this project). See
 [installation scope](installation-scope.md).
 
 ### `skills`: "partial official skill install detected"
@@ -173,7 +174,7 @@ check only inspects the project scope, not user-scope installations.
 
 **Diagnose:** `npx sdd-agentic-flow doctor --contracts`.
 
-**Fix:** `npx sdd-agentic-flow install --scope project` if you want project-local skills to
+**Fix:** `npx sdd-agentic-flow install --scope project --adoption-mode team` if you want project-local skills to
 validate against; otherwise this `WARN` is expected under the default `user` scope.
 
 ### `capability_contracts`: `FAIL` "missing required field" / "SKILL.md missing or has no frontmatter"
@@ -183,7 +184,7 @@ validate against; otherwise this `WARN` is expected under the default `user` sco
 **Diagnose:** `npx sdd-agentic-flow doctor --contracts --json` — the message names the skill and
 field.
 
-**Fix:** re-run `install --scope project`; if the file already exists, remove it first
+**Fix:** re-run `install --scope project --adoption-mode team`; if the file already exists, remove it first
 (or use `uninstall --yes --scope project` then reinstall) so the clean version is copied
 back in.
 
@@ -276,7 +277,7 @@ installed from an older package that predates this field.
 
 **Diagnose:** `npx sdd-agentic-flow doctor --autonomy --json` — the message names the skill(s).
 
-**Fix:** re-run `install --scope project`; if the file already exists, remove it first (or
+**Fix:** re-run `install --scope project --adoption-mode team`; if the file already exists, remove it first (or
 use `uninstall --yes --scope project` then reinstall) so the clean version is copied back in —
 same caveat as the `capability_contracts` "missing required field" entry above, since `install`
 never overwrites an existing file.

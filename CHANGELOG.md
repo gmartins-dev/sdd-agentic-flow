@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 7.7.0
+
+- Harden canonical CLI grammar and fail-fast dispatch across read-only and
+  mutating commands.
+- Enforce zero-delta rejection, Team project authorization, target/scope
+  validation, and atomic machine JSON for `init` and `doctor`.
+- Align command capabilities and extend dist/packed-npx certification for
+  contract, mutation, and nested-output regressions.
+
 ## 7.6.1
 
 - Fix setup-state detection outside Git workspaces, non-destructive doctor

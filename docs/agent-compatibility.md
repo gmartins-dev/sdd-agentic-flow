@@ -28,7 +28,7 @@ Skills and toolkit state are **agent-neutral by construction**:
 
 **Mid-flow agent swap** (e.g. start in Cursor, resume in Codex CLI) should work when the agent reads repo files—not chat history:
 
-1. `install --scope project` + `init` in a test repo.
+1. `install --scope project --adoption-mode team` + `init` in a test repo.
 2. Agent A: produce spec artifacts under `.specs/features/` and record progress in `.sdd-agentic-flow/autonomy/loop-state.md` if using autonomy. These are active-change working artifacts, not automatically durable project knowledge.
 3. End the session.
 4. Agent B: read `loop-state.md` and `.specs/`; continue without re-init.

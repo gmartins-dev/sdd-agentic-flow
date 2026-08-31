@@ -65,14 +65,26 @@ jobs:
         id: decide
         run: |
           result="$(node -e "
-            const { compareVersions, parseVersion } = require('./dist/version-compat.js');
             const [pkgVersion, latestTag] = process.argv.slice(1);
             const latestVersion = latestTag ? latestTag.replace(/^v/, '') : null;
-            if (!parseVersion(pkgVersion)) {
+            const version = (value) => /^\d+\.\d+\.\d+$/.test(value);
+            const compare = (left, right) => {
+              const a = left.split('.').map(Number);
+              const b = right.split('.').map(Number);
+              for (let index = 0; index < 3; index += 1) {
+                if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
+              }
+              return 0;
+            };
+            if (!version(pkgVersion)) {
               console.error(\`package.json version '\${pkgVersion}' is not a valid x.y.z version\`);
               process.exit(2);
             }
-            console.log(!latestVersion || compareVersions(pkgVersion, latestVersion) > 0 ? 'true' : 'false');
+            if (latestVersion && !version(latestVersion)) {
+              console.error(\`release tag '\${latestTag}' is not a valid x.y.z version\`);
+              process.exit(2);
+            }
+            console.log(!latestVersion || compare(pkgVersion, latestVersion) > 0 ? 'true' : 'false');
           " "${{ steps.pkg.outputs.version }}" "${{ steps.latest_tag.outputs.tag }}")"
           echo "should_release=$result" >> "$GITHUB_OUTPUT"
 

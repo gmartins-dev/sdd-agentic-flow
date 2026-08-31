@@ -288,7 +288,7 @@ function incompleteScenario(): Scenario {
       const before = observeSandbox(sandbox);
       const bare = adapter.run([], sandbox);
       expectSuccess(bare, /install|incomplete|Suggested next step/i);
-      assert.doesNotMatch(`${bare.stdout}\n${bare.stderr}`, /^(?:PASS|[◇◆]) Ready\r?$/m);
+      assert.doesNotMatch(`${bare.stdout}\n${bare.stderr}`, /^(?:PASS|[◇◆])\s+Ready\r?$/m);
       const doctor = adapter.run(['doctor', '--json'], sandbox);
       assert.ok([0, 1].includes(doctor.status ?? -1), `${doctor.stderr}\n${doctor.stdout}`);
       assert.notEqual(JSON.parse(doctor.stdout).data?.status, 'PASS');
@@ -467,7 +467,7 @@ function ptyScenario(): Scenario {
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
-      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆]) Ready(?:\r?\n|$)/);
+      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆])\s+Ready(?:\r?\n|$)/);
       const languagePrompt = result.transcript.indexOf('Choose your language / Escolha o idioma');
       assert.ok(languagePrompt >= 0);
       const languagePrelude = result.transcript.slice(0, languagePrompt);
@@ -629,7 +629,7 @@ function userInstallThenWorkspaceScenario(): Scenario {
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
       assert.match(result.transcript, /SAF is already installed|Set up this repository/i);
-      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆]) Ready(?:\r?\n|$)/);
+      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆])\s+Ready(?:\r?\n|$)/);
       assert.ok(fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'workspace.yml')));
       assert.ok(
         fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'context', 'project-context.md')),

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 7.7.1
+
+- Remove the local-only `release-saf` skill from the published package.
+- Republish the corrected package contents without local release automation.
+
 ## 7.7.0
 
 - Harden canonical CLI grammar and fail-fast dispatch across read-only and

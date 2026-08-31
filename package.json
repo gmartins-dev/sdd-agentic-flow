@@ -81,7 +81,7 @@
     "sdd-agentic-flow": "bin/sdd-agentic-flow.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.7",
+    "@biomejs/biome": "2.5.11",
     "@clack/prompts": "^1.0.1",
     "@mermaid-js/mermaid-cli": "^11.16.0",
     "@types/node": "^26.2.0",

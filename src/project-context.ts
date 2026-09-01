@@ -5,6 +5,7 @@ import { renderCliCommand } from './cli-command';
 import { EFFECTIVE_DEFAULTS, readConfig } from './config-domain';
 import { resolveLocale, t, translateText } from './messages';
 import { SDD_PATHS, sddJoin, VERSION } from './paths';
+import { terminalLog, terminalNext } from './terminal-ui';
 import { type DisplayMode, outputMode, styleStatus } from './ui';
 
 type ProjectSignals = {
@@ -60,9 +61,7 @@ function resolveMode(flags: ProjectContextOptions = {}): DisplayMode {
 
 function log(status: string, message: string, explicitLocale?: string) {
   const locale = explicitLocale || localeFor(process.cwd());
-  process.stdout.write(
-    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
-  );
+  terminalLog(status, translateText(locale, message), { mode: resolveMode() });
 }
 
 function fail(message: string, code = 1) {
@@ -77,9 +76,7 @@ function nextStep(line: string | string[], options: NextStepOptions = {}) {
   const list = (Array.isArray(line) ? line : [line]).filter(Boolean);
   if (!list.length) return;
   const locale = localeFor(process.cwd());
-  process.stdout.write(
-    `\n${t(locale, 'init.next')}\n${list.map((entry: string) => `  ${entry}`).join('\n')}\n`,
-  );
+  terminalNext(list, { mode, title: t(locale, 'init.next') });
 }
 
 function existingPaths(cwd: string, names: string[]) {

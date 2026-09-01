@@ -6,6 +6,7 @@ import {
   physicalRows,
   stripAnsi,
   truncateDisplayWidth,
+  wrapCopyable,
   wrapDisplayWidth,
 } from '../src/terminal-geometry';
 import { sanitizeTerminalText } from '../src/terminal-safety';
@@ -20,6 +21,9 @@ test('terminal geometry wraps and truncates by visible width', () => {
   assert.deepEqual(wrapDisplayWidth('one two three', 7), ['one two', 'three']);
   assert.equal(truncateDisplayWidth('abcdef', 4), 'abc…');
   assert.equal(physicalRows('a界b', 3), 2);
+  assert.deepEqual(wrapCopyable('npx sdd-agentic-flow install --target very-long-name', 10), [
+    'npx sdd-agentic-flow install --target very-long-name',
+  ]);
 });
 
 test('terminal sanitization renders controls inert without changing ordinary text', () => {

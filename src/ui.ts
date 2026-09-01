@@ -10,6 +10,7 @@
 import path from 'node:path';
 import { type BrandStream, type DisplayMode, formatBrandArt, writeBrandArt } from './brand-art';
 import type { DoctorCheck } from './doctor-view';
+import { SAF_ASCII_GLYPHS, SAF_GLYPHS, SAF_THEME, safGlyph, symbol } from './terminal-theme';
 
 const STATUS_COLORS = {
   PASS: '32',
@@ -21,17 +22,6 @@ const STATUS_COLORS = {
 } as const;
 
 type StatusName = keyof typeof STATUS_COLORS;
-type SymbolName = keyof typeof SYMBOLS;
-
-const SYMBOLS = {
-  success: { rich: '✓', ascii: 'OK' },
-  warn: { rich: '!', ascii: 'WARN' },
-  fail: { rich: '✗', ascii: 'FAIL' },
-  next: { rich: '→', ascii: '->' },
-  // Compact inline echo; welcome uses the full embedded block via styleBrand/formatBrandArt.
-  brand: { rich: '›››', ascii: '>>>' },
-} as const;
-
 type OutputStreams = {
   stdin?: BrandStream;
   stdout?: BrandStream;
@@ -46,6 +36,9 @@ type OutputFlags = {
 
 type OutputFormat = 'human' | 'machine';
 type HumanPresentation = 'rich' | 'plain';
+type ColorDepth = 'none' | 'ansi16' | 'ansi256' | 'truecolor';
+type TerminalBreakpoint = 'wide' | 'compact' | 'narrow' | 'minimal';
+type MotionLevel = 'none' | 'instant' | 'active';
 type TerminalCapabilities = {
   interactive: boolean;
   color: boolean;
@@ -54,7 +47,9 @@ type TerminalCapabilities = {
   rawInput: boolean;
   animation: boolean;
   width: number;
+  colorDepth: ColorDepth;
 };
+type PresentationContext = TerminalCapabilities & { mode: DisplayMode };
 
 type ShortenPathOptions = {
   homeDir?: string;
@@ -77,6 +72,18 @@ function colorEnabled(
   return true;
 }
 
+function colorDepth(
+  stream: BrandStream | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): ColorDepth {
+  if (!colorEnabled(stream, env)) return 'none';
+  const terminal = env.TERM ?? '';
+  const colorTerminal = env.COLORTERM ?? '';
+  if (colorTerminal === 'truecolor' || colorTerminal === '24bit') return 'truecolor';
+  if (terminal.includes('256color')) return 'ansi256';
+  return 'ansi16';
+}
+
 function terminalCapabilities(
   streams: OutputStreams = {},
   env: NodeJS.ProcessEnv = process.env,
@@ -89,16 +96,35 @@ function terminalCapabilities(
       ?.setRawMode === 'function';
   const dumb = env.TERM === 'dumb';
   const color = !flags.json && !flags.machine && colorEnabled(streams.stdout, env);
-  const plain = Boolean(flags.ascii || env.SDD_ASCII === '1' || dumb);
+  const plain = Boolean(flags.quiet || flags.ascii || env.SDD_ASCII === '1' || dumb);
   return {
     interactive,
     color: color && !plain,
     unicode: !plain,
-    cursor: interactive && !dumb,
+    cursor: interactive && !plain && !dumb,
     rawInput,
     animation: interactive && !plain && env.SDD_BRAND_ANIMATE !== '0',
     width: terminalColumns(streams.stdout || process.stdout),
+    colorDepth: color && !plain ? colorDepth(streams.stdout, env) : 'none',
   };
+}
+
+function resolvePresentationContext(
+  streams: OutputStreams = {},
+  env: NodeJS.ProcessEnv = process.env,
+  flags: OutputFlags = {},
+): PresentationContext {
+  const capabilities = terminalCapabilities(streams, env, flags);
+  const machine = Boolean(flags.json || flags.machine);
+  const forcedPlain = Boolean(
+    flags.quiet || flags.ascii || env.SDD_ASCII === '1' || env.TERM === 'dumb',
+  );
+  const mode: DisplayMode = machine
+    ? 'machine'
+    : capabilities.interactive && !forcedPlain
+      ? 'human-rich'
+      : 'human-plain';
+  return { ...capabilities, mode };
 }
 
 function clearViewport(
@@ -130,19 +156,23 @@ function outputMode(
   // A pipe changes presentation, not the semantic contract. JSON is the only
   // public machine protocol; ordinary CI and redirected output stay readable.
   if (flags.json || flags.machine) return 'machine';
-  const capabilities = terminalCapabilities(streams, env, flags);
-  if (flags.quiet || !capabilities.interactive || !capabilities.color) return 'human-plain';
-  return 'human-rich';
+  return resolvePresentationContext(streams, env, flags).mode;
+}
+
+function terminalBreakpoint(width: number): TerminalBreakpoint {
+  if (width >= SAF_THEME.breakpoints.wide) return 'wide';
+  if (width >= SAF_THEME.breakpoints.compact) return 'compact';
+  if (width >= SAF_THEME.breakpoints.narrow) return 'narrow';
+  return 'minimal';
+}
+
+function motionLevel(context: PresentationContext): MotionLevel {
+  if (!context.interactive || context.mode !== 'human-rich') return 'none';
+  return context.animation ? 'active' : 'instant';
 }
 
 function isRich(mode: DisplayMode): boolean {
   return mode === 'human-rich';
-}
-
-function symbol(name: SymbolName, mode: DisplayMode = 'human-rich'): string {
-  const entry = SYMBOLS[name];
-  if (!entry) return '';
-  return mode === 'human-rich' ? entry.rich : entry.ascii;
 }
 
 // Full welcome brand block (embedded in src/brand-art.ts). Empty in machine mode.
@@ -154,7 +184,7 @@ function styleBrand(
   return formatBrandArt(mode, stream, env);
 }
 
-// Write welcome brand (async): left→right reveal in human-rich TTY; instant otherwise.
+// Write welcome brand (async): left-to-right reveal in human-rich TTY; instant otherwise.
 function writeBrand(
   mode: DisplayMode = 'human-rich',
   stream?: BrandStream,
@@ -303,11 +333,15 @@ function didYouMean(input: unknown, candidates: string[]): string | null {
 
 export type {
   BrandOptions,
+  ColorDepth,
   DisplayMode,
   HumanPresentation,
+  MotionLevel,
   OutputFlags,
   OutputFormat,
   OutputStreams,
+  PresentationContext,
+  TerminalBreakpoint,
   TerminalCapabilities,
 };
 export {
@@ -316,16 +350,23 @@ export {
   didYouMean,
   doctorFooterLines,
   isRich,
+  motionLevel,
   outputMode,
   renderKeyValue,
   renderSection,
   renderStep,
   renderSuccess,
   renderWarning,
+  resolvePresentationContext,
+  SAF_ASCII_GLYPHS,
+  SAF_GLYPHS,
+  SAF_THEME,
+  safGlyph,
   shortenPath,
   styleBrand,
   styleStatus,
   symbol,
+  terminalBreakpoint,
   terminalCapabilities,
   terminalColumns,
   writeBrand,

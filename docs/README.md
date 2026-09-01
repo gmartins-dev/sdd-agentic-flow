@@ -73,6 +73,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [architecture.md](architecture.md) | CLI, official bundle, skills, shared layer, consumer project |
 | [cli-interaction.md](cli-interaction.md) | Output modes, stdout/stderr, colors, branding vs protocol |
 | [cli-terminal-behavior.md](cli-terminal-behavior.md) | TTY, plain output, prompts, terminal capabilities, and interruption |
+| [terminal-design-system.md](terminal-design-system.md) | Shared human-terminal tokens, renderers, geometry, and release evidence |
 | [machine-interface.md](machine-interface.md) | JSON envelope, stable tokens, and machine-readable errors |
 | [information-representation-model.md](information-representation-model.md) | Authority, persistence, and derived representations |
 | [compatibility-promise.md](compatibility-promise.md) | Versioning and capability-contract rules |

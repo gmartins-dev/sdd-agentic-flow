@@ -5,7 +5,7 @@ import { PassThrough, Readable } from 'node:stream';
 import { test } from 'node:test';
 
 import { resolveOnboardingState } from '../src/onboarding';
-import { resolveSelection, select } from '../src/selector';
+import { renderSelector, resolveSelection, select } from '../src/selector';
 
 // Simulated raw-capable fixtures are intentionally not TERM=dumb; TERM=dumb is
 // a documented numbered-readline mode in the v5 terminal contract.
@@ -73,6 +73,46 @@ test('multi-select navigation actions are not toggleable values', () => {
   assert.deepEqual(resolveSelection('2', options, ['agents'], true), { value: 'back' });
 });
 
+test('selector renderer uses journey glyphs, stable descriptions, and collapsed answers', () => {
+  const rich = renderSelector(
+    'Choose',
+    [
+      { value: 'one', label: 'One', description: 'First option' },
+      { value: 'two', label: 'Two', recommended: true },
+    ],
+    { activeIndex: 1 },
+  );
+  assert.match(rich, /▸ 2\. Two \(recommended\)/);
+  assert.equal((rich.match(/ {6}/g) || []).length, 2);
+  const action = renderSelector(
+    'Choose',
+    [
+      { value: 'start', label: 'Iniciar configuração' },
+      { value: 'learn', label: 'Saiba mais sobre o SAF', action: true },
+    ],
+    { activeIndex: 0 },
+  );
+  assert.match(action, /▹ 2\. Saiba mais sobre o SAF/);
+  assert.doesNotMatch(action, /→/);
+  assert.match(
+    renderSelector('Choose', [{ value: 'exit', label: 'Exit', action: true }], {
+      activeIndex: 0,
+    }),
+    /▸ 1\. Exit/,
+  );
+  assert.equal(
+    renderSelector('Choose', [{ value: 'two', label: 'Two' }], {
+      selected: ['two'],
+      collapsed: true,
+    }),
+    '◇ Choose: Two',
+  );
+  assert.match(
+    renderSelector('Choose', [{ value: 'one', label: 'One' }], { plain: true }),
+    /> 1\. One/,
+  );
+});
+
 test('selector falls back to numbered input when a TTY cannot enter raw mode', async () => {
   const input = Readable.from(['\n']);
   setTty(input);
@@ -113,6 +153,41 @@ test('NO_COLOR keeps the complete numbered selector without ANSI output', async 
   }
 });
 
+test('NO_COLOR keeps rich selector structure and raw interaction without ANSI', async () => {
+  const prior = process.env.NO_COLOR;
+  const priorTerm = process.env.TERM;
+  process.env.NO_COLOR = '1';
+  process.env.TERM = 'xterm';
+  const input = new PassThrough();
+  setTty(input);
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+  };
+  const output = setTty(new PassThrough());
+  try {
+    const pending = select(
+      'Choose',
+      [
+        { value: 'one', label: 'One' },
+        { value: 'two', label: 'Two' },
+      ],
+      { input, output, locale: 'en-US' },
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    input.emit('keypress', '2', { name: '2' });
+    assert.deepEqual(await pending, { value: 'two' });
+    const rendered = [output.read(), output.read()].filter(Boolean).join('');
+    assert.match(rendered, /◇ Choose: Two/);
+    assert.equal(rendered.includes(String.fromCharCode(27)), false);
+  } finally {
+    if (prior === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = prior;
+    if (priorTerm === undefined) delete process.env.TERM;
+    else process.env.TERM = priorTerm;
+  }
+});
+
 test('raw selector redraws the active option before Enter commits it', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
@@ -138,7 +213,7 @@ test('raw selector redraws the active option before Enter commits it', async () 
 
     assert.deepEqual(await pending, { value: 'two' });
     const rendered = [output.read(), output.read()].filter(Boolean).join('');
-    assert.match(rendered, /> 2\. Two/);
+    assert.match(rendered, /▸ 2\. Two/);
   } finally {
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;

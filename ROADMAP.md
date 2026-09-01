@@ -1,5 +1,13 @@
 # Roadmap
 
+- **v7.9.0 (current release):** Completes the SAF terminal design system across every human-facing
+  CLI journey. Unifies terminal context, semantic tokens, glyph fallbacks, cell-aware geometry,
+  copyable output, selector rendering, gallery/catalog evidence, and presentation-boundary checks.
+  Interactive `NO_COLOR` preserves rich structure without ANSI. Machine output, command semantics,
+  selector state transitions, local-first behavior, and zero external runtime dependencies remain
+  unchanged. No TUI framework, new command or flag, telemetry, implicit network behavior,
+  automatic Git mutation, or release publication authority.
+
 - **Next release after 7.7.1 — v7.8.0:** SAF Terminal Design System and Human CLI UX.
   Replace log-oriented rich output with a coherent guided terminal journey, bundled
   Clack/Picocolors primitives, cell-aware layout, inert terminal-text sanitization,

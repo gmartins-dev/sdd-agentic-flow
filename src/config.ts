@@ -9,7 +9,8 @@ import {
 } from './config-domain';
 import { resolveLocale, t } from './messages';
 import { select } from './selector';
-import { type DisplayMode, outputMode, renderKeyValue, renderSection, renderWarning } from './ui';
+import { terminalLog } from './terminal-ui';
+import { type DisplayMode, outputMode, renderKeyValue, renderSection } from './ui';
 
 type ConfigCommandOptions = {
   mode?: DisplayMode;
@@ -296,7 +297,7 @@ async function runConfigPolicy(
   const resolved = await resolveNextPolicy(args, current, locale);
   if (!resolved.ok) {
     if (resolved.cancelled) {
-      process.stdout.write(`${renderWarning(t(locale, 'config.cancelled'), mode)}\n`);
+      terminalLog('WARN', t(locale, 'config.cancelled'), { mode });
       return { ok: true, exitCode: 0, cancelled: true };
     }
     return { ok: false, exitCode: 1, message: resolved.message, try: resolved.try };
@@ -315,8 +316,10 @@ async function runConfigPolicy(
     preview.beforeLanguage === preview.afterLanguage &&
     preview.beforeFeatureProfile === preview.afterFeatureProfile
   ) {
-    process.stdout.write(
-      `${t(locale, 'config.alreadyUsing')} ${current.presetEquivalent || t(locale, 'config.keepCurrent')}.\n`,
+    terminalLog(
+      'INFO',
+      `${t(locale, 'config.alreadyUsing')} ${current.presetEquivalent || t(locale, 'config.keepCurrent')}.`,
+      { mode },
     );
     return { ok: true, exitCode: 0, unchanged: true };
   }
@@ -333,7 +336,7 @@ async function runConfigPolicy(
     }
     const applied = applyPolicyMutation(configPath, resolved.policy, { dryRun: false });
     if (!applied.ok) return { ok: false, exitCode: 1, message: applied.errors?.join('; ') };
-    process.stdout.write(`PASS ${t(locale, 'config.updated')}\n`);
+    terminalLog('PASS', t(locale, 'config.updated'), { mode });
     return { ok: true, exitCode: 0 };
   }
   if (!yes) {
@@ -345,13 +348,13 @@ async function runConfigPolicy(
       ('cancelled' in confirmation && confirmation.cancelled) ||
       ('value' in confirmation && confirmation.value !== 'yes')
     ) {
-      process.stdout.write(`${renderWarning(t(locale, 'config.cancelled'), mode)}\n`);
+      terminalLog('WARN', t(locale, 'config.cancelled'), { mode });
       return { ok: true, exitCode: 0, cancelled: true };
     }
   }
   const applied = applyPolicyMutation(configPath, resolved.policy, { dryRun: false });
   if (!applied.ok) return { ok: false, exitCode: 1, message: applied.errors?.join('; ') };
-  process.stdout.write(`PASS ${t(locale, 'config.updated')}\n`);
+  terminalLog('PASS', t(locale, 'config.updated'), { mode });
   return { ok: true, exitCode: 0 };
 }
 

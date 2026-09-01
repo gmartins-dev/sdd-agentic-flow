@@ -14,7 +14,7 @@ One command, three modes — decided by `outputMode(streams, env, flags)` in `sr
 | Mode            | When                                                                            | Brand / connectors                 | ANSI | Symbols                    |
 | --------------- | ------------------------------------------------------------------------------- | ---------------------------------- | ---- | -------------------------- |
 | **human-rich**  | stdout TTY, stdin TTY, not `CI`, no `--quiet`, no `--json`                      | SAF chevron art and guided journey | yes  | Unicode blocks + `✓` / `│` |
-| **human-plain** | `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, pipe/redirect, CI, or no usable TTY color | full chevron art (`#`/`+`/`=`)     | no   | ASCII (`OK`, `->`, …)      |
+| **human-plain** | `--ascii`, `SDD_ASCII=1`, `TERM=dumb`, pipe/redirect, CI, or no usable TTY | compact/static fallback | no | ASCII (`OK`, `->`, …) |
 | **machine**     | explicit structured output (`--json`)                                           | no                                 | no   | ASCII / status words       |
 
 Rules:
@@ -26,12 +26,16 @@ Rules:
   suppress `FAIL` lines on stderr.
 - `--json` never carries art and never changes the existing check object shape (additive
   rows only when an opt-in flag is passed — see the compatibility promise).
-- Human-rich uses the SAF terminal journey symbols. Force ASCII with `--ascii` or
-  `SDD_ASCII=1`; every structural symbol has a readable fallback.
+- Human-rich uses the SAF terminal journey symbols. Force ASCII with `--ascii`, `SDD_ASCII=1`, or
+  `TERM=dumb`; every structural symbol has a readable fallback. See
+  [the terminal design system](terminal-design-system.md) for the shared token and geometry
+  contract.
 
 ## Colors
 
-- **Off** when `NO_COLOR` is set (any value), or the target stream is not a TTY.
+- **Off** when `NO_COLOR` is set (any value), or the target stream is not a TTY. An interactive
+  `NO_COLOR` session keeps the rich structure and numbered/raw interaction appropriate to its
+  capabilities; only ANSI color is removed.
 - **`FORCE_COLOR`** is honored only when the stream **is** a TTY. It never forces ANSI into
   a pipe (CLIG / picocolors convention).
 - Status words (`PASS` / `WARN` / `FAIL` / …) may be colored; symbols are optional extras
@@ -110,8 +114,9 @@ is local evidence from PATH and known host directories only; it never invokes a 
 a network service. A missing detection is shown as a choice rather than silently selecting every target.
 
 Terminal capability changes presentation, never workflow correctness: rich terminals get arrow
-navigation, while `NO_COLOR`, `--ascii`, `SDD_ASCII=1`, missing raw mode, pipes, and CI receive
-the complete numbered/plain interaction. Rich TTY operations may use a transient spinner that
+navigation, while `--ascii`, `SDD_ASCII=1`, `TERM=dumb`, missing raw mode, pipes, and CI receive
+the complete numbered/plain interaction. Interactive `NO_COLOR` keeps the rich layout without
+ANSI. Rich TTY operations may use a transient spinner that
 collapses to one durable result; plain, CI, pipe, and machine output never animate.
 
 Rich layout measures terminal cells rather than JavaScript string length. SAF sanitizes untrusted

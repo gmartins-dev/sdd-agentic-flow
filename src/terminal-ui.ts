@@ -1,12 +1,14 @@
 import * as clack from '@clack/prompts';
-import pc from 'picocolors';
 
+import { type ComponentStatus, renderCard, renderStatus } from './terminal-components';
 import { sanitizeTerminalText } from './terminal-safety';
-import type { DisplayMode } from './ui';
+import { type DisplayMode, type PresentationContext, SAF_THEME, terminalCapabilities } from './ui';
 
 type TerminalUiOptions = {
   mode?: DisplayMode;
   output?: NodeJS.WriteStream;
+  title?: string;
+  color?: boolean;
 };
 
 type TerminalSpinner = {
@@ -19,6 +21,33 @@ function sanitizeMultilineTerminalText(value: string): string {
   return value.split('\n').map(sanitizeTerminalText).join('\n');
 }
 
+function presentationContext(
+  mode: DisplayMode,
+  output: NodeJS.WriteStream,
+  color?: boolean,
+): PresentationContext {
+  const capabilities = terminalCapabilities({ stdout: output }, process.env);
+  const enabled = mode === 'human-rich' && (color ?? capabilities.color);
+  return {
+    ...capabilities,
+    mode,
+    color: enabled,
+    colorDepth: enabled
+      ? capabilities.colorDepth === 'none'
+        ? 'ansi16'
+        : capabilities.colorDepth
+      : 'none',
+  };
+}
+
+function componentStatus(status: string): ComponentStatus {
+  if (status === 'PASS') return 'success';
+  if (status === 'WARN') return 'warning';
+  if (status === 'FAIL') return 'error';
+  if (status === 'INFO') return 'info';
+  return 'busy';
+}
+
 function terminalLog(
   status: string,
   message: string,
@@ -27,11 +56,9 @@ function terminalLog(
   if (mode === 'machine') return;
   const safe = sanitizeTerminalText(message);
   if (mode === 'human-rich') {
-    const opts = { output };
-    if (status === 'PASS') clack.log.success(safe, opts);
-    else if (status === 'WARN') clack.log.warn(safe, opts);
-    else if (status === 'FAIL') clack.log.error(safe, opts);
-    else clack.log.step(safe, opts);
+    output.write(
+      `${renderStatus(componentStatus(status), safe, presentationContext(mode, output))}\n`,
+    );
     return;
   }
   output.write(`${status} ${safe}\n`);
@@ -40,21 +67,23 @@ function terminalLog(
 function terminalNote(
   title: string,
   entries: readonly (readonly [string, string])[],
-  { mode = 'human-plain', output = process.stdout }: TerminalUiOptions = {},
+  { mode = 'human-plain', output = process.stdout, color }: TerminalUiOptions = {},
 ): void {
   if (mode === 'machine') return;
-  const colors = pc.createColors(mode === 'human-rich');
   const safeTitle = sanitizeTerminalText(title);
-  const body = entries
-    .map(
-      ([key, value]) =>
-        `${colors.bold(sanitizeTerminalText(key))}\n${sanitizeMultilineTerminalText(value)}`,
-    )
-    .join('\n\n');
   if (mode === 'human-rich') {
-    clack.note(body, safeTitle, { output });
+    output.write(
+      `${renderCard(
+        safeTitle,
+        entries.map(([key, value]) => ({ key, value })),
+        presentationContext(mode, output, color),
+      )}\n`,
+    );
     return;
   }
+  const body = entries
+    .map(([key, value]) => `${sanitizeTerminalText(key)}\n${sanitizeMultilineTerminalText(value)}`)
+    .join('\n\n');
   output.write(`${safeTitle}\n${body}\n`);
 }
 
@@ -77,5 +106,23 @@ function terminalSpinner({
   };
 }
 
+function terminalNext(
+  lines: string | readonly string[],
+  { mode = 'human-plain', output = process.stdout, title = 'Next action' }: TerminalUiOptions = {},
+): void {
+  if (mode === 'machine') return;
+  const entries = (Array.isArray(lines) ? lines : [lines])
+    .filter(Boolean)
+    .map(sanitizeTerminalText);
+  if (!entries.length) return;
+  if (mode === 'human-rich') {
+    terminalNote(title, [['Action', entries.join('\n')]], { mode, output });
+    return;
+  }
+  output.write(
+    `\n${sanitizeTerminalText(title)}\n${entries.map((entry) => `${' '.repeat(SAF_THEME.spacing.gutter)}${entry}`).join('\n')}\n`,
+  );
+}
+
 export type { TerminalUiOptions };
-export { terminalLog, terminalNote, terminalSpinner };
+export { terminalLog, terminalNext, terminalNote, terminalSpinner };

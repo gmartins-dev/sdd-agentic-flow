@@ -2,7 +2,10 @@
 
 The CLI separates `OutputFormat` (`human` or `machine`), `HumanPresentation` (`rich` or `plain`), and `TerminalCapabilities` (`interactive`, `color`, `unicode`, `cursor`, `rawInput`, `animation`, and `width`).
 
-Normal TTY sessions use human-rich output and prompts. `NO_COLOR`, `--ascii`, and `TERM=dumb` use human-plain output; `TERM=dumb` keeps numbered input. A TTY without raw mode uses numbered readline. CI, pipes, closed stdin, and redirected stdout never prompt or redraw. `--json` never prompts and never emits ANSI or cursor control.
+Normal TTY sessions use human-rich output and prompts. `NO_COLOR` keeps the rich layout while
+removing ANSI color. `--ascii` and `TERM=dumb` use human-plain output; `TERM=dumb` keeps numbered
+input. A TTY without raw mode uses numbered readline. CI, pipes, closed stdin, and redirected
+stdout never prompt or redraw. `--json` never prompts and never emits ANSI or cursor control.
 
 Selectors use raw arrows only when interactive raw input and cursor capabilities are present. Enter, numeric shortcuts, Space for multi-select, Escape, and Ctrl-C are supported; EOF cancels deterministically and restores terminal state. `--interactive` requires TTY stdin/stdout and an unset `CI`.
 
@@ -14,3 +17,6 @@ does not use an alternate buffer, mouse, dashboard, or persistent UI state.
 
 Untrusted terminal text is rendered inert or visibly escaped before styling. ANSI stripping is a
 layout helper only; it is not the sanitization boundary.
+
+The shared tokens, glyph fallbacks, renderer ownership, and gallery evidence are documented in
+[the terminal design system](terminal-design-system.md).

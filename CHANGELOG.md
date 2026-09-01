@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 7.9.0
+
+- Complete the SAF terminal design system across human-facing CLI journeys.
+- Preserve rich structure under `NO_COLOR` while removing ANSI, with independent terminal
+  capability resolution, semantic tokens, glyph fallbacks, cell-aware geometry, and copyable
+  commands and paths.
+- Add shared terminal components, selector rendering, gallery/catalog evidence, documentation,
+  and a presentation-boundary release check without changing machine protocols or command
+  semantics.
+
 ## 7.8.0
 
 - Add a SAF-native human-rich terminal design system with guided journey

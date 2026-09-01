@@ -106,4 +106,16 @@ function physicalRows(value: string, maxWidth: number): number {
   return wrapDisplayWidth(value, maxWidth).length;
 }
 
-export { displayWidth, physicalRows, stripAnsi, truncateDisplayWidth, wrapDisplayWidth };
+function wrapCopyable(value: string, maxWidth: number): string[] {
+  if (maxWidth <= 0) return [''];
+  return value.split('\n');
+}
+
+export {
+  displayWidth,
+  physicalRows,
+  stripAnsi,
+  truncateDisplayWidth,
+  wrapCopyable,
+  wrapDisplayWidth,
+};

@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "7.8.0",
+  "version": "7.9.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -39,7 +39,7 @@
     "test": "npm run build && tsx --test --experimental-test-coverage test/**/*.test.ts",
     "skills:lint": "bash ./scripts/check-skills.sh",
     "licenses:check": "tsx scripts/check-bundled-licenses.ts",
-    "check": "npm run typecheck && npm run build && npm run licenses:check && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && bash ./scripts/check-sdd-paths.sh && npm test",
+    "check": "npm run typecheck && npm run build && npm run licenses:check && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && npm run presentation:boundary && bash ./scripts/check-sdd-paths.sh && npm test",
     "lint:check": "npm run lint:biome",
     "lint:fix": "npm run lint:biome:fix",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
@@ -54,6 +54,9 @@
     "cli:dev": "tsx scripts/cli-dev.ts",
     "cli:audit-source": "tsx scripts/cli-audit-source.ts",
     "cli:human-audit": "tsx scripts/check-cli-human-input.ts",
+    "presentation:boundary": "tsx scripts/check-presentation-boundary.ts",
+    "ui:gallery": "tsx scripts/ui-gallery.ts",
+    "ui:catalog": "tsx scripts/ui-gallery.ts --catalog",
     "cli:exhaustive": "tsx scripts/cli-exhaustive.ts",
     "cli:full-matrix:dist": "SAF_FULL_MATRIX_SOURCE=dist node scripts/cli-full-matrix.mjs",
     "cli:full-matrix:packed": "SAF_FULL_MATRIX_SOURCE=packed node scripts/cli-full-matrix.mjs",

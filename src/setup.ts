@@ -53,13 +53,14 @@ import {
   targetsForHosts,
 } from './setup-plan';
 import { inspectSetupState, inspectUserInstallation, type SetupStateSnapshot } from './setup-state';
-import { terminalLog, terminalNote } from './terminal-ui';
+import { terminalLog, terminalNext, terminalNote } from './terminal-ui';
 import {
   clearViewport,
   type DisplayMode,
   isRich,
   outputMode,
   renderStep,
+  SAF_GLYPHS,
   styleStatus,
   symbol,
   writeBrand,
@@ -206,9 +207,7 @@ function nextStep(line: string | string[], options: NextStepOptions = {}) {
   const list = (Array.isArray(line) ? line : [line]).filter(Boolean);
   if (!list.length) return;
   const locale = localeFor(process.cwd());
-  process.stdout.write(
-    `\n${t(locale, 'init.next')}\n${list.map((entry: string) => `  ${entry}`).join('\n')}\n`,
-  );
+  terminalNext(list, { mode, title: t(locale, 'init.next') });
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -434,14 +433,14 @@ function printSetupStages(
   for (const stage of stages) {
     const marker = complete.includes(stage)
       ? rich
-        ? '✓'
+        ? SAF_GLYPHS.completed
         : 'OK'
       : stage === active
         ? rich
-          ? '●'
+          ? SAF_GLYPHS.active
           : '>'
         : rich
-          ? '○'
+          ? SAF_GLYPHS.unselected
           : 'o';
     process.stdout.write(`${marker} ${t(locale, `setup.${stage}`)}\n`);
   }
@@ -1432,7 +1431,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         const repair = await select(
           t(locale, 'recovery.question'),
           [
-            { value: 'apply', label: t(locale, 'recovery.cleanReinstall') },
+            { value: 'apply', label: t(locale, 'recovery.cleanReinstall'), action: true },
             { value: 'back', label: t(locale, 'menu.back'), action: true },
           ],
           { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
@@ -1452,9 +1451,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     const review = await select(
       t(locale, 'setup.review'),
       [
-        { value: 'continue', label: t(locale, 'setup.continue') },
-        { value: 'back', label: t(locale, 'setup.back') },
-        { value: 'cancel', label: t(locale, 'setup.cancel') },
+        { value: 'continue', label: t(locale, 'setup.continue'), action: true },
+        { value: 'back', label: t(locale, 'setup.back'), action: true },
+        { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
       ],
       { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
     );
@@ -1492,9 +1491,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     const recovery = await select(
       t(locale, 'menu.question'),
       [
-        { value: 'change', label: t(locale, 'setup.changeChoices') },
-        { value: 'validate', label: t(locale, 'menu.validate') },
-        { value: 'exit', label: t(locale, 'setup.exit') },
+        { value: 'change', label: t(locale, 'setup.changeChoices'), action: true },
+        { value: 'validate', label: t(locale, 'menu.validate'), action: true },
+        { value: 'exit', label: t(locale, 'setup.exit'), action: true },
       ],
       { ascii: Boolean(options.ascii), cancelValues: ['q', '0'], locale },
     );
@@ -1708,8 +1707,8 @@ async function initInteractive(
       const confirmation = await select(
         confirmPrompt,
         [
-          { value: 'apply', label: 'Apply' },
-          { value: 'cancel', label: 'Cancel' },
+          { value: 'apply', label: 'Apply', action: true },
+          { value: 'cancel', label: 'Cancel', action: true },
         ],
         { locale },
       );

@@ -874,7 +874,7 @@ function autonomyLoopStateCoherence(loopState: NonNullable<ReturnType<typeof rea
 
   return {
     status: 'PASS',
-    message: `last recorded skill '${loopState.skill}' → ${loopState.status}; next: ${next}`,
+    message: `last recorded skill '${loopState.skill}' -> ${loopState.status}; next: ${next}`,
   };
 }
 

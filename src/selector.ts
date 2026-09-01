@@ -2,7 +2,7 @@ import readline from 'node:readline';
 import { t } from './messages';
 import { physicalRows } from './terminal-geometry';
 import { sanitizeTerminalText } from './terminal-safety';
-import { terminalCapabilities } from './ui';
+import { safGlyph, terminalCapabilities } from './ui';
 
 type SelectOption = {
   value: unknown;
@@ -86,6 +86,7 @@ type RenderSelectorOptions = {
   selected?: unknown[];
   locale?: string | undefined;
   plain?: boolean;
+  collapsed?: boolean;
 };
 
 function renderSelector(
@@ -97,6 +98,7 @@ function renderSelector(
     selected,
     locale,
     plain = false,
+    collapsed = false,
   }: RenderSelectorOptions = {},
 ): string {
   const selectedValues = new Set(
@@ -106,16 +108,42 @@ function renderSelector(
     ).map(optionValueKey),
   );
   const safeQuestion = sanitizeTerminalText(question);
+  if (collapsed) {
+    const chosen = options
+      .filter((option) => !option.action && selectedValues.has(optionValueKey(option.value)))
+      .map((option) => sanitizeTerminalText(option.label));
+    return `${plain ? 'OK' : safGlyph('completed', 'human-rich')} ${safeQuestion}: ${chosen.join(', ') || 'confirmed'}`;
+  }
   const lines = [`\n${safeQuestion}\n`];
+  const hasDescriptions = options.some((option) => option.description);
   options.forEach((option, index) => {
-    const marker = index === activeIndex ? '>' : ' ';
-    const state =
-      multiple && !option.action
-        ? ` ${selectedValues.has(optionValueKey(option.value)) ? '[x]' : '[ ]'}`
-        : '';
+    const action = Boolean(option.action);
+    const active = index === activeIndex;
+    const marker = plain
+      ? action
+        ? active
+          ? safGlyph('pointerActive', 'human-plain')
+          : safGlyph('pointerInactive', 'human-plain')
+        : active
+          ? safGlyph('pointerActive', 'human-plain')
+          : safGlyph(
+              selectedValues.has(optionValueKey(option.value)) ? 'selected' : 'unselected',
+              'human-plain',
+            )
+      : action
+        ? active
+          ? safGlyph('pointerActive', 'human-rich')
+          : safGlyph('pointerInactive', 'human-rich')
+        : active
+          ? safGlyph('pointerActive', 'human-rich')
+          : safGlyph(
+              selectedValues.has(optionValueKey(option.value)) ? 'selected' : 'unselected',
+              'human-rich',
+            );
     const suffix = option.recommended ? ' (recommended)' : '';
-    lines.push(` ${marker}${state} ${index + 1}. ${sanitizeTerminalText(option.label)}${suffix}`);
-    if (option.description) lines.push(`      ${sanitizeTerminalText(option.description)}`);
+    lines.push(` ${marker} ${index + 1}. ${sanitizeTerminalText(option.label)}${suffix}`);
+    if (hasDescriptions)
+      lines.push(`      ${option.description ? sanitizeTerminalText(option.description) : ''}`);
   });
   lines.push(
     `\n${t(
@@ -146,7 +174,11 @@ async function select(
     process.env,
     settings.ascii === undefined ? {} : { ascii: settings.ascii },
   );
-  const plain = !capabilities.interactive || !capabilities.rawInput || process.env.TERM === 'dumb';
+  const plain =
+    !capabilities.interactive ||
+    !capabilities.rawInput ||
+    !capabilities.unicode ||
+    !capabilities.cursor;
   output.write(
     `${renderSelector(question, options, { multiple, locale: settings.locale, plain })}\n`,
   );
@@ -200,6 +232,22 @@ async function select(
       process.off('SIGINT', onSignal);
       if (input.setRawMode) input.setRawMode(Boolean(wasRaw));
       input.pause();
+      if (!result.cancelled) {
+        const committed = Array.isArray(result.value)
+          ? result.value
+          : result.value === undefined
+            ? []
+            : [result.value];
+        output.write(
+          `${renderSelector(question, options, {
+            multiple,
+            selected: committed,
+            locale: settings.locale,
+            plain,
+            collapsed: true,
+          })}\n`,
+        );
+      }
       output.write('\n');
       resolve(result);
     };

@@ -55,6 +55,7 @@ import {
 import { select } from './selector';
 import { guidedInit, setSetupCommandDeps } from './setup';
 import { OFFICIAL_SKILLS } from './skill-identity';
+import { terminalLog, terminalNext } from './terminal-ui';
 import {
   type DisplayMode,
   didYouMean,
@@ -127,9 +128,8 @@ function localeFor(cwd: string, explicit?: string) {
 
 function log(status: string, message: string, explicitLocale?: string) {
   const locale = explicitLocale || localeFor(process.cwd());
-  process.stdout.write(
-    `${styleStatus(status, process.stdout)} ${translateText(locale, message)}\n`,
-  );
+  const mode = resolveMode();
+  terminalLog(status, translateText(locale, message), { mode });
 }
 
 function resolveMode(flags: CommandOptions = {}) {
@@ -176,7 +176,7 @@ function didYouMeanTry(input: string, candidates: string[]) {
 async function askYesNo(question: string) {
   const result = await select(question.replace(/\s*\[[^\]]+\]\s*$/, ''), [
     { value: 'continue', label: 'Continue' },
-    { value: 'cancel', label: 'Cancel' },
+    { value: 'cancel', label: 'Cancel', action: true },
   ]);
   return !result.cancelled && result.value === 'continue';
 }
@@ -198,9 +198,7 @@ function nextStep(line: string | string[], options: NextStepOptions = {}) {
   const list = (Array.isArray(line) ? line : [line]).filter(Boolean);
   if (!list.length) return;
   const locale = localeFor(process.cwd());
-  process.stdout.write(
-    `\n${t(locale, 'init.next')}\n${list.map((entry: string) => `  ${entry}`).join('\n')}\n`,
-  );
+  terminalNext(list, { mode, title: t(locale, 'init.next') });
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -352,7 +350,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
 
   if (mode === 'human-rich') {
     // Full embedded chevron art — human TTY only; never machine/pipe/CI.
-    // human-rich: left→right band reveal (~160ms); plain / SDD_BRAND_ANIMATE=0: instant.
+    // human-rich: left-to-right band reveal (~160ms); plain / SDD_BRAND_ANIMATE=0: instant.
     await writeBrand(mode, process.stdout, process.env, {
       ...(options.quiet ? { quiet: options.quiet } : {}),
     });
@@ -589,7 +587,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
     );
     if (result.updateAvailable) {
       if (execMode === 'global')
-        process.stdout.write(`  1. Upgrade CLI → ${result.latest} (npm install -g)\n`);
+        process.stdout.write(`  1. Upgrade CLI -> ${result.latest} (npm install -g)\n`);
       else
         process.stdout.write(
           `  1. Re-run via npx/local: npx sdd-agentic-flow@latest (no in-process self-replace)\n`,

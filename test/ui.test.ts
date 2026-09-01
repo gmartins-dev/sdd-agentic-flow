@@ -7,10 +7,13 @@ import {
   didYouMean,
   doctorFooterLines,
   isRich,
+  motionLevel,
   outputMode,
+  resolvePresentationContext,
   styleBrand,
   styleStatus,
   symbol,
+  terminalBreakpoint,
   terminalCapabilities,
 } from '../src/ui';
 import { brandStream, outputStreams } from './helpers';
@@ -51,7 +54,7 @@ test('CLI-015: outputMode covers human-rich / human-plain / machine cells', () =
   assert.equal(outputMode(ttyPair, {}, { quiet: true }), 'human-plain');
   assert.equal(outputMode(ttyPair, {}, { ascii: true }), 'human-plain');
   assert.equal(outputMode(ttyPair, { SDD_ASCII: '1' }, {}), 'human-plain');
-  assert.equal(outputMode(ttyPair, { NO_COLOR: '1' }, {}), 'human-plain');
+  assert.equal(outputMode(ttyPair, { NO_COLOR: '1' }, {}), 'human-rich');
   assert.equal(outputMode(ttyPair, {}, { json: true }), 'machine');
   assert.equal(outputMode(ttyPair, { CI: '1' }, {}), 'human-plain');
   assert.equal(outputMode(pipePair, {}, {}), 'human-plain');
@@ -60,6 +63,31 @@ test('CLI-015: outputMode covers human-rich / human-plain / machine cells', () =
   assert.equal(isRich('human-rich'), true);
   assert.equal(isRich('human-plain'), false);
   assert.equal(isRich('machine'), false);
+});
+
+test('resolved context keeps rich structure independent from color', () => {
+  const input = { isTTY: true, setRawMode: () => undefined } as never;
+  const output = { isTTY: true, columns: 80 } as never;
+  const noColor = resolvePresentationContext({ stdin: input, stdout: output }, { NO_COLOR: '1' });
+  assert.equal(noColor.mode, 'human-rich');
+  assert.equal(noColor.color, false);
+  assert.equal(noColor.colorDepth, 'none');
+  assert.equal(noColor.unicode, true);
+  assert.equal(noColor.cursor, true);
+  assert.equal(motionLevel(noColor), 'active');
+  const ascii = resolvePresentationContext({ stdin: input, stdout: output }, {}, { ascii: true });
+  assert.equal(ascii.mode, 'human-plain');
+  assert.equal(ascii.unicode, false);
+  assert.equal(ascii.cursor, false);
+  assert.equal(ascii.colorDepth, 'none');
+  const quiet = resolvePresentationContext({ stdin: input, stdout: output }, {}, { quiet: true });
+  assert.equal(quiet.mode, 'human-plain');
+  assert.equal(quiet.unicode, false);
+  assert.equal(quiet.cursor, false);
+  assert.equal(terminalBreakpoint(120), 'wide');
+  assert.equal(terminalBreakpoint(60), 'compact');
+  assert.equal(terminalBreakpoint(40), 'narrow');
+  assert.equal(terminalBreakpoint(39), 'minimal');
 });
 
 test('CLI-016: terminal capabilities keep raw navigation under NO_COLOR and ASCII', () => {

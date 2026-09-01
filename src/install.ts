@@ -477,7 +477,7 @@ async function installInteractive(
   const confirmation = await select(
     t(locale, 'install.applyQuestion'),
     [
-      { value: 'apply', label: t(locale, 'setup.apply') },
+      { value: 'apply', label: t(locale, 'setup.apply'), action: true },
       { value: 'back', label: t(locale, 'setup.back'), action: true },
       { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
     ],
@@ -578,7 +578,7 @@ async function configureInteractive(
   const confirmation = await select(
     t(locale, 'install.applyChangesQuestion'),
     [
-      { value: 'apply', label: t(locale, 'setup.apply') },
+      { value: 'apply', label: t(locale, 'setup.apply'), action: true },
       { value: 'back', label: t(locale, 'setup.back'), action: true },
       { value: 'cancel', label: t(locale, 'setup.cancel'), action: true },
     ],

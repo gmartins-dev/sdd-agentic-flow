@@ -1,16 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
 import { type AdoptionMode, adoptionModeForScope } from './adoption';
 import { renderCliCommand } from './cli-command';
-import { renderPolicySummary } from './config';
 import {
   AUTONOMY_LEVELS,
+  applyPolicyMutation,
   defaultOnboardingPolicy,
   EXECUTION_MODES,
-  ONBOARDING_DEFAULT_PRESET,
-  onboardingPresetOrder,
   policyDisplayTitle,
   readConfig,
   type SetupPolicyDraft,
@@ -29,18 +26,10 @@ import {
 import { resolveLocale, t, translateText } from './messages';
 import {
   autonomyComboValid,
-  gitInfoExcludePath,
   LANGUAGE_PROFILES,
-  LOCAL_GIT_EXCLUDE_COMMENT,
-  LOCAL_GIT_EXCLUDE_ENTRY,
-  PACKAGE_ROOT,
-  resolveOperatingPreset,
   SDD_PATHS,
-  SDD_ROOT,
   sddJoin,
-  USAGE_GUIDE_PT_BR_URL,
   USAGE_GUIDE_URL,
-  VERSION,
 } from './paths';
 import { select } from './selector';
 import {
@@ -53,17 +42,17 @@ import {
   targetsForHosts,
 } from './setup-plan';
 import { inspectSetupState, inspectUserInstallation, type SetupStateSnapshot } from './setup-state';
-import { terminalLog, terminalNext, terminalNote } from './terminal-ui';
+import { renderWelcomeText } from './terminal-components';
+import { terminalLog, terminalNext, terminalNote, terminalWelcome } from './terminal-ui';
 import {
   clearViewport,
   type DisplayMode,
   isRich,
   outputMode,
-  renderStep,
+  resolvePresentationContext,
   SAF_GLYPHS,
   styleStatus,
   symbol,
-  writeBrand,
 } from './ui';
 import {
   applyWorkspaceInitialization,
@@ -98,22 +87,7 @@ type SetupDraft = {
   saved?: Record<string, unknown> | null | undefined;
   policy?: SetupPolicyDraft | undefined;
   precondition?: string | undefined;
-};
-
-type InitInteractiveState = {
-  language?: string;
-  name?: string;
-  branch?: string;
-  agent?: string;
-  featureProfile?: string;
-  source?: string;
-  flow?: string;
-  multiWorktree?: boolean;
-  stackedPrs?: boolean;
-  executionMode?: string;
-  autonomyLevel?: string;
-  presetName?: string;
-  presetAlias?: string;
+  language?: SetupIntent['language'] | undefined;
 };
 
 type SetupCommandOptions = {
@@ -278,92 +252,6 @@ safety:
 `;
 }
 
-function usageGuideLinks(locale: string): string {
-  if (locale === 'pt-BR') {
-    return (
-      `- [Guia completo](saf-skills-usage-guide.pt-BR.md) — referência local completa do fluxo.\n` +
-      `- GitHub (canônico): \`${USAGE_GUIDE_PT_BR_URL}\`\n` +
-      `- Outro idioma: [Full guide](saf-skills-usage-guide.md)`
-    );
-  }
-  return (
-    `- [Full guide](saf-skills-usage-guide.md) — complete local workflow reference.\n` +
-    `- GitHub (canonical): \`${USAGE_GUIDE_URL}\`\n` +
-    `- Other locale: [Guia completo](saf-skills-usage-guide.pt-BR.md)`
-  );
-}
-
-function writeUsageGuide(cwd: string, locale: string) {
-  const resolvedLocale = resolveLocale({ configured: locale });
-  const templateName = resolvedLocale === 'pt-BR' ? 'usage.template.pt-BR.md' : 'usage.template.md';
-  const templatePath = path.join(PACKAGE_ROOT, 'shared', 'templates', templateName);
-  const mermaidPath = path.join(PACKAGE_ROOT, 'shared', 'templates', 'workflow-diagram.mmd');
-  const mermaid = fs.readFileSync(mermaidPath, 'utf8').trim();
-  const stub = fs
-    .readFileSync(templatePath, 'utf8')
-    .replace('{{WORKFLOW_DIAGRAM_SECTION}}', `\`\`\`mermaid\n${mermaid}\n\`\`\``)
-    .replace('{{FULL_GUIDE_LINKS}}', usageGuideLinks(resolvedLocale));
-
-  const destination = sddJoin(cwd, 'usage.md');
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.writeFileSync(destination, stub, 'utf8');
-
-  const activeGuide =
-    resolvedLocale === 'pt-BR'
-      ? ([
-          [
-            'saf-skills-usage-guide.pt-BR.md',
-            path.join(PACKAGE_ROOT, 'docs', 'saf-skills-usage-guide.pt-BR.md'),
-          ],
-        ] as const)
-      : ([
-          [
-            'saf-skills-usage-guide.md',
-            path.join(PACKAGE_ROOT, 'docs', 'saf-skills-usage-guide.md'),
-          ],
-        ] as const);
-  for (const [name, source] of activeGuide) {
-    fs.copyFileSync(source, sddJoin(cwd, name));
-  }
-
-  log('PASS', `wrote ${SDD_PATHS.usage}`, locale);
-  log('PASS', `wrote ${activeGuide[0][0]}`, locale);
-}
-
-function resolveLocalGitExclude(options: SetupCommandOptions = {}): boolean {
-  return Boolean(options.localGitExclude);
-}
-
-function applyLocalGitExclude(cwd: string, locale: string) {
-  const excludePath = gitInfoExcludePath(cwd);
-  if (!excludePath) {
-    log('WARN', 'init --local-git-exclude: no .git directory; skipped (Git is optional)', locale);
-    return;
-  }
-  fs.mkdirSync(path.dirname(excludePath), { recursive: true });
-  const existing = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
-  const alreadyListed = existing.split(/\r?\n/).some((line: string) => {
-    const trimmed = line.trim();
-    return trimmed === LOCAL_GIT_EXCLUDE_ENTRY || trimmed === SDD_ROOT;
-  });
-  if (alreadyListed) {
-    log('PASS', `local git exclude already lists ${LOCAL_GIT_EXCLUDE_ENTRY}`, locale);
-    return;
-  }
-  const prefix = existing === '' || existing.endsWith('\n') ? '' : '\n';
-  fs.appendFileSync(
-    excludePath,
-    `${prefix}${LOCAL_GIT_EXCLUDE_COMMENT}\n${LOCAL_GIT_EXCLUDE_ENTRY}\n`,
-  );
-  log('PASS', `appended ${LOCAL_GIT_EXCLUDE_ENTRY} to .git/info/exclude`, locale);
-}
-
-function applyInitSideEffects(cwd: string, options: SetupCommandOptions = {}) {
-  const locale = asString(options.locale, localeFor(cwd));
-  writeUsageGuide(cwd, locale);
-  if (resolveLocalGitExclude(options)) applyLocalGitExclude(cwd, locale);
-}
-
 function printUsageGuidePointer(cwd: string, locale = 'en-US') {
   const resolvedLocale = resolveLocale({ configured: locale });
   const localGuide = resolvedLocale === 'pt-BR' ? SDD_PATHS.usageGuidePtBr : SDD_PATHS.usageGuideEn;
@@ -388,10 +276,6 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   logPassLine(`initialized ${plan.git?.projectRoot}`, { mode, quiet: options.quiet });
   if (!options.quiet) nextStep(renderCliCommand('doctor'), { quiet: options.quiet, mode });
   return true;
-}
-
-function validValue(value: string, allowed: readonly string[]) {
-  return allowed.includes(value) ? value : null;
 }
 
 function onboardingStateFor(cwd: string) {
@@ -460,7 +344,10 @@ function policyReviewTitle(draft: SetupPolicyDraft, locale: string): string {
   if (draft.kind === 'custom' || !draft.presetName) {
     return t(locale, 'setup.policyCustom');
   }
-  return policyDisplayTitle(draft);
+  const presetName = draft.presetName;
+  return locale === 'pt-BR'
+    ? t(locale, `setup.policy${presetName.charAt(0).toUpperCase()}${presetName.slice(1)}Title`)
+    : policyDisplayTitle(draft);
 }
 
 function printPolicyLines(draft: SetupPolicyDraft, locale: string, indent = '  ') {
@@ -484,6 +371,34 @@ function policyFromConfig(
       autonomyLevel: 'manual',
     }
   );
+}
+
+function persistWorkspaceSetupConfig(
+  cwd: string,
+  locale: SetupIntent['language'],
+  policy: SetupPolicyDraft,
+): { ok: boolean; error?: string } {
+  const configPath = sddJoin(cwd, 'config.yml');
+  if (!fs.existsSync(configPath)) {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(
+      configPath,
+      configFor(cwd, {
+        profile: locale,
+        executionMode: policy.executionMode,
+        autonomyLevel: policy.autonomyLevel,
+      }),
+      'utf8',
+    );
+    return { ok: true };
+  }
+  const applied = applyPolicyMutation(configPath, {
+    executionMode: policy.executionMode,
+    autonomyLevel: policy.autonomyLevel,
+    languageProfile: locale,
+  });
+  if (applied.ok) return { ok: true };
+  return { ok: false, error: applied.errors?.join('; ') || 'workspace config update failed' };
 }
 
 function printCurrentSetup(cwd: string, locale: string, homeDir = os.homedir()) {
@@ -547,21 +462,24 @@ async function applySetup(
 ) {
   const { install } = requireCommandDeps();
   const homeDir = asString(options.homeDir, os.homedir());
+  const applyLocale = resolveLocale({
+    explicit: plan?.intent?.language || draft.language || locale,
+  });
   process.exitCode = undefined;
   if (plan && !setupPlanIsCurrent(cwd, plan, homeDir)) {
-    log('WARN', 'setup changed after review; render a new plan before applying');
+    log('WARN', 'setup changed after review; render a new plan before applying', applyLocale);
     return false;
   }
   if (!plan && draft.precondition && draft.precondition !== setupPrecondition(cwd, homeDir)) {
-    log('WARN', 'setup changed after review; render a new plan before applying');
+    log('WARN', 'setup changed after review; render a new plan before applying', applyLocale);
     return false;
   }
   const installRequested = plan ? plan.installRequired : Boolean(draft.install);
   if (installRequested && !plan && !(await preflightSetup(cwd, draft, options))) return false;
   if (installRequested && plan && plan.installationPlan.applicability !== 'applicable')
     return false;
-  printSetupStages(locale, 'validation', ['project', 'skills', 'context'], options);
-  process.stdout.write(`\n${t(locale, 'setup.apply')}\n`);
+  printSetupStages(applyLocale, 'validation', ['project', 'skills', 'context'], options);
+  process.stdout.write(`\n${t(applyLocale, 'setup.apply')}\n`);
   const policy =
     draft.policy ?? resolvePolicyFromCommandOptions(options) ?? defaultOnboardingPolicy();
   if (installRequested) {
@@ -576,45 +494,57 @@ async function applySetup(
         quiet: true,
         ascii: Boolean(options.ascii),
         mode: options.mode,
+        locale: applyLocale,
       }))
     )
       return false;
   }
   if (!plan || plan.workspacePlan.applicability === 'applicable') {
-    init(cwd, {
-      ...(options.language ? { profile: options.language } : {}),
-      ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
-      executionMode: policy.executionMode,
-      autonomyLevel: policy.autonomyLevel,
-      ...(policy.presetName ? { presetName: policy.presetName } : {}),
-      ...(plan?.workspacePlan ? { workspacePlan: plan.workspacePlan } : {}),
-      ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
-      quiet: true,
-      homeDir,
-      scope: draft.scope,
-      localGitExclude: Boolean(options.localGitExclude),
-      ascii: Boolean(options.ascii),
-    });
+    if (
+      !init(cwd, {
+        ...(options.featureProfile ? { featureProfile: options.featureProfile } : {}),
+        executionMode: policy.executionMode,
+        autonomyLevel: policy.autonomyLevel,
+        ...(policy.presetName ? { presetName: policy.presetName } : {}),
+        ...(plan?.workspacePlan ? { workspacePlan: plan.workspacePlan } : {}),
+        ...(options.presetAlias ? { presetAlias: options.presetAlias } : {}),
+        quiet: true,
+        homeDir,
+        scope: draft.scope,
+        localGitExclude: Boolean(options.localGitExclude),
+        ascii: Boolean(options.ascii),
+      })
+    )
+      return false;
+    const persisted = persistWorkspaceSetupConfig(cwd, applyLocale, policy);
+    if (!persisted.ok) {
+      log('FAIL', persisted.error || 'workspace language configuration failed', applyLocale);
+      return false;
+    }
   }
   if (plan?.operation === 'user-install') {
-    log('PASS', t(locale, 'setup.userReady'), locale);
-    process.stdout.write(`\n${t(locale, 'setup.userReadyNext')}\n`);
+    log('PASS', t(applyLocale, 'setup.userReady'), applyLocale);
+    process.stdout.write(`\n${t(applyLocale, 'setup.userReadyNext')}\n`);
     return true;
   }
-  const result = await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+  const result = await doctor(cwd, {
+    ascii: Boolean(options.ascii),
+    homeDir,
+    locale: applyLocale,
+  });
   if ('status' in result && result.status === 'PASS') {
-    log('PASS', t(locale, 'setup.ready'), locale);
+    log('PASS', t(applyLocale, 'setup.ready'), applyLocale);
     process.stdout.write(
-      `\n${t(locale, 'setup.policyReady', {
-        preset: policyReviewTitle(policy, locale),
-      })}\n${t(locale, 'setup.policyChangeHint')}\n`,
+      `\n${t(applyLocale, 'setup.policyReady', {
+        preset: policyReviewTitle(policy, applyLocale),
+      })}\n${t(applyLocale, 'setup.policyChangeHint')}\n`,
     );
     return true;
   }
   return false;
 }
 
-type SetupIntentResult = SetupIntent | { cancelled: true };
+type SetupIntentResult = SetupIntent | { cancelled: true; language: SetupIntent['language'] };
 
 type PersistedSetupIntent = {
   sharing?: SetupIntent['sharing'];
@@ -688,42 +618,46 @@ async function collectSetupIntent(
   options: SetupCommandOptions,
   homeDir: string,
 ): Promise<SetupIntentResult> {
+  const persisted = persistedSetupIntent(cwd, homeDir);
+  let sessionLocale = resolveLocale({
+    explicit: options.language || persisted.language || locale,
+  });
   const choose = async (
     label: string,
-    values: Array<{ value: string; label: string; selected?: boolean }>,
+    values: Array<{ value: string; label: string; selected?: boolean; recommended?: boolean }>,
     multiple = false,
   ) =>
     select(label, values, {
       multiple,
       ascii: Boolean(options.ascii),
       cancelValues: ['q', '0'],
-      locale,
+      locale: sessionLocale,
     });
-  const persisted = persistedSetupIntent(cwd, homeDir);
+  const configuredLanguage = options.language || persisted.language;
+  if (!configuredLanguage) {
+    const selected = await chooseSessionLocale(select, {
+      ascii: Boolean(options.ascii),
+      locale: sessionLocale,
+    });
+    if (!selected) return { cancelled: true, language: sessionLocale };
+    sessionLocale = selected;
+  }
   const gitAvailable = resolveGitContext(cwd).ok;
   const sharing = !gitAvailable
     ? { value: 'personal' }
     : persisted.sharing
       ? { value: persisted.sharing }
-      : await choose(t(locale, 'install.sharingPrompt'), [
-          { value: 'personal', label: t(locale, 'install.adoptionPersonal'), selected: true },
-          { value: 'specs-shared', label: t(locale, 'install.adoptionSpecsShared') },
-          { value: 'team', label: t(locale, 'install.adoptionTeam') },
+      : await choose(t(sessionLocale, 'install.sharingPrompt'), [
+          {
+            value: 'personal',
+            label: t(sessionLocale, 'install.adoptionPersonal'),
+            selected: true,
+          },
+          { value: 'specs-shared', label: t(sessionLocale, 'install.adoptionSpecsShared') },
+          { value: 'team', label: t(sessionLocale, 'install.adoptionTeam') },
         ]);
   if (('cancelled' in sharing && sharing.cancelled) || typeof sharing.value !== 'string')
-    return { cancelled: true };
-
-  const specsVisibility =
-    gitAvailable && sharing.value === 'team'
-      ? persisted.specsVisibility
-        ? { value: persisted.specsVisibility }
-        : await choose(t(locale, 'setup.featureSpecs'), [
-            { value: 'local', label: t(locale, 'setup.keepSpecsLocal'), selected: true },
-            { value: 'shared', label: t(locale, 'setup.shareSpecs') },
-          ])
-      : null;
-  if (specsVisibility && 'cancelled' in specsVisibility && specsVisibility.cancelled)
-    return { cancelled: true };
+    return { cancelled: true, language: sessionLocale };
 
   const hints = detectSetupHosts({ cwd, homeDir });
   const hostLabels: Record<string, string> = {
@@ -736,21 +670,25 @@ async function collectSetupIntent(
   if (!selectedHosts.length) {
     for (;;) {
       const hosts = await choose(
-        t(locale, 'install.agentsPrompt'),
+        t(sessionLocale, 'install.agentsPrompt'),
         hints.map((hint) => ({
           value: hint.host,
-          label: `${hostLabels[hint.host] || hint.host}${hint.detected ? ' (detected)' : ''}`,
+          label: `${hostLabels[hint.host] || hint.host}${hint.detected ? ` (${t(sessionLocale, 'setup.detected')})` : ''}`,
           selected: hint.detected,
         })),
         true,
       );
-      if (hosts.cancelled) return { cancelled: true };
+      if (hosts.cancelled) return { cancelled: true, language: sessionLocale };
       selectedHosts = (Array.isArray(hosts.value) ? hosts.value : []).filter(
         (host): host is SetupIntent['selectedHosts'][number] =>
           ['codex', 'cursor', 'claude-code', 'vscode-copilot'].includes(host),
       );
       if (selectedHosts.length) break;
-      log('WARN', 'No coding-agent host selected; choose at least one host explicitly', locale);
+      log(
+        'WARN',
+        'No coding-agent host selected; choose at least one host explicitly',
+        sessionLocale,
+      );
     }
   }
 
@@ -758,25 +696,46 @@ async function collectSetupIntent(
     ? { value: 'supervised' }
     : persisted.workflow
       ? { value: persisted.workflow }
-      : await choose(t(locale, 'setup.workflow'), [
-          { value: 'supervised', label: t(locale, 'setup.policySupervised'), selected: true },
-          { value: 'manual', label: t(locale, 'setup.policyManual') },
-          { value: 'autonomous', label: t(locale, 'setup.policyAutonomous') },
-          { value: 'custom', label: t(locale, 'setup.policyAdvanced') },
+      : await choose(t(sessionLocale, 'setup.workflow'), [
+          {
+            value: 'supervised',
+            label: t(sessionLocale, 'setup.policySupervised'),
+            selected: true,
+          },
+          { value: 'manual', label: t(sessionLocale, 'setup.policyManual') },
+          { value: 'autonomous', label: t(sessionLocale, 'setup.policyAutonomous') },
+          { value: 'custom', label: t(sessionLocale, 'setup.policyAdvanced') },
         ]);
   if (('cancelled' in workflow && workflow.cancelled) || typeof workflow.value !== 'string')
-    return { cancelled: true };
+    return { cancelled: true, language: sessionLocale };
+
+  const selectedSpecsVisibility =
+    gitAvailable && sharing.value === 'team'
+      ? persisted.specsVisibility
+        ? { value: persisted.specsVisibility }
+        : await choose(t(sessionLocale, 'setup.featureSpecs'), [
+            { value: 'local', label: t(sessionLocale, 'setup.keepSpecsLocal'), selected: true },
+            { value: 'shared', label: t(sessionLocale, 'setup.shareSpecs') },
+          ])
+      : null;
+  if (
+    selectedSpecsVisibility &&
+    'cancelled' in selectedSpecsVisibility &&
+    selectedSpecsVisibility.cancelled
+  )
+    return { cancelled: true, language: sessionLocale };
   let executionMode: SetupIntent['executionMode'] = persisted.executionMode;
   let autonomyLevel: SetupIntent['autonomyLevel'] = persisted.autonomyLevel;
   if (workflow.value === 'custom' && (!executionMode || !autonomyLevel)) {
     const mode = await choose(
-      'Execution mode',
+      t(sessionLocale, 'setup.policyExecutionMode'),
       EXECUTION_MODES.map((value) => ({ value, label: value, selected: value === 'apply' })),
     );
-    if (mode.cancelled || typeof mode.value !== 'string') return { cancelled: true };
+    if (mode.cancelled || typeof mode.value !== 'string')
+      return { cancelled: true, language: sessionLocale };
     const selectedExecutionMode = mode.value;
     const autonomy = await choose(
-      'Autonomy level',
+      t(sessionLocale, 'setup.policyAutonomyLevel'),
       AUTONOMY_LEVELS.filter((value) => autonomyComboValid(selectedExecutionMode, value)).map(
         (value) => ({
           value,
@@ -785,27 +744,22 @@ async function collectSetupIntent(
         }),
       ),
     );
-    if (autonomy.cancelled || typeof autonomy.value !== 'string') return { cancelled: true };
+    if (autonomy.cancelled || typeof autonomy.value !== 'string')
+      return { cancelled: true, language: sessionLocale };
     executionMode = selectedExecutionMode as SetupIntent['executionMode'];
     autonomyLevel = autonomy.value as SetupIntent['autonomyLevel'];
   }
-  const language = options.language
-    ? { value: options.language }
-    : persisted.language
-      ? { value: persisted.language }
-      : { value: locale };
-  if (('cancelled' in language && language.cancelled) || typeof language.value !== 'string')
-    return { cancelled: true };
   return {
     sharing: sharing.value as SetupIntent['sharing'],
     selectedHosts,
     workflow: workflow.value as SetupIntent['workflow'],
     ...(executionMode ? { executionMode } : {}),
     ...(autonomyLevel ? { autonomyLevel } : {}),
-    ...(specsVisibility && (specsVisibility.value === 'local' || specsVisibility.value === 'shared')
-      ? { specsVisibility: specsVisibility.value }
+    ...(selectedSpecsVisibility &&
+    (selectedSpecsVisibility.value === 'local' || selectedSpecsVisibility.value === 'shared')
+      ? { specsVisibility: selectedSpecsVisibility.value }
       : {}),
-    language: language.value as SetupIntent['language'],
+    language: sessionLocale,
   };
 }
 
@@ -838,6 +792,9 @@ function printSetupPlan(
             ? 'Cursor'
             : target,
   );
+  const languageLabel = plan.intent?.language === 'pt-BR' ? 'Português (Brasil)' : 'English';
+  const none = locale === 'pt-BR' ? '(nenhum)' : '(none)';
+  const detail = (value: string) => translateText(locale, value);
   if (mode === 'human-rich') {
     const operations = [
       ...plan.cleanupActions,
@@ -850,8 +807,9 @@ function printSetupPlan(
     terminalNote(
       t(locale, 'setup.review'),
       [
+        [t(locale, 'init.language'), languageLabel],
         [t(locale, 'install.sharingPrompt'), sharingLabel],
-        [t(locale, 'install.agentsPrompt'), targetLabels.join(', ') || '(none)'],
+        [t(locale, 'install.agentsPrompt'), targetLabels.join(', ') || none],
         ...(sharing === 'team'
           ? [
               [
@@ -868,13 +826,13 @@ function printSetupPlan(
         ],
         [
           t(locale, 'plan.fileOperations'),
-          operations.map((item) => item.detail).join('\n') || 'None',
+          operations.map((item) => detail(item.detail)).join('\n') || t(locale, 'plan.none'),
         ],
         ...(plan.warnings.length
-          ? [[t(locale, 'doctor.related'), plan.warnings.join('\n')] as const]
+          ? [[t(locale, 'doctor.related'), plan.warnings.map(detail).join('\n')] as const]
           : []),
         ...(plan.blockers.length
-          ? [[t(locale, 'plan.blocked'), plan.blockers.join('\n')] as const]
+          ? [[t(locale, 'plan.blocked'), plan.blockers.map(detail).join('\n')] as const]
           : []),
       ],
       { mode },
@@ -884,8 +842,9 @@ function printSetupPlan(
   process.stdout.write(`\n${t(locale, 'setup.review')}\n\n`);
   process.stdout.write(`  ${t(locale, 'install.sharingPrompt')}  ${sharingLabel}\n`);
   process.stdout.write(
-    `  ${t(locale, 'install.agentsPrompt')}   ${targetLabels.join(', ') || '(none)'}\n`,
+    `  ${t(locale, 'install.agentsPrompt')}   ${targetLabels.join(', ') || none}\n`,
   );
+  process.stdout.write(`  ${t(locale, 'init.language')}     ${languageLabel}\n`);
   if (sharing === 'team')
     process.stdout.write(
       `  ${t(locale, 'setup.featureSpecs')}  ${plan.intent?.specsVisibility === 'shared' ? t(locale, 'setup.shareSpecs') : t(locale, 'setup.keepSpecsLocal')}\n`,
@@ -902,13 +861,13 @@ function printSetupPlan(
     ...plan.configMutation,
     ...plan.workspaceInitialization,
   ])
-    process.stdout.write(`  - ${item.detail}\n`);
+    process.stdout.write(`  - ${detail(item.detail)}\n`);
   for (const warning of plan.warnings)
-    process.stdout.write(`  ${t(locale, 'doctor.related')}: ${warning}\n`);
+    process.stdout.write(`  ${t(locale, 'doctor.related')}: ${detail(warning)}\n`);
   for (const blocker of plan.blockers)
     process.stdout.write(
       `  ${t(locale, 'plan.blocked', {
-        details: blocker,
+        details: detail(blocker),
         path: plan.workspacePlan.git?.projectRoot || '.',
       })}\n`,
     );
@@ -994,26 +953,26 @@ function renderOperationResult(
 
 async function chooseSessionLocale(
   choose: typeof select,
-  options: Pick<SetupCommandOptions, 'ascii'> = {},
+  options: Pick<SetupCommandOptions, 'ascii' | 'locale'> = {},
 ): Promise<ReturnType<typeof resolveLocale> | null> {
   const language = await choose(
     'Choose your language / Escolha o idioma',
     [
       { value: 'en-US', label: 'English', selected: true },
-      { value: 'pt-BR', label: 'Português (Brasil)' },
+      { value: 'pt-BR', label: 'Português' },
     ],
-    { ascii: Boolean(options.ascii), cancelValues: ['q', '0'] },
+    {
+      ascii: Boolean(options.ascii),
+      cancelValues: ['q', '0'],
+      locale: options.locale || 'en-US',
+    },
   );
   return language.cancelled || typeof language.value !== 'string'
     ? null
     : resolveLocale({ explicit: language.value });
 }
 
-function renderLanguagePrelude(): string {
-  return `\nsdd-agentic-flow ${VERSION}\n\n`;
-}
-
-function renderInvocationWelcome(
+function invocationStateContent(
   snapshot: SetupStateSnapshot,
   locale: string,
   mode: DisplayMode = 'human-rich',
@@ -1036,10 +995,21 @@ function renderInvocationWelcome(
       stateContent = `${t(locale, 'welcome.incompleteTitle')}\n${t(locale, 'welcome.incompleteBody')}`;
       break;
   }
-  return (
-    `sdd-agentic-flow ${VERSION}\n${t(locale, 'welcome.product')}\n${t(locale, 'welcome.tagline')}\n\n` +
-    `${stateContent}\n\n`
+  return stateContent;
+}
+
+function renderInvocationWelcome(
+  snapshot: SetupStateSnapshot,
+  locale: string,
+  mode: DisplayMode = 'human-rich',
+): string {
+  const stream = { isTTY: mode === 'human-rich', columns: 80 } as never;
+  const context = resolvePresentationContext(
+    { stdin: stream, stdout: stream },
+    mode === 'human-rich' ? { NO_COLOR: '1' } : {},
+    mode === 'machine' ? { machine: true } : mode === 'human-plain' ? { quiet: true } : {},
   );
+  return `${renderWelcomeText(context, locale)}\n\n\n${invocationStateContent(snapshot, locale, mode)}\n\n`;
 }
 
 async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
@@ -1139,7 +1109,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       } else if (choice.value === 'language') {
         const language = await choose(t(locale, 'menu.language'), [
           { value: 'en-US', label: 'English' },
-          { value: 'pt-BR', label: 'Português (Brasil)' },
+          { value: 'pt-BR', label: 'Português' },
           { value: 'back', label: t(locale, 'menu.back'), action: true },
           { value: 'exit', label: t(locale, 'menu.exit'), action: true },
         ]);
@@ -1204,9 +1174,6 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     }
   };
 
-  const hasConfiguredLanguage =
-    fs.existsSync(sddJoin(cwd, 'config.yml')) && Boolean(languageReport(cwd).profile);
-  let languageSelected = Boolean(options.language || hasConfiguredLanguage);
   const mode =
     options.mode ??
     outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
@@ -1214,24 +1181,10 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     });
   let initialScreen = true;
   let snapshot = inspectSetupState(cwd, homeDir);
-  if (needsSessionLanguageSelection(snapshot.state, languageSelected)) {
-    transition();
-    process.stdout.write(renderLanguagePrelude());
-    const selectedLocale = await chooseSessionLocale(select, options);
-    if (!selectedLocale) {
-      process.stdout.write(`${t(locale, 'welcome.cancelled')}\n`);
-      return;
-    }
-    locale = selectedLocale;
-    languageSelected = true;
-    snapshot = inspectSetupState(cwd, homeDir);
-    transition();
-  } else {
-    transition();
-  }
+  transition();
   // The brand is eligible here because guidedInit is only entered by the bare interactive shell.
   // Non-TTY bare execution stays on the status-only welcome path in main().
-  await writeBrand(mode, process.stdout, process.env);
+  await terminalWelcome(locale, { mode });
   const hasGitWorkspace = resolveGitContext(cwd).ok;
   const userInstallation = inspectUserInstallation(homeDir);
   if (!hasGitWorkspace && userInstallation.state === 'healthy') {
@@ -1252,10 +1205,11 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     await showOperationResult(t(locale, 'install.details'), result);
     return;
   }
-  process.stdout.write(renderInvocationWelcome(snapshot, locale, mode));
+  process.stdout.write(`\n${invocationStateContent(snapshot, locale, mode)}\n\n`);
 
-  let directWorkspaceSetup = false;
+  let directWorkspaceSetup = snapshot.state === 'Fresh' || snapshot.state === 'Incomplete';
   for (;;) {
+    if (directWorkspaceSetup) break;
     snapshot = inspectSetupState(cwd, homeDir);
     if (
       !directWorkspaceSetup &&
@@ -1382,7 +1336,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (!initialScreen) {
       transition();
       process.stdout.write(
-        `\n${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
+        `\n\n\n${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshTitle') : t(locale, 'welcome.incompleteTitle')}\n` +
           `${snapshot.state === 'Fresh' ? t(locale, 'welcome.freshBody') : t(locale, 'welcome.incompleteBody')}\n\n`,
       );
     }
@@ -1416,8 +1370,12 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   }
 
   for (;;) {
-    const intent = await collectSetupIntent(cwd, locale, { ...options, language: locale }, homeDir);
-    if ('cancelled' in intent) return log('INFO', t(locale, 'setup.cancelled'), locale);
+    const intent = await collectSetupIntent(cwd, locale, options, homeDir);
+    if ('cancelled' in intent) {
+      locale = intent.language;
+      return log('INFO', t(locale, 'setup.cancelled'), locale);
+    }
+    locale = intent.language;
     const plan = resolveSetupPlan(cwd, inspectSetupState(cwd, homeDir), intent, homeDir);
     printSetupPlan(plan, locale, mode);
     if (plan.blocked) {
@@ -1478,12 +1436,12 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       targets: targetsForHosts(intent.selectedHosts),
       adoptionMode: intent.sharing,
       ...(intent.specsVisibility ? { specsVisibility: intent.specsVisibility } : {}),
+      language: intent.language,
       policy,
     };
     const applyOptions = {
       ...options,
       homeDir,
-      language: intent.language,
       mode,
     };
     if (await applySetup(cwd, draft, applyOptions, locale, plan)) return;
@@ -1505,235 +1463,21 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
 
 async function initInteractive(
   cwd: string,
-  languageDefault = 'en-US',
+  _languageDefault = 'en-US',
   _featureProfileDefault = 'medium_feature',
   quiet = false,
-  executionModeDefault = 'guided',
-  autonomyLevelDefault = 'manual',
+  _executionModeDefault = 'guided',
+  _autonomyLevelDefault = 'manual',
   localGitExclude = false,
 ) {
-  const configPath = sddJoin(cwd, 'config.yml');
-  const mode = resolveMode({ quiet });
-  if (fs.existsSync(configPath)) {
-    const existing = fs.readFileSync(configPath, 'utf8');
-    const schema = existing.match(/^schema:\s*(\S+)$/m)?.[1];
-    if (schema !== 'saf-config/v2') {
-      fs.writeFileSync(configPath, configFor(cwd, { language: languageDefault }), 'utf8');
-      log('INFO', `${SDD_PATHS.config} replaced with the current configuration contract`);
-      return;
-    }
-    log('WARN', `${SDD_PATHS.config} already exists; init will not overwrite it`);
-    const config = readConfig(configPath);
-    if (config.ok) process.stdout.write(`\n${renderPolicySummary(config, mode)}\n`);
-    process.stdout.write(
-      `\nChange operating policy with: ${renderCliCommand('config', 'policy')}\n` +
-        `Install skills with: ${renderCliCommand('install')}\n`,
-    );
-    applyInitSideEffects(cwd, {
-      localGitExclude: resolveLocalGitExclude({ localGitExclude }),
-    });
-    return;
-  }
-  const inferred = inferInitDefaults(cwd);
-  const pipedAnswers = process.stdin.isTTY ? null : fs.readFileSync(0, 'utf8').split(/\r?\n/);
-  let answerIndex = 0;
-  const rl = pipedAnswers
-    ? null
-    : readline.createInterface({ input: process.stdin, output: process.stdout });
-  let locale = resolveLocale({ explicit: languageDefault });
-  const ask = async (
-    label: string,
-    fallback: string,
-    allowed: readonly string[] | null,
-    kind: 'text' | 'branch' = 'text',
-  ): Promise<string> => {
-    if (allowed) {
-      const labels: Record<string, string> = {
-        'en-US': 'English',
-        'pt-BR': 'Português (Brasil)',
-        generic: 'Any coding agent',
-        codex: 'Codex',
-        cursor: 'Cursor',
-        'claude-code': 'Claude Code',
-        'vscode-copilot': 'GitHub Copilot',
-        supervised: 'Supervised',
-        manual: 'Manual',
-        autonomous: 'Autonomous',
-        advanced: 'Advanced policy',
-        'local-files': 'Local files',
-        single: 'Single feature',
-        multi: 'Multiple features',
-        true: 'Yes',
-        false: 'No',
-        plan: 'Plan',
-        guided: 'Guided',
-        apply: 'Apply',
-        review: 'Review',
-        full: 'Full',
-      };
-      if (pipedAnswers) {
-        process.stdout.write(`${label}: `);
-        const answer = (pipedAnswers[answerIndex++] || fallback).trim() || fallback;
-        if (!validValue(answer, allowed)) throw new Error(`${label} must be a listed choice`);
-        return answer;
-      }
-      const selected = await select(
-        label,
-        allowed.map((value) => ({
-          value,
-          label: labels[value] || value,
-          selected: value === fallback,
-        })),
-        { locale },
-      );
-      if (selected.cancelled || typeof selected.value !== 'string') throw new Error('cancelled');
-      return selected.value;
-    }
-    const prompt = `${label} [${fallback}]: `;
-    let raw: string | undefined;
-    if (pipedAnswers) {
-      process.stdout.write(prompt);
-      raw = pipedAnswers[answerIndex++];
-      // human-input-allowlist: free-form project name/branch only
-    } else if (rl) {
-      raw = await rl.question(prompt);
-    } else {
-      raw = fallback;
-    }
-    const answer = (raw || '').trim() || fallback;
-    if (!allowed) {
-      const valid =
-        kind === 'branch' ? /^[A-Za-z0-9][A-Za-z0-9._/-]*$/ : /^[A-Za-z0-9][A-Za-z0-9 ._-]*$/;
-      if (!valid.test(answer)) throw new Error(`${label} contains unsupported characters`);
-    }
-    return answer;
-  };
-  try {
-    process.stdout.write(
-      `\n${renderStep(1, 6, t(locale, 'init.language'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    const language = await ask(
-      t(locale, 'init.languagePrompt'),
-      languageDefault,
-      LANGUAGE_PROFILES,
-    );
-    locale = resolveLocale({ explicit: language });
-    const initOptions: InitOptions & InitInteractiveState = {
-      language,
-      executionMode: executionModeDefault,
-      autonomyLevel: autonomyLevelDefault,
-    };
-
-    process.stdout.write(
-      `\n${renderStep(2, 6, t(locale, 'init.identity'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    initOptions.name = await ask(t(locale, 'init.projectName'), inferred.name, null);
-    initOptions.branch = await ask(
-      t(locale, 'init.defaultBranch'),
-      inferred.branch,
-      null,
-      'branch',
-    );
-
-    process.stdout.write(
-      `\n${renderStep(3, 6, t(locale, 'init.agent'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    process.stdout.write(`  ${t(locale, 'init.agentHint')}\n`);
-    initOptions.agent = await ask(t(locale, 'init.agentPrompt'), inferred.agent, [
-      'generic',
-      'codex',
-      'cursor',
-      'claude-code',
-      'vscode-copilot',
-    ]);
-
-    process.stdout.write(
-      `\n${renderStep(4, 6, t(locale, 'init.policy'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    const presetChoice = await ask(t(locale, 'init.presetPrompt'), ONBOARDING_DEFAULT_PRESET, [
-      ...onboardingPresetOrder(),
-      'advanced',
-    ]);
-    if (presetChoice === 'advanced') {
-      initOptions.executionMode = await ask(
-        'Execution mode',
-        executionModeDefault,
-        EXECUTION_MODES,
-      );
-      initOptions.autonomyLevel = await ask(
-        'Autonomy level',
-        autonomyLevelDefault,
-        AUTONOMY_LEVELS,
-      );
-    } else {
-      const resolved = resolveOperatingPreset(presetChoice || ONBOARDING_DEFAULT_PRESET);
-      if (!resolved) throw new Error(`Unknown operating preset: ${presetChoice}`);
-      initOptions.executionMode = resolved.executionMode;
-      initOptions.autonomyLevel = resolved.autonomyLevel;
-    }
-    process.stdout.write(
-      `\n${renderStep(5, 6, t(locale, 'init.workflow'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    initOptions.source = await ask(t(locale, 'init.sourcePrompt'), 'local-files', ['local-files']);
-    initOptions.flow = await ask(t(locale, 'init.flowPrompt'), 'single', ['single', 'multi']);
-    initOptions.multiWorktree =
-      (await ask(t(locale, 'init.worktreePrompt'), 'false', ['true', 'false'])) === 'true';
-    initOptions.stackedPrs =
-      (await ask(t(locale, 'init.stackedPrompt'), 'false', ['true', 'false'])) === 'true';
-    process.stdout.write(
-      `\n${renderStep(6, 6, t(locale, 'init.review'), mode, t(locale, 'step')).join('\n')}\n`,
-    );
-    process.stdout.write(
-      `  ${t(locale, 'init.reviewProject')}: ${initOptions.name}\n` +
-        `  ${t(locale, 'init.reviewBranch')}: ${initOptions.branch}\n` +
-        `  ${t(locale, 'init.reviewAgent')}: ${initOptions.agent}\n` +
-        `  ${t(locale, 'init.reviewLanguage')}: ${initOptions.language}\n` +
-        `  ${t(locale, 'init.reviewPolicy')}: ${initOptions.executionMode} + ${initOptions.autonomyLevel}\n` +
-        `  ${t(locale, 'init.reviewSource')}: ${initOptions.source}\n` +
-        `  ${t(locale, 'init.reviewFlow')}: ${initOptions.flow}\n` +
-        `  ${t(locale, 'init.reviewWorktree')}: ${initOptions.multiWorktree}\n` +
-        `  ${t(locale, 'init.reviewStacked')}: ${initOptions.stackedPrs}\n`,
-    );
-    if (!autonomyComboValid(initOptions.executionMode, initOptions.autonomyLevel))
-      throw new Error(
-        `Execution mode ${initOptions.executionMode} cannot combine with autonomy level ${initOptions.autonomyLevel}`,
-      );
-    const confirmPrompt = t(locale, 'init.confirm');
-    let confirmed = true;
-    if (pipedAnswers) {
-      process.stdout.write(`${confirmPrompt}: `);
-      confirmed = !/^(no|n)$/i.test(String(pipedAnswers[answerIndex++] || '').trim());
-    } else {
-      const confirmation = await select(
-        confirmPrompt,
-        [
-          { value: 'apply', label: 'Apply', action: true },
-          { value: 'cancel', label: 'Cancel', action: true },
-        ],
-        { locale },
-      );
-      confirmed = !confirmation.cancelled && confirmation.value === 'apply';
-    }
-    if (!confirmed) {
-      log('INFO', t(locale, 'init.cancelled'));
-      return;
-    }
-    init(cwd, {
-      ...initOptions,
-      ...(initOptions.language ? { profile: initOptions.language } : {}),
-      quiet,
-      localGitExclude: resolveLocalGitExclude({ localGitExclude }),
-    });
-  } catch (error: unknown) {
-    fail(errorMessage(error), 1);
-  } finally {
-    if (rl) rl.close();
-  }
+  return guidedInit(cwd, { quiet, localGitExclude });
 }
 
 export type { InitOptions, SetupCommandOptions };
 export {
+  applySetup,
   chooseSessionLocale,
+  collectSetupIntent,
   guidedInit,
   init,
   initInteractive,
@@ -1747,7 +1491,6 @@ export {
   printPolicyLines,
   printUsageGuidePointer,
   renderInvocationWelcome,
-  renderLanguagePrelude,
   renderOperationResult,
   resolvePolicyFromCommandOptions,
   setSetupCommandDeps,

@@ -11,7 +11,7 @@ type ColorToken = {
   ansi16: number;
 };
 
-type TypographyRole = 'normal' | 'bold' | 'dim';
+type TypographyRole = 'normal' | 'bold' | 'dim' | 'italic';
 
 const TERMINAL_GLYPHS = {
   journey: {
@@ -35,8 +35,10 @@ const TERMINAL_GLYPHS = {
     info: { rich: 'i', ascii: 'INFO' },
   },
   selection: {
+    radioFocused: { rich: '◉', ascii: '(*)' },
     radioSelected: { rich: '●', ascii: '(*)' },
     radioUnselected: { rich: '○', ascii: '( )' },
+    checkboxFocused: { rich: '▣', ascii: '[*]' },
     checkboxSelected: { rich: '■', ascii: '[x]' },
     checkboxUnselected: { rich: '□', ascii: '[ ]' },
   },
@@ -51,15 +53,15 @@ const TERMINAL_GLYPHS = {
   },
   brand: {
     chevron: { rich: '›', ascii: '>' },
-    lockup: { rich: '›››', ascii: '>>>' },
+    lockup: { rich: '›  ››  ›››', ascii: '>  >>  >>>' },
   },
 } as const satisfies Record<string, Record<string, GlyphToken>>;
 
 const COLORS = {
   brand: {
-    primary: { truecolor: '#8b7dff', ansi256: 99, ansi16: 95 },
+    primary: { truecolor: '#6d5ef0', ansi256: 99, ansi16: 95 },
     secondary: { truecolor: '#4b3ea8', ansi256: 61, ansi16: 35 },
-    accent: { truecolor: '#b8adff', ansi256: 147, ansi16: 95 },
+    accent: { truecolor: '#8b7dff', ansi256: 105, ansi16: 95 },
   },
   text: {
     primary: { truecolor: '', ansi256: 39, ansi16: 39 },
@@ -94,6 +96,7 @@ const TYPOGRAPHY = {
   command: 'normal',
   path: 'normal',
   keyboardHint: 'dim',
+  tagline: 'italic',
 } as const satisfies Record<string, TypographyRole>;
 
 const SPACING = {
@@ -104,6 +107,7 @@ const SPACING = {
   compact: 0,
   section: 1,
   major: 2,
+  brandToContent: 4,
   card: 1,
   journey: 2,
   contentWidth: 72,
@@ -130,7 +134,7 @@ const SYMBOLS = {
   fail: TERMINAL_GLYPHS.status.error,
   next: TERMINAL_GLYPHS.navigation.next,
   info: TERMINAL_GLYPHS.status.info,
-  // Compact inline echo; welcome uses the full embedded block via styleBrand/formatBrandArt.
+  // Compact inline echo; welcome uses the canonical embedded ASCII mask via styleBrand/formatBrandArt.
   brand: TERMINAL_GLYPHS.brand.lockup,
 } as const;
 
@@ -147,6 +151,8 @@ const SAF_GLYPHS = {
   pending: TERMINAL_GLYPHS.stage.pending.rich,
   selected: TERMINAL_GLYPHS.selection.radioSelected.rich,
   unselected: TERMINAL_GLYPHS.selection.radioUnselected.rich,
+  radioFocused: TERMINAL_GLYPHS.selection.radioFocused.rich,
+  checkboxFocused: TERMINAL_GLYPHS.selection.checkboxFocused.rich,
   checkboxSelected: TERMINAL_GLYPHS.selection.checkboxSelected.rich,
   checkboxUnselected: TERMINAL_GLYPHS.selection.checkboxUnselected.rich,
   next: TERMINAL_GLYPHS.navigation.next.rich,
@@ -172,6 +178,8 @@ const SAF_ASCII_GLYPHS = {
   pending: TERMINAL_GLYPHS.stage.pending.ascii,
   selected: TERMINAL_GLYPHS.selection.radioSelected.ascii,
   unselected: TERMINAL_GLYPHS.selection.radioUnselected.ascii,
+  radioFocused: TERMINAL_GLYPHS.selection.radioFocused.ascii,
+  checkboxFocused: TERMINAL_GLYPHS.selection.checkboxFocused.ascii,
   checkboxSelected: TERMINAL_GLYPHS.selection.checkboxSelected.ascii,
   checkboxUnselected: TERMINAL_GLYPHS.selection.checkboxUnselected.ascii,
   next: TERMINAL_GLYPHS.navigation.next.ascii,

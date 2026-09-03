@@ -1,14 +1,26 @@
 import * as clack from '@clack/prompts';
 
-import { type ComponentStatus, renderCard, renderStatus } from './terminal-components';
+import {
+  type ComponentStatus,
+  renderCard,
+  renderStatus,
+  renderWelcomeText,
+} from './terminal-components';
 import { sanitizeTerminalText } from './terminal-safety';
-import { type DisplayMode, type PresentationContext, SAF_THEME, terminalCapabilities } from './ui';
+import {
+  type DisplayMode,
+  type PresentationContext,
+  SAF_THEME,
+  terminalCapabilities,
+  writeBrand,
+} from './ui';
 
 type TerminalUiOptions = {
   mode?: DisplayMode;
   output?: NodeJS.WriteStream;
   title?: string;
   color?: boolean;
+  quiet?: boolean;
 };
 
 type TerminalSpinner = {
@@ -87,6 +99,21 @@ function terminalNote(
   output.write(`${safeTitle}\n${body}\n`);
 }
 
+async function terminalWelcome(
+  locale = 'en-US',
+  { mode = 'human-plain', output = process.stdout, quiet }: TerminalUiOptions = {},
+): Promise<void> {
+  if (mode === 'machine') return;
+  const context = presentationContext(mode, output);
+  const includeArt = mode === 'human-rich' || (Boolean(output.isTTY) && !quiet);
+  if (includeArt) {
+    if (mode === 'human-rich') output.write('\n'.repeat(SAF_THEME.spacing.major));
+    await writeBrand(mode, output, process.env, { center: mode === 'human-rich' });
+    if (mode === 'human-rich') output.write('\n'.repeat(SAF_THEME.spacing.brandToContent));
+  }
+  output.write(`${renderWelcomeText(context, locale, { outerSpacing: false })}\n\n`);
+}
+
 function terminalSpinner({
   mode = 'human-plain',
   output = process.stdout,
@@ -125,4 +152,4 @@ function terminalNext(
 }
 
 export type { TerminalUiOptions };
-export { terminalLog, terminalNext, terminalNote, terminalSpinner };
+export { terminalLog, terminalNext, terminalNote, terminalSpinner, terminalWelcome };

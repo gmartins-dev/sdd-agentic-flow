@@ -11,11 +11,16 @@ const CATALOGS = Object.freeze({
     'doctor.checks': 'Checks',
     'doctor.summary': 'Checks: {pass} PASS, {info} INFO, {warn} WARN, {fail} FAIL',
     'doctor.next': 'Next',
+    'doctor.setupHealth': 'Setup health',
+    'doctor.status': 'Status',
+    'doctor.checksLabel': 'Checks',
+    'doctor.nextAction': 'Next action',
     'selector.single': '↑/↓ navigate · 1-9 select · Enter confirm · Esc cancel/back',
     'selector.multiple':
       '↑/↓ navigate · Space toggle · 1-9 toggle · Enter confirm · Esc cancel/back',
     'selector.plainSingle': 'Enter selects the default; 1-9 selects; q/0 cancels',
     'selector.plainMultiple': 'Numbers toggle; Enter confirms; q/0 cancels',
+    'selector.recommended': '(recommended)',
     'menu.question': 'What would you like to do?',
     'menu.select': 'Select an option',
     'menu.keep': 'Keep current setup',
@@ -51,7 +56,7 @@ const CATALOGS = Object.freeze({
       'The known SAF state could not be fully removed. Review the details and retry.',
     'welcome.tagline': 'Specs first. Evidence before done. You stay in control.',
     'welcome.product': 'Spec-Driven Agentic Workflow Harness for coding agents.',
-    'welcome.freshTitle': 'Welcome to SAF',
+    'welcome.freshTitle': 'Welcome to SAF (sdd-agentic-flow)',
     'welcome.freshBody': 'No SAF setup was found for this workspace.',
     'welcome.freshHint': 'Nothing will be changed until you review the setup plan.',
     'welcome.incompleteTitle': 'SAF setup is incomplete',
@@ -113,11 +118,14 @@ const CATALOGS = Object.freeze({
     'setup.policy': 'Policy',
     'setup.policyPrompt': 'How should SAF work in this project?',
     'setup.policySupervised': 'Supervised — recommended',
+    'setup.policySupervisedTitle': 'Supervised',
     'setup.policySupervisedHint':
       'Perform authorized local work and ask before workflow transitions.',
     'setup.policyManual': 'Manual',
+    'setup.policyManualTitle': 'Manual',
     'setup.policyManualHint': 'Stop between workflow steps for maximum explicit control.',
     'setup.policyAutonomous': 'Autonomous',
+    'setup.policyAutonomousTitle': 'Autonomous',
     'setup.policyAutonomousHint':
       'Continue through eligible workflow steps while all guardrails pass.',
     'setup.policyAdvanced': 'Advanced policy',
@@ -125,6 +133,7 @@ const CATALOGS = Object.freeze({
     'setup.policyCustom': 'Custom',
     'setup.policyExecutionMode': 'Execution mode',
     'setup.policyAutonomyLevel': 'Autonomy level',
+    'setup.detected': 'detected',
     'setup.policyReady': 'Workflow: {preset}',
     'setup.policyChangeHint': 'Change anytime: npx sdd-agentic-flow config policy',
     'plan.noChanges': 'No changes made.',
@@ -204,6 +213,7 @@ const CATALOGS = Object.freeze({
     'plan.skillsSupport': '{skills} skills + shared support',
     'plan.filesTargets': '{files} files across {targets} targets',
     'plan.blocked': 'Blocked: {details} at {path}',
+    'plan.none': 'None',
     'learn.body':
       'Spec-Driven Development (SDD) turns a requested outcome into evidence-based specs,\nbounded implementation tasks, independent checks, and human-gated Git work.',
     'learn.controlPlane':
@@ -256,6 +266,9 @@ const CATALOGS = Object.freeze({
     'install.repositoryNone': 'Repository changes: none',
     'install.updated': 'updated',
     'install.removed': 'removed',
+    'install.installing': 'Installing skills for {target}',
+    'install.installationFailed': 'Installation failed',
+    'install.installedTarget': 'Installed skills for {target}',
     'next.then': 'Then use your coding agent with the installed SDD workflow.',
     'next.validate': 'Run `npx sdd-agentic-flow doctor` to validate setup.',
   }),
@@ -269,11 +282,16 @@ const CATALOGS = Object.freeze({
     'doctor.checks': 'Verificações',
     'doctor.summary': 'Verificações: {pass} PASS, {info} INFO, {warn} WARN, {fail} FAIL',
     'doctor.next': 'Próxima etapa',
+    'doctor.setupHealth': 'Saúde da configuração',
+    'doctor.status': 'Status',
+    'doctor.checksLabel': 'Verificações',
+    'doctor.nextAction': 'Próxima ação',
     'selector.single': '↑/↓ navega · 1-9 seleciona · Enter confirma · Esc cancela/volta',
     'selector.multiple':
       '↑/↓ navega · Espaço alterna · 1-9 alterna · Enter confirma · Esc cancela/volta',
     'selector.plainSingle': 'Enter seleciona o padrão; 1-9 seleciona; q/0 cancela',
     'selector.plainMultiple': 'Números alternam; Enter confirma; q/0 cancela',
+    'selector.recommended': '(recomendado)',
     'menu.question': 'O que você gostaria de fazer?',
     'menu.select': 'Selecione uma opção',
     'menu.keep': 'Manter a configuração atual',
@@ -310,7 +328,7 @@ const CATALOGS = Object.freeze({
     'welcome.tagline': 'Specs primeiro. Evidências antes de concluir. Você mantém o controle.',
     'welcome.product':
       'Harness de fluxo de trabalho agentic orientado a especificações para agentes de código.',
-    'welcome.freshTitle': 'Boas-vindas ao SAF',
+    'welcome.freshTitle': 'Boas-vindas ao SAF (sdd-agentic-flow)',
     'welcome.freshBody': 'Nenhuma configuração do SAF foi encontrada neste workspace.',
     'welcome.freshHint': 'Nada será alterado antes que você revise o plano de configuração.',
     'welcome.incompleteTitle': 'A configuração do SAF está incompleta',
@@ -374,11 +392,14 @@ const CATALOGS = Object.freeze({
     'setup.policy': 'Política',
     'setup.policyPrompt': 'Como o SAF deve funcionar neste projeto?',
     'setup.policySupervised': 'Supervisionado — recomendado',
+    'setup.policySupervisedTitle': 'Supervisionado',
     'setup.policySupervisedHint':
       'Executa trabalho local autorizado e pergunta antes das transições do fluxo.',
     'setup.policyManual': 'Manual',
+    'setup.policyManualTitle': 'Manual',
     'setup.policyManualHint': 'Para entre as etapas do fluxo para controle explícito máximo.',
     'setup.policyAutonomous': 'Autônomo',
+    'setup.policyAutonomousTitle': 'Autônomo',
     'setup.policyAutonomousHint':
       'Continua pelas etapas elegíveis do fluxo enquanto todos os guardrails passarem.',
     'setup.policyAdvanced': 'Política avançada',
@@ -386,6 +407,7 @@ const CATALOGS = Object.freeze({
     'setup.policyCustom': 'Personalizada',
     'setup.policyExecutionMode': 'Modo de execução',
     'setup.policyAutonomyLevel': 'Nível de autonomia',
+    'setup.detected': 'detectado',
     'setup.policyReady': 'Fluxo: {preset}',
     'setup.policyChangeHint': 'Altere quando quiser: npx sdd-agentic-flow config policy',
     'plan.noChanges': 'Nenhuma alteração foi feita.',
@@ -467,6 +489,7 @@ const CATALOGS = Object.freeze({
     'plan.skillsSupport': '{skills} skills + suporte compartilhado',
     'plan.filesTargets': '{files} arquivos em {targets} destinos',
     'plan.blocked': 'Bloqueado: {details} em {path}',
+    'plan.none': 'Nenhum',
     'learn.body':
       'O Spec-Driven Development (SDD) transforma um resultado solicitado em especificações baseadas em evidências,\ntarefas de implementação delimitadas, verificações independentes e trabalho Git com aprovação humana.',
     'learn.controlPlane':
@@ -520,6 +543,9 @@ const CATALOGS = Object.freeze({
     'install.repositoryNone': 'Alterações no repositório: nenhuma',
     'install.updated': 'atualizados',
     'install.removed': 'removidos',
+    'install.installing': 'Instalando skills para {target}',
+    'install.installationFailed': 'Falha na instalação',
+    'install.installedTarget': 'Skills instaladas para {target}',
     'next.then': 'Depois, use seu agente de código com o fluxo SDD instalado.',
     'next.validate': 'Execute `npx sdd-agentic-flow doctor` para validar a configuração.',
   }),
@@ -590,6 +616,35 @@ function translateText(locale: string, text: unknown): string {
     [
       /^no skill files refreshed \(all candidates differed or were identical\)$/,
       'nenhum arquivo de skill foi atualizado (todos eram diferentes ou idênticos)',
+    ],
+    [
+      /^install or update the official skill bundle for /,
+      'instalar ou atualizar o pacote oficial de skills para ',
+    ],
+    [
+      /^persist selected targets and adoption$/,
+      'persistir os destinos e o compartilhamento selecionados',
+    ],
+    [
+      /^synchronize managed Git visibility for the selected sharing mode$/,
+      'sincronizar a visibilidade gerenciada no Git para o compartilhamento selecionado',
+    ],
+    [
+      /^persist only selected non-default managed values$/,
+      'persistir somente os valores gerenciados selecionados que não são padrão',
+    ],
+    [/^initialize workspace and generated context$/, 'inicializar o workspace e o contexto gerado'],
+    [
+      /^remove only exact recognized legacy paths$/,
+      'remover somente caminhos legados reconhecidos exatamente',
+    ],
+    [
+      /^at least one coding-agent host must be selected$/,
+      'selecione pelo menos um agente de código',
+    ],
+    [
+      /^installation intent has pending reconciliation$/,
+      'a intenção de instalação precisa de reconciliação',
     ],
   ];
   return replacements.reduce(

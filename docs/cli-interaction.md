@@ -42,12 +42,17 @@ Rules:
   in human modes only.
 - Rich status, note, and spinner primitives are provided by the bundled terminal UI adapter;
   command semantics and terminal mode selection remain SAF-owned.
-- Welcome prints a **compact** three-chevron brand mark (~8–10 lines, ≤52 columns) in
-  human-rich / human-plain only (embedded in `src/brand-art.ts` so it ships in the npm
-  package — no runtime read of `public/`). In human-rich TTY, the three bands reveal
-  left→right (~160ms steps) to echo the chevron flow; human-plain / `--ascii` stay
+- Welcome prints the approved 110×46 filled three-triangle mask from
+  `public/ascii/saf-ascii-art.txt` at 110+ columns with sufficient height. The TXT is a golden
+  source only; the mask is embedded in `src/brand-art.ts`, so the package has no runtime read of
+  `public/`. Its background `█` cells become transparent and its `▒`/`▓` cells become the
+  semantic brand glyph. At smaller or short terminals, the existing compact/progressive fallback
+  is used without scaling the canonical canvas. In human-rich TTY, the canonical components
+  reveal left-to-right (~240ms steps, 480ms to the final frame)
+  to echo the SVG flow; human-plain / `--ascii` stay
   instant. If the TTY reports `columns` or `rows` too small for the block, welcome falls
-  back to a one-line mark (`›››` / `>>>`) with no animation. Set `SDD_BRAND_ANIMATE=0` to
+  back to a progressive one-line mark (`›  ››  ›››` / `>  >>  >>>`) with no animation.
+  Set `SDD_BRAND_ANIMATE=0` to
   skip the reveal. Machine output gets no art. SVG is never rendered in the CLI.
 
 ## stdout vs stderr
@@ -98,17 +103,24 @@ state-aware welcome; ready and attention states offer **Exit**, **Change setting
 **Check for updates**, **Validate setup**, and **Advanced options**. Nested flows expose
 **Back**, **Cancel**, or **Apply** when applicable. Updates remain opt-in.
 
-Guided setup is an inline CLI flow, not a full-screen TUI. It has one recommended path and an
-optional customization path, including an operating-policy step (Supervised recommended), then a
-single review before the first write. It derives first-use, partial, and ready state from
+Guided setup is an inline CLI flow, not a full-screen TUI. Language is the first decision. With a
+valid Git workspace, the remaining decisions are Sharing, Coding agents, Workflow, and, only for
+Team adoption, specs visibility, followed by one review before Apply. Without Git, setup asks only
+for Coding agents after Language, then reviews and applies a user-only installation. The selected
+locale is session-local until Apply and owns all following human-facing prompts, plans, warnings,
+progress, validation, and results. It has one recommended path and an optional customization path,
+including an operating-policy step (Supervised recommended), then a single review before the first write. It derives first-use, partial, and ready state from
 configuration, installation intent, context, and `doctor`; it does not store a separate onboarding
 marker. Before apply, **Back** only changes in-memory choices. After apply, **Workflow** runs
 `config policy`; **Sharing and coding agents** runs `config installation` — each is a deliberate
 change, not a rollback. A handled failure keeps the human in the flow with retry, validation,
 change, or exit.
 
-The first-use journey records four decisions: sharing mode, explicitly selected coding-agent
-hosts, workflow mode (including a custom execution/autonomy pair), and language profile. Feature
+The first-use journey records four decisions: language profile, sharing mode, explicitly selected
+coding-agent hosts, and workflow mode (including a custom execution/autonomy pair); Team adoption
+also records specs visibility. A valid project configuration supplies the initial locale during
+normal re-entry, so Language is not asked again. User-only setup does not create project config or
+global language preference. Feature
 profile is resolved per work package by `saf-create-spec`, not by installation setup. Host detection
 is local evidence from PATH and known host directories only; it never invokes a provider or contacts
 a network service. A missing detection is shown as a choice rather than silently selecting every target.

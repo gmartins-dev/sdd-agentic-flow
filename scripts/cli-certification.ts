@@ -458,7 +458,6 @@ function ptyScenario(): Scenario {
         env: { ...adapter.ptyEnvironment(sandbox), SDD_BRAND_ANIMATE: '0' },
         steps: [
           { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
-          { waitFor: /What would you like to do/, input: '1' },
           { waitFor: /Sharing/, input: '1' },
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
@@ -467,36 +466,37 @@ function ptyScenario(): Scenario {
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
-      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
-      const languagePrompt = result.transcript.indexOf('Choose your language / Escolha o idioma');
+      const transcript = stripAnsi(result.transcript);
+      assert.match(transcript, /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
+      const languagePrompt = transcript.indexOf('Choose your language / Escolha o idioma');
       assert.ok(languagePrompt >= 0);
-      const languagePrelude = result.transcript.slice(0, languagePrompt);
-      assert.doesNotMatch(
+      const languagePrelude = transcript.slice(0, languagePrompt);
+      assert.match(
         languagePrelude,
-        /▓|#{2,}\s+\+{2,}|Spec-Driven Agentic Workflow Harness|Specs first/i,
+        /█{3,}\s+█{5,}\s+█{7,}|#{3,}\s+\+{5,}\s+={7,}|›\s+››\s+›››|>\s+>>\s+>>>/,
       );
+      assert.match(transcript, /SDD-AGENTIC-FLOW \(SAF\)/);
+      assert.ok((transcript.match(/SDD-AGENTIC-FLOW \(SAF\)/g) || []).length >= 1);
       assert.match(
-        result.transcript,
-        new RegExp(`sdd-agentic-flow ${adapter.identity.version.replace(/\./g, '\\.')}`),
-      );
-      assert.match(
-        result.transcript,
+        transcript,
         /Spec-Driven Agentic Workflow Harness|Harness de fluxo de trabalho/i,
       );
-      assert.match(result.transcript, /Specs first\. Evidence before done|Specs primeiro/i);
-      assert.match(result.transcript, /Welcome to SAF|Boas-vindas ao SAF/i);
-      assert.match(result.transcript, /▓|#{2,}/);
-      assert.equal(
-        (result.transcript.match(/Welcome to SAF|Boas-vindas ao SAF/gi) || []).length,
-        1,
+      assert.match(transcript, /Specs first\. Evidence before done|Specs primeiro/i);
+      assert.match(transcript, /Welcome to SAF|Boas-vindas ao SAF/i);
+      assert.match(
+        transcript,
+        /█{3,}\s+█{5,}\s+█{7,}|#{3,}\s+\+{5,}\s+={7,}|›\s+››\s+›››|>\s+>>\s+>>>/,
       );
-      const welcomeStart = result.transcript.search(/Welcome to SAF|Boas-vindas ao SAF/i);
-      const menuStart = result.transcript.search(
-        /What would you like to do|O que você gostaria de fazer/i,
-      );
-      assert.ok(welcomeStart >= 0 && menuStart > welcomeStart);
+      assert.equal((transcript.match(/Welcome to SAF|Boas-vindas ao SAF/gi) || []).length, 1);
+      const welcomeStart = transcript.search(/Welcome to SAF|Boas-vindas ao SAF/i);
+      assert.ok(welcomeStart >= 0 && languagePrompt > welcomeStart);
       assert.equal(
-        result.transcript.slice(welcomeStart, menuStart).includes('\x1b[H\x1b[2J'),
+        result.transcript
+          .slice(
+            result.transcript.search(/Welcome to SAF|Boas-vindas ao SAF/i),
+            result.transcript.search(/Choose your language|Escolha o idioma/i),
+          )
+          .includes('\x1b[H\x1b[2J'),
         false,
       );
       assert.doesNotMatch(
@@ -555,7 +555,6 @@ function readySettingsScenario(): Scenario {
         cwd: sandbox.cwd,
         env: { ...adapter.ptyEnvironment(sandbox), SDD_BRAND_ANIMATE: '0' },
         steps: [
-          { waitFor: /Choose your language|Escolha o idioma/, input: '1\n' },
           {
             waitFor: /What would you like to do[\s\S]*1\.\s*Change settings/i,
             input: '1\n',
@@ -571,21 +570,27 @@ function readySettingsScenario(): Scenario {
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
+      const transcript = stripAnsi(result.transcript);
+      assert.match(transcript, /SDD-AGENTIC-FLOW \(SAF\)/);
+      assert.match(transcript, /Welcome back|Bem-vindo de volta/i);
+      assert.match(transcript, /SAF is ready|O SAF está pronto/i);
       assert.match(
-        result.transcript,
-        new RegExp(`sdd-agentic-flow ${adapter.identity.version.replace(/\./g, '\\.')}`),
+        transcript,
+        /█{3,}\s+█{5,}\s+█{7,}|#{3,}\s+\+{5,}\s+={7,}|›\s+››\s+›››|>\s+>>\s+>>>/,
       );
-      assert.match(result.transcript, /Welcome back|Bem-vindo de volta/i);
-      assert.match(result.transcript, /SAF is ready|O SAF está pronto/i);
-      assert.match(result.transcript, /▓|#{2,}/);
-      assert.equal((result.transcript.match(/Welcome back|Bem-vindo de volta/gi) || []).length, 1);
-      const welcomeStart = result.transcript.search(/Welcome back|Bem-vindo de volta/i);
-      const menuStart = result.transcript.search(
+      assert.equal((transcript.match(/Welcome back|Bem-vindo de volta/gi) || []).length, 1);
+      const welcomeStart = transcript.search(/Welcome back|Bem-vindo de volta/i);
+      const menuStart = transcript.search(
         /What would you like to do|O que você gostaria de fazer/i,
       );
       assert.ok(welcomeStart >= 0 && menuStart > welcomeStart);
       assert.equal(
-        result.transcript.slice(welcomeStart, menuStart).includes('\x1b[H\x1b[2J'),
+        result.transcript
+          .slice(
+            result.transcript.search(/Welcome back|Bem-vindo de volta/i),
+            result.transcript.search(/What would you like to do|O que você gostaria de fazer/i),
+          )
+          .includes('\x1b[H\x1b[2J'),
         false,
       );
       assert.doesNotMatch(
@@ -620,15 +625,14 @@ function userInstallThenWorkspaceScenario(): Scenario {
         env: { ...adapter.ptyEnvironment(sandbox), SDD_BRAND_ANIMATE: '0' },
         steps: [
           { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\n' },
-          { waitFor: /Set up this repository/, input: '1\n' },
           { waitFor: /Sharing/, input: '1\n' },
-          { waitFor: /Workflow/, input: '1\n' },
-          { waitFor: /Ready to set up SAF/, input: '1\n' },
+          { waitFor: /Workflow/, input: '\r' },
+          { waitFor: /Ready to set up SAF/, input: '\r' },
           { waitFor: /Ready/, input: '' },
         ],
       });
       assert.equal(result.status, 0, `${result.stderr}\n${result.transcript}`);
-      assert.match(result.transcript, /SAF is already installed|Set up this repository/i);
+      assert.match(result.transcript, /Choose your language \/ Escolha o idioma/);
       assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
       assert.ok(fs.existsSync(path.join(repository, '.sdd-agentic-flow', 'workspace.yml')));
       assert.ok(

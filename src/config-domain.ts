@@ -268,6 +268,15 @@ function replaceConfigField(
   return { ok: true, content: content.replace(pattern, `$1${value}`) };
 }
 
+function upsertLanguageField(content: string, key: string, value: string): string {
+  const replaced = replaceConfigField(content, key, value);
+  if (replaced.ok) return replaced.content;
+  const language = /^language:\s*$/m;
+  if (language.test(content)) return content.replace(language, `language:\n  ${key}: ${value}`);
+  const schema = /^schema:\s*.+$/m;
+  return content.replace(schema, `$&\n\nlanguage:\n  ${key}: ${value}`);
+}
+
 function addWorkflowField(content: string, key: string, value: string): string {
   const marker = /^( {2}autonomy_level:\s*.+)$/m;
   return marker.test(content) ? content.replace(marker, `$1\n  ${key}: ${value}`) : content;
@@ -334,10 +343,21 @@ function applyPolicyMutation(
     { executionMode, autonomyLevel },
   );
   const selectedLanguage = languageProfile ?? language;
+  const beforeProfile = current.content
+    ? configValue(current.content, 'profile')
+    : EFFECTIVE_DEFAULTS.language_profile;
   const beforeLanguage = current.languageProfile ?? EFFECTIVE_DEFAULTS.language_profile;
+  const beforeHumanOutputs = current.content
+    ? configValue(current.content, 'human_outputs')
+    : EFFECTIVE_DEFAULTS.language_profile;
   const beforeFeatureProfile = current.featureProfile ?? 'medium_feature';
   const afterLanguage = selectedLanguage ?? beforeLanguage;
   const afterFeatureProfile = featureProfile ?? beforeFeatureProfile;
+  const languageSynchronized =
+    selectedLanguage === undefined ||
+    (beforeProfile !== null &&
+      beforeProfile === selectedLanguage &&
+      beforeHumanOutputs === selectedLanguage);
   preview.beforeLanguage = beforeLanguage;
   preview.afterLanguage = afterLanguage;
   preview.beforeFeatureProfile = beforeFeatureProfile;
@@ -346,6 +366,7 @@ function applyPolicyMutation(
     preview.before.executionMode === preview.after.executionMode &&
     preview.before.autonomyLevel === preview.after.autonomyLevel &&
     beforeLanguage === afterLanguage &&
+    languageSynchronized &&
     beforeFeatureProfile === afterFeatureProfile;
   if (unchanged) return { ok: true, preview, wrote: false };
   if (options.dryRun) {
@@ -356,12 +377,13 @@ function applyPolicyMutation(
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;
   if (selectedLanguage) {
-    const languageResult = replaceConfigField(next, 'profile', selectedLanguage);
-    if (!languageResult.ok) return { ok: false, errors: [languageResult.error], wrote: false };
-    next = languageResult.content;
-    const humanResult = replaceConfigField(next, 'human_outputs', selectedLanguage);
-    if (!humanResult.ok) return { ok: false, errors: [humanResult.error], wrote: false };
-    next = humanResult.content;
+    next = upsertLanguageField(next, 'profile', selectedLanguage);
+    next = upsertLanguageField(next, 'human_outputs', selectedLanguage);
+    if (
+      configValue(next, 'profile') !== selectedLanguage ||
+      configValue(next, 'human_outputs') !== selectedLanguage
+    )
+      return { ok: false, errors: ['language fields not writable'], wrote: false };
   }
   if (featureProfile) {
     const featureResult = replaceConfigField(next, 'feature_profile', featureProfile);

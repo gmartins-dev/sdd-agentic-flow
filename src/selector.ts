@@ -119,28 +119,20 @@ function renderSelector(
   options.forEach((option, index) => {
     const action = Boolean(option.action);
     const active = index === activeIndex;
-    const marker = plain
-      ? action
-        ? active
-          ? safGlyph('pointerActive', 'human-plain')
-          : safGlyph('pointerInactive', 'human-plain')
-        : active
-          ? safGlyph('pointerActive', 'human-plain')
-          : safGlyph(
-              selectedValues.has(optionValueKey(option.value)) ? 'selected' : 'unselected',
-              'human-plain',
-            )
-      : action
-        ? active
-          ? safGlyph('pointerActive', 'human-rich')
-          : safGlyph('pointerInactive', 'human-rich')
-        : active
-          ? safGlyph('pointerActive', 'human-rich')
-          : safGlyph(
-              selectedValues.has(optionValueKey(option.value)) ? 'selected' : 'unselected',
-              'human-rich',
-            );
-    const suffix = option.recommended ? ' (recommended)' : '';
+    const displayMode = plain ? 'human-plain' : 'human-rich';
+    const marker = action
+      ? safGlyph(active ? 'pointerActive' : 'pointerInactive', displayMode)
+      : active
+        ? safGlyph(multiple ? 'checkboxFocused' : 'radioFocused', displayMode)
+        : safGlyph(
+            multiple
+              ? selectedValues.has(optionValueKey(option.value))
+                ? 'checkboxSelected'
+                : 'checkboxUnselected'
+              : 'unselected',
+            displayMode,
+          );
+    const suffix = option.recommended ? ` ${t(locale ?? 'en-US', 'selector.recommended')}` : '';
     lines.push(` ${marker} ${index + 1}. ${sanitizeTerminalText(option.label)}${suffix}`);
     if (hasDescriptions)
       lines.push(`      ${option.description ? sanitizeTerminalText(option.description) : ''}`);

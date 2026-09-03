@@ -60,6 +60,7 @@ type BrandOptions = {
   quiet?: boolean;
   animate?: boolean;
   delayMs?: number;
+  center?: boolean;
 };
 
 function colorEnabled(

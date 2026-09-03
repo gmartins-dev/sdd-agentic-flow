@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Make Language the first interactive setup decision and keep the selected locale session-local
+  until Apply. Git workspace setup now persists synchronized `language.profile` and
+  `language.human_outputs`; user-only setup does not create project or global language config.
+- Unify guided setup and interactive init ordering across rich, plain, ASCII, and `NO_COLOR`
+  output, including localized recommendation markers, plans, progress, validation, and results.
+- Refine the SAF welcome composition with a centered `SDD-AGENTIC-FLOW (SAF)` display title,
+  theme-owned brand colors, italic localized tagline, and deterministic narrow-terminal fallbacks.
+- Replace the distorted welcome art with the approved 110×46 mask from
+  `public/ascii/saf-ascii-art.txt`, preserving exact foreground occupancy, semantic brand colors,
+  fixed-canvas progressive reveal, and existing compact/ASCII fallbacks.
+
 ## 7.9.0
 
 - Complete the SAF terminal design system across human-facing CLI journeys.

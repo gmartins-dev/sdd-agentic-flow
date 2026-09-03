@@ -122,18 +122,17 @@ test('viewport clearing is cursor-gated and never clears scrollback', () => {
 
 test('CLI-012: symbols are ASCII outside human-rich; welcome brand is the full embedded art', () => {
   assert.equal(symbol('success', 'human-rich'), '✓');
-  assert.equal(symbol('brand', 'human-rich'), '›››');
+  assert.equal(symbol('brand', 'human-rich'), '›  ››  ›››');
   assert.equal(symbol('next', 'human-rich'), '→');
   assert.equal(symbol('success', 'human-plain'), 'OK');
-  assert.equal(symbol('brand', 'human-plain'), '>>>');
+  assert.equal(symbol('brand', 'human-plain'), '>  >>  >>>');
   assert.equal(symbol('next', 'machine'), '->');
   assert.equal(symbol('warn', 'human-rich'), '!');
   assert.equal(symbol('fail', 'human-rich'), '✗');
   assert.equal(symbol('unknown' as 'success', 'human-rich'), '');
-  // styleBrand = full block for welcome (not the one-line ›››).
-  assert.match(styleBrand('human-plain', brandStream(true), {}), /#{2,}/);
-  assert.match(styleBrand('human-rich', brandStream(true), { NO_COLOR: '1' }), /▓/);
-  const colored = styleBrand('human-rich', brandStream(true), {});
+  assert.match(styleBrand('human-plain', brandStream(true), {}), /#{10}\s+\+{16}\s+={22}/);
+  assert.match(styleBrand('human-rich', brandStream(true, 110), { NO_COLOR: '1' }), /▓/);
+  const colored = styleBrand('human-rich', brandStream(true, 110), { COLORTERM: 'truecolor' });
   const esc = String.fromCharCode(27);
   assert.ok(colored.includes(`${esc}[38;2;75;62;168m`));
   assert.ok(colored.includes(`${esc}[38;2;139;125;255m`));

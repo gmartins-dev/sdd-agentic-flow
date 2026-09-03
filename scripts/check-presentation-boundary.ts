@@ -19,7 +19,7 @@ const colorOwners = new Set([
   'terminal-ui.ts',
   'ui.ts',
 ]);
-const approvedStructuralGlyphs = /[┌│├└─┐┘◇◆✓✗→←↑↓↳▸▹›●○■□]/;
+const approvedStructuralGlyphs = /[┌│├└─┐┘◇◆✓✗→←↑↓↳▸▹›●○■□█]/;
 const prohibitedPresentation =
   /(?:\uFE0E|\uFE0F|\u200D|[\uE000-\uF8FF]|[\u{F0000}-\u{FFFFD}]|[\u{100000}-\u{10FFFD}])/u;
 const violations: string[] = [];

@@ -82,7 +82,14 @@ test('selector renderer uses journey glyphs, stable descriptions, and collapsed 
     ],
     { activeIndex: 1 },
   );
-  assert.match(rich, /▸ 2\. Two \(recommended\)/);
+  assert.match(rich, /◉ 2\. Two \(recommended\)/);
+  assert.match(
+    renderSelector('Escolha', [{ value: 'two', label: 'Dois', recommended: true }], {
+      activeIndex: 0,
+      locale: 'pt-BR',
+    }),
+    /\(recomendado\)/,
+  );
   assert.equal((rich.match(/ {6}/g) || []).length, 2);
   const action = renderSelector(
     'Choose',
@@ -93,6 +100,7 @@ test('selector renderer uses journey glyphs, stable descriptions, and collapsed 
     { activeIndex: 0 },
   );
   assert.match(action, /▹ 2\. Saiba mais sobre o SAF/);
+  assert.match(action, /◉ 1\. Iniciar configuração/);
   assert.doesNotMatch(action, /→/);
   assert.match(
     renderSelector('Choose', [{ value: 'exit', label: 'Exit', action: true }], {
@@ -109,8 +117,66 @@ test('selector renderer uses journey glyphs, stable descriptions, and collapsed 
   );
   assert.match(
     renderSelector('Choose', [{ value: 'one', label: 'One' }], { plain: true }),
-    /> 1\. One/,
+    /\(\*\) 1\. One/,
   );
+  const multiple = renderSelector(
+    'Choose agents',
+    [
+      { value: 'one', label: 'One', selected: true },
+      { value: 'two', label: 'Two' },
+      { value: 'back', label: 'Back', action: true },
+    ],
+    { multiple: true, activeIndex: 0 },
+  );
+  assert.match(multiple, /▣ 1\. One/);
+  assert.match(multiple, /□ 2\. Two/);
+  assert.match(multiple, /▹ 3\. Back/);
+  assert.match(
+    renderSelector(
+      'Choose language',
+      [
+        { value: 'en-US', label: 'English', selected: true },
+        { value: 'pt-BR', label: 'Português (Brasil)' },
+      ],
+      { activeIndex: 1 },
+    ),
+    /○ 1\. English[\s\S]*◉ 2\. Português/,
+  );
+});
+
+test('PT-BR selector copy survives plain, ASCII, and NO_COLOR output', async () => {
+  const options = [{ value: 'one', label: 'Um', recommended: true }];
+  assert.match(renderSelector('Escolha', options, { locale: 'pt-BR' }), /\(recomendado\)/);
+  assert.match(
+    renderSelector('Escolha', options, { locale: 'pt-BR', plain: true }),
+    /Enter seleciona/,
+  );
+
+  const priorNoColor = process.env.NO_COLOR;
+  const priorTerm = process.env.TERM;
+  process.env.NO_COLOR = '1';
+  process.env.TERM = 'dumb';
+  const input = Readable.from(['\n']);
+  setTty(input);
+  const output = setTty(new PassThrough());
+  try {
+    const result = await select('Escolha', options, {
+      input,
+      output,
+      ascii: true,
+      locale: 'pt-BR',
+    });
+    assert.deepEqual(result, { value: 'one' });
+    const rendered = output.read().toString();
+    assert.match(rendered, /Enter seleciona/);
+    assert.doesNotMatch(rendered, /Enter selects/);
+    assert.equal(rendered.includes(String.fromCharCode(27)), false);
+  } finally {
+    if (priorNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = priorNoColor;
+    if (priorTerm === undefined) delete process.env.TERM;
+    else process.env.TERM = priorTerm;
+  }
 });
 
 test('selector falls back to numbered input when a TTY cannot enter raw mode', async () => {
@@ -213,7 +279,7 @@ test('raw selector redraws the active option before Enter commits it', async () 
 
     assert.deepEqual(await pending, { value: 'two' });
     const rendered = [output.read(), output.read()].filter(Boolean).join('');
-    assert.match(rendered, /▸ 2\. Two/);
+    assert.match(rendered, /◉ 2\. Two/);
   } finally {
     if (noColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = noColor;

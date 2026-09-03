@@ -55,7 +55,7 @@ import {
 import { select } from './selector';
 import { guidedInit, setSetupCommandDeps } from './setup';
 import { OFFICIAL_SKILLS } from './skill-identity';
-import { terminalLog, terminalNext } from './terminal-ui';
+import { terminalLog, terminalNext, terminalWelcome } from './terminal-ui';
 import {
   type DisplayMode,
   didYouMean,
@@ -63,7 +63,6 @@ import {
   renderKeyValue,
   renderSection,
   styleStatus,
-  writeBrand,
 } from './ui';
 import { purgeKnownSafState, uninstall } from './uninstall';
 import { checkForUpdate } from './update-check';
@@ -348,22 +347,7 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
   const skillsPartial = presence.partial;
   const workspaceFound = fs.existsSync(path.join(cwd, SDD_PATHS.workspace));
 
-  if (mode === 'human-rich') {
-    // Full embedded chevron art — human TTY only; never machine/pipe/CI.
-    // human-rich: left-to-right band reveal (~160ms); plain / SDD_BRAND_ANIMATE=0: instant.
-    await writeBrand(mode, process.stdout, process.env, {
-      ...(options.quiet ? { quiet: options.quiet } : {}),
-    });
-    process.stdout.write(
-      `sdd-agentic-flow ${VERSION}\n\n` +
-        `  ${locale === 'pt-BR' ? 'Harness orientado a especificações para fluxos guiados por humanos.' : 'Spec-driven agent harness for human-guided workflows.'}\n\n`,
-    );
-  } else {
-    process.stdout.write(
-      `sdd-agentic-flow ${VERSION}\n` +
-        `${t(locale, 'welcome.description')}\n\n${t(locale, 'welcome.status')}\n`,
-    );
-  }
+  await terminalWelcome(locale, { mode, output: process.stdout });
 
   const configLabel = configFound
     ? `${SDD_PATHS.config} ${t(locale, 'welcome.configFound')}`

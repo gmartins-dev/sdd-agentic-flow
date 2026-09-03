@@ -58,6 +58,7 @@ function addUnknownTokens(
         'saf-config',
         'saf-install-intent',
         'saf-install-provenance',
+        'saf-ascii-art',
       ].includes(token) &&
       !known.has(token) &&
       !seen.has(token)

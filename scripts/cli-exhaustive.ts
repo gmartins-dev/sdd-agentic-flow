@@ -618,10 +618,9 @@ function runJourneys() {
     assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
     assert.match(stripAnsi(result.stdout), /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
     assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
-    assert.equal(
-      fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml')),
-      false,
-    );
+    const configPath = path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml');
+    assert.equal(fs.existsSync(configPath), true);
+    assert.match(fs.readFileSync(configPath, 'utf8'), /profile: en-US/);
     return 'interactive workspace initialization completed';
   });
 

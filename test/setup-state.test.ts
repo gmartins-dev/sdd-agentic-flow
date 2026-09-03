@@ -9,7 +9,6 @@ import {
   chooseSessionLocale,
   needsSessionLanguageSelection,
   renderInvocationWelcome,
-  renderLanguagePrelude,
   renderOperationResult,
 } from '../src/setup';
 import {
@@ -38,7 +37,7 @@ test('Fresh language selection is bilingual, defaults to English, and stays sess
   assert.equal(question, 'Choose your language / Escolha o idioma');
   assert.deepEqual(options, [
     { value: 'en-US', label: 'English', selected: true },
-    { value: 'pt-BR', label: 'Português (Brasil)' },
+    { value: 'pt-BR', label: 'Português' },
   ]);
   assert.equal(locale, 'pt-BR');
   assert.equal(await chooseSessionLocale(async () => ({ cancelled: true })), null);
@@ -54,7 +53,7 @@ test('operation result pages expose state, summary, and next action', () => {
 test('invocation welcome owns localized identity and state greeting', () => {
   const snapshot = (state: string) => ({ state }) as never;
   const ready = renderInvocationWelcome(snapshot('Ready'), 'en-US', 'human-plain');
-  assert.match(ready, /sdd-agentic-flow/);
+  assert.match(ready, /SDD-AGENTIC-FLOW \(SAF\)/);
   assert.match(ready, /Spec-Driven Agentic Workflow Harness/);
   assert.match(ready, /Specs first\. Evidence before done/);
   assert.match(ready, /Welcome back/);
@@ -69,14 +68,15 @@ test('invocation welcome owns localized identity and state greeting', () => {
   assert.match(incomplete, /SAF setup is incomplete/);
   assert.match(incomplete, /Some setup steps are complete/);
 
+  const fresh = renderInvocationWelcome(snapshot('Fresh'), 'pt-BR', 'human-plain');
+  assert.match(fresh, /Boas-vindas ao SAF \(sdd-agentic-flow\)/);
+  assert.match(
+    fresh,
+    /Specs primeiro\. Evidências antes de concluir\. Você mantém o controle\.\n\n\nBoas-vindas ao SAF \(sdd-agentic-flow\)\nNenhuma configuração do SAF foi encontrada neste workspace\.\n\n$/,
+  );
+
   const blocked = renderInvocationWelcome(snapshot('Blocked'), 'en-US', 'human-plain');
   assert.match(blocked, /SAF needs attention before setup can continue/);
-});
-
-test('language prelude is neutral until session locale is selected', () => {
-  const prelude = renderLanguagePrelude();
-  assert.match(prelude, /sdd-agentic-flow/);
-  assert.doesNotMatch(prelude, /Specs first|Boas-vindas|Welcome back/);
 });
 
 test('classifies setup from durable facts without requiring config', () => {

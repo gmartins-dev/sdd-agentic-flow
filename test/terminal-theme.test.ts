@@ -30,10 +30,14 @@ test('terminal theme provides safe rich and ASCII values for every semantic toke
   assert.equal(symbol('success', 'human-rich'), '✓');
   assert.equal(symbol('success', 'human-plain'), 'OK');
   assert.equal(SAF_ASCII_GLYPHS.checkboxSelected, '[x]');
+  assert.equal(SAF_ASCII_GLYPHS.radioFocused, '(*)');
+  assert.equal(SAF_ASCII_GLYPHS.checkboxFocused, '[*]');
   assert.equal(SAF_ASCII_GLYPHS.pointerActive, '>');
   assert.deepEqual(Object.keys(TERMINAL_GLYPHS.selection), [
+    'radioFocused',
     'radioSelected',
     'radioUnselected',
+    'checkboxFocused',
     'checkboxSelected',
     'checkboxUnselected',
   ]);
@@ -66,10 +70,11 @@ test('terminal theme exposes four complete declarative foundations', () => {
     'command',
     'path',
     'keyboardHint',
+    'tagline',
   ]);
 });
 
 test('brand lockup remains a brand-only multi-code-point exception', () => {
-  assert.equal(TERMINAL_GLYPHS.brand.lockup.rich, '›››');
+  assert.equal(TERMINAL_GLYPHS.brand.lockup.rich, '›  ››  ›››');
   assert.equal(TERMINAL_GLYPHS.brand.chevron.rich, '›');
 });

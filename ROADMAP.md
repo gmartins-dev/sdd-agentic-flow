@@ -1,6 +1,12 @@
 # Roadmap
 
-- **v7.9.0 (current release):** Completes the SAF terminal design system across every human-facing
+- **v7.9.1 (next patch):** Makes Language the first interactive setup decision, keeps its locale
+  session-local until Apply, persists synchronized workspace language fields only for Git setup,
+  and unifies guided-init ordering across terminal presentations. It also refines the SAF welcome
+  composition with a centered display title, localized italic tagline, and the canonical 110×46
+  terminal brand mask from `public/ascii`, while preserving theme-owned colors and deterministic
+  narrow-terminal fallbacks.
+- **v7.9.0:** Completes the SAF terminal design system across every human-facing
   CLI journey. Unifies terminal context, semantic tokens, glyph fallbacks, cell-aware geometry,
   copyable output, selector rendering, gallery/catalog evidence, and presentation-boundary checks.
   Interactive `NO_COLOR` preserves rich structure without ANSI. Machine output, command semantics,

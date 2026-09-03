@@ -49,7 +49,7 @@ Stage       ◇ ◆
 Status      ✓ ! ✗ i
 Selection   ● ○ ■ □
 Navigation  → ← ↑ ↓ ↳ ▸ ▹
-Brand       › (candidate; ››› remains brand-only legacy art)
+Brand       `public/ascii/saf-ascii-art.txt` → canonical filled 110×46 small/medium/large terminal mask
 ```
 
 Every semantic token has a deterministic printable-ASCII fallback. EAW-A glyphs are valid in
@@ -68,7 +68,7 @@ icons are not part of the structural vocabulary.
 
 The theme exposes semantic tokens rather than raw visual values. Colors support brand, text,
 interaction, status, and border roles; typography maps display, title, section, body, value,
-supporting, command, path, and keyboard-hint roles to normal, bold, or dim emphasis; layout
+supporting, command, path, and keyboard-hint roles to normal, bold, dim, or italic emphasis; layout
 tokens provide shared gutters, indentation, content width, section spacing, and 80/60/40-cell
 breakpoints. Normal content uses the terminal's default foreground and background. `NO_COLOR`
 removes hue without removing structure, and ASCII mode selects deterministic fallbacks.
@@ -88,6 +88,34 @@ The selector state machine remains authoritative for input semantics. Its render
 markers, ASCII fallbacks, stable description slots, cancellation, and a collapsed selection
 summary after completion. Rendering never changes the selected value or transition rules.
 
+## Welcome composition
+
+The human welcome uses one shared composition: the canonical 110×46 terminal mask from
+`public/ascii/saf-ascii-art.txt`, the display
+title `SDD-AGENTIC-FLOW (SAF)`, the localized product description, and the localized tagline.
+Rich interactive output centers each physical line by terminal-cell width and uses tokenized
+vertical rhythm. It does not center against the viewport height. The package version remains on
+the canonical `--version`, `version`, help, and machine surfaces rather than in the visual title.
+
+The tagline uses the semantic italic text role. `NO_COLOR` removes hue but preserves rich
+structure and supported non-color emphasis. The terminal mask preserves the approved filled
+small→medium→large progression; its geometry is embedded in `brand-art.ts` and its palette is
+owned by `terminal-theme.ts`. Its zero-based inclusive component bounds are small
+`x=7..24,y=18..27`, medium `x=30..57,y=12..33`, and large `x=63..102,y=3..42`.
+Plain, ASCII, pipe, CI, and non-TTY output remain left-aligned and deterministic. At 110+
+columns with sufficient height, the mark uses the complete 110×46 canvas; smaller or short terminals use the progressive
+`›  ››  ›››` / `>  >>  >>>` fallback without splitting localized text or canonical command/path
+tokens.
+
+`public/ascii/saf-ascii-art.txt` is a geometry contract, not a suggestion. The wide renderer
+preserves every foreground glyph and coordinate; it never fills gaps, reconstructs interiors,
+rescales, crops, or derives another canonical variant. Responsive behavior selects the separate
+compact or minimal fallback instead of transforming the 110×46 asset.
+
+Single-choice selectors show only the current focus while open: `◉` for the focused option and
+`○` for other options. Multiple-choice selectors use the corresponding square states `▣`, `■`, and
+`□`. Action rows such as Back, Cancel, and Exit retain the navigation markers `▸` and `▹`.
+
 ## Adoption and boundaries
 
 Human-facing command flows use `terminalLog`, `terminalNext`, shared setup markers, or the
@@ -97,7 +125,7 @@ source-boundary check prevents new direct Clack or Picocolors imports, raw ANSI 
 structural glyphs from spreading into domain modules.
 
 `npm run ui:gallery` renders the gallery at a selected mode and width. `npm run ui:catalog`
-regenerates the normalized representative catalog at 40, 60, 80, and 120 columns for `en-US`
+regenerates the normalized representative catalog at 40, 60, 80, 110, and 120 columns for `en-US`
 and `pt-BR`, including rich color, rich `NO_COLOR`, ASCII, and plain human output. The catalog is
 evidence for visual and copyability regressions; it is not a runtime protocol.
 

@@ -25,7 +25,7 @@ import {
   type InstallProfilePlanInput,
   isPlanEmpty,
 } from './install-preflight';
-import { resolveLocale, t } from './messages';
+import { resolveLocale, t, translateText } from './messages';
 import { PACKAGE_ROOT, userSkillsDirsForTargets, VERSION } from './paths';
 import { select } from './selector';
 import { OFFICIAL_SKILLS } from './skill-identity';
@@ -37,6 +37,7 @@ type InstallCommandOptions = {
   mode?: DisplayMode | undefined;
   quiet?: boolean | undefined;
   ascii?: boolean | undefined;
+  locale?: string | undefined;
   homeDir?: string | undefined;
   plan?: boolean | undefined;
   scope?: string | undefined;
@@ -61,8 +62,8 @@ type SmokeInit = (
   options: { profile?: string; quiet?: boolean },
 ) => boolean | undefined;
 
-function fail(message: string): false {
-  process.stderr.write(`FAIL ${message}\n`);
+function fail(message: string, locale = 'en-US'): false {
+  process.stderr.write(`FAIL ${translateText(locale, message)}\n`);
   process.exitCode = 1;
   return false;
 }
@@ -261,6 +262,8 @@ function cleanupDeselectedUserTargets(
 
 function install(cwd: string, options: InstallCommandOptions = {}): boolean {
   const homeDir = options.homeDir || os.homedir();
+  const locale = options.locale || installLocale(cwd);
+  const failWithLocale = (message: string) => fail(message, locale);
   const historicalRoots = [
     path.join(cwd, '.agents', 'skills'),
     ...userSkillsDirsForTargets(['agents', 'cursor', 'claude', 'copilot'], homeDir),
@@ -275,7 +278,9 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       );
       return false;
     }
-    return fail(reset.blockedReason || 'future or unknown installation state is preserved');
+    return failWithLocale(
+      reset.blockedReason || 'future or unknown installation state is preserved',
+    );
   }
   if (reset.state === 'legacy') {
     const resetPaths = [
@@ -290,7 +295,8 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       `Pre-v7 reset plan\n${resetPaths.map((file) => `Remove: ${file}`).join('\n')}\n`,
     );
     if (options.plan) return false;
-    if (!options.yes) return fail('pre-v7 reset requires explicit confirmation with --yes');
+    if (!options.yes)
+      return failWithLocale('pre-v7 reset requires explicit confirmation with --yes');
     prepareCleanUpgrade(reset).commit();
   }
   const intentState = classifyInstallIntent(homeDir);
@@ -299,7 +305,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       printInstallPlanReport(blockedPlan(intentState.schema), options.mode, cwd);
       return false;
     }
-    return fail(`installation state ${intentState.schema} requires a clean v7 reinstall`);
+    return failWithLocale(`installation state ${intentState.schema} requires a clean v7 reinstall`);
   }
   const config =
     intentState.kind === 'current'
@@ -317,7 +323,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
         );
       });
   if (options.adoptionMode && !isAdoptionMode(options.adoptionMode))
-    return fail('unknown adoption mode: use personal, specs-shared, or team');
+    return failWithLocale('unknown adoption mode: use personal, specs-shared, or team');
   const git = resolveGitContext(cwd);
   const storedProject = git.ok ? config.projects[git.context.adoptionKey] : undefined;
   const adoptionMode = options.adoptionMode || storedProject?.adoption_mode;
@@ -336,18 +342,18 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     (adoptionMode ? adoptionModeForScope(adoptionMode) : storedProject ? 'project' : 'user');
   const leavingTeamProject = scope === 'user' && storedProject?.adoption_mode === 'team';
   if (scope !== 'user' && scope !== 'project')
-    return fail('unknown scope: use --scope user or --scope project');
+    return failWithLocale('unknown scope: use --scope user or --scope project');
   if (adoptionMode && adoptionModeForScope(adoptionMode) !== scope)
-    return fail(
+    return failWithLocale(
       `adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`,
     );
   if (scope === 'project' && options.targets?.length)
-    return fail('project installation does not accept user-only --target values');
+    return failWithLocale('project installation does not accept user-only --target values');
   if (scope === 'project' && adoptionMode !== 'team')
-    return fail(
+    return failWithLocale(
       'blocked: project installation requires Team adoption; retry with --adoption-mode team or configure persisted Team adoption',
     );
-  if ((scope === 'project' || adoptionMode === 'team') && !git.ok) return fail(git.error);
+  if ((scope === 'project' || adoptionMode === 'team') && !git.ok) return failWithLocale(git.error);
   const targets =
     scope === 'project'
       ? [path.join(cwd, '.agents', 'skills')]
@@ -360,7 +366,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     scope === 'user' &&
     targets.some((target) => !['agents', 'cursor', 'claude', 'copilot'].includes(target))
   )
-    return fail('unknown installation target');
+    return failWithLocale('unknown installation target');
 
   const profile =
     scope === 'user'
@@ -378,61 +384,63 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     printInstallPlanReport(plan, options.mode, cwd);
     return plan.applicability === 'applicable';
   }
-  if (plan.blocked) return fail(plan.blockerReason || 'installation is blocked');
+  if (plan.blocked) return failWithLocale(plan.blockerReason || 'installation is blocked');
   if (plan.totals.MANAGED_MODIFIED && !options.overwriteDiffers)
-    return fail(
+    return failWithLocale(
       'managed assets differ; inspect install --plan and confirm overwrite interactively',
     );
 
   for (let index = 0; index < plan.targets.length; index += 1) {
-    const target = plan.targets[index];
-    if (!target) continue;
-    const previous = readInstallProvenance(target.targetRoot);
+    const targetReport = plan.targets[index];
+    if (!targetReport) continue;
+    const previous = readInstallProvenance(targetReport.targetRoot);
     if (previous?.schema && previous.schema !== 'saf-install-provenance/v3')
-      return fail(`provenance ${previous.schema} requires a clean v7 reinstall`);
-    writeInstallProvenance(target.targetRoot, {
+      return failWithLocale(`provenance ${previous.schema} requires a clean v7 reinstall`);
+    writeInstallProvenance(targetReport.targetRoot, {
       packageVersion: VERSION,
       scope,
       target: plan.targetIds[index] || 'project-agents',
       managedSkills: [...OFFICIAL_SKILLS],
-      managedPaths: target.pairs.map((pair) => pair.rel),
+      managedPaths: targetReport.pairs.map((pair) => pair.rel),
       applyState: 'applying',
     });
     const progress = terminalSpinner({ mode: options.mode || 'human-plain' });
-    progress.start(`Installing skills for ${plan.targetIds[index] || 'project'}`);
-    const applied = applyInstallPlan(PACKAGE_ROOT, OFFICIAL_SKILLS, target.targetRoot, {
+    const targetId = plan.targetIds[index] || 'project';
+    progress.start(t(locale, 'install.installing', { target: targetId }));
+    const applied = applyInstallPlan(PACKAGE_ROOT, OFFICIAL_SKILLS, targetReport.targetRoot, {
       officialSkills: OFFICIAL_SKILLS,
     });
     if (!applied.ok) {
-      progress.error('Installation failed');
-      return fail('installation apply failed');
+      progress.error(t(locale, 'install.installationFailed'));
+      return failWithLocale('installation apply failed');
     }
-    progress.stop(`Installed skills for ${plan.targetIds[index] || 'project'}`);
-    writeInstallProvenance(target.targetRoot, {
+    progress.stop(t(locale, 'install.installedTarget', { target: targetId }));
+    writeInstallProvenance(targetReport.targetRoot, {
       packageVersion: VERSION,
       scope,
       target: plan.targetIds[index] || 'project-agents',
       managedSkills: [...OFFICIAL_SKILLS],
-      managedPaths: target.pairs.map((pair) => pair.rel),
+      managedPaths: targetReport.pairs.map((pair) => pair.rel),
       applyState: 'complete',
     });
   }
   const appliedPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
-  if (!isPlanEmpty(appliedPlan)) return fail('installation verification failed');
+  if (!isPlanEmpty(appliedPlan)) return failWithLocale('installation verification failed');
   if (adoptionMode && git.ok) {
     const adoption = applyAdoption(cwd, adoptionMode, homeDir, resolvedSpecsVisibility);
-    if (adoption.warning || adoption.drift.length) return fail('adoption verification failed');
+    if (adoption.warning || adoption.drift.length)
+      return failWithLocale('adoption verification failed');
   }
   if (scope === 'user' && !cleanupDeselectedUserTargets(previousUserTargets, targets, homeDir))
-    return fail('installation cleanup blocked by interrupted apply');
+    return failWithLocale('installation cleanup blocked by interrupted apply');
   if (leavingTeamProject && git.ok) {
     const projectRoot = path.join(cwd, '.agents', 'skills');
     removeManagedTargetContent(projectRoot, readInstallProvenance(projectRoot), 'project');
     if (readInstallProvenance(projectRoot)?.package === 'sdd-agentic-flow')
-      return fail('project cleanup verification failed');
+      return failWithLocale('project cleanup verification failed');
   }
   const cleanedPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
-  if (!isPlanEmpty(cleanedPlan)) return fail('installation cleanup verification failed');
+  if (!isPlanEmpty(cleanedPlan)) return failWithLocale('installation cleanup verification failed');
   if (scope === 'user') {
     config.user.targets = targets;
     if (adoptionMode && git.ok) {
@@ -446,12 +454,12 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
     if (leavingTeamProject && git.ok) delete config.projects[git.context.adoptionKey];
   } else {
     const project = profile as InstallProjectProfile;
-    if (!git.ok) return fail(git.error);
+    if (!git.ok) return failWithLocale(git.error);
     config.projects[git.context.adoptionKey] = project;
   }
   writeInstallConfig(config, homeDir);
   const finalPlan = planForInstallProfile({ cwd, homeDir, scope, profile });
-  if (!isPlanEmpty(finalPlan)) return fail('installation re-inspection failed');
+  if (!isPlanEmpty(finalPlan)) return failWithLocale('installation re-inspection failed');
   if (!options.quiet)
     process.stdout.write(
       `PASS installed ${OFFICIAL_SKILLS.length} official skills + shared layer\n`,

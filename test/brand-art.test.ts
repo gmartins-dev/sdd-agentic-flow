@@ -1,91 +1,164 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { test } from 'node:test';
 
 import {
-  BRAND_ART_ASCII,
-  BRAND_ART_RICH,
   brandArtFitsTerminal,
   brandArtLineCount,
+  brandArtVariant,
   brandArtWidth,
+  CANONICAL_MASK,
+  CANONICAL_WIDE_HEIGHT,
+  CANONICAL_WIDE_WIDTH,
   formatBrandArt,
   formatOneLineBrand,
-  MAX_ART_WIDTH,
   shouldAnimateBrandArt,
   writeBrandArt,
 } from '../src/brand-art';
+import { stripAnsi } from '../src/terminal-geometry';
 import { asBrandStream, brandStream } from './helpers';
 
-test('brand art is a compact three-chevron mark', () => {
-  assert.equal(BRAND_ART_RICH.length, 3);
-  assert.equal(BRAND_ART_ASCII.length, 3);
-  const richLines = brandArtLineCount('human-rich');
-  const plainLines = brandArtLineCount('human-plain');
-  assert.ok(richLines >= 8 && richLines <= 10);
-  assert.equal(plainLines, richLines);
-  assert.equal(brandArtLineCount('machine'), 0);
-  assert.ok(brandArtWidth('human-rich') <= MAX_ART_WIDTH);
-  assert.ok(brandArtWidth('human-plain') <= MAX_ART_WIDTH);
-  assert.equal(brandArtWidth('machine'), 0);
-});
+const ESC = String.fromCharCode(27);
+const FOREGROUND = new Set(['▒', '▓']);
+const BOUNDS = {
+  small: [7, 24, 18, 27],
+  medium: [30, 57, 12, 33],
+  large: [63, 102, 3, 42],
+} as const;
 
-test('formatBrandArt is empty in machine mode and full otherwise', () => {
-  assert.equal(formatBrandArt('machine', brandStream(true), {}), '');
+function canonicalRows(): string[] {
+  return fs
+    .readFileSync('public/ascii/saf-ascii-art.txt', 'utf8')
+    .replace(/\r?\n$/, '')
+    .split(/\r?\n/);
+}
 
-  const esc = String.fromCharCode(27);
-  const plain = formatBrandArt('human-plain', brandStream(true), {});
-  assert.match(plain, /#{2,}/);
-  assert.match(plain, /\+{2,}/);
-  assert.match(plain, /={2,}/);
-  assert.ok(!plain.includes(esc));
-  assert.equal(plain.endsWith('\n'), true);
-
-  const rich = formatBrandArt('human-rich', brandStream(true), {});
-  assert.match(rich, /▓/);
-  assert.match(rich, /▒/);
-  assert.ok(rich.includes(`${esc}[38;2;75;62;168m`));
-  assert.ok(rich.includes(`${esc}[38;2;139;125;255m`));
-
-  const noColor = formatBrandArt('human-rich', brandStream(true), { NO_COLOR: '1' });
-  assert.match(noColor, /▓/);
-  assert.ok(!noColor.includes(esc));
-});
-
-test('shouldAnimateBrandArt only for human-rich TTY without CI/quiet', () => {
-  const tty = brandStream(true);
-  assert.equal(shouldAnimateBrandArt('human-rich', tty, {}), true);
-  assert.equal(shouldAnimateBrandArt('human-plain', tty, {}), false);
-  assert.equal(shouldAnimateBrandArt('machine', tty, {}), false);
-  assert.equal(shouldAnimateBrandArt('human-rich', brandStream(false), {}), false);
-  assert.equal(shouldAnimateBrandArt('human-rich', tty, { CI: '1' }), false);
-  assert.equal(shouldAnimateBrandArt('human-rich', tty, {}, { quiet: true }), false);
-  assert.equal(shouldAnimateBrandArt('human-rich', tty, { SDD_BRAND_ANIMATE: '0' }), false);
-  assert.equal(shouldAnimateBrandArt('human-rich', tty, {}, { animate: false }), false);
-});
-
-test('brandArtFitsTerminal rejects narrow or short TTY reports', () => {
-  const wide = asBrandStream({ isTTY: true, columns: 80, rows: 40 });
-  const width = brandArtWidth('human-rich');
-  const height = brandArtLineCount('human-rich');
-  assert.equal(brandArtFitsTerminal('human-rich', wide), true);
-  assert.equal(
-    brandArtFitsTerminal('human-rich', asBrandStream({ isTTY: true, columns: width - 1 })),
-    false,
+function sourceCells(): Set<string> {
+  return new Set(
+    canonicalRows().flatMap((row, y) =>
+      [...row].flatMap((character, x) => (FOREGROUND.has(character) ? [`${x},${y}`] : [])),
+    ),
   );
-  assert.equal(
-    brandArtFitsTerminal('human-rich', asBrandStream({ isTTY: true, rows: height + 9 })),
-    false,
+}
+
+function renderedCells(value: string, offset = 0): Set<string> {
+  return new Set(
+    stripAnsi(value)
+      .replace(/\n$/, '')
+      .split('\n')
+      .flatMap((row, y) =>
+        [...row].flatMap((character, x) =>
+          FOREGROUND.has(character) ? [`${x - offset},${y}`] : [],
+        ),
+      ),
   );
-  assert.equal(brandArtFitsTerminal('machine', wide), false);
+}
+
+function componentCells(component: keyof typeof BOUNDS): Set<string> {
+  const [minX, maxX, minY, maxY] = BOUNDS[component];
+  return new Set(
+    [...sourceCells()].filter((cell) => {
+      const [x = 0, y = 0] = cell.split(',').map(Number);
+      return x >= minX && x <= maxX && y >= minY && y <= maxY;
+    }),
+  );
+}
+
+function wideStream(columns = 110, rows = 60) {
+  return asBrandStream({ isTTY: true, columns, rows });
+}
+
+test('canonical TXT and embedded mask preserve exact 110×46 occupancy', () => {
+  const rows = canonicalRows();
+  assert.equal(rows.length, CANONICAL_WIDE_HEIGHT);
+  assert.deepEqual([...new Set(rows.map((row) => [...row].length))], [CANONICAL_WIDE_WIDTH]);
+  assert.equal(CANONICAL_MASK.length, CANONICAL_WIDE_HEIGHT);
+  assert.deepEqual(
+    CANONICAL_MASK.map((spans) =>
+      spans.flatMap(([start, end]) =>
+        Array.from({ length: end - start + 1 }, (_, index) => start + index),
+      ),
+    ),
+    rows.map((row) => [...row].flatMap((character, x) => (FOREGROUND.has(character) ? [x] : []))),
+  );
 });
 
-test('writeBrandArt animates left-to-right on rich TTY and is instant otherwise', async () => {
-  const esc = String.fromCharCode(27);
-  const lineCount = brandArtLineCount('human-rich');
+test('canonical renderer preserves every foreground glyph and coordinate', () => {
+  const source = canonicalRows().map((row) => row.replaceAll('█', ' '));
+  const rendered = stripAnsi(formatBrandArt('human-rich', wideStream(110), { NO_COLOR: '1' }))
+    .replace(/\n$/, '')
+    .split('\n')
+    .map((row) => row.padEnd(CANONICAL_WIDE_WIDTH, ' ').slice(0, CANONICAL_WIDE_WIDTH));
+  assert.deepEqual(rendered, source);
+});
+
+test('canonical components are disjoint and cover every foreground cell', () => {
+  const parts = (['small', 'medium', 'large'] as const).map(componentCells);
+  assert.equal(new Set(parts.flatMap((part) => [...part])).size, sourceCells().size);
+  assert.equal(
+    new Set(parts.flatMap((part) => [...part])).size,
+    parts.reduce((sum, part) => sum + part.size, 0),
+  );
+});
+
+test('canonical renderer keeps the full canvas and complete viewport offset', () => {
+  const rendered = formatBrandArt(
+    'human-rich',
+    wideStream(120),
+    { NO_COLOR: '1' },
+    { center: true },
+  );
+  assert.equal(brandArtVariant('human-rich', wideStream()), 'wide');
+  assert.equal(brandArtWidth('human-rich', wideStream()), CANONICAL_WIDE_WIDTH);
+  assert.equal(brandArtLineCount('human-rich', wideStream()), CANONICAL_WIDE_HEIGHT);
+  assert.deepEqual(renderedCells(rendered, 5), sourceCells());
+  assert.equal(rendered.replace(/\r?\n$/, '').split('\n').length, CANONICAL_WIDE_HEIGHT);
+
+  const extraWide = formatBrandArt(
+    'human-rich',
+    wideStream(140),
+    { NO_COLOR: '1' },
+    { center: true },
+  );
+  assert.deepEqual(renderedCells(extraWide, 15), sourceCells());
+});
+
+test('canonical renderer uses theme colors without changing geometry', () => {
+  const rendered = formatBrandArt('human-rich', wideStream(), { COLORTERM: 'truecolor' });
+  assert.deepEqual(renderedCells(rendered), sourceCells());
+  assert.ok(rendered.includes(`${ESC}[38;2;75;62;168m`));
+  assert.ok(rendered.includes(`${ESC}[38;2;109;94;240m`));
+  assert.ok(rendered.includes(`${ESC}[38;2;139;125;255m`));
+
+  const noColor = formatBrandArt('human-rich', wideStream(), { NO_COLOR: '1' });
+  assert.deepEqual(renderedCells(noColor), sourceCells());
+  assert.equal(noColor.includes(ESC), false);
+});
+
+test('canonical variant requires width 110 and enough rows; smaller terminals keep fallbacks', () => {
+  assert.equal(brandArtVariant('human-rich', wideStream(110, 60)), 'wide');
+  assert.equal(brandArtVariant('human-rich', wideStream(111, 60)), 'wide');
+  assert.equal(brandArtVariant('human-rich', wideStream(120, 59)), 'compact');
+  assert.equal(brandArtVariant('human-rich', wideStream(109, 60)), 'compact');
+  assert.equal(brandArtVariant('human-rich', wideStream(20, 60)), 'minimal');
+  assert.equal(brandArtFitsTerminal('machine', wideStream()), false);
+});
+
+test('plain, ASCII, and machine modes remain deterministic', () => {
+  const plain = formatBrandArt('human-plain', wideStream(110), {});
+  assert.match(plain, /#{10}\s+\+{16}\s+={22}/);
+  assert.equal(plain.includes(ESC), false);
+  assert.equal(formatBrandArt('machine', wideStream(), {}), '');
+  assert.equal(formatOneLineBrand('human-plain', wideStream(20), {}), '>  >>  >>>\n');
+  assert.equal(brandArtLineCount('machine', wideStream()), 0);
+});
+
+test('animation reveals component masks in order on a fixed 110×46 canvas', async () => {
   const chunks: string[] = [];
   const stream = {
     isTTY: true,
-    columns: 80,
-    rows: 40,
+    columns: 110,
+    rows: 60,
     write(chunk: string) {
       chunks.push(String(chunk));
       return true;
@@ -93,39 +166,52 @@ test('writeBrandArt animates left-to-right on rich TTY and is instant otherwise'
   };
 
   await writeBrandArt('human-rich', stream, { NO_COLOR: '1' }, { delayMs: 0 });
-  const out = chunks.join('');
-  assert.match(out, /▓/);
-  assert.match(out, /▒/);
-  assert.equal((out.match(new RegExp(`${esc}\\[${lineCount}A`, 'g')) || []).length, 2);
-
-  chunks.length = 0;
-  await writeBrandArt('human-plain', stream, {}, { delayMs: 0 });
-  const plain = chunks.join('');
-  assert.match(plain, /#{2,}/);
-  assert.equal(plain.includes(`${esc}[${lineCount}A`), false);
-
-  chunks.length = 0;
-  await writeBrandArt('machine', stream, {}, {});
-  assert.equal(chunks.join(''), '');
+  const frames = chunks
+    .join('')
+    .split(`${ESC}[${CANONICAL_WIDE_HEIGHT}A`)
+    .map((frame) => frame.replaceAll(`${ESC}[K`, ''));
+  assert.equal(frames.length, 3);
+  assert.deepEqual(renderedCells(frames[0] ?? ''), componentCells('small'));
+  assert.deepEqual(
+    renderedCells(frames[1] ?? ''),
+    new Set([...componentCells('small'), ...componentCells('medium')]),
+  );
+  assert.deepEqual(renderedCells(frames[2] ?? ''), sourceCells());
+  assert.equal(
+    renderedCells(frames[2] ?? '').size,
+    renderedCells(formatBrandArt('human-rich', stream, { NO_COLOR: '1' })).size,
+  );
+  assert.equal(chunks.join('').split(`${ESC}[${CANONICAL_WIDE_HEIGHT}A`).length - 1, 2);
 });
 
-test('writeBrandArt falls back to one-line mark on tiny TTY', async () => {
-  const chunks: string[] = [];
-  const narrow = {
-    isTTY: true,
-    columns: brandArtWidth('human-rich') - 1,
-    rows: 40,
-    write(chunk: string) {
-      chunks.push(String(chunk));
-      return true;
-    },
-  };
+test('animation is disabled outside rich interactive TTY contexts', () => {
+  const tty = brandStream(true, 110);
+  assert.equal(shouldAnimateBrandArt('human-rich', tty, {}), true);
+  assert.equal(shouldAnimateBrandArt('human-rich', brandStream(false, 110), {}), false);
+  assert.equal(shouldAnimateBrandArt('human-plain', tty, {}), false);
+  assert.equal(shouldAnimateBrandArt('machine', tty, {}), false);
+  assert.equal(shouldAnimateBrandArt('human-rich', tty, { CI: '1' }), false);
+  assert.equal(shouldAnimateBrandArt('human-rich', tty, { TERM: 'dumb' }), false);
+  assert.equal(shouldAnimateBrandArt('human-rich', tty, { SDD_BRAND_ANIMATE: '0' }), false);
+});
 
-  await writeBrandArt('human-rich', narrow, { NO_COLOR: '1' }, { delayMs: 0 });
-  assert.equal(chunks.join(''), formatOneLineBrand('human-rich', narrow, { NO_COLOR: '1' }));
-  assert.ok(!chunks.join('').includes('▓'));
-
-  chunks.length = 0;
-  await writeBrandArt('human-plain', narrow, {}, { delayMs: 0 });
-  assert.equal(chunks.join(''), '>>>\n');
+test('centered compact and minimal fallbacks remain stable', () => {
+  const compact = formatBrandArt(
+    'human-rich',
+    asBrandStream({ isTTY: true, columns: 80, rows: 40 }),
+    { NO_COLOR: '1' },
+    { center: true },
+  );
+  assert.match(compact, /██████████\s+████████████████\s+██████████████████████/);
+  assert.equal(
+    brandArtWidth('human-rich', asBrandStream({ isTTY: true, columns: 80, rows: 40 })),
+    54,
+  );
+  const minimal = formatBrandArt(
+    'human-rich',
+    asBrandStream({ isTTY: true, columns: 20, rows: 40 }),
+    { NO_COLOR: '1' },
+    { center: true },
+  );
+  assert.equal(minimal, '     ›  ››  ›››\n');
 });

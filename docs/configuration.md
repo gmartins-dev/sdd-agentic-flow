@@ -3,7 +3,8 @@
 `.sdd-agentic-flow/config.yml` is optional. When it is absent, SAF uses the
 built-in v3 policy, including `apply + supervised`, `.specs/features`, and
 `en-US`. Create it only to persist project-specific overrides for specs root,
-language, workflow, or safety. `init` never creates or overwrites it. See
+language, workflow, or safety. Direct `init` never creates or overwrites it; interactive Git
+workspace setup creates it from the reviewed Apply intent when needed. See
 [language profiles](language-profiles.md).
 
 Keep `quality` gates enabled unless the project records an explicit exception. The `safety`

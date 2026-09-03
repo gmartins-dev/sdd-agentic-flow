@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderCard, renderGallery, renderJourney, renderStatus } from '../src/terminal-components';
+import {
+  renderCard,
+  renderGallery,
+  renderJourney,
+  renderStatus,
+  renderWelcomeText,
+} from '../src/terminal-components';
+import { displayWidth } from '../src/terminal-geometry';
 import { resolvePresentationContext } from '../src/ui';
 
 function context(mode: 'human-rich' | 'human-plain' | 'machine', width = 80, noColor = false) {
@@ -38,8 +45,25 @@ test('terminal components keep semantic structure without color', () => {
   );
   assert.doesNotMatch(renderJourney([{ label: 'observe', state: 'active' }], plain), /[◇◆○┌└]/);
   assert.match(renderJourney([{ label: 'observe', state: 'active' }], plain), /\*/);
-  assert.equal(renderGallery(noColorContext).includes(String.fromCharCode(27)), false);
+  const esc = String.fromCharCode(27);
+  assert.match(renderGallery(noColorContext), new RegExp(`${esc}\\[1m`));
+  assert.doesNotMatch(renderGallery(noColorContext), /38(?:;|m)/);
   assert.doesNotMatch(renderGallery(context('machine')), /Summary|observe/);
+});
+
+test('welcome text centers rich lines and keeps the localized tagline italic', () => {
+  const rich = renderWelcomeText(context('human-rich', 80), 'en-US');
+  const noColor = renderWelcomeText(context('human-rich', 80, true), 'pt-BR');
+  assert.match(rich, /SDD-AGENTIC-FLOW \(SAF\)/);
+  const esc = String.fromCharCode(27);
+  assert.match(rich, new RegExp(`${esc}\\[.*1m`));
+  assert.match(rich, new RegExp(`${esc}\\[.*3m`));
+  assert.match(noColor, /Specs primeiro\. Evidências antes de concluir\. Você mantém o controle\./);
+  assert.match(noColor, new RegExp(`${esc}\\[3m`));
+  assert.doesNotMatch(noColor, /38(?:;|m)/);
+  for (const line of rich.split('\n').filter(Boolean)) {
+    assert.ok(displayWidth(line) <= 80);
+  }
 });
 
 test('gallery is deterministic and preserves long copyable values', () => {

@@ -109,6 +109,38 @@ test('applyPolicyMutation writes authorized fields only', () => {
   assert.equal(updated.presetEquivalent, 'autonomous');
 });
 
+test('applyPolicyMutation repairs a mismatched human output locale', () => {
+  const file = writeConfig(
+    'language-mismatch.yml',
+    SAMPLE.replace('profile: en-US', 'profile: pt-BR'),
+  );
+  const result = applyPolicyMutation(file, {
+    executionMode: 'guided',
+    autonomyLevel: 'manual',
+    languageProfile: 'pt-BR',
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.wrote, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(content, /profile: pt-BR/);
+  assert.match(content, /human_outputs: pt-BR/);
+});
+
+test('applyPolicyMutation materializes missing language fields', () => {
+  const file = writeConfig('language-missing.yml', SAMPLE.replace(/\nlanguage:[\s\S]*$/, '\n'));
+  const result = applyPolicyMutation(file, {
+    executionMode: 'guided',
+    autonomyLevel: 'manual',
+    languageProfile: 'en-US',
+  });
+  assert.equal(result.ok, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(
+    content,
+    /language:\n  (?:profile: en-US\n  human_outputs: en-US|human_outputs: en-US\n  profile: en-US)/,
+  );
+});
+
 test('applyPolicyMutation materializes config only when an absent default is changed', () => {
   const file = path.join(temporary, 'new/config.yml');
   const preview = applyPolicyMutation(

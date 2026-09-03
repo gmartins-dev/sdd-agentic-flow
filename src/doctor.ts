@@ -1081,11 +1081,14 @@ function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {})
   if (mode === 'human-rich') {
     terminalLog('INFO', view.title, { mode });
     terminalNote(
-      'Setup health',
+      t(locale, 'doctor.setupHealth'),
       [
-        ['Status', view.hasProblems ? t(locale, 'doctor.needsAction') : t(locale, 'doctor.passed')],
         [
-          'Checks',
+          t(locale, 'doctor.status'),
+          view.hasProblems ? t(locale, 'doctor.needsAction') : t(locale, 'doctor.passed'),
+        ],
+        [
+          t(locale, 'doctor.checksLabel'),
           t(locale, 'doctor.summary', {
             pass: view.counts.PASS,
             info: view.counts.INFO,
@@ -1093,7 +1096,7 @@ function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {})
             fail: view.counts.FAIL,
           }),
         ],
-        ...(view.primaryFix ? [['Next action', view.primaryFix] as const] : []),
+        ...(view.primaryFix ? [[t(locale, 'doctor.nextAction'), view.primaryFix] as const] : []),
       ],
       { mode },
     );
@@ -1219,7 +1222,8 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
   else
     renderDoctor(projectedChecks, {
       verbose: options.verbose,
-      locale: resolveLocale({ configured: languageReport(cwd).profile ?? undefined }),
+      locale:
+        options.locale || resolveLocale({ configured: languageReport(cwd).profile ?? undefined }),
     });
   if (result.status === 'FAIL') process.exitCode = 1;
   return result;

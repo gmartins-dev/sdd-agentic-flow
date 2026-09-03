@@ -70,7 +70,7 @@ test('Git setup keeps PT-BR through review, Apply, validation, and persisted lan
       steps: [
         { waitFor: /Choose your language \/ Escolha o idioma/, input: '2' },
         { waitFor: /Compartilhamento/, input: '1' },
-        { waitFor: /Agentes de código/, input: '\r' },
+        { waitFor: /Agentes de código/, input: '1\r' },
         { waitFor: /Fluxo de trabalho/, input: '\r' },
         { waitFor: /Pronto para configurar o SAF/, input: '\r' },
         { waitFor: /Fluxo: Supervisionado/, input: '' },

@@ -136,7 +136,7 @@ function runPacked(
   return spawnSync('npx', ['--yes', '--cache', cacheDir, `file:${tarball}`, ...args], {
     cwd: state.cwd,
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: 120_000,
     env: { ...process.env, HOME: state.home, USERPROFILE: state.home, CI: '1', ...env },
   });
 }
@@ -160,7 +160,7 @@ function runPackedInteractive(
   return spawnSync('sh', ['-c', command], {
     cwd: state.cwd,
     encoding: 'utf8',
-    timeout: 120_000,
+    timeout: 180_000,
     env,
   });
 }

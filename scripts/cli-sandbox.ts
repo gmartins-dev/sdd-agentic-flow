@@ -53,7 +53,7 @@ console.log('  installing via npx exactly as a first-time user would...\n');
 
 const result = spawnSync(
   'npx',
-  ['--yes', '--cache', cacheDir, `file:${tarballPath}`, ...forwardedArgs],
+  ['--yes', '--no-audit', '--cache', cacheDir, `file:${tarballPath}`, ...forwardedArgs],
   {
     cwd: consumerDir,
     stdio: 'inherit',

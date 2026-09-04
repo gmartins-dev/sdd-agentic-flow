@@ -128,16 +128,20 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
     name: 'packed',
     identity,
     run(args, sandbox, input = '') {
-      return spawnSync('npx', ['--yes', '--cache', cache, `file:${tarball}`, ...args], {
-        cwd: sandbox.cwd,
-        input,
-        encoding: 'utf8',
-        timeout: 60_000,
-        env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
-      });
+      return spawnSync(
+        'npx',
+        ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args],
+        {
+          cwd: sandbox.cwd,
+          input,
+          encoding: 'utf8',
+          timeout: 60_000,
+          env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
+        },
+      );
     },
     ptyCommand: () =>
-      `stty cols 80 rows 24 -isig -echo; exec npx --yes --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
+      `stty cols 80 rows 24 -isig -echo; exec npx --yes --no-audit --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
     ptyEnvironment: (sandbox) => {
       const env = environment(sandbox);
       delete env.CI;

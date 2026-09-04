@@ -54,7 +54,7 @@ function run(cwd, args = [], input = '', ci = true) {
     source === 'dist'
       ? [path.join(repo, 'dist/sdd-agentic-flow.js'), ...args]
       : source === 'packed'
-        ? ['--yes', '--cache', cache, `file:${tarball}`, ...args]
+        ? ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args]
         : ['--yes', 'sdd-agentic-flow', ...args];
   return spawnSync(command, commandArgs, {
     cwd,
@@ -149,7 +149,7 @@ function runInteractive(id, area, cwd, script, expected) {
     source === 'dist'
       ? `node ${path.join(repo, 'dist/sdd-agentic-flow.js')}`
       : source === 'packed'
-        ? `npx --yes --cache ${cache} file:${tarball}`
+        ? `npx --yes --no-audit --cache ${cache} file:${tarball}`
         : 'npx --yes sdd-agentic-flow';
   const inputScript =
     source === 'packed'

@@ -133,12 +133,16 @@ function runPacked(
   cacheDir: string,
   env: Record<string, string | undefined> = {},
 ): SpawnSyncReturns<string> {
-  return spawnSync('npx', ['--yes', '--cache', cacheDir, `file:${tarball}`, ...args], {
-    cwd: state.cwd,
-    encoding: 'utf8',
-    timeout: 120_000,
-    env: { ...process.env, HOME: state.home, USERPROFILE: state.home, CI: '1', ...env },
-  });
+  return spawnSync(
+    'npx',
+    ['--yes', '--no-audit', '--cache', cacheDir, `file:${tarball}`, ...args],
+    {
+      cwd: state.cwd,
+      encoding: 'utf8',
+      timeout: 120_000,
+      env: { ...process.env, HOME: state.home, USERPROFILE: state.home, CI: '1', ...env },
+    },
+  );
 }
 
 function runPackedInteractive(
@@ -148,7 +152,7 @@ function runPackedInteractive(
 ): SpawnSyncReturns<string> | null {
   const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
   if (probe.error || probe.status !== 0) return null;
-  const cli = `npx --yes --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
+  const cli = `npx --yes --no-audit --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
   const command = `{ sleep 5; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf " "; sleep 0.2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; } | script -qec ${quoteShell(`stty cols 80 rows 24; exec ${cli}`)} /dev/null`;
   const env: Record<string, string | undefined> = {
     ...process.env,

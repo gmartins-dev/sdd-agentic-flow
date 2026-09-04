@@ -459,7 +459,9 @@ function ptyScenario(): Scenario {
         steps: [
           { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
           { waitFor: /Sharing/, input: '1' },
-          { waitFor: /Coding agents/, input: '1' },
+          // Choose an initially unselected host: Codex is preselected by the
+          // sandbox marker, while local PATH detection may preselect others.
+          { waitFor: /Coding agents/, input: '4' },
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
           { waitFor: /Ready to set up SAF/, input: '\r' },

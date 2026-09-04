@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 7.9.1
 
 - Make Language the first interactive setup decision and keep the selected locale session-local
   until Apply. Git workspace setup now persists synchronized `language.profile` and

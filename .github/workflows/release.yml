@@ -49,8 +49,10 @@ jobs:
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --fund=false
       - run: npm run build
 
       - name: Read package.json version
@@ -179,10 +181,6 @@ jobs:
       - name: Ensure npm CLI supports Trusted Publishing (OIDC)
         if: steps.should_publish.outputs.value == 'true'
         run: npm install -g npm@latest
-
-      - name: Install dependencies
-        if: steps.should_publish.outputs.value == 'true' || steps.should_publish_gpr.outputs.value == 'true'
-        run: npm ci
 
       - name: Sanity-check the package contents before publishing
         if: steps.should_publish.outputs.value == 'true' || steps.should_publish_gpr.outputs.value == 'true'

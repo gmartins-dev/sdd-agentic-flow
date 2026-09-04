@@ -59,8 +59,8 @@ stored in this repository.** npm only accepts that exchange from the one provide
 workflow filename) registered as this package's Trusted Publisher. npmjs.com allows exactly one
 per package, so only `release.yml` is registered; see "One-time setup" below.
 
-Before publishing, `release.yml` re-installs dependencies and re-runs `npm run pack:dry` as a
-final sanity check of the package contents.
+Before publishing, `release.yml` uses the cached dependency installation from the start of the
+job and re-runs `npm run pack:dry` as a final sanity check of the package contents.
 
 ## GitHub Packages mirror: automatic (scoped)
 

@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -18,7 +22,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm ci
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --fund=false
       - run: npm audit --package-lock-only --offline --audit-level=high
       - run: npm run check
       - run: npm run pack:dry
@@ -41,7 +47,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm ci
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --fund=false
       - run: npm run check
       - run: npm run pack:dry
       - run: npm run cli:packed-smoke

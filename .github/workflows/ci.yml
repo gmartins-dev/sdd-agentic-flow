@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
-      - run: npm audit --package-lock-only --audit-level=high
+      - run: npm audit --package-lock-only --offline --audit-level=high
       - run: npm run check
       - run: npm run pack:dry
       - run: npm run cli:packed-smoke

@@ -90,7 +90,7 @@ export function createDistAdapter(repoRoot: string): CliExecutionAdapter {
         cwd: sandbox.cwd,
         input,
         encoding: 'utf8',
-        timeout: 30_000,
+        timeout: 60_000,
         env: environment(sandbox),
       });
     },
@@ -135,7 +135,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
           cwd: sandbox.cwd,
           input,
           encoding: 'utf8',
-          timeout: 60_000,
+          timeout: 120_000,
           env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
         },
       );

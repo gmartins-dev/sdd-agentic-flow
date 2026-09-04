@@ -95,7 +95,7 @@ export function createDistAdapter(repoRoot: string): CliExecutionAdapter {
       });
     },
     ptyCommand: () =>
-      `stty cols 80 rows 24 -isig -echo; exec ${shellQuote(process.execPath)} ${shellQuote(cli)}`,
+      `stty cols 80 rows 24 raw -echo; exec ${shellQuote(process.execPath)} ${shellQuote(cli)}`,
     ptyEnvironment: (sandbox) => {
       const env = environment(sandbox);
       delete env.CI;
@@ -141,7 +141,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
       );
     },
     ptyCommand: () =>
-      `stty cols 80 rows 24 -isig -echo; exec npx --yes --no-audit --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
+      `stty cols 80 rows 24 raw -echo; exec npx --yes --no-audit --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
     ptyEnvironment: (sandbox) => {
       const env = environment(sandbox);
       delete env.CI;

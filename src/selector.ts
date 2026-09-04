@@ -292,12 +292,12 @@ async function select(
         }
       }
     };
-    if (input.setRawMode) input.setRawMode(true);
-    input.resume();
     input.on('keypress', onKeypress);
     process.once('SIGINT', onSignal);
     const onEnd = () => done({ cancelled: true });
     input.once('end', onEnd);
+    if (input.setRawMode) input.setRawMode(true);
+    input.resume();
     output.write(`${initialRender}\n`);
   });
 }

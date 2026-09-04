@@ -340,6 +340,33 @@ test('raw selector registers input before rendering the initial prompt', async (
   );
 });
 
+test('raw selector registers input before resuming the stream', async () => {
+  const input = new PassThrough();
+  setTty(input);
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+  };
+  const resume = input.resume.bind(input);
+  input.resume = () => {
+    resume();
+    input.emit('keypress', '2', { name: '2' });
+    return input;
+  };
+
+  assert.deepEqual(
+    await select(
+      'Choose',
+      [
+        { value: 'one', label: 'One' },
+        { value: 'two', label: 'Two' },
+      ],
+      { input, output: setTty(new PassThrough()) },
+    ),
+    { value: 'two' },
+  );
+});
+
 test('raw selector accepts configured menu exits', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;

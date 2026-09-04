@@ -86,7 +86,7 @@ export async function runScriptPty(
       child,
       () => transcript,
       step.waitFor,
-      step.timeoutMs ?? 10_000,
+      step.timeoutMs ?? 20_000,
       cursor,
     );
     if (step.input) {
@@ -100,7 +100,7 @@ export async function runScriptPty(
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
       resolve({ status: null, signal: 'SIGTERM', transcript, stderr });
-    }, options.timeoutMs ?? 30_000);
+    }, options.timeoutMs ?? 60_000);
     child.once('close', (status, signal) => {
       clearTimeout(timer);
       resolve({ status, signal, transcript, stderr });

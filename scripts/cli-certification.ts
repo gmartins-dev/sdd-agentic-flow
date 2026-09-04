@@ -787,6 +787,9 @@ async function main(): Promise<number> {
   const evidence: ScenarioEvidence[] = results.map(
     ({ id: _id, name: _name, command: _command, durationMs: _durationMs, ...item }) => item,
   );
+  for (const result of results.filter((item) => item.outcome !== 'PASS')) {
+    console.error(`CLI certification scenario ${result.id} ${result.outcome}: ${result.note}`);
+  }
   const verdict = decideCertification(evidence);
   const report = reportPath(adapter.identity.version);
   writeReport(adapter, results, verdict, report);

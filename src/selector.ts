@@ -171,10 +171,13 @@ async function select(
     !capabilities.rawInput ||
     !capabilities.unicode ||
     !capabilities.cursor;
-  output.write(
-    `${renderSelector(question, options, { multiple, locale: settings.locale, plain })}\n`,
-  );
+  const initialRender = renderSelector(question, options, {
+    multiple,
+    locale: settings.locale,
+    plain,
+  });
   if (plain) {
+    output.write(`${initialRender}\n`);
     const rl = readline.createInterface({ input, output, terminal: false });
     try {
       let selected = options
@@ -295,6 +298,7 @@ async function select(
     process.once('SIGINT', onSignal);
     const onEnd = () => done({ cancelled: true });
     input.once('end', onEnd);
+    output.write(`${initialRender}\n`);
   });
 }
 

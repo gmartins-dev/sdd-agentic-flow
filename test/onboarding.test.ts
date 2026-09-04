@@ -308,6 +308,38 @@ test('raw multi-select numbers toggle the numbered value before Enter confirms',
   assert.deepEqual(await pending, { value: ['two'] });
 });
 
+test('raw selector registers input before rendering the initial prompt', async () => {
+  const input = new PassThrough();
+  setTty(input);
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+  };
+  let firstWrite = true;
+  const output = setTty({
+    columns: 80,
+    write: () => {
+      if (firstWrite) {
+        firstWrite = false;
+        input.emit('keypress', '2', { name: '2' });
+      }
+      return true;
+    },
+  });
+
+  assert.deepEqual(
+    await select(
+      'Choose',
+      [
+        { value: 'one', label: 'One' },
+        { value: 'two', label: 'Two' },
+      ],
+      { input, output },
+    ),
+    { value: 'two' },
+  );
+});
+
 test('raw selector accepts configured menu exits', async () => {
   const noColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;

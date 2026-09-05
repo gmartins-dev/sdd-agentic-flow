@@ -47,6 +47,7 @@ type TerminalCapabilities = {
   rawInput: boolean;
   animation: boolean;
   width: number;
+  height: number | null;
   colorDepth: ColorDepth;
 };
 type PresentationContext = TerminalCapabilities & { mode: DisplayMode };
@@ -106,6 +107,7 @@ function terminalCapabilities(
     rawInput,
     animation: interactive && !plain && env.SDD_BRAND_ANIMATE !== '0',
     width: terminalColumns(streams.stdout || process.stdout),
+    height: terminalRows(streams.stdout),
     colorDepth: color && !plain ? colorDepth(streams.stdout, env) : 'none',
   };
 }
@@ -227,6 +229,11 @@ function doctorFooterLines(checks: DoctorCheck[] = []): string[] {
 function terminalColumns(stream: BrandStream = process.stdout, fallback = 80): number {
   const width = stream?.columns;
   return typeof width === 'number' && width > 0 ? width : fallback;
+}
+
+function terminalRows(stream?: BrandStream): number | null {
+  const rows = stream?.rows;
+  return typeof rows === 'number' && rows > 0 ? rows : null;
 }
 
 function renderSection(title: string, mode: DisplayMode = 'human-rich'): string[] {
@@ -370,6 +377,7 @@ export {
   terminalBreakpoint,
   terminalCapabilities,
   terminalColumns,
+  terminalRows,
   writeBrand,
 };
 

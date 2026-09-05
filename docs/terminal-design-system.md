@@ -49,7 +49,7 @@ Stage       ◇ ◆
 Status      ✓ ! ✗ i
 Selection   ● ○ ■ □
 Navigation  → ← ↑ ↓ ↳ ▸ ▹
-Brand       `public/ascii/saf-ascii-art.txt` → canonical filled 110×46 small/medium/large terminal mask
+Brand       `public/ascii/saf-ascii-art.txt` → generated filled 80×34 small/medium/large terminal mask
 ```
 
 Every semantic token has a deterministic printable-ASCII fallback. EAW-A glyphs are valid in
@@ -90,7 +90,7 @@ summary after completion. Rendering never changes the selected value or transiti
 
 ## Welcome composition
 
-The human welcome uses one shared composition: the canonical 110×46 terminal mask from
+The human welcome uses one shared composition: the canonical 80×34 terminal mask from
 `public/ascii/saf-ascii-art.txt`, the display
 title `SDD-AGENTIC-FLOW (SAF)`, the localized product description, and the localized tagline.
 Rich interactive output centers each physical line by terminal-cell width and uses tokenized
@@ -99,18 +99,15 @@ the canonical `--version`, `version`, help, and machine surfaces rather than in 
 
 The tagline uses the semantic italic text role. `NO_COLOR` removes hue but preserves rich
 structure and supported non-color emphasis. The terminal mask preserves the approved filled
-small→medium→large progression; its geometry is embedded in `brand-art.ts` and its palette is
-owned by `terminal-theme.ts`. Its zero-based inclusive component bounds are small
-`x=7..24,y=18..27`, medium `x=30..57,y=12..33`, and large `x=63..102,y=3..42`.
-Plain, ASCII, pipe, CI, and non-TTY output remain left-aligned and deterministic. At 110+
-columns with sufficient height, the mark uses the complete 110×46 canvas; smaller or short terminals use the progressive
+small→medium→large progression; its generated geometry is embedded in `brand-animation.generated.ts` and its palette is
+owned by `terminal-theme.ts`. Plain, ASCII, pipe, CI, and non-TTY output remain left-aligned and deterministic. At 80+
+columns and sufficient height, the mark uses the complete 80×34 canvas; smaller or short terminals use the progressive
 `›  ››  ›››` / `>  >>  >>>` fallback without splitting localized text or canonical command/path
 tokens.
 
-`public/ascii/saf-ascii-art.txt` is a geometry contract, not a suggestion. The wide renderer
-preserves every foreground glyph and coordinate; it never fills gaps, reconstructs interiors,
-rescales, crops, or derives another canonical variant. Responsive behavior selects the separate
-compact or minimal fallback instead of transforming the 110×46 asset.
+`public/ascii/saf-ascii-art.txt` is a geometry contract, not a suggestion. The file is generated
+from the three polygons in `public/imgs/symbol.svg` and checked byte-for-byte by `npm run brand:check`.
+Responsive behavior selects the separate compact or minimal fallback instead of transforming the 80×34 asset.
 
 Single-choice selectors show only the current focus while open: `◉` for the focused option and
 `○` for other options. Multiple-choice selectors use the corresponding square states `▣`, `■`, and
@@ -125,7 +122,7 @@ source-boundary check prevents new direct Clack or Picocolors imports, raw ANSI 
 structural glyphs from spreading into domain modules.
 
 `npm run ui:gallery` renders the gallery at a selected mode and width. `npm run ui:catalog`
-regenerates the normalized representative catalog at 40, 60, 80, 110, and 120 columns for `en-US`
+regenerates the normalized representative catalog at 40, 54, 60, 80, 110, and 120 columns for `en-US`
 and `pt-BR`, including rich color, rich `NO_COLOR`, ASCII, and plain human output. The catalog is
 evidence for visual and copyability regressions; it is not a runtime protocol.
 

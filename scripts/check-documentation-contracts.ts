@@ -8,6 +8,12 @@ import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 export type DocumentationFinding = { file: string; message: string };
 
+export type ReleaseDocumentationState = {
+  roadmap: string;
+  changelog: string;
+  packageVersion: string;
+};
+
 const DOCUMENTATION_EXEMPTIONS = new Set([
   'CHANGELOG.md',
   'ROADMAP.md',
@@ -103,6 +109,89 @@ function addRepresentationFindings(
     });
 }
 
+function parseVersion(value: string): [number, number, number] | null {
+  const match = value
+    .trim()
+    .replace(/^v/, '')
+    .match(/^(\d+)\.(\d+)\.(\d+)$/);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+function compareVersions(left: [number, number, number], right: [number, number, number]): number {
+  for (let index = 0; index < left.length; index += 1) {
+    const leftValue = left[index] ?? 0;
+    const rightValue = right[index] ?? 0;
+    if (leftValue !== rightValue) return leftValue - rightValue;
+  }
+  return 0;
+}
+
+function markerVersions(content: string, marker: 'Current release' | 'Planned release'): string[] {
+  return [
+    ...content.matchAll(new RegExp(`^${marker}:[ \\t]*v?(\\d+\\.\\d+\\.\\d+)[ \\t]*$`, 'gim')),
+  ]
+    .map((match) => match[1])
+    .filter((value): value is string => Boolean(value));
+}
+
+export function checkReleaseDocumentationState(
+  state: ReleaseDocumentationState,
+): DocumentationFinding[] {
+  const findings: DocumentationFinding[] = [];
+  const current = markerVersions(state.roadmap, 'Current release');
+  const planned = markerVersions(state.roadmap, 'Planned release');
+  const packageVersion = parseVersion(state.packageVersion);
+  const changelogVersions = [
+    ...state.changelog.matchAll(/^##[ \t]+v?(\d+\.\d+\.\d+)[ \t]*$/gim),
+  ].map((match) => match[1]);
+
+  if (current.length !== 1)
+    findings.push({ file: 'ROADMAP.md', message: 'expected exactly one Current release marker' });
+  if (planned.length > 1)
+    findings.push({ file: 'ROADMAP.md', message: 'expected at most one Planned release marker' });
+  if (!packageVersion) {
+    findings.push({
+      file: 'package.json',
+      message: `invalid package version: ${state.packageVersion}`,
+    });
+  }
+  if (current[0] && packageVersion && current[0] !== state.packageVersion.replace(/^v/, ''))
+    findings.push({ file: 'ROADMAP.md', message: 'Current release does not match package.json' });
+  if (current[0] && changelogVersions[0] && current[0] !== changelogVersions[0])
+    findings.push({
+      file: 'CHANGELOG.md',
+      message: 'Current release does not match first CHANGELOG release',
+    });
+  if (planned[0] && current[0]) {
+    const plannedVersion = parseVersion(planned[0]);
+    const currentVersion = parseVersion(current[0]);
+    if (plannedVersion && currentVersion && compareVersions(plannedVersion, currentVersion) <= 0)
+      findings.push({
+        file: 'ROADMAP.md',
+        message: 'Planned release must be greater than Current release',
+      });
+  }
+
+  for (const match of state.roadmap.matchAll(
+    /Next release after[\s\S]*?—[ \t]*v?(\d+\.\d+\.\d+)/gim,
+  )) {
+    if (changelogVersions.includes(match[1]))
+      findings.push({
+        file: 'ROADMAP.md',
+        message: `released version still labeled as next: ${match[1]}`,
+      });
+  }
+  if (/v?\d+\.\d+\.\d+[ \t]*\(next patch\)/i.test(state.roadmap))
+    findings.push({ file: 'ROADMAP.md', message: 'released version still labeled as next patch' });
+  if (/v?\d+\.\d+\.\d+[ \t]*\(current baseline\)/i.test(state.roadmap))
+    findings.push({
+      file: 'ROADMAP.md',
+      message: 'released version still labeled as current baseline',
+    });
+
+  return findings;
+}
+
 export function checkDocumentationContracts(
   documents: ReadonlyMap<string, string>,
 ): DocumentationFinding[] {
@@ -159,8 +248,22 @@ export function loadActiveDocumentation(root = process.cwd()): Map<string, strin
   return documents;
 }
 
+export function loadReleaseDocumentationState(root = process.cwd()): ReleaseDocumentationState {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+    version?: string;
+  };
+  return {
+    roadmap: fs.readFileSync(path.join(root, 'ROADMAP.md'), 'utf8'),
+    changelog: fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8'),
+    packageVersion: packageJson.version ?? '',
+  };
+}
+
 if (process.argv[1]?.endsWith('check-documentation-contracts.ts')) {
-  const findings = checkDocumentationContracts(loadActiveDocumentation());
+  const findings = [
+    ...checkDocumentationContracts(loadActiveDocumentation()),
+    ...checkReleaseDocumentationState(loadReleaseDocumentationState()),
+  ];
   for (const finding of findings) process.stderr.write(`${finding.file}: ${finding.message}\n`);
   if (findings.length) process.exitCode = 1;
   else console.log('PASS documentation contracts');

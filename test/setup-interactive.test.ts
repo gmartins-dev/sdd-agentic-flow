@@ -36,7 +36,10 @@ test('no-Git setup asks Language before coding agents and stays user-only', asyn
       steps: [
         { waitFor: /Choose your language \/ Escolha o idioma/, input: '2' },
         { waitFor: /Agentes de código/, input: '1\r' },
-        { waitFor: /Pronto para configurar o SAF/, input: '\r' },
+        {
+          waitFor: /Pronto para configurar o SAF[\s\S]*?▸ 1\. Instalar e configurar/,
+          input: '1\r',
+        },
         { waitFor: /Nenhum workspace Git está ativo aqui/, input: '' },
       ],
     });
@@ -72,7 +75,7 @@ test('Git setup keeps PT-BR through review, Apply, validation, and persisted lan
         { waitFor: /Compartilhamento/, input: '1' },
         { waitFor: /Agentes de código/, input: '1\r' },
         { waitFor: /Fluxo de trabalho/, input: '\r' },
-        { waitFor: /Pronto para configurar o SAF/, input: '\r' },
+        { waitFor: /Pronto para configurar o SAF/, input: '1\r' },
         { waitFor: /Fluxo: Supervisionado/, input: '' },
       ],
     });

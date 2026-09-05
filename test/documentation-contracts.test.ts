@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-import { checkDocumentationContracts } from '../scripts/check-documentation-contracts';
+import {
+  checkDocumentationContracts,
+  checkReleaseDocumentationState,
+  loadReleaseDocumentationState,
+} from '../scripts/check-documentation-contracts';
 
 test('documentation contracts accept current commands and skills', () => {
   const findings = checkDocumentationContracts(
@@ -68,4 +72,51 @@ test('documentation contracts reject a missing representation token', () => {
     findings.some((finding) => finding.message.includes('validation-report')),
     true,
   );
+});
+
+test('release documentation state matches current package and planned semver', () => {
+  assert.deepEqual(
+    checkReleaseDocumentationState({
+      roadmap: 'Current release: v7.9.1\nPlanned release: v7.10.0\n',
+      changelog: '# Changelog\n\n## 7.9.1\n\n- current\n',
+      packageVersion: '7.9.1',
+    }),
+    [],
+  );
+});
+
+test('release documentation state rejects stale labels and mismatched versions', () => {
+  const findings = checkReleaseDocumentationState({
+    roadmap:
+      'Current release: v7.8.0\nPlanned release: v7.7.0\n\n- v7.9.1 (next patch)\n- Next release after 7.7.1 — v7.8.0\n',
+    changelog: '# Changelog\n\n## 7.9.1\n',
+    packageVersion: '7.9.1',
+  });
+  assert.equal(
+    findings.some((finding) => finding.message.includes('package.json')),
+    true,
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('first CHANGELOG')),
+    true,
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('Planned release')),
+    true,
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('next patch')),
+    true,
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('released version')),
+    true,
+  );
+});
+
+test('release documentation loader reads roadmap, changelog, and package version', () => {
+  const state = loadReleaseDocumentationState();
+  assert.equal(state.packageVersion, '7.10.0');
+  assert.match(state.roadmap, /Current release: v7\.10\.0/);
+  assert.match(state.changelog, /^## 7\.10\.0/m);
 });

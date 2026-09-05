@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { resolveOnboardingState } from '../src/onboarding';
 import { renderSelector, resolveSelection, select } from '../src/selector';
+import { displayWidth } from '../src/terminal-geometry';
 
 // Simulated raw-capable fixtures are intentionally not TERM=dumb; TERM=dumb is
 // a documented numbered-readline mode in the v5 terminal contract.
@@ -142,6 +143,21 @@ test('selector renderer uses journey glyphs, stable descriptions, and collapsed 
     ),
     /○ 1\. English[\s\S]*◉ 2\. Português/,
   );
+});
+
+test('selector renderer wraps long prompts, options, and hints to the terminal width', () => {
+  const rendered = renderSelector(
+    'Escolha os agentes de código disponíveis para instalação',
+    [
+      {
+        value: 'agents',
+        label: 'Skills compatíveis com agentes detectados',
+        description: 'Instala ou atualiza o pacote oficial de skills para agentes.',
+      },
+    ],
+    { multiple: true, locale: 'pt-BR', width: 40 },
+  );
+  for (const line of rendered.split('\n')) assert.ok(displayWidth(line) <= 40, line);
 });
 
 test('PT-BR selector copy survives plain, ASCII, and NO_COLOR output', async () => {

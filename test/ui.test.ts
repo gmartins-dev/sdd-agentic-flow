@@ -131,7 +131,7 @@ test('CLI-012: symbols are ASCII outside human-rich; welcome brand is the full e
   assert.equal(symbol('fail', 'human-rich'), '✗');
   assert.equal(symbol('unknown' as 'success', 'human-rich'), '');
   assert.match(styleBrand('human-plain', brandStream(true), {}), /#{10}\s+\+{16}\s+={22}/);
-  assert.match(styleBrand('human-rich', brandStream(true, 110), { NO_COLOR: '1' }), /▓/);
+  assert.match(styleBrand('human-rich', brandStream(true, 80), { NO_COLOR: '1' }), /█/);
   const colored = styleBrand('human-rich', brandStream(true, 110), { COLORTERM: 'truecolor' });
   const esc = String.fromCharCode(27);
   assert.ok(colored.includes(`${esc}[38;2;75;62;168m`));

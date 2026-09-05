@@ -126,6 +126,12 @@ second specification.
 
 ## Adjacent writing (cited, not copied)
 
+- Ghostty's pinned [video-to-terminal pipeline](https://github.com/ghostty-org/website/blob/7962e91e190ff226be1a4983eb9368b7ddb4dff9/bin/video-to-terminal/video-to-terminal.sh)
+  informs offline raster/frame generation only; SAF does not add media tools or a runtime image protocol.
+- GitHub Engineering's [animated Copilot CLI banner article](https://github.blog/engineering/from-pixels-to-characters-the-engineering-behind-github-copilot-clis-animated-ascii-banner/)
+  informs semantic roles, terminal variance, timing, and best-effort fallback. SAF keeps its existing
+  default-on policy for rich interactive TTYs.
+
 Short pointers to public essays that describe layers this toolkit already implements. They
 are not product requirements and are not reproduced here.
 

@@ -1,6 +1,8 @@
 # Roadmap
 
-- **v7.9.1 (next patch):** Makes Language the first interactive setup decision, keeps its locale
+Current release: v7.10.0
+
+- **v7.9.1:** Makes Language the first interactive setup decision, keeps its locale
   session-local until Apply, persists synchronized workspace language fields only for Git setup,
   and unifies guided-init ordering across terminal presentations. It also refines the SAF welcome
   composition with a centered display title, localized italic tagline, and the canonical 110×46
@@ -14,7 +16,7 @@
   unchanged. No TUI framework, new command or flag, telemetry, implicit network behavior,
   automatic Git mutation, or release publication authority.
 
-- **Next release after 7.7.1 — v7.8.0:** SAF Terminal Design System and Human CLI UX.
+- **v7.8.0:** SAF Terminal Design System and Human CLI UX.
   Replace log-oriented rich output with a coherent guided terminal journey, bundled
   Clack/Picocolors primitives, cell-aware layout, inert terminal-text sanitization,
   responsive notes and summaries, transient rich-TTY progress, and representative
@@ -23,7 +25,7 @@
   No new command semantics, workflow authority, telemetry, implicit network behavior,
   automatic Git mutation, or release publication authority.
 
-- **v7.7.1 (current baseline):** Removes the local-only `release-saf` skill from the
+- **v7.7.1:** Removes the local-only `release-saf` skill from the
   published package and republishes the corrected package contents.
 
 - **v7.7.0:** Hardens canonical CLI grammar, fail-fast dispatch,

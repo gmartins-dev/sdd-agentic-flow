@@ -4,6 +4,8 @@ import path from 'node:path';
 const root = path.resolve('src');
 const presentationOwners = new Set([
   'brand-art.ts',
+  'brand-motion.ts',
+  'brand-animation.generated.ts',
   'messages.ts',
   'selector.ts',
   'terminal-components.ts',
@@ -11,9 +13,16 @@ const presentationOwners = new Set([
   'terminal-ui.ts',
   'ui.ts',
 ]);
-const glyphOwners = new Set(['brand-art.ts', 'messages.ts', 'terminal-theme.ts']);
+const glyphOwners = new Set([
+  'brand-art.ts',
+  'brand-motion.ts',
+  'brand-animation.generated.ts',
+  'messages.ts',
+  'terminal-theme.ts',
+]);
 const colorOwners = new Set([
   'brand-art.ts',
+  'brand-motion.ts',
   'terminal-components.ts',
   'terminal-theme.ts',
   'terminal-ui.ts',

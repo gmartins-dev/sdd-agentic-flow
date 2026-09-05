@@ -39,7 +39,7 @@ test('terminal welcome composes centered rich branding and localized text', asyn
     );
     assert.match(stream.text(), new RegExp(`${String.fromCharCode(27)}\\[3m`));
     assert.doesNotMatch(stream.text(), /38(?:;|m)/);
-    assert.match(stream.text(), /^ {45}█/m);
+    assert.match(stream.text(), /^ {46}█/m);
   } finally {
     if (priorNoColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = priorNoColor;

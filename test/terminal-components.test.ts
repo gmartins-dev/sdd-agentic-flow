@@ -66,16 +66,23 @@ test('welcome text centers rich lines and keeps the localized tagline italic', (
   }
 });
 
-test('gallery is deterministic and preserves long copyable values', () => {
+test('gallery is deterministic and keeps card content inside the terminal box', () => {
   const first = renderGallery(context('human-rich', 40));
   assert.equal(first, renderGallery(context('human-rich', 40)));
-  assert.match(first, /npx sdd-agentic-flow doctor --json/);
-  assert.doesNotMatch(
-    renderCard(
-      'Summary',
-      [{ key: 'Command', value: 'npx sdd-agentic-flow doctor --json', copyable: true }],
-      context('human-rich', 40),
-    ),
-    /\n│/,
+  const card = renderCard(
+    'Pronto para configurar o SAF',
+    [
+      {
+        key: 'Operações de arquivo',
+        value: 'persistir os destinos e o compartilhamento selecionados',
+      },
+      { key: 'Command', value: 'npx sdd-agentic-flow doctor --json', copyable: true },
+    ],
+    context('human-rich', 40, true),
   );
+  assert.match(card, /npx sdd-agentic-flow/);
+  assert.match(card, /doctor --json/);
+  for (const line of card.split('\n')) assert.ok(displayWidth(line) <= 40, line);
+  const cardLines = card.split('\n');
+  assert.ok(cardLines.slice(1, -1).every((line) => line.startsWith('│') && line.endsWith('│')));
 });

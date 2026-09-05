@@ -1,6 +1,6 @@
 import { type BrandStream, formatBrandArt, formatOneLineBrand } from './brand-art';
 import { t } from './messages';
-import { displayWidth, wrapCopyable, wrapDisplayWidth } from './terminal-geometry';
+import { displayWidth, wrapDisplayWidth } from './terminal-geometry';
 import { sanitizeTerminalText } from './terminal-safety';
 import { ansiColor, COLORS, type ColorToken, TERMINAL_GLYPHS } from './terminal-theme';
 import { type PresentationContext, SAF_THEME, safGlyph, symbol } from './ui';
@@ -198,28 +198,38 @@ function renderCard(
   context: PresentationContext,
 ): string {
   if (context.mode === 'machine') return '';
-  const width = Math.max(20, context.width - SAF_THEME.spacing.gutter * 2);
-  const rows = entries.flatMap(({ key, value, copyable }) => {
+  const availableOuterWidth = Math.max(20, context.width - SAF_THEME.spacing.gutter * 2);
+  const maxInnerWidth = Math.max(1, availableOuterWidth - 2);
+  const rows = entries.flatMap(({ key, value }) => {
     const safeKey = sanitizeTerminalText(key);
     const safeValue = sanitizeMultilineTerminalText(value);
-    const values = copyable
-      ? wrapCopyable(safeValue, width)
-      : wrapDisplayWidth(
-          safeValue,
-          Math.max(12, width - displayWidth(safeKey) - SAF_THEME.spacing.gutter),
-        );
+    const values = safeValue
+      .split('\n')
+      .flatMap((line) =>
+        wrapDisplayWidth(
+          line,
+          Math.max(1, maxInnerWidth - displayWidth(safeKey) - SAF_THEME.spacing.gutter),
+        ),
+      );
     return values.map(
       (line, index) =>
         `${index === 0 ? `${safeKey}: ` : ' '.repeat(displayWidth(safeKey) + SAF_THEME.spacing.gutter)}${line}`,
     );
   });
-  const body = [sanitizeTerminalText(title), ...rows].join('\n');
-  if (context.mode !== 'human-rich' || context.width < 40) return body;
-  if (body.split('\n').some((line) => displayWidth(line) > width)) return body;
-  const border = safGlyph('rule', context.mode).repeat(
-    Math.min(width, Math.max(12, displayWidth(sanitizeTerminalText(title)) + 4)),
+  const lines = [sanitizeTerminalText(title), ...rows];
+  const innerWidth = Math.max(
+    1,
+    Math.min(maxInnerWidth, Math.max(...lines.map((line) => displayWidth(line)), 1)),
   );
-  return `${safGlyph('start', context.mode)}${border}${safGlyph('topRight', context.mode)}\n${safGlyph('continuation', context.mode)} ${body.replaceAll('\n', `\n${safGlyph('continuation', context.mode)} `)}\n${safGlyph('end', context.mode)}${border}${safGlyph('bottomRight', context.mode)}`;
+  if (context.mode !== 'human-rich' || context.width < 40) return lines.join('\n');
+  const border = safGlyph('rule', context.mode).repeat(innerWidth + 2);
+  const body = lines
+    .map(
+      (line) =>
+        `${safGlyph('continuation', context.mode)} ${line}${' '.repeat(Math.max(0, innerWidth - displayWidth(line)))} ${safGlyph('continuation', context.mode)}`,
+    )
+    .join('\n');
+  return `${safGlyph('start', context.mode)}${border}${safGlyph('topRight', context.mode)}\n${body}\n${safGlyph('end', context.mode)}${border}${safGlyph('bottomRight', context.mode)}`;
 }
 
 function renderFoundationGallery(context: PresentationContext, locale = 'en-US'): string {
@@ -237,7 +247,7 @@ function renderFoundationGallery(context: PresentationContext, locale = 'en-US')
     `  ${label}:`,
     ...formatBrandArt(brandMode, galleryStream(width), galleryEnv, {
       center: brandMode === 'human-rich',
-      variant: width >= 110 ? 'wide' : 'compact',
+      variant: width >= 80 ? 'wide' : 'compact',
     })
       .trimEnd()
       .split('\n')
@@ -247,7 +257,7 @@ function renderFoundationGallery(context: PresentationContext, locale = 'en-US')
     context.mode === 'human-rich'
       ? [1, 2, 3].flatMap((visible, index) => [
           `  frame ${index + 1}: ${['small', 'small + medium', 'small + medium + large'][index]}`,
-          ...formatBrandArt('human-rich', galleryStream(110), galleryEnv, {
+          ...formatBrandArt('human-rich', galleryStream(80), galleryEnv, {
             center: true,
             visibleParts: visible,
           })
@@ -268,11 +278,10 @@ function renderFoundationGallery(context: PresentationContext, locale = 'en-US')
   return [
     typography(context, heading, 'title'),
     'Brand / Canonical ASCII Assets',
-    '  asset: public/ascii/saf-ascii-art.txt (110×46 logical cells)',
-    '  preview: public/ascii/saf-ascii-art.png',
+    '  asset: public/ascii/saf-ascii-art.txt (80×34 logical cells, generated from symbol.svg)',
     '  identity reference: public/imgs/symbol.svg',
     '  progression: small to medium to large; no scaling',
-    ...brandSample('canonical wide (110 columns)', 110),
+    ...brandSample('canonical wide (80 columns)', 80),
     ...brandSample('canonical wide (120 columns)', 120),
     ...brandSample('canonical wide (140 columns)', 140),
     ...brandSample('compact fallback (80 columns)', 80),

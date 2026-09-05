@@ -1,6 +1,6 @@
 import readline from 'node:readline';
 import { t } from './messages';
-import { physicalRows } from './terminal-geometry';
+import { physicalRows, wrapDisplayWidth } from './terminal-geometry';
 import { sanitizeTerminalText } from './terminal-safety';
 import { safGlyph, terminalCapabilities } from './ui';
 
@@ -87,6 +87,7 @@ type RenderSelectorOptions = {
   locale?: string | undefined;
   plain?: boolean;
   collapsed?: boolean;
+  width?: number;
 };
 
 function renderSelector(
@@ -99,8 +100,10 @@ function renderSelector(
     locale,
     plain = false,
     collapsed = false,
+    width = 80,
   }: RenderSelectorOptions = {},
 ): string {
+  const maxWidth = Math.max(12, width);
   const selectedValues = new Set(
     (
       selected ||
@@ -112,9 +115,12 @@ function renderSelector(
     const chosen = options
       .filter((option) => !option.action && selectedValues.has(optionValueKey(option.value)))
       .map((option) => sanitizeTerminalText(option.label));
-    return `${plain ? 'OK' : safGlyph('completed', 'human-rich')} ${safeQuestion}: ${chosen.join(', ') || 'confirmed'}`;
+    return wrapDisplayWidth(
+      `${plain ? 'OK' : safGlyph('completed', 'human-rich')} ${safeQuestion}: ${chosen.join(', ') || 'confirmed'}`,
+      maxWidth,
+    ).join('\n');
   }
-  const lines = [`\n${safeQuestion}\n`];
+  const lines = ['', ...wrapDisplayWidth(safeQuestion, maxWidth), ''];
   const hasDescriptions = options.some((option) => option.description);
   options.forEach((option, index) => {
     const action = Boolean(option.action);
@@ -133,22 +139,30 @@ function renderSelector(
             displayMode,
           );
     const suffix = option.recommended ? ` ${t(locale ?? 'en-US', 'selector.recommended')}` : '';
-    lines.push(` ${marker} ${index + 1}. ${sanitizeTerminalText(option.label)}${suffix}`);
-    if (hasDescriptions)
-      lines.push(`      ${option.description ? sanitizeTerminalText(option.description) : ''}`);
+    const prefix = ` ${marker} ${index + 1}. `;
+    const labelLines = wrapDisplayWidth(
+      `${sanitizeTerminalText(option.label)}${suffix}`,
+      Math.max(1, maxWidth - prefix.length),
+    );
+    lines.push(`${prefix}${labelLines[0] ?? ''}`);
+    for (const line of labelLines.slice(1)) lines.push(`${' '.repeat(prefix.length)}${line}`);
+    if (hasDescriptions) {
+      const description = option.description ? sanitizeTerminalText(option.description) : '';
+      const descriptionLines = wrapDisplayWidth(description, Math.max(1, maxWidth - 6));
+      lines.push(...descriptionLines.map((line) => `      ${line}`));
+    }
   });
-  lines.push(
-    `\n${t(
-      locale ?? 'en-US',
-      plain
-        ? multiple
-          ? 'selector.plainMultiple'
-          : 'selector.plainSingle'
-        : multiple
-          ? 'selector.multiple'
-          : 'selector.single',
-    )}`,
+  const hint = t(
+    locale ?? 'en-US',
+    plain
+      ? multiple
+        ? 'selector.plainMultiple'
+        : 'selector.plainSingle'
+      : multiple
+        ? 'selector.multiple'
+        : 'selector.single',
   );
+  lines.push('', ...wrapDisplayWidth(hint, maxWidth));
   return lines.join('\n');
 }
 
@@ -175,6 +189,7 @@ async function select(
     multiple,
     locale: settings.locale,
     plain,
+    width: capabilities.width,
   });
   if (plain) {
     output.write(`${initialRender}\n`);
@@ -209,8 +224,9 @@ async function select(
     const rendered = renderSelector(question, options, {
       multiple,
       locale: settings.locale,
+      width: capabilities.width,
     });
-    const renderedLines = physicalRows(rendered, terminalCapabilities({ stdout: output }).width);
+    const renderedLines = physicalRows(rendered, capabilities.width);
     const redraw = () => {
       output.write(
         `\x1b[${renderedLines}F\x1b[J${renderSelector(question, options, {
@@ -218,6 +234,7 @@ async function select(
           activeIndex: index,
           selected,
           locale: settings.locale,
+          width: capabilities.width,
         })}\n`,
       );
     };
@@ -240,6 +257,7 @@ async function select(
             locale: settings.locale,
             plain,
             collapsed: true,
+            width: capabilities.width,
           })}\n`,
         );
       }

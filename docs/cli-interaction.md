@@ -42,18 +42,15 @@ Rules:
   in human modes only.
 - Rich status, note, and spinner primitives are provided by the bundled terminal UI adapter;
   command semantics and terminal mode selection remain SAF-owned.
-- Welcome prints the approved 110×46 filled three-triangle mask from
-  `public/ascii/saf-ascii-art.txt` at 110+ columns with sufficient height. The TXT is a golden
-  source only; the mask is embedded in `src/brand-art.ts`, so the package has no runtime read of
-  `public/`. Its background `█` cells become transparent and its `▒`/`▓` cells become the
-  semantic brand glyph. At smaller or short terminals, the existing compact/progressive fallback
-  is used without scaling the canonical canvas. In human-rich TTY, the canonical components
-  reveal left-to-right (~240ms steps, 480ms to the final frame)
-  to echo the SVG flow; human-plain / `--ascii` stay
-  instant. If the TTY reports `columns` or `rows` too small for the block, welcome falls
-  back to a progressive one-line mark (`›  ››  ›››` / `>  >>  >>>`) with no animation.
-  Set `SDD_BRAND_ANIMATE=0` to
-  skip the reveal. Machine output gets no art. SVG is never rendered in the CLI.
+- Welcome prints the generated 80×34 filled three-triangle mask from
+  `public/ascii/saf-ascii-art.txt` at 80+ columns with sufficient height. The mask is embedded in
+  `brand-animation.generated.ts`, so the package has no runtime read of `public/`. At smaller or
+  short terminals, the existing compact/progressive fallback is used without scaling the canonical
+  canvas. In a human-rich TTY at least 80×48, semantic components materialize left-to-right in a
+  deadline-driven 590 ms animation and settle on the exact static frame; delayed output skips stale
+  frames. `NO_COLOR` preserves motion without ANSI, while human-plain, `--ascii`, CI, pipes, and
+  machine output stay static. Set `SDD_BRAND_ANIMATE=0` to skip the animation. SVG is never
+  rendered in the CLI.
 
 ## stdout vs stderr
 

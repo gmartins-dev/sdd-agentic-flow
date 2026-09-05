@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { hasScriptPty, runScriptPty } from './cli-certification/pty.ts';
 
 const repo = process.cwd();
 const source = process.env.SAF_FULL_MATRIX_SOURCE ?? 'dist';
@@ -23,6 +24,20 @@ const tarball =
 const expectedVersion = JSON.parse(
   fs.readFileSync(path.join(repo, 'package.json'), 'utf8'),
 ).version;
+const sourceCommit =
+  process.env.SAF_CLI_SOURCE_COMMIT ??
+  execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim();
+const sourceDirty =
+  process.env.SAF_CLI_SOURCE_DIRTY === 'true' ||
+  (process.env.SAF_CLI_SOURCE_DIRTY !== 'false' &&
+    Boolean(
+      execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim(),
+    ));
+const candidateType =
+  process.env.SAF_CLI_CANDIDATE_TYPE ?? (sourceDirty ? 'working-tree' : 'commit');
+const tarballSha256 = tarball
+  ? crypto.createHash('sha256').update(fs.readFileSync(tarball)).digest('hex')
+  : null;
 const results = [];
 const failures = [];
 const findings = [];
@@ -143,35 +158,36 @@ function check(
   return result;
 }
 
-function runInteractive(id, area, cwd, script, expected) {
+async function runInteractive(id, area, cwd, steps, expected) {
   const started = Date.now();
   const cliCommand =
     source === 'dist'
-      ? `node ${path.join(repo, 'dist/sdd-agentic-flow.js')}`
+      ? `node '${path.join(repo, 'dist/sdd-agentic-flow.js')}'`
       : source === 'packed'
-        ? `npx --yes --no-audit --cache ${cache} file:${tarball}`
+        ? `npx --yes --no-audit --cache '${cache}' 'file:${tarball}'`
         : 'npx --yes sdd-agentic-flow';
-  const inputScript =
-    source === 'packed'
-      ? 'sleep 5; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf " "; sleep 0.2; printf "\\r"; sleep 1; printf "\\r"; sleep 1; printf "\\r"; sleep 10'
-      : script;
-  const command = `{ ${inputScript}; } | script -qec '${cliCommand}' /dev/null`;
-  const result = spawnSync('bash', ['-lc', command], {
-    cwd,
-    encoding: 'utf8',
-    timeout: 180_000,
-    env: env(false),
-  });
-  const text = output(result);
+  const result = hasScriptPty()
+    ? await runScriptPty(`stty cols 80 rows 24; exec ${cliCommand}`, {
+        cwd,
+        env: {
+          ...env(false),
+          PATH: [path.dirname(process.execPath), '/usr/bin', '/bin'].join(path.delimiter),
+        },
+        timeoutMs: 180_000,
+        steps,
+      })
+    : null;
+  const text = result ? result.transcript : '';
   const problems = [];
-  if (result.status !== 0) problems.push(`exit ${result.status} (expected 0)`);
+  if (!result) problems.push('script PTY wrapper unavailable');
+  else if (result.status !== 0) problems.push(`exit ${result.status} (expected 0)`);
   if (!expected.test(text)) problems.push(`missing /${expected.source}/`);
   const item = {
     id,
     area,
     command: 'npx sdd-agentic-flow (interactive TTY)',
     status: problems.length ? 'FAIL' : 'PASS',
-    exit: result.status,
+    exit: result?.status ?? null,
     durationMs: Date.now() - started,
     evidence: cleanEvidence(text.slice(-1000)),
   };
@@ -545,11 +561,19 @@ check('F02', 'fail closed', 'install --plan malformed config', malformed, ['inst
 });
 
 const interactiveCwd = project('interactive');
-runInteractive(
+await runInteractive(
   'I01',
   'interactive onboarding',
   interactiveCwd,
-  "sleep 2; printf '1\\n'; sleep 1; printf '1\\n'; sleep 1; printf '\\r'; sleep 1; printf '\\r'; sleep 1; printf '1\\n'; sleep 2; printf '\\r'",
+  [
+    { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
+    { waitFor: /Sharing/, input: '1' },
+    { waitFor: /Coding agents/, input: '1' },
+    { waitFor: /Coding agents/, input: '\r' },
+    { waitFor: /Workflow/, input: '\r' },
+    { waitFor: /Ready to set up SAF/, input: '1\r' },
+    { waitFor: /Ready/, input: '' },
+  ],
   /PASS Ready|Ready|pronto/i,
 );
 const ready = project('interactive-ready');
@@ -561,24 +585,20 @@ check('I03-prep', 'interactive settings', 'install --scope project --adoption-mo
   '--adoption-mode',
   'team',
 ]);
-if (source === 'packed') {
-  check(
-    'I04',
-    'interactive settings final state',
-    'doctor --json --contracts --autonomy',
-    ready,
-    ['doctor', '--json', '--contracts', '--autonomy'],
-    { status: 0, json: true, match: /schema_version|doctor|status/i },
-  );
-} else {
-  runInteractive(
-    'I04',
-    'interactive settings',
-    ready,
-    "sleep 5; printf '1\\n'; sleep 3; printf '1\\n'; sleep 3; printf '1\\n'; sleep 3; printf '1\\n'; sleep 6; printf '1\\n'; sleep 3; printf '4\\n'; sleep 3; printf '5\\n'; sleep 5; printf '5\\n'; sleep 5",
-    /Welcome back|Bem-vindo de volta|Exit|Sair/i,
-  );
-}
+await runInteractive(
+  'I04',
+  'interactive settings',
+  ready,
+  [
+    { waitFor: /What would you like to do[\s\S]*1\.\s*Change settings/i, input: '1\n' },
+    { waitFor: /1\.\s*Workflow/i, input: '1\n' },
+    { waitFor: /1\.\s*Supervised/i, input: '1\n' },
+    { waitFor: /Success: operation completed[\s\S]*What would you like to do/i, input: '1\n' },
+    { waitFor: /Change settings[\s\S]*4\.\s*Back/i, input: '4\n' },
+    { waitFor: /What would you like to do[\s\S]*5\.\s*Exit/i, input: '5\n' },
+  ],
+  /Welcome back|Bem-vindo de volta|Exit|Sair/i,
+);
 
 const summary = {
   total: results.length,
@@ -642,6 +662,11 @@ const lines = [
   `> **Status:** ${summary.failed ? 'FINDINGS' : 'PASS'}`,
   `> **Executed:** ${new Date().toISOString()}`,
   `> **Artifact:** ${source === 'dist' ? 'compiled dist CLI' : source === 'packed' ? 'local npm pack tarball via npx file:' : 'published package via npx'}`,
+  `> **Source commit:** ${sourceCommit || 'unavailable'}`,
+  `> **Source dirty:** ${sourceDirty}`,
+  `> **Candidate type:** ${candidateType}`,
+  `> **Tarball filename:** ${tarball ? path.basename(tarball) : 'n/a'}`,
+  `> **Tarball SHA-256:** ${tarballSha256 ?? 'n/a'}`,
   `> **Package version:** ${output(run(fresh, ['version'])).trim()}`,
   `> **Sandbox root:** ${root}`,
   '',

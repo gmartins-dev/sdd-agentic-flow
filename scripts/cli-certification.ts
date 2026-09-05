@@ -464,7 +464,7 @@ function ptyScenario(): Scenario {
           { waitFor: /Coding agents/, input: '4' },
           { waitFor: /Coding agents/, input: '\r' },
           { waitFor: /Workflow/, input: '\r' },
-          { waitFor: /Ready to set up SAF/, input: '\r' },
+          { waitFor: /Ready to set up SAF/, input: '1\r' },
           { waitFor: /Ready/, input: '' },
         ],
       });
@@ -630,7 +630,7 @@ function userInstallThenWorkspaceScenario(): Scenario {
           { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\n' },
           { waitFor: /Sharing/, input: '1\n' },
           { waitFor: /Workflow/, input: '\r' },
-          { waitFor: /Ready to set up SAF/, input: '\r' },
+          { waitFor: /Ready to set up SAF/, input: '1\r' },
           { waitFor: /Ready/, input: '' },
         ],
       });

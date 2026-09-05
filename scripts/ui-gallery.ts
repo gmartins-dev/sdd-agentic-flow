@@ -43,6 +43,8 @@ function catalog(): string {
     ['80 rich + color', 'human-rich', 80, 'en-US', false],
     ['80 rich + NO_COLOR', 'human-rich', 80, 'en-US', true],
     ['60 rich', 'human-rich', 60, 'en-US', false],
+    ['54 rich compact', 'human-rich', 54, 'en-US', true],
+    ['79 rich compact', 'human-rich', 79, 'en-US', true],
     ['40 rich/minimal', 'human-rich', 40, 'en-US', false],
     ['110 rich canonical', 'human-rich', 110, 'en-US', true],
     ['120 rich', 'human-rich', 120, 'en-US', false],

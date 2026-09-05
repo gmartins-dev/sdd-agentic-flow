@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.10.0
+
+- Replace timing-driven release audits with shared output-driven PTY journeys and deterministic
+  process cleanup across exhaustive, dist, and packed certification paths.
+- Derive the canonical 80×34 terminal raster from `public/imgs/symbol.svg` and add deterministic,
+  semantic SAF brand motion with deadline scheduling, responsive fallbacks, and packed-artifact
+  certification.
+- Preserve CLI commands, machine output, state and Skill contracts, local-first safety, and zero
+  external runtime dependencies.
+
 ## 7.9.1
 
 - Make Language the first interactive setup decision and keep the selected locale session-local

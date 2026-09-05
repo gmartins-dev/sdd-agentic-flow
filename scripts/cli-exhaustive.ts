@@ -16,6 +16,7 @@ import {
   summarizeAuditCases,
 } from './cli-audit-model.js';
 import { assertSnapshotUnchanged, snapshotPersistentState } from './cli-audit-snapshot.js';
+import { hasScriptPty, runScriptPty } from './cli-certification/pty.js';
 
 type ProjectState = { cwd: string; home: string };
 type AuditCase = {
@@ -145,27 +146,34 @@ function runPacked(
   );
 }
 
-function runPackedInteractive(
+async function runPackedInteractive(
   state: ProjectState,
   tarball: string,
   cacheDir: string,
-): SpawnSyncReturns<string> | null {
-  const probe = spawnSync('script', ['-qec', 'true', '/dev/null'], { encoding: 'utf8' });
-  if (probe.error || probe.status !== 0) return null;
+): Promise<Awaited<ReturnType<typeof runScriptPty>> | null> {
+  if (!hasScriptPty()) return null;
   const cli = `npx --yes --no-audit --cache ${quoteShell(cacheDir)} ${quoteShell(`file:${tarball}`)}`;
-  const command = `{ sleep 5; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf " "; sleep 0.2; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; printf "\\r"; sleep 2; printf "\\r"; sleep 2; printf "\\r"; sleep 10; } | script -qec ${quoteShell(`stty cols 80 rows 24; exec ${cli}`)} /dev/null`;
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: state.home,
     USERPROFILE: state.home,
     SDD_NO_UPDATE_PROMPT: '1',
+    PATH: [path.dirname(process.execPath), '/usr/bin', '/bin'].join(path.delimiter),
   };
   delete env.CI;
-  return spawnSync('sh', ['-c', command], {
+  return runScriptPty(`stty cols 80 rows 24; exec ${cli}`, {
     cwd: state.cwd,
-    encoding: 'utf8',
-    timeout: 180_000,
     env,
+    timeoutMs: 180_000,
+    steps: [
+      { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
+      { waitFor: /Sharing/, input: '1' },
+      { waitFor: /Coding agents/, input: '1' },
+      { waitFor: /Coding agents/, input: '\r' },
+      { waitFor: /Workflow/, input: '\r' },
+      { waitFor: /Ready to set up SAF/, input: '1\r' },
+      { waitFor: /Ready/, input: '' },
+    ],
   });
 }
 
@@ -175,6 +183,36 @@ function record(id: string, journey: string, command: string, fn: () => unknown)
   const started = Date.now();
   try {
     const observation = normalizeObservation(fn());
+    cases.push({ id, journey, command, ...observation, duration: Date.now() - started });
+  } catch (error) {
+    console.error(
+      `CLI exhaustive scenario ${id} failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    cases.push({
+      id,
+      journey,
+      command,
+      outcome: 'FAIL',
+      coverage: 'PARTIAL',
+      duration: Date.now() - started,
+      note: (error instanceof Error ? error.message : String(error))
+        .replace(/\s+/g, ' ')
+        .slice(0, 360),
+    });
+  }
+}
+
+async function recordAsync(
+  id: string,
+  journey: string,
+  command: string,
+  fn: () => unknown | Promise<unknown>,
+): Promise<void> {
+  assertUniqueScenarioId(scenarioIds, id);
+  scenarioIds.add(id);
+  const started = Date.now();
+  try {
+    const observation = normalizeObservation(await fn());
     cases.push({ id, journey, command, ...observation, duration: Date.now() - started });
   } catch (error) {
     console.error(
@@ -311,7 +349,7 @@ function writeIncompleteLoopState(cwd: string): void {
   );
 }
 
-function runJourneys() {
+async function runJourneys() {
   const fresh = project('01-new-user');
   const before = entries(fresh.cwd);
   record('J01', 'new user', 'sdd-agentic-flow', () => {
@@ -609,24 +647,30 @@ function runJourneys() {
     assert.equal(doctor.stdout.includes(String.fromCharCode(27)), false);
   });
   const packedInteractive = project('11-packed-interactive');
-  record('J35', 'packaged interactive consumer', 'bare TTY recommended setup', () => {
-    const result = runPackedInteractive(packedInteractive, tarball, cacheDir);
-    if (!result) {
-      return {
-        outcome: 'SKIPPED',
-        coverage: 'UNAVAILABLE',
-        note: 'interactive TTY helper unavailable on this host',
-        limitation: 'script command is not available or failed its probe',
-      } satisfies AuditObservation;
-    }
-    assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
-    assert.match(stripAnsi(result.stdout), /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
-    assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
-    const configPath = path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml');
-    assert.equal(fs.existsSync(configPath), true);
-    assert.match(fs.readFileSync(configPath, 'utf8'), /profile: en-US/);
-    return 'interactive workspace initialization completed';
-  });
+  await recordAsync(
+    'J35',
+    'packaged interactive consumer',
+    'bare TTY recommended setup',
+    async () => {
+      const result = await runPackedInteractive(packedInteractive, tarball, cacheDir);
+      if (!result) {
+        return {
+          outcome: 'SKIPPED',
+          coverage: 'UNAVAILABLE',
+          note: 'interactive TTY helper unavailable on this host',
+          limitation: 'script command is not available or failed its probe',
+        } satisfies AuditObservation;
+      }
+      assert.equal(result.status, 0, `${result.stderr}${result.transcript}`);
+      assert.match(stripAnsi(result.transcript), /(?:PASS|[◇◆✓])\s+Ready(?:\r?\n|$)/);
+      assert.ok(fs.existsSync(path.join(packedInteractive.cwd, '.sdd-agentic-flow/workspace.yml')));
+      const configPath = path.join(packedInteractive.cwd, '.sdd-agentic-flow/config.yml');
+      assert.equal(fs.existsSync(configPath), true);
+      assert.match(fs.readFileSync(configPath, 'utf8'), /profile: en-US/);
+      assert.match(fs.readFileSync(configPath, 'utf8'), /human_outputs: en-US/);
+      return 'interactive workspace initialization completed';
+    },
+  );
 
   const targetedRemoval = project('12-targeted-removal');
   expect(run(['install', '--target', 'agents'], targetedRemoval), 0);
@@ -788,9 +832,14 @@ function writeReport() {
   }
 }
 
-try {
-  runJourneys();
-} finally {
-  writeReport();
-  fs.rmSync(runRoot, { recursive: true, force: true });
-}
+runJourneys()
+  .catch((error) => {
+    console.error(
+      `CLI exhaustive runner failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    writeReport();
+    fs.rmSync(runRoot, { recursive: true, force: true });
+  });

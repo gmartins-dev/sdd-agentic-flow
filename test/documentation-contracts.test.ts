@@ -77,11 +77,66 @@ test('documentation contracts reject a missing representation token', () => {
 test('release documentation state matches current package and planned semver', () => {
   assert.deepEqual(
     checkReleaseDocumentationState({
-      roadmap: 'Current release: v7.9.1\nPlanned release: v7.10.0\n',
+      roadmap: 'Current release: v7.9.1\nPlanned release: v7.10.0\n\n- **v7.9.1:** current\n',
       changelog: '# Changelog\n\n## 7.9.1\n\n- current\n',
       packageVersion: '7.9.1',
     }),
     [],
+  );
+});
+
+test('release documentation state accepts the final current release bullet', () => {
+  assert.deepEqual(
+    checkReleaseDocumentationState({
+      roadmap: 'Current release: v7.10.1\n\n- **v7.10.1:** current\n',
+      changelog: '# Changelog\n\n## 7.10.1\n',
+      packageVersion: '7.10.1',
+    }),
+    [],
+  );
+});
+
+test('release documentation state rejects a missing or duplicate current bullet', () => {
+  const missing = checkReleaseDocumentationState({
+    roadmap: 'Current release: v7.10.0\n\n- **v7.9.1:** prior\n',
+    changelog: '# Changelog\n\n## 7.10.0\n',
+    packageVersion: '7.10.0',
+  });
+  assert.equal(
+    missing.some((finding) => finding.message.includes('exactly one historical')),
+    true,
+  );
+
+  const duplicate = checkReleaseDocumentationState({
+    roadmap: 'Current release: v7.10.0\n\n- **v7.10.0:** one\n- **v7.10.0:** two\n',
+    changelog: '# Changelog\n\n## 7.10.0\n',
+    packageVersion: '7.10.0',
+  });
+  assert.equal(
+    duplicate.some((finding) => finding.message.includes('exactly one historical')),
+    true,
+  );
+});
+
+test('release documentation state counts only canonical release bullets', () => {
+  const findings = checkReleaseDocumentationState({
+    roadmap:
+      'Current release: v7.10.0\n\n' +
+      '## v7.10.0\n' +
+      'The v7.10.0 release is current.\n' +
+      '- v7.10.0: malformed\n' +
+      '- **v7.10.0** malformed\n' +
+      '- **v7.10.0:** next\n',
+    changelog: '# Changelog\n\n## 7.10.0\n',
+    packageVersion: '7.10.0',
+  });
+  assert.equal(
+    findings.some((finding) => finding.message.includes('exactly one historical')),
+    true,
+  );
+  assert.equal(
+    findings.some((finding) => finding.message.includes('labeled as next')),
+    true,
   );
 });
 
@@ -116,7 +171,8 @@ test('release documentation state rejects stale labels and mismatched versions',
 
 test('release documentation loader reads roadmap, changelog, and package version', () => {
   const state = loadReleaseDocumentationState();
-  assert.equal(state.packageVersion, '7.10.0');
-  assert.match(state.roadmap, /Current release: v7\.10\.0/);
-  assert.match(state.changelog, /^## 7\.10\.0/m);
+  assert.equal(state.packageVersion, '7.10.1');
+  assert.match(state.roadmap, /Current release: v7\.10\.1/);
+  assert.match(state.roadmap, /^- \*\*v7\.10\.1:\*\*/m);
+  assert.match(state.changelog, /^## 7\.10\.1/m);
 });

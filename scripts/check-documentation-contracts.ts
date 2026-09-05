@@ -134,6 +134,13 @@ function markerVersions(content: string, marker: 'Current release' | 'Planned re
     .filter((value): value is string => Boolean(value));
 }
 
+function releaseBulletVersions(content: string): string[] {
+  return content.split(/\r?\n/).flatMap((line) => {
+    const match = line.match(/^- \*\*v?(\d+\.\d+\.\d+):\*\*/i);
+    return match?.[1] && !/\bnext\b/i.test(line) ? [match[1]] : [];
+  });
+}
+
 export function checkReleaseDocumentationState(
   state: ReleaseDocumentationState,
 ): DocumentationFinding[] {
@@ -144,6 +151,7 @@ export function checkReleaseDocumentationState(
   const changelogVersions = [
     ...state.changelog.matchAll(/^##[ \t]+v?(\d+\.\d+\.\d+)[ \t]*$/gim),
   ].map((match) => match[1]);
+  const roadmapReleaseBullets = releaseBulletVersions(state.roadmap);
 
   if (current.length !== 1)
     findings.push({ file: 'ROADMAP.md', message: 'expected exactly one Current release marker' });
@@ -169,6 +177,26 @@ export function checkReleaseDocumentationState(
       findings.push({
         file: 'ROADMAP.md',
         message: 'Planned release must be greater than Current release',
+      });
+  }
+
+  if (current[0]) {
+    const currentBulletCount = roadmapReleaseBullets.filter(
+      (version) => version === current[0],
+    ).length;
+    if (currentBulletCount !== 1)
+      findings.push({
+        file: 'ROADMAP.md',
+        message: `expected exactly one historical release bullet for Current release: ${current[0]}`,
+      });
+  }
+
+  for (const line of state.roadmap.split(/\r?\n/)) {
+    const match = line.match(/^- \*\*v?(\d+\.\d+\.\d+):\*\*/i);
+    if (match && /\bnext\b/i.test(line))
+      findings.push({
+        file: 'ROADMAP.md',
+        message: `release bullet still labeled as next: ${match[1]}`,
       });
   }
 

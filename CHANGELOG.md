@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.10.1
+
+- Enforce release-state coherence by requiring exactly one historical roadmap entry for the
+  current release and record the corrected `v7.10.0` history.
+- Refresh `@types/node` to `26.4.1` and Biome to `2.5.12` as dev-only tooling updates, including
+  the directly required Biome configuration schema migration.
+- Preserve CLI commands, machine output, state and Skill contracts, local-first safety, and zero
+  external runtime dependencies.
+
 ## 7.10.0
 
 - Replace timing-driven release audits with shared output-driven PTY journeys and deterministic

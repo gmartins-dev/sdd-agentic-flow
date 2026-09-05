@@ -1,6 +1,16 @@
 # Roadmap
 
-Current release: v7.10.0
+Current release: v7.10.1
+
+- **v7.10.1:** Enforces release-state coherence with a deterministic roadmap-entry guard and
+  records the corrected v7.10.0 history. Refreshes dev-only @types/node and Biome tooling while
+  preserving all CLI, machine, state, Skill, safety, local-first, and zero-runtime-dependency
+  contracts.
+
+- **v7.10.0:** Replaces timing-driven release audits with output-driven PTY journeys,
+  deterministic cleanup, canonical 80×34 terminal branding, deadline-driven SAF brand motion,
+  responsive fallbacks, and packed-artifact certification. Preserves all CLI, machine, state,
+  Skill, safety, local-first, and zero-runtime-dependency contracts.
 
 - **v7.9.1:** Makes Language the first interactive setup decision, keeps its locale
   session-local until Apply, persists synchronized workspace language fields only for Git setup,

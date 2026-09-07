@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const npmCommand = 'npm';
+const npxCommand = 'npx';
+const windowsShell = process.platform === 'win32';
 
 export type CliResult = SpawnSyncReturns<string>;
 
@@ -118,7 +119,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
     const pack = spawnSync(
       npmCommand,
       ['pack', '--json', '--pack-destination', packRoot, '--cache', cache],
-      { cwd: repoRoot, encoding: 'utf8', timeout: 60_000 },
+      { cwd: repoRoot, encoding: 'utf8', timeout: 60_000, shell: windowsShell },
     );
     if (pack.status !== 0) throw new Error(`npm pack failed: ${pack.stderr}`);
     const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0] as {
@@ -143,6 +144,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
             input,
             encoding: 'utf8',
             timeout: 120_000,
+            shell: windowsShell,
             env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
           },
         );

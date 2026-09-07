@@ -7,8 +7,9 @@ import { hasScriptPty, runScriptPty } from './cli-certification/pty.ts';
 
 const repo = process.cwd();
 const source = process.env.SAF_FULL_MATRIX_SOURCE ?? 'dist';
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const npmCommand = 'npm';
+const npxCommand = 'npx';
+const windowsShell = process.platform === 'win32';
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-real-npx-audit-'));
 const home = path.join(root, 'home');
 const cache = path.join(root, 'npm-cache');
@@ -20,6 +21,7 @@ const tarball =
         root,
         execFileSync(npmCommand, ['pack', '--silent', '--pack-destination', root], {
           encoding: 'utf8',
+          shell: windowsShell,
         }).trim(),
       )
     : null;
@@ -78,6 +80,7 @@ function run(cwd, args = [], input = '', ci = true) {
     input,
     encoding: 'utf8',
     timeout: 45_000,
+    shell: windowsShell,
     env: env(ci),
   });
 }

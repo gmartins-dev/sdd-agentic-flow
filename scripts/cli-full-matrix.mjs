@@ -7,6 +7,8 @@ import { hasScriptPty, runScriptPty } from './cli-certification/pty.ts';
 
 const repo = process.cwd();
 const source = process.env.SAF_FULL_MATRIX_SOURCE ?? 'dist';
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-real-npx-audit-'));
 const home = path.join(root, 'home');
 const cache = path.join(root, 'npm-cache');
@@ -16,7 +18,7 @@ const tarball =
   source === 'packed'
     ? path.join(
         root,
-        execFileSync('npm', ['pack', '--silent', '--pack-destination', root], {
+        execFileSync(npmCommand, ['pack', '--silent', '--pack-destination', root], {
           encoding: 'utf8',
         }).trim(),
       )
@@ -64,7 +66,7 @@ function env(ci = true) {
 }
 
 function run(cwd, args = [], input = '', ci = true) {
-  const command = source === 'dist' ? 'node' : 'npx';
+  const command = source === 'dist' ? 'node' : npxCommand;
   const commandArgs =
     source === 'dist'
       ? [path.join(repo, 'dist/sdd-agentic-flow.js'), ...args]

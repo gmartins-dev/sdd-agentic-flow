@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
 export type CliResult = SpawnSyncReturns<string>;
 
 export type CertificationSandbox = {
@@ -113,7 +116,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
     const cache = path.join(packRoot, 'npm-cache');
     fs.mkdirSync(cache, { recursive: true });
     const pack = spawnSync(
-      'npm',
+      npmCommand,
       ['pack', '--json', '--pack-destination', packRoot, '--cache', cache],
       { cwd: repoRoot, encoding: 'utf8', timeout: 60_000 },
     );
@@ -133,7 +136,7 @@ export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
       dispose,
       run(args, sandbox, input = '') {
         return spawnSync(
-          'npx',
+          npxCommand,
           ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args],
           {
             cwd: sandbox.cwd,

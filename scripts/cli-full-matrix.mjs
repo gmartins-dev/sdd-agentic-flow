@@ -178,9 +178,20 @@ async function runInteractive(id, area, cwd, steps, expected) {
       })
     : null;
   const text = result ? result.transcript : '';
+  if (!result) {
+    results.push({
+      id,
+      area,
+      command: 'npx sdd-agentic-flow (interactive TTY)',
+      status: 'SKIP',
+      exit: null,
+      durationMs: Date.now() - started,
+      evidence: 'skipped: Linux script PTY wrapper unavailable on this host',
+    });
+    return text;
+  }
   const problems = [];
-  if (!result) problems.push('script PTY wrapper unavailable');
-  else if (result.status !== 0) problems.push(`exit ${result.status} (expected 0)`);
+  if (result.status !== 0) problems.push(`exit ${result.status} (expected 0)`);
   if (!expected.test(text)) problems.push(`missing /${expected.source}/`);
   const item = {
     id,
@@ -603,6 +614,7 @@ await runInteractive(
 const summary = {
   total: results.length,
   passed: results.filter((x) => x.status === 'PASS').length,
+  skipped: results.filter((x) => x.status === 'SKIP').length,
   failed: failures.length,
   root,
 };
@@ -674,6 +686,7 @@ const lines = [
   '',
   `- Scenarios: **${summary.total}**`,
   `- Passed: **${summary.passed}**`,
+  `- Skipped: **${summary.skipped}**`,
   `- Unexpected failures: **${summary.failed}**`,
   '- Coverage: command surface, lifecycle, Git/no-Git, configuration, adoption, all four agent targets, reconciliation, uninstall, negative safety, machine JSON, and interactive TTY flows.',
   '',

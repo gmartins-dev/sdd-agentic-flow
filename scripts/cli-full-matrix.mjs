@@ -27,6 +27,35 @@ const tarball =
         }).trim(),
       )
     : null;
+const packedCli =
+  source === 'packed' && process.platform === 'win32'
+    ? (() => {
+        const consumer = path.join(root, 'packed-consumer');
+        fs.mkdirSync(consumer, { recursive: true });
+        const install = spawnSync(
+          npmCommand,
+          ['install', '--prefix', consumer, '--no-audit', '--ignore-scripts', `file:${tarball}`],
+          {
+            cwd: repo,
+            encoding: 'utf8',
+            timeout: 120_000,
+            shell: windowsShell,
+            env: { ...process.env, NPM_CONFIG_CACHE: cache },
+          },
+        );
+        if (install.status !== 0)
+          throw new Error(`packed consumer install failed: ${install.stderr || install.stdout}`);
+        const entry = path.join(
+          consumer,
+          'node_modules',
+          'sdd-agentic-flow',
+          'dist',
+          'sdd-agentic-flow.js',
+        );
+        if (!fs.existsSync(entry)) throw new Error(`packed consumer entry missing: ${entry}`);
+        return entry;
+      })()
+    : null;
 const expectedVersion = JSON.parse(
   fs.readFileSync(path.join(repo, 'package.json'), 'utf8'),
 ).version;
@@ -70,13 +99,15 @@ function env(ci = true) {
 }
 
 function run(cwd, args = [], input = '', ci = true) {
-  const command = source === 'dist' ? 'node' : npxCommand;
+  const command = source === 'dist' || packedCli ? 'node' : npxCommand;
   const commandArgs =
     source === 'dist'
       ? [path.join(repo, 'dist/sdd-agentic-flow.js'), ...args]
-      : source === 'packed'
-        ? ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args]
-        : ['--yes', 'sdd-agentic-flow', ...args];
+      : packedCli
+        ? [packedCli, ...args]
+        : source === 'packed'
+          ? ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args]
+          : ['--yes', 'sdd-agentic-flow', ...args];
   return spawnSync(command, commandArgs, {
     cwd,
     input,
@@ -170,9 +201,11 @@ async function runInteractive(id, area, cwd, steps, expected) {
   const cliCommand =
     source === 'dist'
       ? `node '${path.join(repo, 'dist/sdd-agentic-flow.js')}'`
-      : source === 'packed'
-        ? `npx --yes --no-audit --cache '${cache}' 'file:${tarball}'`
-        : 'npx --yes sdd-agentic-flow';
+      : packedCli
+        ? `node '${packedCli}'`
+        : source === 'packed'
+          ? `npx --yes --no-audit --cache '${cache}' 'file:${tarball}'`
+          : 'npx --yes sdd-agentic-flow';
   const result = hasScriptPty()
     ? await runScriptPty(`stty cols 80 rows 24; exec ${cliCommand}`, {
         cwd,

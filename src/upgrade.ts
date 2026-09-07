@@ -96,8 +96,29 @@ function provenancePath(skillsRoot: string): string {
   return path.join(skillsRoot, PROVENANCE_REL);
 }
 
+// The installation root is the authority boundary; metadata cannot redirect a write/delete.
+function assertManagedDestination(root: string, relative: string): void {
+  if (
+    path.isAbsolute(relative) ||
+    path.win32.isAbsolute(relative) ||
+    relative.split(/[\\/]/).some((part) => !part || part === '.' || part === '..')
+  )
+    throw new Error('unsafe installation provenance path');
+  // Include the host directory for the conventional <home>/<host>/skills layout.
+  const boundary = path.basename(root) === 'skills' ? path.dirname(path.dirname(root)) : root;
+  const destination = path.resolve(root, relative);
+  let current = path.resolve(boundary);
+  for (const part of ['', ...path.relative(current, destination).split(path.sep)]) {
+    current = path.join(current, part);
+    if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink())
+      throw new Error(`managed destination crosses a symbolic link: ${current}`);
+  }
+}
+
 function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput): void {
   const dest = provenancePath(skillsRoot);
+  assertManagedDestination(skillsRoot, PROVENANCE_REL);
+  assertManagedDestination(skillsRoot, `${PROVENANCE_REL}.tmp`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const value = typeof provenance === 'string' ? { packageVersion: provenance } : provenance;
   const lines = [
@@ -150,11 +171,69 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
     };
     const managedSkills = list('managed_skills');
     const managedPaths = list('managed_paths');
+    if (
+      managedSkills.some((skill) => !/^[a-z0-9][a-z0-9-]*$/.test(skill)) ||
+      managedPaths.some((relative) => {
+        const parts = relative.split(/[\\/]/);
+        return (
+          path.isAbsolute(relative) ||
+          path.win32.isAbsolute(relative) ||
+          parts.some((part) => !part || part === '.' || part === '..') ||
+          (parts[0] !== 'sdd-agentic-flow-shared' && !managedSkills.includes(parts[0] ?? ''))
+        );
+      })
+    )
+      throw new Error('unsafe installation provenance paths; preserve and repair the metadata');
     if (managedSkills.length) provenance.managedSkills = managedSkills;
     if (managedPaths.length) provenance.managedPaths = managedPaths;
     return provenance;
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('unsafe installation provenance'))
+      throw error;
     return null;
+  }
+}
+
+function managedRemovalPaths(
+  root: string,
+  provenance: InstallProvenance | null,
+  expectedScope?: string,
+): string[] {
+  if (
+    provenance?.package !== 'sdd-agentic-flow' ||
+    provenance.schema !== CURRENT_PROVENANCE_SCHEMA ||
+    (expectedScope && provenance.scope && provenance.scope !== expectedScope)
+  )
+    return [];
+  if (provenance.applyState === 'applying')
+    throw new Error('installation cleanup blocked by interrupted apply');
+  const managed = provenance.managedPaths?.length
+    ? provenance.managedPaths
+    : [...(provenance.managedSkills || []), 'sdd-agentic-flow-shared'];
+  const relatives = [...managed, PROVENANCE_REL];
+  for (const relative of relatives) assertManagedDestination(root, relative);
+  return [...new Set(relatives.map((relative) => path.join(root, relative)))];
+}
+
+function removeManagedTargetContent(
+  root: string,
+  provenance: InstallProvenance | null,
+  expectedScope?: string,
+): void {
+  const targets = managedRemovalPaths(root, provenance, expectedScope);
+  for (const target of targets) fs.rmSync(target, { recursive: true, force: true });
+  // Prune only parents of removed files, preserving unrelated empty directories.
+  for (const target of targets) {
+    let directory = path.dirname(target);
+    while (directory !== root && directory.startsWith(`${root}${path.sep}`)) {
+      if (!fs.existsSync(directory)) {
+        directory = path.dirname(directory);
+        continue;
+      }
+      if (fs.readdirSync(directory).length) break;
+      fs.rmdirSync(directory);
+      directory = path.dirname(directory);
+    }
   }
 }
 
@@ -191,6 +270,7 @@ function collectManagedPairs(
       rel: path.join('sdd-agentic-flow-shared', rel),
     });
   }
+  for (const pair of pairs) assertManagedDestination(targetRoot, pair.rel);
   return pairs;
 }
 
@@ -222,6 +302,10 @@ function applyManagedPairs(
   pairs: ManagedPair[],
   { overwriteDiffers = false }: { overwriteDiffers?: boolean } = {},
 ): ApplySummary {
+  for (const pair of pairs) {
+    const root = path.resolve(pair.dest, ...pair.rel.split(/[\\/]/).map(() => '..'));
+    assertManagedDestination(root, pair.rel);
+  }
   const summary: ApplySummary = {
     installed: 0,
     refreshed: 0,
@@ -287,15 +371,18 @@ function formatCheckReport(result: UpdateCheckResult): string {
 export type { ApplySummary, ClassifiedPairs, ExecutionMode, InstallProvenance, ManagedPair };
 export {
   applyManagedPairs,
+  assertManagedDestination,
   checkForUpdate,
   classifyManagedPairs,
   classifyPair,
   collectManagedPairs,
   detectExecutionMode,
   formatCheckReport,
+  managedRemovalPaths,
   PROVENANCE_REL,
   provenancePath,
   readInstallProvenance,
+  removeManagedTargetContent,
   runNpmGlobalInstall,
   writeInstallProvenance,
 };

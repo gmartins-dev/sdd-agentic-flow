@@ -4,14 +4,14 @@
 (`plan`/`guided`/`apply`/`review`/`full`, see [execution modes](../../docs/execution-modes.md)).
 `execution_mode` answers "what is a skill authorized to do"; `autonomy_level` answers "does a
 skill need a human between it and the next one." Neither replaces the other, and neither changes
-behavior unless a project explicitly opts in. The default is `manual`, the same fully-supervised
-behavior every skill already had before this file existed.
+the safety boundary. Absent configuration resolves to `apply` + `supervised`, as defined in
+[effective defaults](effective-defaults.md). Autonomous continuation requires explicit delegation.
 
 ## The three levels
 
-- **`manual`** (default): every skill returns control completely. Nothing advances
+- **`manual`**: every skill returns control completely. Nothing advances
   automatically, even when a skill reports success. Transition policy: `stop`.
-- **`supervised`**: a skill executes, reports its evidence, and offers an explicit
+- **`supervised`** (default): a skill executes, reports its evidence, and offers an explicit
   "continue to `<next skill>`?" recommendation; the human decides. Transition policy: `confirm`.
 - **`autonomous`**: a skill executes and continues toward a verified outcome on its own. A
   positive result advances on the normal path; a recoverable negative result may take an
@@ -22,11 +22,11 @@ behavior every skill already had before this file existed.
 
 | execution_mode | `manual` | `supervised` | `autonomous` |
 | --- | --- | --- | --- |
-| `plan` | valid (default) | valid, uncommon | **invalid** |
-| `guided` | valid | valid (default) | **invalid** |
-| `apply` | valid | valid | valid (default) |
-| `review` | valid (default) | valid | valid, uncommon |
-| `full` | valid | valid | valid (default) |
+| `plan` | valid | valid | **invalid** |
+| `guided` | valid | valid | **invalid** |
+| `apply` | valid | valid (effective default) | valid |
+| `review` | valid | valid | valid |
+| `full` | valid | valid | valid |
 
 `plan` and `guided` never combine with `autonomous`. A plan-only workflow has nothing to
 auto-advance into, and step-by-step confirmation is the entire point of `guided`. Pairing it with
@@ -34,7 +34,9 @@ unattended advance contradicts `guided`. `doctor --autonomy` flags either combin
 
 ## The 7 guardrails
 
-Every one of the seven is deterministic and auditable. An agent operating in
+The invoking host/agent evaluates these seven obligations from current evidence; the CLI
+does not enforce their runtime evaluation. Scope and evidence adequacy require judgment.
+An agent operating in
 `autonomy_level: autonomous` re-checks them before treating a Skill result as permission for a
 normal advance or an authorized repair transition. The checks govern transition admissibility;
 they do not turn a recoverable negative result into a claim of completed work.
@@ -69,9 +71,9 @@ recoverable result records its native status, the authorized repair `Next`, and 
 then the invoking host/agent continues without a new human confirmation. SAF never starts the
 next host turn itself.
 
-## `autonomy_profile` frontmatter
+## `autonomy_profile` sidecar
 
-Each skill declares, in its `SKILL.md` frontmatter, which levels it supports and what a `PASS`
+Each skill declares, in its `saf-contract.yml` sidecar, which levels it supports and what a `PASS`
 means for it:
 
 ```yaml

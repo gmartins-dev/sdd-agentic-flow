@@ -6,11 +6,10 @@ import { renderCliCommand } from './cli-command';
 import { USAGE } from './cli-help';
 import { languageReport } from './doctor';
 import { resolveGitContext } from './git-context';
-import { USER_TARGETS } from './install-domain';
+import { readInstallConfig, USER_TARGETS, writeInstallConfig } from './install-domain';
 import { targetLabelFor } from './install-preflight';
 import { resolveLocale, t, translateText } from './messages';
 import {
-  DEFAULT_USER_DIR_SEGMENTS,
   gitInfoExcludePath,
   KNOWN_AGENTS,
   projectSddRoot,
@@ -19,9 +18,15 @@ import {
   userSkillsDirsFor,
   userSkillsDirsForTargets,
 } from './paths';
-import { listManagedSkillDirNames, OFFICIAL_SKILLS } from './skill-identity';
+import { listManagedSkillDirNames } from './skill-identity';
 import { terminalLog, terminalNote } from './terminal-ui';
 import { outputMode, shortenPath, styleStatus } from './ui';
+import {
+  assertManagedDestination,
+  managedRemovalPaths,
+  readInstallProvenance,
+  removeManagedTargetContent,
+} from './upgrade';
 
 type PurgeTarget = { path: string; kind: string; preserve?: boolean; reason?: string };
 
@@ -53,7 +58,7 @@ function describePath(cwd: string, target: string) {
 
 function skillsRoots(cwd: string, homeDir: string): string[] {
   const projectRoot = path.join(cwd, '.agents', 'skills');
-  const userRoots = DEFAULT_USER_DIR_SEGMENTS.map((parts) => path.join(homeDir, ...parts));
+  const userRoots = Object.values(USER_TARGETS).map((parts) => path.join(homeDir, ...parts));
   const roots = [...(resolveGitContext(cwd).ok ? [projectRoot] : []), ...userRoots];
   return [...new Map(roots.map((root) => [canonicalPathKey(root), root])).values()];
 }
@@ -65,6 +70,7 @@ function canonicalPathKey(value: string): string {
 
 function collectSkillTargets(root: string): PurgeTarget[] {
   if (!fs.existsSync(root)) return [];
+  assertManagedDestination(root, 'sdd-agentic-flow-shared');
   const entries = fs.readdirSync(root);
   return listManagedSkillDirNames(entries).map((name) => ({
     path: path.join(root, name),
@@ -92,6 +98,7 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
   }
   if (gitAvailable) {
     const projectState = projectSddRoot(cwd);
+    assertManagedDestination(cwd, '.sdd-agentic-flow');
     for (const relative of [
       'config.yml',
       'usage.md',
@@ -104,6 +111,7 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
       'explanations',
     ]) {
       const file = path.join(projectState, relative);
+      assertManagedDestination(projectState, relative);
       if (fs.existsSync(file)) targets.push({ path: file, kind: 'project-install-state' });
     }
     const workspace = path.join(projectState, 'workspace.yml');
@@ -115,6 +123,7 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
     }
   }
   const userInstall = userInstallConfigPath(homeDir);
+  assertManagedDestination(homeDir, '.sdd-agentic-flow/install.yml');
   if (fs.existsSync(userInstall)) {
     targets.push({
       path: userInstall,
@@ -129,7 +138,8 @@ export function collectPurgeTargets(cwd: string, homeDir: string = os.homedir())
   }
   const legacyRoot = path.join(cwd, '.sdd');
   if (fs.existsSync(legacyRoot)) {
-    if (legacySddOwnershipProven(cwd)) {
+    assertManagedDestination(cwd, '.sdd');
+    if (gitAvailable && legacySddOwnershipProven(cwd)) {
       for (const name of [
         'config.yml',
         'install.yml',
@@ -332,31 +342,50 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
   if (scopes.includes('user')) {
     const userDirs = targetIds.length
       ? userSkillsDirsForTargets([...new Set(targetIds)], os.homedir())
-      : userSkillsDirsFor(agent);
+      : agent
+        ? userSkillsDirsFor(agent)
+        : userSkillsDirsForTargets(Object.keys(USER_TARGETS), os.homedir());
     if (userDirs) roots.push(...userDirs);
   }
   const uniqueRoots = [...new Map(roots.map((root) => [canonicalPathKey(root), root])).values()];
-  const targets = uniqueRoots.flatMap((root: string) => {
-    const hasOwnedSkill = OFFICIAL_SKILLS.some((skill: string) =>
-      fs.existsSync(path.join(root, skill, 'SKILL.md')),
-    );
-    if (!hasOwnedSkill && scope !== 'project' && root !== path.join(cwd, '.agents', 'skills'))
-      return [];
-    return [
-      ...OFFICIAL_SKILLS.map((skill: string) => path.join(root, skill)),
-      path.join(root, 'sdd-agentic-flow-shared'),
-    ];
+  const installations = uniqueRoots.map((root) => {
+    const provenance = readInstallProvenance(root);
+    const expectedScope = root === projectRoot ? 'project' : 'user';
+    return {
+      root,
+      provenance,
+      expectedScope,
+      paths: managedRemovalPaths(root, provenance, expectedScope),
+    };
   });
-  if (includeConfig) targets.push(sddJoin(cwd, 'config.yml'));
-  if (scopes.includes('user')) targets.push(userInstallConfigPath(os.homedir()));
+  const targets = installations.flatMap((installation) => installation.paths);
+  const intent = readInstallConfig(os.homedir());
+  const nextIntent = intent ? structuredClone(intent) : null;
+  if (nextIntent) {
+    if (scopes.includes('user'))
+      nextIntent.user.targets = nextIntent.user.targets.filter((target) => {
+        const root = userSkillsDirsForTargets([target], os.homedir())[0];
+        return !root || !uniqueRoots.includes(root);
+      });
+    const git = scopes.includes('project') ? resolveGitContext(cwd) : null;
+    if (git?.ok) delete nextIntent.projects[git.context.adoptionKey];
+  }
+  const intentChanged = JSON.stringify(intent) !== JSON.stringify(nextIntent);
+  if (intentChanged) {
+    assertManagedDestination(os.homedir(), '.sdd-agentic-flow/install.yml');
+    assertManagedDestination(os.homedir(), '.sdd-agentic-flow/install.yml.tmp');
+  }
+  const extraTargets: string[] = [];
+  if (includeConfig) extraTargets.push(sddJoin(cwd, 'config.yml'));
   if (full) {
-    targets.push(
+    extraTargets.push(
       sddJoin(cwd, 'usage.md'),
       sddJoin(cwd, 'saf-skills-usage-guide.md'),
       sddJoin(cwd, 'saf-skills-usage-guide.pt-BR.md'),
       sddJoin(cwd, 'autonomy', 'loop-state.md'),
     );
   }
+  targets.push(...extraTargets);
   const existing = targets.filter((target: string) => fs.existsSync(target));
   const locale = localeFor(cwd);
   if (plan) {
@@ -366,6 +395,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
         t(locale, 'uninstall.plan'),
         [
           ['Remove', `${existing.length} managed paths`],
+          ['Intent', intentChanged ? 'Reconcile selected entries only' : 'Unchanged'],
           ['Preserve', '.specs/features/**, source code, unknown/unmanaged paths'],
           ['Apply', renderCliCommand('uninstall', '--yes')],
         ],
@@ -373,6 +403,10 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       );
       return;
     }
+    if (intentChanged)
+      process.stdout.write(
+        'Reconcile selected installation intent entries; preserve other targets and projects.\n\n',
+      );
     const grouped = new Map<string, string[]>();
     for (const target of existing) {
       const root =
@@ -388,11 +422,14 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
       process.stdout.write(
         `${targetLabelFor(root, root === projectRoot ? 'project' : 'user')} (${shortenPath(root, { homeDir: os.homedir(), cwd })})\n`,
       );
-      const skills = paths.filter((entry: string) =>
-        path.basename(entry).startsWith('saf-'),
-      ).length;
+      const skills = new Set(
+        paths
+          .map((entry) => path.relative(root, entry).split(path.sep)[0])
+          .filter((name) => name?.startsWith('saf-')),
+      ).size;
       const shared = paths.some(
-        (entry: string) => path.basename(entry) === 'sdd-agentic-flow-shared',
+        (entry: string) =>
+          path.relative(root, entry).split(path.sep)[0] === 'sdd-agentic-flow-shared',
       );
       process.stdout.write(`  ${skills} managed skills${shared ? ' + shared support' : ''}\n`);
       if (verbose)
@@ -408,8 +445,20 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
     );
     return;
   }
+  for (const target of extraTargets) assertManagedDestination(cwd, path.relative(cwd, target));
+  for (const installation of installations)
+    removeManagedTargetContent(
+      installation.root,
+      installation.provenance,
+      installation.expectedScope,
+    );
+  for (const target of extraTargets) fs.rmSync(target, { recursive: true, force: true });
+  if (intentChanged && nextIntent) {
+    if (nextIntent.user.targets.length || Object.keys(nextIntent.projects).length)
+      writeInstallConfig(nextIntent, os.homedir());
+    else fs.rmSync(userInstallConfigPath(os.homedir()), { force: true });
+  }
   for (const target of existing) {
-    fs.rmSync(target, { recursive: true, force: true });
     log('PASS', `removed ${describePath(cwd, target)}`);
   }
   if (!existing.length) log('WARN', 'nothing installed by sdd-agentic-flow was found');

@@ -1,15 +1,13 @@
 # Golden flow: greenfield
 
-Proved by `test/cli.test.ts` — `golden flow: greenfield install -> init -> copy spec
-artifacts -> doctor PASS`. This file describes what that test exercises; it is not a
-promise beyond what the test actually checks (see `docs/environment-compatibility.md` for the
-project's stance on documentation vs. mechanically-proved claims).
+Illustrative greenfield spec package. Executable CLI lifecycle checks live in
+`scripts/cli-certification.ts`; these artifacts do not prove a host implemented the feature.
 
 ## Commands
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install --scope project
+sdd-agentic-flow install --scope project --adoption-mode team
 ```
 
 Then the artifacts a real `saf-create-spec` run in **source-item mode** would produce for

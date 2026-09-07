@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v7.10.1
+Current release: v7.10.2
+
+- **v7.10.2:** Hardens uninstall ownership, provenance and filesystem preflight; requires
+  structurally complete evidence; preserves unrelated installation intent; improves packaging
+  sensors and certification cleanup; and adds dist/packed platform CI matrices.
 
 - **v7.10.1:** Enforces release-state coherence with a deterministic roadmap-entry guard and
   records the corrected v7.10.0 history. Refreshes dev-only @types/node and Biome tooling while

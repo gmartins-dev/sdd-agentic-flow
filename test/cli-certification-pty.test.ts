@@ -139,3 +139,9 @@ test('release-critical audits contain no blind sleep/printf input choreography',
     assert.doesNotMatch(source, /sleep[\s\S]{0,160}printf|printf[\s\S]{0,160}sleep/);
   }
 });
+
+test('exhaustive report does not claim execution of separate gates', () => {
+  const source = fs.readFileSync('scripts/cli-exhaustive.ts', 'utf8');
+  assert.doesNotMatch(source, /— executed separately|and executed separately/);
+  assert.match(source, /execution is not established by this report/);
+});

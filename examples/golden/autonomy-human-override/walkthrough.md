@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-004 — human override (guardrail 3)
 
-Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-004 — override-guard with audited reason`.
+Illustrative human override fixture. Related executable CLI cases are in `scripts/cli-exhaustive.ts`.
 
 ## Commands
 

@@ -35,6 +35,7 @@ async function certify(adapter: Adapter): Promise<void> {
     );
   } finally {
     removeSandbox(sandbox);
+    adapter.dispose?.();
   }
 }
 

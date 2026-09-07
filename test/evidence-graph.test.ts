@@ -41,6 +41,29 @@ test('parseCheckReport reads feature identity and evidence table', () => {
   assert.equal(parsed.hasDetailedEvidence, true);
 });
 
+test('evidence details require all four nonempty fields in the Evidence section', () => {
+  const valid = fs.readFileSync(path.join(fixtureRoot, 'valid-check.md'), 'utf8');
+  for (const label of ['Command', 'Exit status', 'Observable result', 'Requirement mapping']) {
+    assert.equal(
+      parseCheckReport(valid.replace(new RegExp(`^${label}:.*$`, 'm'), `${label}:`))
+        .hasDetailedEvidence,
+      false,
+      label,
+    );
+  }
+  const details =
+    'Command: test\nExit status: 0\nObservable result: pass\nRequirement mapping: REQ-1';
+  assert.equal(parseCheckReport(`## Evidence\n\n## Other\n${details}`).hasDetailedEvidence, false);
+});
+
+test('evidence table parsing preserves empty cells and stops at the table boundary', () => {
+  const header = '| Requirement anchor | Sensor | Result | Freshness |\n| --- | --- | --- | --- |';
+  const parsed = parseCheckReport(
+    `## Evidence\n${header}\n| REQ-1 | | pass | current |\n\n## Other\n| REQ-2 | test | pass | current |\n`,
+  );
+  assert.deepEqual(parsed.evidenceRows, []);
+});
+
 test('legacy check without Feature is non-v4 for graph', () => {
   const content = fs.readFileSync(path.join(fixtureRoot, 'legacy-check.md'), 'utf8');
   const parsed = parseCheckReport(content);
@@ -150,6 +173,21 @@ test('collectPurgeTargets lists the managed user installation intent', () => {
   const targets = collectPurgeTargets(temp, temp);
   assert.ok(targets.some((target) => target.path === intent));
   fs.rmSync(temp, { recursive: true, force: true });
+});
+
+test('purge includes explicit Cursor targets without claiming foreign prefixes', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-purge-cursor-'));
+  try {
+    const owned = path.join(temp, '.cursor', 'skills', 'saf-route');
+    const foreign = path.join(temp, '.cursor', 'skills', 'sdd-personal-tool');
+    fs.mkdirSync(owned, { recursive: true });
+    fs.mkdirSync(foreign, { recursive: true });
+    const targets = collectPurgeTargets(temp, temp).map((target) => target.path);
+    assert.ok(targets.includes(owned));
+    assert.ok(!targets.includes(foreign));
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 test('parseCheckReport detects stale freshness and summary-only gaps', () => {

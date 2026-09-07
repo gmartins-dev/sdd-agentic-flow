@@ -157,7 +157,8 @@ export function parseCheckReport(content: string): {
     result: string;
     freshness: EvidenceFreshness;
   }> = [];
-  const lines = content.split('\n');
+  const evidence = content.split(/^## Evidence[ \t]*\r?$/m)[1]?.split(/^## /m)[0] ?? '';
+  const lines = evidence.split(/\r?\n/);
   let inTable = false;
   for (const line of lines) {
     if (EVIDENCE_TABLE_HEADER.test(line)) {
@@ -165,16 +166,20 @@ export function parseCheckReport(content: string): {
       continue;
     }
     if (inTable) {
-      if (!line.startsWith('|') || line.match(/^\|\s*---/)) continue;
-      if (!line.includes('|')) {
+      if (!line.startsWith('|')) {
         inTable = false;
         continue;
       }
+      if (/^\|\s*:?-+/.test(line)) continue;
       const cells = line
         .split('|')
-        .map((cell) => cell.trim())
-        .filter(Boolean);
-      if (cells.length >= 4) {
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      if (
+        cells.length === 4 &&
+        cells.every(Boolean) &&
+        ['current', 'historical', 'stale', 'not-run'].includes(cells[3] ?? '')
+      ) {
         const freshness = cells[3] as EvidenceFreshness;
         rows.push({
           anchor: cells[0] ?? '',
@@ -185,9 +190,12 @@ export function parseCheckReport(content: string): {
       }
     }
   }
-  const hasDetailedEvidence =
-    /## Evidence/.test(content) &&
-    /(^Command:|^Exit status:|Observable result:|Requirement mapping:)/im.test(content);
+  const hasDetailedEvidence = [
+    'Command',
+    'Exit status',
+    'Observable result',
+    'Requirement mapping',
+  ].every((label) => new RegExp(`^${label}:[ \\t]*\\S[^\\r\\n]*$`, 'im').test(evidence));
   return { taskId, featureSlug, evidenceRows: rows, hasDetailedEvidence };
 }
 

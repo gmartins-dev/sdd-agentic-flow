@@ -27,6 +27,7 @@ const LEGACY_PATTERNS = [
   /^##[ \t]+Packs\b/gim,
   /\bsaf-(?:config|install-intent|install-provenance)\/v2\b/gi,
   /\b(?:default|defaults to)[ \t`]*(?:guided|manual)\b/gi,
+  /\bdefault is[ \t`]*(?:guided|manual)\b/gi,
   /\bcompatible_with\b/g,
   /\bmetadata\.pack\b/g,
   /\bpresets\//g,
@@ -240,6 +241,11 @@ export function checkDocumentationContracts(
     }
 
     for (const literal of technicalLiterals(content)) {
+      if (
+        /^(?:test|scripts)\/[a-zA-Z0-9_./-]+\.(?:ts|mjs|sh)$/.test(literal) &&
+        !fs.existsSync(literal)
+      )
+        findings.push({ file, message: `missing executable reference: ${literal}` });
       addUnknownTokens(
         findings,
         file,

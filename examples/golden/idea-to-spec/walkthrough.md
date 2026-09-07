@@ -1,21 +1,19 @@
 # Golden flow: idea to spec
 
-Proved by `test/cli.test.ts` — `golden flow: idea to spec — brainstorm brief converges into a
-saf-create-spec package`. This file describes what that test exercises; it is not a promise
-beyond what the test actually checks (see `docs/environment-compatibility.md` for the project's
-stance on documentation vs. mechanically-proved claims).
+Illustrative progression from a converged brief to a spec package. These files show
+artifact shape; they are not evidence of live host execution or feature correctness.
 
 ## Commands
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install --scope project
+sdd-agentic-flow install --scope project --adoption-mode team
 ```
 
 The idea starts vague: "notifications are too noisy at night." A real `saf-brainstorm` run in
 **exploratory mode** would ask what "noisy" means, what happens today, and why muting isn't an
 acceptable workaround, until the problem and a decided approach converge. That converged state
-is `brief.md` in this directory — the same file this test copies to
+is `brief.md` in this directory — copy it to
 `.specs/features/quiet-hours-notifications/brief.md`.
 
 Then the artifacts a real `saf-create-spec` run in **source-item mode** would produce from that

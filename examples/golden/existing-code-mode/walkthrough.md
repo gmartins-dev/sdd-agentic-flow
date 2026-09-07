@@ -1,7 +1,7 @@
 # Golden flow: existing-code mode
 
-Proved by `test/cli.test.ts` — `golden flow: existing-code mode artifacts carry
-Observed/Inferred/Unknown labels and are accepted`.
+Illustrative existing-code package with Observed/Inferred/Unknown labels. The fixture
+does not establish that a host produced or independently verified these artifacts.
 
 ## Fixture
 
@@ -15,7 +15,7 @@ tests answer), exactly as the skill's `SKILL.md` requires.
 
 ```bash
 sdd-agentic-flow init
-sdd-agentic-flow install --scope project
+sdd-agentic-flow install --scope project --adoption-mode team
 ```
 
 Then `context.md`, `spec.md`, and `design.md` are copied to

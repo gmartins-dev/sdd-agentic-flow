@@ -137,7 +137,7 @@ test('applyPolicyMutation materializes missing language fields', () => {
   const content = fs.readFileSync(file, 'utf8');
   assert.match(
     content,
-    /language:\n  (?:profile: en-US\n  human_outputs: en-US|human_outputs: en-US\n  profile: en-US)/,
+    /language:\n {2}(?:profile: en-US\n {2}human_outputs: en-US|human_outputs: en-US\n {2}profile: en-US)/,
   );
 });
 

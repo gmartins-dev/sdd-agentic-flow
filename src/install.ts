@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -31,7 +30,11 @@ import { select } from './selector';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import { terminalNote, terminalSpinner } from './terminal-ui';
 import type { DisplayMode } from './ui';
-import { readInstallProvenance, writeInstallProvenance } from './upgrade';
+import {
+  readInstallProvenance,
+  removeManagedTargetContent,
+  writeInstallProvenance,
+} from './upgrade';
 
 type InstallCommandOptions = {
   mode?: DisplayMode | undefined;
@@ -202,45 +205,6 @@ function blockedPlan(schema: string): InstallPlan {
     blockerReason: `Installation state ${schema} requires a clean v7 reinstall.`,
     repositoryChanges: [],
   };
-}
-
-function removeManagedTargetContent(
-  root: string,
-  provenance: ReturnType<typeof readInstallProvenance>,
-  expectedScope?: string,
-) {
-  if (
-    provenance?.package !== 'sdd-agentic-flow' ||
-    provenance.schema !== 'saf-install-provenance/v3' ||
-    (expectedScope && provenance.scope && provenance.scope !== expectedScope)
-  )
-    return;
-  if (provenance.applyState === 'applying') return;
-  const paths = provenance.managedPaths?.length
-    ? provenance.managedPaths
-    : (provenance.managedSkills || []).map((skill) => skill);
-  for (const relative of paths) {
-    const destination = path.resolve(root, relative);
-    if (
-      destination !== path.resolve(root) &&
-      destination.startsWith(`${path.resolve(root)}${path.sep}`)
-    )
-      fs.rmSync(destination, { recursive: true, force: true });
-  }
-  const provenanceFile = path.join(root, 'sdd-agentic-flow-shared', 'install-provenance.yml');
-  fs.rmSync(provenanceFile, { force: true });
-  const shared = path.dirname(provenanceFile);
-  if (fs.existsSync(shared) && fs.readdirSync(shared).length === 0)
-    fs.rmSync(shared, { recursive: true });
-  const prune = (directory: string) => {
-    if (!fs.existsSync(directory)) return;
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (entry.isDirectory()) prune(path.join(directory, entry.name));
-    }
-    if (directory !== root && fs.readdirSync(directory).length === 0)
-      fs.rmSync(directory, { recursive: true });
-  };
-  prune(root);
 }
 
 function cleanupDeselectedUserTargets(

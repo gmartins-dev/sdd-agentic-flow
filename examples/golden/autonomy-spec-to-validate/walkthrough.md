@@ -1,13 +1,13 @@
 # Golden flow: autonomy AUTO-002 — spec to validate
 
-Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-002 — task-check hands off to validation`.
+Illustrative check-to-validation handoff; the CLI inspects recorded state and does not execute skills.
 
 ## Commands
 
 ```bash
 sdd-agentic-flow init
 sdd-agentic-flow config policy --yes --preset autonomous
-sdd-agentic-flow install --scope project
+sdd-agentic-flow install --scope project --adoption-mode team
 ```
 
 Copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`.

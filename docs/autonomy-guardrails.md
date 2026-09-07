@@ -1,12 +1,12 @@
 # Autonomy guardrails
 
-**Autonomous does not mean unlimited authority.** Seven deterministic checks an agent evaluates
+**Autonomous does not mean unlimited authority.** Seven obligations an agent evaluates
 before a Skill running at `workflow.autonomy_level: autonomous` advances or takes an authorized
 repair transition. Each check is auditable from the Skill's output, its `autonomy_profile`, and
 `.sdd-agentic-flow/config.yml`. Recoverable findings continue through repair; exceptional blockers
 return control to a human.
 
-For level definitions and configuration, see [autonomy levels](autonomy-levels.md). For the full guardrail definitions, `autonomy_profile` frontmatter shape, and `.sdd-agentic-flow/autonomy/loop-state.md` format, see [shared/references/autonomy-guardrails.md](../shared/references/autonomy-guardrails.md). To read which SDD flow phase a `loop-state.md` entry's `Skill:` value corresponds to, see the `Phase | Typical skill` table in [sdd-methodology.md](sdd-methodology.md#workflow-phases).
+For level definitions and configuration, see [autonomy levels](autonomy-levels.md). For the full guardrail definitions, `autonomy_profile` sidecar shape, and `.sdd-agentic-flow/autonomy/loop-state.md` format, see [shared/references/autonomy-guardrails.md](../shared/references/autonomy-guardrails.md). To read which SDD flow phase a `loop-state.md` entry's `Skill:` value corresponds to, see the `Phase | Typical skill` table in [sdd-methodology.md](sdd-methodology.md#workflow-phases).
 
 ## The 7 guardrails
 

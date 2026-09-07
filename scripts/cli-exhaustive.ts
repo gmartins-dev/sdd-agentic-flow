@@ -673,8 +673,12 @@ async function runJourneys() {
   );
 
   const targetedRemoval = project('12-targeted-removal');
-  expect(run(['install', '--target', 'agents'], targetedRemoval), 0);
-  expect(run(['install', '--target', 'claude'], targetedRemoval), 0);
+  expect(run(['install', '--target', 'agents', '--target', 'claude'], targetedRemoval), 0);
+  for (const host of ['.agents', '.claude']) {
+    assert.ok(
+      fs.existsSync(path.join(targetedRemoval.home, host, 'skills', 'saf-create-spec', 'SKILL.md')),
+    );
+  }
   fs.mkdirSync(path.join(targetedRemoval.home, '.agents', 'skills'), { recursive: true });
   fs.writeFileSync(path.join(targetedRemoval.home, '.agents', 'skills', 'foreign.txt'), 'keep\n');
   record('J40', 'scoped uninstall', 'uninstall --plan --target agents', () => {
@@ -811,10 +815,9 @@ function writeReport() {
     '',
     '## Validation commands',
     '',
-    '- `npm test` — executed separately after this runner.',
-    '- `npm run check` — executed separately after this runner.',
-    '- `npm run pack:dry` — covered by the packaged-consumer journey and executed separately.',
-    '- `npm run release:check` — executed separately; registry publication remains workflow-owned.',
+    '- `npm test` and `npm run check` — separate gates; execution is not established by this report.',
+    '- `npm run pack:dry` — separate gate; the packaged-consumer journey records its own pack execution above.',
+    '- `npm run release:check` — separate gate; execution is not established by this report. Publication remains workflow-owned.',
     '',
     '## Interpretation',
     '',

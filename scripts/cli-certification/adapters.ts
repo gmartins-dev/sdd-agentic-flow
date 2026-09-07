@@ -28,6 +28,7 @@ export type CliExecutionAdapter = {
   run(args: string[], sandbox: CertificationSandbox, input?: string): CliResult;
   ptyCommand(sandbox: CertificationSandbox): string;
   ptyEnvironment(sandbox: CertificationSandbox): NodeJS.ProcessEnv;
+  dispose?(): void;
 };
 
 function sourceIdentity(repoRoot: string, candidateType: ArtifactIdentity['candidateType']) {
@@ -107,49 +108,56 @@ export function createDistAdapter(repoRoot: string): CliExecutionAdapter {
 
 export function createPackedAdapter(repoRoot: string): CliExecutionAdapter {
   const packRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-agentic-flow-cert-pack-'));
-  const cache = path.join(packRoot, 'npm-cache');
-  fs.mkdirSync(cache, { recursive: true });
-  const pack = spawnSync(
-    'npm',
-    ['pack', '--json', '--pack-destination', packRoot, '--cache', cache],
-    { cwd: repoRoot, encoding: 'utf8', timeout: 60_000 },
-  );
-  if (pack.status !== 0) throw new Error(`npm pack failed: ${pack.stderr}`);
-  const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0] as {
-    filename: string;
-  };
-  const tarball = path.join(packRoot, metadata.filename);
-  const identity: ArtifactIdentity = {
-    ...sourceIdentity(repoRoot, 'packed'),
-    tarball: metadata.filename,
-    tarballSha256: crypto.createHash('sha256').update(fs.readFileSync(tarball)).digest('hex'),
-  };
-  return {
-    name: 'packed',
-    identity,
-    run(args, sandbox, input = '') {
-      return spawnSync(
-        'npx',
-        ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args],
-        {
-          cwd: sandbox.cwd,
-          input,
-          encoding: 'utf8',
-          timeout: 120_000,
-          env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
-        },
-      );
-    },
-    ptyCommand: () =>
-      `stty cols 80 rows 24 raw -echo; exec npx --yes --no-audit --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
-    ptyEnvironment: (sandbox) => {
-      const env = environment(sandbox);
-      delete env.CI;
-      env.SDD_NO_UPDATE_PROMPT = '1';
-      env.TERM = 'xterm-256color';
-      return env;
-    },
-  };
+  const dispose = () => fs.rmSync(packRoot, { recursive: true, force: true });
+  try {
+    const cache = path.join(packRoot, 'npm-cache');
+    fs.mkdirSync(cache, { recursive: true });
+    const pack = spawnSync(
+      'npm',
+      ['pack', '--json', '--pack-destination', packRoot, '--cache', cache],
+      { cwd: repoRoot, encoding: 'utf8', timeout: 60_000 },
+    );
+    if (pack.status !== 0) throw new Error(`npm pack failed: ${pack.stderr}`);
+    const metadata = JSON.parse(pack.stdout.slice(pack.stdout.indexOf('[')))[0] as {
+      filename: string;
+    };
+    const tarball = path.join(packRoot, metadata.filename);
+    const identity: ArtifactIdentity = {
+      ...sourceIdentity(repoRoot, 'packed'),
+      tarball: metadata.filename,
+      tarballSha256: crypto.createHash('sha256').update(fs.readFileSync(tarball)).digest('hex'),
+    };
+    return {
+      name: 'packed',
+      identity,
+      dispose,
+      run(args, sandbox, input = '') {
+        return spawnSync(
+          'npx',
+          ['--yes', '--no-audit', '--cache', cache, `file:${tarball}`, ...args],
+          {
+            cwd: sandbox.cwd,
+            input,
+            encoding: 'utf8',
+            timeout: 120_000,
+            env: { ...environment(sandbox), SDD_NO_UPDATE_PROMPT: '1' },
+          },
+        );
+      },
+      ptyCommand: () =>
+        `stty cols 80 rows 24 raw -echo; exec npx --yes --no-audit --cache ${shellQuote(cache)} ${shellQuote(`file:${tarball}`)}`,
+      ptyEnvironment: (sandbox) => {
+        const env = environment(sandbox);
+        delete env.CI;
+        env.SDD_NO_UPDATE_PROMPT = '1';
+        env.TERM = 'xterm-256color';
+        return env;
+      },
+    };
+  } catch (error) {
+    dispose();
+    throw error;
+  }
 }
 
 function shellQuote(value: string): string {

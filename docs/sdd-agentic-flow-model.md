@@ -88,7 +88,7 @@ terms most useful when operating this toolkit.
 | Term | Meaning |
 | --- | --- |
 | **Skill** | Markdown contract (`SKILL.md`) the agent reads and follows |
-| **Capability contract** | Frontmatter fields (`requires`, `consumes`, `produces`, …) linking skills |
+| **Capability contract** | Sidecar fields in `saf-contract.yml` (`requires`, `consumes`, `produces`, …) linking skills |
 | **Feature profile** | Uncertainty/risk sizing hint (`small_fix` … `epic`) persisted with a work package; an explicit project config value is an advanced override |
 | **Execution mode** | Authorization axis: what work type is allowed |
 | **Autonomy level** | Advance axis: manual / supervised / autonomous |
@@ -96,7 +96,7 @@ terms most useful when operating this toolkit.
 | **Loop state** | Append-only execution memory for supervised/autonomous runs |
 | **Evidence** | Sensor results + `Status:` establishing confidence about specified properties |
 | **Handoff** | Cross-session bridge when a skill spans agent boundaries |
-| **Golden flow** | Fixture + walkthrough + `test/cli.test.ts` integration proof |
+| **Golden flow** | Illustrative fixture and walkthrough; executable checks provide separate evidence |
 | **Doctor** | Local validator; never invokes skills or runs your tests |
 | **Golden flow ID** | e.g. `AUTO-001` — autonomy chain proofs in this repository |
 

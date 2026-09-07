@@ -25,13 +25,12 @@ function parseSvg(): Triangle[] {
     .split(/\s+/)
     .map(Number);
   if (
-    !viewBox ||
-    viewBox.length !== 4 ||
-    viewBox.some((n) => !Number.isFinite(n)) ||
-    viewBox[0] !== 0 ||
-    viewBox[1] !== 0 ||
-    viewBox[2] !== SVG_WIDTH ||
-    viewBox[3] !== SVG_HEIGHT
+    viewBox?.length !== 4 ||
+    viewBox?.some((n) => !Number.isFinite(n)) ||
+    viewBox?.[0] !== 0 ||
+    viewBox?.[1] !== 0 ||
+    viewBox?.[2] !== SVG_WIDTH ||
+    viewBox?.[3] !== SVG_HEIGHT
   ) {
     throw new Error('Unsupported symbol.svg viewBox');
   }
@@ -52,9 +51,8 @@ function parseSvg(): Triangle[] {
       .split(/\s+/)
       .map((pair) => pair.split(',').map(Number));
     if (
-      !points ||
-      points.length !== 3 ||
-      points.some((p) => p.length !== 2 || p.some((n) => !Number.isFinite(n)))
+      points?.length !== 3 ||
+      points?.some((p) => p.length !== 2 || p.some((n) => !Number.isFinite(n)))
     ) {
       throw new Error('symbol.svg polygons must be triangles');
     }

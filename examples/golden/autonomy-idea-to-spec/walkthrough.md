@@ -1,13 +1,13 @@
 # Golden flow: autonomy AUTO-001 — idea to spec
 
-Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-001 — brainstorm handoff to create-specs under autonomous config`.
+Illustrative artifact handoff; the CLI inspects recorded state and does not run the agent workflow.
 
 ## Commands
 
 ```bash
 sdd-agentic-flow init
 sdd-agentic-flow config policy --yes --preset autonomous
-sdd-agentic-flow install --scope project
+sdd-agentic-flow install --scope project --adoption-mode team
 ```
 
 Copy converged brainstorm output and spec package from this directory into `.specs/features/quiet-hours-notifications/`, and copy `loop-state.md` to `.sdd-agentic-flow/autonomy/loop-state.md`.

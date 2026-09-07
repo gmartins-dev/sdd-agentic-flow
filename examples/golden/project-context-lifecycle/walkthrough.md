@@ -1,14 +1,12 @@
 # Golden flow: project-context lifecycle
 
-Proved by `test/cli.test.ts` — `context status detects repository revision drift in a real git
-repository` (added in v0.8.0). This directory has no separate fixture: the test creates a real,
-temporary Git repository directly, since project-context provenance is inherently about Git
-state, not static files.
+Illustrative context lifecycle in a disposable Git repository. Executable context
+checks are maintained in `test/project-context.test.ts` and `scripts/cli-exhaustive.ts`.
 
 ## Commands
 
 ```bash
-git init && git commit -m init   # a real repository, so provenance has a revision to track
+git init && git commit --allow-empty -m init   # requires configured Git author identity
 sdd-agentic-flow init
 sdd-agentic-flow context status
 # ... make a commit ...
@@ -27,6 +25,5 @@ sdd-agentic-flow context status
   generation" at that point.
 - After `context refresh`, the drift warning is gone again.
 
-Outside a Git repository, the same flow degrades gracefully: `> Repository revision: not a git
-repository`, never a failure — see the [trust model](../../../docs/trust-model.md)'s formal
-requirement that Git is an optional integration, not a runtime requirement.
+`init` requires a Git workspace. User-scope skill installation works outside Git;
+see the [trust model](../../../docs/trust-model.md) for that separate boundary.

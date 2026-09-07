@@ -32,7 +32,6 @@ function listManagedSkillDirNames(entries: string[]): string[] {
     (name) =>
       (OFFICIAL_SKILLS as readonly string[]).includes(name) ||
       (HISTORICAL_SKILLS as readonly string[]).includes(name) ||
-      isLegacySkillName(name) ||
       name === 'sdd-agentic-flow-shared',
   );
 }

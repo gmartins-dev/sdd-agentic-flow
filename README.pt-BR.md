@@ -137,11 +137,11 @@ flowchart TD
 
 Use `saf-route` quando o próximo passo não estiver claro. Ele recomenda uma skill e aponta para o `SKILL.md` selecionado; não invoca skills nem altera arquivos.
 
-## Comprovado neste repositório
+## Exemplos de workflow
 
-Esses walkthroughs não são claim de slide — rodam como testes de integração em `test/cli.test.ts`. Cada um lista os comandos que o teste executa e o que ele verifica.
+Esses walkthroughs ilustram formatos de artefatos e o comportamento esperado da CLI. Não são evidência de execução de agentes. As jornadas executáveis da CLI estão em `scripts/cli-exhaustive.ts` e `scripts/cli-certification.ts`.
 
-| Fluxo | O que comprova | Walkthrough |
+| Fluxo | O que ilustra | Walkthrough |
 | --- | --- | --- |
 | Greenfield | Source item até validação | [task-management](examples/golden/task-management/walkthrough.md) |
 | Código existente | Specs a partir de código sem docs | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
@@ -153,7 +153,7 @@ Esses walkthroughs não são claim de slide — rodam como testes de integraçã
 | Autonomia AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
 | Autonomia AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. Os fluxos de autonomia comprovam contratos estáticos de continuidade e reparo — não orquestração LLM ao vivo.
+O [exemplo task-management](examples/golden/task-management/) mostra uma feature de ponta a ponta. As fixtures de autonomia ilustram estados de continuidade e reparo; somente checks executados fornecem evidência de um comportamento específico.
 
 ## TDD baseline
 

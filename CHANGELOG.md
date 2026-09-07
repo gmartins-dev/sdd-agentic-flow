@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.10.2
+
+- Harden uninstall ownership, provenance validation, symlink/traversal preflight, and cleanup of
+  legacy shared installation state without deleting foreign content.
+- Require structurally complete evidence reports, reconcile selected installation intent entries,
+  and extend runtime-dependency sensors across package metadata and the generated bundle.
+- Correct audit documentation and certification lifecycle cleanup, and run dist/packed CLI matrices
+  in platform CI jobs.
+
 ## 7.10.1
 
 - Enforce release-state coherence by requiring exactly one historical roadmap entry for the

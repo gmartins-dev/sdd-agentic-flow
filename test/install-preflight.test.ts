@@ -12,7 +12,7 @@ import {
   skillDirPartial,
 } from '../src/install-preflight';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
-import { writeInstallProvenance } from '../src/upgrade';
+import { removeManagedTargetContent, writeInstallProvenance } from '../src/upgrade';
 
 const packageRoot = path.resolve(__dirname, '..');
 const officialSkills = [...OFFICIAL_SKILLS];
@@ -101,4 +101,59 @@ test('an identical managed target produces an empty plan', () => {
     scope: 'user',
   });
   assert.equal(isPlanEmpty(plan), true);
+});
+
+test('invalid provenance cannot authorize removal outside the installation', () => {
+  const target = path.join(temporary, 'unsafe-provenance');
+  const outside = path.join(temporary, 'outside');
+  fs.mkdirSync(outside);
+  fs.writeFileSync(path.join(outside, 'keep.txt'), 'user data');
+  writeInstallProvenance(target, {
+    packageVersion: '7.10.1',
+    managedSkills: ['../outside'],
+  });
+  assert.throws(
+    () => applyInstallPlan(packageRoot, [firstSkill], target, { officialSkills }),
+    /unsafe.*provenance/i,
+  );
+  assert.equal(fs.readFileSync(path.join(outside, 'keep.txt'), 'utf8'), 'user data');
+});
+
+test('legacy current provenance removes the shared layer during cleanup', () => {
+  const target = path.join(temporary, 'legacy-shared-cleanup');
+  fs.mkdirSync(path.join(target, 'sdd-agentic-flow-shared', 'references'), { recursive: true });
+  fs.writeFileSync(
+    path.join(target, 'sdd-agentic-flow-shared', 'references', 'evidence-standard.md'),
+    'owned\n',
+  );
+  writeInstallProvenance(target, {
+    packageVersion: '7.10.1',
+    managedSkills: [firstSkill],
+  });
+  removeManagedTargetContent(target, {
+    package: 'sdd-agentic-flow',
+    packageVersion: '7.10.1',
+    schema: 'saf-install-provenance/v3',
+    skillIdentity: 'saf',
+    managedSkills: [firstSkill],
+  });
+  assert.equal(fs.existsSync(path.join(target, 'sdd-agentic-flow-shared')), false);
+});
+
+test('installation rejects destination symlinks before writing any managed file', (t) => {
+  const target = path.join(temporary, 'linked-target');
+  const outside = path.join(temporary, 'linked-victim');
+  fs.writeFileSync(outside, 'user data');
+  fs.mkdirSync(path.join(target, secondSkill), { recursive: true });
+  try {
+    fs.symlinkSync(outside, path.join(target, secondSkill, 'SKILL.md'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EPERM') throw error;
+    t.skip('symlink creation unavailable');
+    return;
+  }
+  writeInstallProvenance(target, { packageVersion: '7.10.1', managedSkills: officialSkills });
+  assert.throws(() => applyInstallPlan(packageRoot, officialSkills, target), /symbolic link/i);
+  assert.equal(fs.readFileSync(outside, 'utf8'), 'user data');
+  assert.equal(fs.existsSync(path.join(target, firstSkill)), false);
 });

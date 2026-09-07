@@ -58,16 +58,14 @@ export function renderBrandFrame(
   center = false,
 ): string {
   const offset = center ? Math.max(0, Math.floor((columns - CANONICAL_BRAND_WIDTH) / 2)) : 0;
-  return (
-    frame.rows
-      .map((runs) => {
-        let line = ' '.repeat(offset);
-        for (const run of runs)
-          line += `${color(run.role, env, colored)}${run.text}${colored && env.NO_COLOR === undefined ? '\x1b[0m' : ''}`;
-        return `${line}\x1b[K`;
-      })
-      .join('\r\n') + '\r\n'
-  );
+  return `${frame.rows
+    .map((runs) => {
+      let line = ' '.repeat(offset);
+      for (const run of runs)
+        line += `${color(run.role, env, colored)}${run.text}${colored && env.NO_COLOR === undefined ? '\x1b[0m' : ''}`;
+      return `${line}\x1b[K`;
+    })
+    .join('\r\n')}\r\n`;
 }
 
 function wait(ms: number): Promise<void> {

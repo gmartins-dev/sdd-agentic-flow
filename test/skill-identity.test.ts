@@ -3,7 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { isLegacySkillName, isOfficialSkill, OFFICIAL_SKILLS } from '../src/skill-identity';
+import {
+  isLegacySkillName,
+  isOfficialSkill,
+  listManagedSkillDirNames,
+  OFFICIAL_SKILLS,
+} from '../src/skill-identity';
 
 test('the public SAF namespace contains the locked 12-skill roster', () => {
   assert.equal(OFFICIAL_SKILLS.length, 12);
@@ -17,6 +22,13 @@ test('legacy detection is diagnostic-only', () => {
   assert.equal(isLegacySkillName('sdd-create-specs'), true);
   assert.equal(isLegacySkillName('setup-sdd-agentic-flow'), true);
   assert.equal(isLegacySkillName('saf-create-spec'), false);
+});
+
+test('a legacy-looking prefix does not grant deletion authority', () => {
+  assert.deepEqual(
+    listManagedSkillDirNames(['saf-route', 'saf-setup', 'sdd-personal-tool', 'setup-sdd-foreign']),
+    ['saf-route', 'saf-setup'],
+  );
 });
 
 test('multi implementation contract keeps waves, isolation, checking, and integration explicit', () => {

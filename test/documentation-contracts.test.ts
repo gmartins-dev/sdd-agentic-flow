@@ -29,6 +29,20 @@ test('documentation contracts reject retired references', () => {
   );
 });
 
+test('documentation cannot cite a missing executable as current proof', () => {
+  const findings = checkDocumentationContracts(
+    new Map([['README.md', 'Proved by `test/nonexistent-audit-sensor.test.ts`.']]),
+  );
+  assert.ok(findings.some((finding) => finding.message.includes('missing executable reference')));
+});
+
+test('canonical guardrails use effective defaults and sidecar ownership', () => {
+  const guardrails = fs.readFileSync('shared/references/autonomy-guardrails.md', 'utf8');
+  assert.doesNotMatch(guardrails, /default is `manual`|`SKILL\.md` frontmatter/);
+  assert.match(guardrails, /`apply` \+ `supervised`/);
+  assert.match(guardrails, /`saf-contract\.yml` sidecar/);
+});
+
 test('documentation contracts reject retired v7 lifecycle vocabulary', () => {
   const findings = checkDocumentationContracts(
     new Map([
@@ -171,8 +185,8 @@ test('release documentation state rejects stale labels and mismatched versions',
 
 test('release documentation loader reads roadmap, changelog, and package version', () => {
   const state = loadReleaseDocumentationState();
-  assert.equal(state.packageVersion, '7.10.1');
-  assert.match(state.roadmap, /Current release: v7\.10\.1/);
-  assert.match(state.roadmap, /^- \*\*v7\.10\.1:\*\*/m);
-  assert.match(state.changelog, /^## 7\.10\.1/m);
+  assert.equal(state.packageVersion, '7.10.2');
+  assert.match(state.roadmap, /Current release: v7\.10\.2/);
+  assert.match(state.roadmap, /^- \*\*v7\.10\.2:\*\*/m);
+  assert.match(state.changelog, /^## 7\.10\.2/m);
 });

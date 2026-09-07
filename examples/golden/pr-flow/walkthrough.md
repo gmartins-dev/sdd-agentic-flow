@@ -1,7 +1,7 @@
 # Golden flow: change review (create → review → fix → review)
 
-Proved by `test/cli.test.ts` — `golden flow: PR fixtures match the pr-* template presence
-contract from artifact-contracts.md`.
+Illustrative PR artifacts matching the documented template landmarks. Presence
+checks do not prove review quality or live agent execution.
 
 None of `saf-create-pr`, `saf-review-pr`, or `saf-fix-pr` are CLI subcommands — they are
 `SKILL.md` files interpreted by an agent, not something this package's CLI can invoke or run
@@ -28,7 +28,7 @@ network by default, same promise as everywhere else in this package.
 - `review-findings.md` and `fix-evidence.md` mirror their respective templates' structure
   (`# PR review — T1` / `## Findings`; `# PR fix — T1` / `## Actionable findings`).
 
-## Agent workflow (illustrative, not run by the test)
+## Agent workflow (illustrative)
 
 ```text
 saf-create-pr  -> local change-review package

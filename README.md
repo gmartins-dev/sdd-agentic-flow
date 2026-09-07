@@ -152,12 +152,13 @@ flowchart TD
 
 Invoke `saf-route` when the next step is unclear. It recommends a skill and points to that skill's `SKILL.md`; it does not invoke skills or change files.
 
-## Proved in this repository
+## Example workflows
 
-These walkthroughs are not product claims. They run as integration tests in
-`test/cli.test.ts`. Each one lists the commands the test runs and what it checks.
+These walkthroughs illustrate artifact shapes and expected CLI behavior. They are
+not live agent execution evidence. Executable CLI journeys are maintained in
+`scripts/cli-exhaustive.ts` and `scripts/cli-certification.ts`.
 
-| Flow | What it proves | Walkthrough |
+| Flow | What it illustrates | Walkthrough |
 | --- | --- | --- |
 | Greenfield feature | Source item through validation | [task-management](examples/golden/task-management/walkthrough.md) |
 | Existing code | Specs from undocumented code | [existing-code mode](examples/golden/existing-code-mode/walkthrough.md) |
@@ -169,7 +170,7 @@ These walkthroughs are not product claims. They run as integration tests in
 | Autonomy AUTO-004 | Human override (guardrail 3) | [autonomy-human-override](examples/golden/autonomy-human-override/walkthrough.md) |
 | Autonomy AUTO-005 | Budget exhaustion (guardrail 6) | [autonomy-budget-exhaustion](examples/golden/autonomy-budget-exhaustion/walkthrough.md) |
 
-The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy flows prove static CLI contracts for bounded continuation and repair, not live LLM orchestration.
+The generic [task-management example](examples/golden/task-management/) shows one feature end to end. Autonomy fixtures illustrate recorded continuation and repair state; only executed checks provide evidence for a particular behavior.
 
 ## Learn more
 

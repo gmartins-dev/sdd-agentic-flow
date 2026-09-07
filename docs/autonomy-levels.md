@@ -111,7 +111,7 @@ it (`context autonomy-state`, `autonomous-resume`). See the "Scope" section of
 
 ## Authoring `autonomy_profile` for a skill
 
-Each skill declares, in its `SKILL.md` frontmatter:
+Each skill declares, in its `saf-contract.yml` sidecar:
 
 ```yaml
 autonomy_profile:

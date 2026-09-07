@@ -1,6 +1,6 @@
 # Feature validation — quiet-hours-notifications
 
-Status: ready
+Status: not ready
 
 Feature: quiet-hours-notifications
 
@@ -12,14 +12,14 @@ Generic idea-to-spec golden example; notification transport out of scope.
 
 | Requirement anchor | Sensor | Result | Freshness |
 | --- | --- | --- | --- |
-| REQ-1 | golden package | quiet-hours setting task anchored | current |
-| REQ-2 | golden package | deferred delivery task anchored | current |
+| REQ-1 | not run | illustrative task anchor only | not-run |
+| REQ-2 | not run | illustrative task anchor only | not-run |
 
-Command: npm test -- cli.test.ts
-Exit status: 0
-Observable result: golden flow idea-to-spec test passes
+Command: not run (illustrative fixture)
+Exit status: not run
+Observable result: no executable feature verification recorded
 Requirement mapping: REQ-1, REQ-2
 
 ## Limitations
 
-This golden package documents spec shape only; executable tests live in `test/cli.test.ts`.
+This golden package documents spec shape only and does not establish feature readiness.

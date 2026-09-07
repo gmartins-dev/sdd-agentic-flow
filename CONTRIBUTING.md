@@ -80,9 +80,9 @@ a user, without ever running `npm publish`:
   change survives the actual packaging boundary.
 
 Both scripts are TypeScript (`scripts/*.ts`) with no runtime dependency. The same
-pack → install → run recipe used by `cli:sandbox` is also exercised automatically by the tarball
-e2e tests in `test/cli.test.ts` — use the script for interactive poking, the tests for
-regression coverage.
+pack → install → run recipe used by `cli:sandbox` is also exercised by
+`scripts/cli-exhaustive.ts` and `npm run cli:certify:packed`. Use the sandbox for
+interactive inspection and certification for recorded regression evidence.
 
 ### Exhaustive CLI audit
 

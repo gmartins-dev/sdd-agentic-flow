@@ -1,6 +1,6 @@
 # Golden flow: autonomy AUTO-005 — budget exhaustion (guardrail 6)
 
-Proved by `test/cli.test.ts` — `golden flow: autonomy AUTO-005 — doctor reads budget-exhausted loop state`.
+Illustrative fixture for recorded budget exhaustion. It does not measure a live host's resource usage.
 
 ## Commands
 

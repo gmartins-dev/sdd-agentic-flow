@@ -785,20 +785,24 @@ async function main(): Promise<number> {
     throw new Error(`unknown certification profile: ${profile}`);
   const adapter =
     profile === 'packed' ? createPackedAdapter(repoRoot) : createDistAdapter(repoRoot);
-  const results: ScenarioResult[] = [];
-  for (const scenario of scenarios) results.push(await runScenario(adapter, scenario));
-  const evidence: ScenarioEvidence[] = results.map(
-    ({ id: _id, name: _name, command: _command, durationMs: _durationMs, ...item }) => item,
-  );
-  for (const result of results.filter((item) => item.outcome !== 'PASS')) {
-    console.error(`CLI certification scenario ${result.id} ${result.outcome}: ${result.note}`);
+  try {
+    const results: ScenarioResult[] = [];
+    for (const scenario of scenarios) results.push(await runScenario(adapter, scenario));
+    const evidence: ScenarioEvidence[] = results.map(
+      ({ id: _id, name: _name, command: _command, durationMs: _durationMs, ...item }) => item,
+    );
+    for (const result of results.filter((item) => item.outcome !== 'PASS')) {
+      console.error(`CLI certification scenario ${result.id} ${result.outcome}: ${result.note}`);
+    }
+    const verdict = decideCertification(evidence);
+    const report = reportPath(adapter.identity.version);
+    writeReport(adapter, results, verdict, report);
+    console.log(`CLI certification ${adapter.name}: ${verdict.verdict}`);
+    console.log(`Report: ${report}`);
+    return verdict.exitCode;
+  } finally {
+    adapter.dispose?.();
   }
-  const verdict = decideCertification(evidence);
-  const report = reportPath(adapter.identity.version);
-  writeReport(adapter, results, verdict, report);
-  console.log(`CLI certification ${adapter.name}: ${verdict.verdict}`);
-  console.log(`Report: ${report}`);
-  return verdict.exitCode;
 }
 
 main()

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { isBuiltin } from 'node:module';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -39,8 +40,20 @@ if (missing.length) throw new Error(`missing bundled license entries: ${missing.
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as {
   dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
 };
-if (Object.keys(manifest.dependencies || {}).length)
+if (
+  [manifest.dependencies, manifest.optionalDependencies, manifest.peerDependencies].some(
+    (dependencies) => Object.keys(dependencies || {}).length,
+  )
+)
   throw new Error('published CLI must not declare external runtime dependencies');
+
+const bundle = fs.readFileSync(bundlePath, 'utf8');
+for (const match of bundle.matchAll(/\b(?:require|import)\(\s*(['"])([^'"]+)\1\s*\)/g)) {
+  if (!isBuiltin(match[2] ?? ''))
+    throw new Error(`published CLI bundle contains an external runtime import: ${match[2]}`);
+}
 
 console.log(`PASS bundled licenses: ${orderedPackages.join(', ')}`);

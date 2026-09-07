@@ -6,7 +6,8 @@ import path from 'node:path';
 import { hasScriptPty, runScriptPty } from './cli-certification/pty.ts';
 
 const repo = process.cwd();
-const source = process.env.SAF_FULL_MATRIX_SOURCE ?? 'dist';
+const sourceArgument = process.argv.find((arg) => arg.startsWith('--source='));
+const source = process.env.SAF_FULL_MATRIX_SOURCE ?? sourceArgument?.slice('--source='.length) ?? 'dist';
 const npmCommand = 'npm';
 const npxCommand = 'npx';
 const windowsShell = process.platform === 'win32';

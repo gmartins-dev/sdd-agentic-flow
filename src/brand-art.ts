@@ -2,28 +2,25 @@
 // the published bundle never reads public/.
 
 import {
+  BRAND_VARIANTS,
   CANONICAL_BRAND_HEIGHT,
   CANONICAL_BRAND_MASK,
   CANONICAL_BRAND_WIDTH,
 } from './brand-animation.generated';
 import { playBrandMotion } from './brand-motion';
-import { centerDisplayBlock, centerDisplayLine, displayWidth } from './terminal-geometry';
+import { colorEnabled, detectColorDepth } from './terminal-color';
+import { centerDisplayLine } from './terminal-geometry';
 import { ansiColor, COLORS } from './terminal-theme';
 
 const DEFAULT_BRAND_ANIMATE_MS = 590;
 const COMPACT_ART_WIDTH = 54;
-const COMPACT_ART_HEIGHT = 14;
 const MAX_ART_WIDTH = CANONICAL_BRAND_WIDTH;
-const GAP = '   ';
 const INLINE_GAP = '  ';
 const ONE_LINE_RICH = ['›', '››', '›››'] as const;
 const ONE_LINE_PLAIN = '>  >>  >>>';
 type DisplayMode = 'human-rich' | 'human-plain' | 'machine';
-type BrandArtBand = readonly string[];
-type BrandArtParts = readonly BrandArtBand[];
-type BrandArtVariant = 'wide' | 'compact' | 'minimal';
+type BrandArtVariant = 'wide' | 'medium' | 'compact' | 'minimal';
 type BrandComponent = 'small' | 'medium' | 'large';
-type CanonicalRun = readonly [start: number, end: number, role: BrandComponent];
 type BrandStream = {
   isTTY?: boolean;
   columns?: number;
@@ -40,6 +37,7 @@ type BrandArtOptions = {
   center?: boolean;
   visibleParts?: number;
   variant?: Exclude<BrandArtVariant, 'minimal'>;
+  contentRows?: number;
 };
 const COMPONENT_ORDER: readonly BrandComponent[] = ['small', 'medium', 'large'];
 const COMPONENT_COLORS = {
@@ -47,7 +45,7 @@ const COMPONENT_COLORS = {
   medium: COLORS.brand.primary,
   large: COLORS.brand.accent,
 } as const;
-const CANONICAL_MASK: readonly (readonly CanonicalRun[])[] = CANONICAL_BRAND_MASK;
+const CANONICAL_MASK = CANONICAL_BRAND_MASK;
 
 function streamColumns(stream?: BrandStream): number {
   return typeof stream?.columns === 'number' && stream.columns > 0 ? stream.columns : 80;
@@ -56,16 +54,11 @@ function streamRows(stream?: BrandStream): number | null {
   return typeof stream?.rows === 'number' && stream.rows > 0 ? stream.rows : null;
 }
 function artColorEnabled(stream?: BrandStream, env: BrandEnv = process.env): boolean {
-  return env.NO_COLOR === undefined && Boolean(stream?.isTTY);
+  return colorEnabled(stream, env);
 }
 function brandColorDepth(env: BrandEnv): 'ansi16' | 'ansi256' | 'truecolor' {
-  const t = env.TERM ?? '';
-  const c = env.COLORTERM ?? '';
-  return c === 'truecolor' || c === '24bit'
-    ? 'truecolor'
-    : t.includes('256color')
-      ? 'ansi256'
-      : 'ansi16';
+  const depth = detectColorDepth({ isTTY: true }, env);
+  return depth === 'none' ? 'ansi16' : depth;
 }
 function componentColor(component: BrandComponent) {
   return COMPONENT_COLORS[component];
@@ -83,127 +76,76 @@ function renderInk(
 function visibleComponent(component: BrandComponent, visibleParts: number): boolean {
   return COMPONENT_ORDER.indexOf(component) < visibleParts;
 }
-function canonicalOffset(stream: BrandStream | undefined, center: boolean): number {
-  return center ? Math.max(0, Math.floor((streamColumns(stream) - CANONICAL_BRAND_WIDTH) / 2)) : 0;
+type GeneratedVariantName = keyof typeof BRAND_VARIANTS;
+type GeneratedRun = { column: number; text: string; role: string };
+
+function generatedVariantName(
+  stream: BrandStream | undefined,
+  variant: BrandArtVariant,
+): GeneratedVariantName {
+  if (variant === 'wide' || variant === 'medium' || variant === 'compact') return variant;
+  return streamColumns(stream) >= 54 ? 'medium' : 'compact';
 }
-function renderCanonical(
+
+function generatedLines(
+  mode: DisplayMode,
+  variant: GeneratedVariantName,
   stream: BrandStream | undefined,
   env: BrandEnv,
   center: boolean,
   visibleParts: number,
 ): string[] {
-  const offset = canonicalOffset(stream, center);
-  return CANONICAL_MASK.map((spans) => {
+  const rows = BRAND_VARIANTS[variant][
+    mode === 'human-rich' ? 'rich' : 'ascii'
+  ] as readonly (readonly GeneratedRun[])[];
+  const width = BRAND_VARIANTS[variant].width;
+  const offset = center ? Math.max(0, Math.floor((streamColumns(stream) - width) / 2)) : 0;
+  return rows.map((runs) => {
     let line = ' '.repeat(offset);
-    let cursor = 0;
-    for (const [start, end, component] of spans) {
-      line += ' '.repeat(Math.max(0, start - cursor));
-      if (visibleComponent(component, visibleParts))
-        line += renderInk('█'.repeat(end - start + 1), component, stream, env);
-      else line += ' '.repeat(end - start + 1);
-      cursor = end + 1;
+    let cursor = offset;
+    for (const run of runs) {
+      const component = run.role.replace('brand.', '') as BrandComponent;
+      line += ' '.repeat(Math.max(0, run.column + offset - cursor));
+      if (visibleComponent(component, visibleParts)) {
+        const value =
+          mode === 'human-rich' && artColorEnabled(stream, env)
+            ? renderInk(run.text, component, stream, env)
+            : run.text;
+        line += value;
+      } else line += ' '.repeat(run.text.length);
+      cursor = run.column + offset + run.text.length;
     }
     return line;
   });
 }
-function compactBand(widths: readonly number[], glyph: string): BrandArtBand {
-  const top = Math.floor((COMPACT_ART_HEIGHT - widths.length) / 2);
-  return Array.from({ length: COMPACT_ART_HEIGHT }, (_, row) =>
-    (widths[row - top] ?? 0) ? glyph.repeat(widths[row - top] ?? 0) : '',
-  );
-}
-const COMPACT_WIDTHS = {
-  small: [3, 6, 10, 10, 6, 3],
-  medium: [2, 5, 8, 11, 16, 16, 11, 8, 5, 2],
-  large: [1, 3, 6, 9, 13, 17, 22, 22, 17, 13, 9, 6, 3, 1],
-} as const;
-const BRAND_ART_COMPACT_RICH: BrandArtParts = [
-  compactBand(COMPACT_WIDTHS.small, '█'),
-  compactBand(COMPACT_WIDTHS.medium, '█'),
-  compactBand(COMPACT_WIDTHS.large, '█'),
-];
-const BRAND_ART_COMPACT_ASCII: BrandArtParts = [
-  compactBand(COMPACT_WIDTHS.small, '#'),
-  compactBand(COMPACT_WIDTHS.medium, '+'),
-  compactBand(COMPACT_WIDTHS.large, '='),
-];
-const BRAND_ART_RICH = BRAND_ART_COMPACT_RICH;
-const BRAND_ART_ASCII = BRAND_ART_COMPACT_ASCII;
-const BRAND_ART_WIDE_RICH = BRAND_ART_COMPACT_RICH;
-const BRAND_ART_WIDE_ASCII = BRAND_ART_COMPACT_ASCII;
-function bandWidths(parts: BrandArtParts): number[] {
-  return parts.map((band) => Math.max(0, ...band.map((line) => displayWidth(line))));
-}
-function padDisplayEnd(value: string, width: number): string {
-  return `${value}${' '.repeat(Math.max(0, width - displayWidth(value)))}`;
-}
-function joinedWidth(parts: BrandArtParts): number {
-  const widths = bandWidths(parts);
-  return widths.reduce((sum, width) => sum + width, 0) + GAP.length * (parts.length - 1);
-}
-function partsForVariant(mode: DisplayMode): BrandArtParts {
-  return mode === 'human-rich' ? BRAND_ART_COMPACT_RICH : BRAND_ART_COMPACT_ASCII;
-}
-function joinPlain(parts: BrandArtParts): string[] {
-  const widths = bandWidths(parts);
-  const first = parts[0];
-  if (!first) return [];
-  return first.map((_, row) =>
-    parts
-      .map((band, index) => padDisplayEnd(band[row] || '', widths[index] ?? 0))
-      .join(GAP)
-      .replace(/\s+$/, ''),
-  );
-}
-function paintCompact(
-  parts: BrandArtParts,
-  stream: BrandStream | undefined,
-  env: BrandEnv,
-  center: boolean,
-  visibleParts = parts.length,
-): string[] {
-  const widths = bandWidths(parts);
-  const first = parts[0];
-  if (!first) return [];
-  const lines = first.map((_, row) =>
-    parts
-      .map((band, index) => {
-        const cell = padDisplayEnd(band[row] || '', widths[index] ?? 0);
-        const component = COMPONENT_ORDER[index];
-        return index < visibleParts && component && artColorEnabled(stream, env)
-          ? cell.replace(/(\S+)/g, (ink) => renderInk(ink, component, stream, env))
-          : cell;
-      })
-      .join(GAP)
-      .replace(/\s+$/, ''),
-  );
-  if (!center) return lines;
-  return centerDisplayBlock(
-    lines.map((line) => padDisplayEnd(line, joinedWidth(parts))),
-    streamColumns(stream),
-  ).map((line) => line.trimEnd());
-}
-function compactBrandFits(stream?: BrandStream): boolean {
+function variantFits(
+  variant: Exclude<BrandArtVariant, 'minimal'>,
+  stream?: BrandStream,
+  contentRows?: number,
+): boolean {
+  const generated = BRAND_VARIANTS[variant];
+  const minimumRows =
+    contentRows === undefined
+      ? variant === 'wide'
+        ? 48
+        : generated.height
+      : generated.height + Math.max(0, contentRows);
   return (
-    streamColumns(stream) >= COMPACT_ART_WIDTH &&
-    (streamRows(stream) === null || (streamRows(stream) ?? 0) >= COMPACT_ART_HEIGHT)
-  );
-}
-function canonicalBrandFits(stream?: BrandStream): boolean {
-  return (
-    streamColumns(stream) >= CANONICAL_BRAND_WIDTH &&
-    (streamRows(stream) === null || (streamRows(stream) ?? 0) >= 48)
+    streamColumns(stream) >= generated.width &&
+    (streamRows(stream) === null || (streamRows(stream) ?? 0) >= minimumRows)
   );
 }
 function brandArtVariant(
   mode: DisplayMode,
   stream?: BrandStream,
   preferred?: Exclude<BrandArtVariant, 'minimal'>,
+  contentRows?: number,
 ): BrandArtVariant {
   if (mode === 'machine') return 'minimal';
-  if (mode === 'human-rich' && canonicalBrandFits(stream)) return 'wide';
-  if (preferred === 'wide' && !compactBrandFits(stream)) return 'minimal';
-  return compactBrandFits(stream) ? 'compact' : 'minimal';
+  if (preferred && variantFits(preferred, stream, contentRows)) return preferred;
+  const variants: readonly Exclude<BrandArtVariant, 'minimal'>[] =
+    mode === 'human-rich' ? ['wide', 'medium', 'compact'] : ['medium', 'compact'];
+  return variants.find((variant) => variantFits(variant, stream, contentRows)) ?? 'minimal';
 }
 function formatOneLineBrand(
   mode: DisplayMode = 'human-rich',
@@ -219,38 +161,32 @@ function formatBrandArt(
   mode: DisplayMode = 'human-rich',
   stream?: BrandStream,
   env: BrandEnv = process.env,
-  options: Pick<BrandArtOptions, 'center' | 'visibleParts' | 'variant'> = {},
+  options: Pick<BrandArtOptions, 'center' | 'visibleParts' | 'variant' | 'contentRows'> = {},
 ): string {
   if (mode === 'machine') return '';
-  const variant = brandArtVariant(mode, stream, options.variant);
+  const variant = brandArtVariant(mode, stream, options.variant, options.contentRows);
   if (variant === 'minimal') {
     const line = formatOneLineBrand(mode, stream, env).trimEnd();
     return `${options.center ? centerDisplayLine(line, streamColumns(stream)) : line}\n`;
   }
-  if (mode === 'human-rich' && variant === 'wide')
-    return `${renderCanonical(stream, env, Boolean(options.center), Math.max(0, Math.min(3, options.visibleParts ?? 3))).join('\n')}\n`;
-  const parts = partsForVariant(mode);
-  const rendered =
-    mode === 'human-rich'
-      ? paintCompact(parts, stream, env, Boolean(options.center), options.visibleParts)
-      : joinPlain(parts);
+  const rendered = generatedLines(
+    mode,
+    generatedVariantName(stream, variant),
+    stream,
+    env,
+    Boolean(options.center),
+    Math.max(0, Math.min(3, options.visibleParts ?? 3)),
+  );
   return `${rendered.join('\n')}\n`;
 }
 function brandArtLineCount(mode: DisplayMode = 'human-rich', stream?: BrandStream): number {
   if (mode === 'machine') return 0;
-  return brandArtVariant(mode, stream) === 'wide'
-    ? CANONICAL_BRAND_HEIGHT
-    : brandArtVariant(mode, stream) === 'compact'
-      ? COMPACT_ART_HEIGHT
-      : 1;
+  const variant = brandArtVariant(mode, stream);
+  return variant === 'minimal' ? 1 : BRAND_VARIANTS[generatedVariantName(stream, variant)].height;
 }
 function brandArtWidth(mode: DisplayMode = 'human-rich', stream?: BrandStream): number {
   const variant = brandArtVariant(mode, stream);
-  return variant === 'wide'
-    ? CANONICAL_BRAND_WIDTH
-    : variant === 'compact'
-      ? joinedWidth(partsForVariant(mode))
-      : 0;
+  return variant === 'minimal' ? 0 : BRAND_VARIANTS[generatedVariantName(stream, variant)].width;
 }
 function brandArtFitsTerminal(mode: DisplayMode, stream?: BrandStream): boolean {
   return brandArtVariant(mode, stream) !== 'minimal';
@@ -264,7 +200,7 @@ function shouldAnimateBrandArt(
   return (
     mode === 'human-rich' &&
     Boolean(stream?.isTTY) &&
-    canonicalBrandFits(stream) &&
+    variantFits('wide', stream) &&
     streamRows(stream) !== null &&
     (streamRows(stream) ?? 0) >= 48 &&
     env.CI === undefined &&
@@ -294,7 +230,12 @@ async function writeBrandArt(
     return;
   }
   if (!shouldAnimateBrandArt(mode, stream, env, options)) {
-    stream.write(formatBrandArt(mode, stream, env, { center: Boolean(options.center) }));
+    const formatOptions: Pick<BrandArtOptions, 'center' | 'contentRows' | 'variant'> = {
+      center: Boolean(options.center),
+    };
+    if (options.contentRows !== undefined) formatOptions.contentRows = options.contentRows;
+    if (options.variant !== undefined) formatOptions.variant = options.variant;
+    stream.write(formatBrandArt(mode, stream, env, formatOptions));
     return;
   }
   await playBrandMotion(stream, env, {
@@ -305,12 +246,6 @@ async function writeBrandArt(
 
 export type { BrandArtOptions, BrandArtVariant, BrandStream, DisplayMode };
 export {
-  BRAND_ART_ASCII,
-  BRAND_ART_COMPACT_ASCII,
-  BRAND_ART_COMPACT_RICH,
-  BRAND_ART_RICH,
-  BRAND_ART_WIDE_ASCII,
-  BRAND_ART_WIDE_RICH,
   brandArtFitsTerminal,
   brandArtLineCount,
   brandArtVariant,

@@ -10,6 +10,7 @@
 import path from 'node:path';
 import { type BrandStream, type DisplayMode, formatBrandArt, writeBrandArt } from './brand-art';
 import type { DoctorCheck } from './doctor-view';
+import { type ColorDepth, colorEnabled, detectColorDepth } from './terminal-color';
 import { SAF_ASCII_GLYPHS, SAF_GLYPHS, SAF_THEME, safGlyph, symbol } from './terminal-theme';
 
 const STATUS_COLORS = {
@@ -36,7 +37,6 @@ type OutputFlags = {
 
 type OutputFormat = 'human' | 'machine';
 type HumanPresentation = 'rich' | 'plain';
-type ColorDepth = 'none' | 'ansi16' | 'ansi256' | 'truecolor';
 type TerminalBreakpoint = 'wide' | 'compact' | 'narrow' | 'minimal';
 type MotionLevel = 'none' | 'instant' | 'active';
 type TerminalCapabilities = {
@@ -62,28 +62,15 @@ type BrandOptions = {
   animate?: boolean;
   delayMs?: number;
   center?: boolean;
+  contentRows?: number;
+  variant?: 'wide' | 'medium' | 'compact';
 };
-
-function colorEnabled(
-  stream: BrandStream | undefined,
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  if (env.NO_COLOR !== undefined) return false;
-  if (!stream?.isTTY) return false;
-  if (env.FORCE_COLOR !== undefined && env.FORCE_COLOR !== '0') return true;
-  return true;
-}
 
 function colorDepth(
   stream: BrandStream | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): ColorDepth {
-  if (!colorEnabled(stream, env)) return 'none';
-  const terminal = env.TERM ?? '';
-  const colorTerminal = env.COLORTERM ?? '';
-  if (colorTerminal === 'truecolor' || colorTerminal === '24bit') return 'truecolor';
-  if (terminal.includes('256color')) return 'ansi256';
-  return 'ansi16';
+  return detectColorDepth(stream, env);
 }
 
 function terminalCapabilities(

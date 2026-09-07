@@ -84,3 +84,21 @@ test('stream errors fall back to one final frame', async () => {
   assert.equal(chunks.length, 2);
   assert.match(stripAnsi(chunks.at(-1) ?? ''), /█/);
 });
+
+test('drain timeout stops scheduling and does not claim a final delivery', async () => {
+  const chunks: string[] = [];
+  await playBrandMotion(
+    {
+      isTTY: true,
+      columns: 80,
+      write: (chunk) => {
+        chunks.push(chunk);
+        return false;
+      },
+      once: () => undefined,
+    },
+    { NO_COLOR: '1' },
+    { durationMs: 0 },
+  );
+  assert.equal(chunks.length, 1);
+});

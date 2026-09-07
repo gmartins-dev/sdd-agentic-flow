@@ -1,6 +1,12 @@
 # Roadmap
 
-Current release: v7.10.2
+Current release: v7.11.0
+
+- **v7.11.0:** Adds SVG-derived responsive terminal branding with wide, medium, and compact
+  variants, centralized truecolor detection for trustworthy Windows Terminal markers, rich
+  subcell rendering, outlined ASCII fallback, width/height welcome selection, and truthful
+  wide-only motion backpressure handling. Preserves CLI, machine output, state, Skills, safety,
+  local-first, zero-runtime-dependency, and human release authority contracts.
 
 - **v7.10.2:** Hardens uninstall ownership, provenance and filesystem preflight; requires
   structurally complete evidence; preserves unrelated installation intent; improves packaging

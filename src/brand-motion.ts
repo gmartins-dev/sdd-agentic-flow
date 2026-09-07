@@ -4,6 +4,7 @@ import {
   CANONICAL_BRAND_WIDTH,
   BRAND_ANIMATION as GENERATED_BRAND_ANIMATION,
 } from './brand-animation.generated';
+import { colorEnabled, detectColorDepth } from './terminal-color';
 import { ansiColor, COLORS } from './terminal-theme';
 
 export type BrandMotionRole =
@@ -37,16 +38,10 @@ const COLORS_BY_ROLE = {
 export const BRAND_ANIMATION: BrandAnimation = GENERATED_BRAND_ANIMATION as BrandAnimation;
 
 function color(role: BrandMotionRole, env: NodeJS.ProcessEnv, enabled: boolean) {
-  if (!enabled || env.NO_COLOR !== undefined) return '';
+  if (!enabled || !colorEnabled({ isTTY: true }, env)) return '';
   const value = COLORS_BY_ROLE[role];
-  const terminal = env.TERM ?? '';
-  const colorterm = env.COLORTERM ?? '';
-  const depth =
-    colorterm === 'truecolor' || colorterm === '24bit'
-      ? 'truecolor'
-      : terminal.includes('256color')
-        ? 'ansi256'
-        : 'ansi16';
+  const detectedDepth = detectColorDepth({ isTTY: true }, env);
+  const depth = detectedDepth === 'none' ? 'ansi16' : detectedDepth;
   return `\x1b[${ansiColor(value, depth)}m`;
 }
 
@@ -61,8 +56,12 @@ export function renderBrandFrame(
   return `${frame.rows
     .map((runs) => {
       let line = ' '.repeat(offset);
-      for (const run of runs)
-        line += `${color(run.role, env, colored)}${run.text}${colored && env.NO_COLOR === undefined ? '\x1b[0m' : ''}`;
+      let cursor = offset;
+      for (const run of runs) {
+        line += ' '.repeat(Math.max(0, run.column + offset - cursor));
+        line += `${color(run.role, env, colored)}${run.text}${colored && colorEnabled({ isTTY: true }, env) ? '\x1b[0m' : ''}`;
+        cursor = run.column + offset + run.text.length;
+      }
       return `${line}\x1b[K`;
     })
     .join('\r\n')}\r\n`;
@@ -76,9 +75,9 @@ function writeWithDrain(
   chunk: string,
   deadline: number,
   now: () => number,
-): Promise<void> {
+): Promise<'drain' | 'timeout'> {
   const accepted = stream.write(chunk);
-  if (accepted !== false || !stream.once) return Promise.resolve();
+  if (accepted !== false || !stream.once) return Promise.resolve('drain');
   const remaining = Math.max(0, deadline - now());
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -96,19 +95,26 @@ function writeWithDrain(
       if (settled) return;
       settled = true;
       cleanup();
-      resolve();
+      resolve('drain');
     };
-    const fail = () => {
+    const fail = (kind: 'error' | 'closed') => {
       if (settled) return;
       settled = true;
       cleanup();
-      reject(new Error('brand motion stream closed during backpressure'));
+      reject(new Error(`brand motion stream ${kind} during backpressure`));
     };
-    listeners.push(['drain', finish], ['error', fail], ['close', fail]);
+    const onError = () => fail('error');
+    const onClose = () => fail('closed');
+    listeners.push(['drain', finish], ['error', onError], ['close', onClose]);
     stream.once?.('drain', finish);
-    stream.once?.('error', fail);
-    stream.once?.('close', fail);
-    timer = setTimeout(finish, remaining);
+    stream.once?.('error', onError);
+    stream.once?.('close', onClose);
+    timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve('timeout');
+    }, remaining);
   });
 }
 
@@ -130,6 +136,12 @@ export async function playBrandMotion(
   const finalFrame = animation.frames[animation.frames.length - 1];
   if (!finalFrame) return;
   let rendered = -1;
+  let timedOut = false;
+  const write = async (chunk: string, deadline: number): Promise<boolean> => {
+    const result = await writeWithDrain(stream, chunk, deadline, now);
+    if (result === 'timeout') timedOut = true;
+    return result === 'drain';
+  };
   try {
     while (rendered < animation.frames.length - 1) {
       const elapsed = now() - start;
@@ -143,28 +155,28 @@ export async function playBrandMotion(
               return elapsed >= deadline ? i : index;
             }, 0);
       if (wanted > rendered) {
-        if (rendered >= 0)
-          await writeWithDrain(stream, `\x1b[${CANONICAL_BRAND_HEIGHT}A`, start + total, now);
-        await writeWithDrain(
-          stream,
-          renderBrandFrame(
-            animation.frames[wanted] ?? finalFrame,
-            stream.columns ?? CANONICAL_BRAND_WIDTH,
-            env,
-            stream.isTTY === true,
-            Boolean(options.center),
-          ),
-          start + total,
-          now,
-        );
+        if (rendered >= 0 && !(await write(`\x1b[${CANONICAL_BRAND_HEIGHT}A`, start + total)))
+          return;
+        if (
+          !(await write(
+            renderBrandFrame(
+              animation.frames[wanted] ?? finalFrame,
+              stream.columns ?? CANONICAL_BRAND_WIDTH,
+              env,
+              stream.isTTY === true,
+              Boolean(options.center),
+            ),
+            start + total,
+          ))
+        )
+          return;
         rendered = wanted;
       }
-      if (rendered < animation.frames.length - 1)
+      if (rendered < animation.frames.length - 1 && !timedOut)
         await pause(Math.min(10, Math.max(1, total - (now() - start))));
     }
     if (rendered < animation.frames.length - 1)
-      await writeWithDrain(
-        stream,
+      await write(
         renderBrandFrame(
           finalFrame,
           stream.columns ?? CANONICAL_BRAND_WIDTH,
@@ -173,12 +185,13 @@ export async function playBrandMotion(
           Boolean(options.center),
         ),
         start + total + 20,
-        now,
       );
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && /stream closed/.test(error.message)) return;
+    if (timedOut) return;
     try {
-      await writeWithDrain(
-        stream,
+      if (rendered >= 0) await write(`\x1b[${CANONICAL_BRAND_HEIGHT}A`, start + total + 20);
+      await write(
         renderBrandFrame(
           finalFrame,
           stream.columns ?? CANONICAL_BRAND_WIDTH,
@@ -187,7 +200,6 @@ export async function playBrandMotion(
           Boolean(options.center),
         ),
         start + total + 20,
-        now,
       );
     } catch {
       /* presentation is best effort */

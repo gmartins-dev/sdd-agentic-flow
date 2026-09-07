@@ -247,7 +247,7 @@ function renderFoundationGallery(context: PresentationContext, locale = 'en-US')
     `  ${label}:`,
     ...formatBrandArt(brandMode, galleryStream(width), galleryEnv, {
       center: brandMode === 'human-rich',
-      variant: width >= 80 ? 'wide' : 'compact',
+      variant: width >= 80 ? 'wide' : width >= 54 ? 'medium' : 'compact',
     })
       .trimEnd()
       .split('\n')

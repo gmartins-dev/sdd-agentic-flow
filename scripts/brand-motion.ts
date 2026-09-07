@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { BRAND_ANIMATION, renderBrandFrame } from '../src/brand-motion';
 
 const ROOT = process.cwd();
 const SVG_PATH = path.join(ROOT, 'public/imgs/symbol.svg');
@@ -11,11 +10,20 @@ const SVG_HEIGHT = 96;
 export const WIDTH = 80;
 const CELL_HEIGHT_RATIO = 0.5;
 export const HEIGHT = Math.round(((SVG_HEIGHT * WIDTH) / SVG_WIDTH) * CELL_HEIGHT_RATIO);
+const VARIANTS = {
+  wide: { width: 80, height: 34 },
+  medium: { width: 54, height: 23 },
+  compact: { width: 33, height: 14 },
+} as const;
+export const RICH_SAMPLE_GRID = 4;
+export const RICH_OCCUPANCY_THRESHOLD = 8;
+export const ASCII_OCCUPANCY_THRESHOLD = 8;
 const ROLES = ['small', 'medium', 'large'] as const;
 const DURATIONS = [50, 55, 60, 65, 65, 70, 70, 75, 80, 0] as const;
 type Role = (typeof ROLES)[number];
 type Triangle = { role: Role; points: readonly [number, number][] };
-type Cell = { role: Role };
+type Cell = { role: Role | undefined };
+type VariantCell = { role: Role | undefined; coverage: number };
 
 function parseSvg(): Triangle[] {
   const svg = fs.readFileSync(SVG_PATH, 'utf8');
@@ -94,7 +102,7 @@ function rasterize(): Cell[][] {
       const sy = ((y + 0.5) * SVG_HEIGHT) / HEIGHT;
       const hits = triangles.filter((triangle) => insideTriangle(sx, sy, triangle));
       if (hits.length > 1) throw new Error(`Overlapping raster cell ${x},${y}`);
-      row.push(hits[0] ? { role: hits[0].role } : { role: undefined as never });
+      row.push({ role: hits[0]?.role });
     }
     cells.push(row);
   }
@@ -103,6 +111,155 @@ function rasterize(): Cell[][] {
       throw new Error(`No raster coverage for ${role}`);
   }
   return cells;
+}
+
+function sampleRole(x: number, y: number, triangles: Triangle[]): Role | undefined {
+  const hits = triangles.filter((triangle) => insideTriangle(x, y, triangle));
+  const roles = new Set(hits.map((triangle) => triangle.role));
+  if (roles.size > 1) throw new Error(`Overlapping raster sample ${x},${y}`);
+  return hits[0]?.role;
+}
+
+function variantCells(width: number, height: number): VariantCell[][] {
+  const triangles = parseSvg();
+  return Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => {
+      let coverage = 0;
+      let role: Role | undefined;
+      for (let sampleY = 0; sampleY < RICH_SAMPLE_GRID; sampleY += 1) {
+        for (let sampleX = 0; sampleX < RICH_SAMPLE_GRID; sampleX += 1) {
+          const sample = sampleRole(
+            ((x + (sampleX + 0.5) / RICH_SAMPLE_GRID) * SVG_WIDTH) / width,
+            ((y + (sampleY + 0.5) / RICH_SAMPLE_GRID) * SVG_HEIGHT) / height,
+            triangles,
+          );
+          if (sample) {
+            coverage += 1;
+            role = sample;
+          }
+        }
+      }
+      return { role: coverage >= ASCII_OCCUPANCY_THRESHOLD ? role : undefined, coverage };
+    }),
+  );
+}
+
+type GeneratedRun = { column: number; text: string; role: string };
+
+function appendRun(runs: GeneratedRun[], column: number, text: string, role: string): void {
+  const previous = runs.at(-1);
+  if (previous && previous.column + previous.text.length === column && previous.role === role) {
+    previous.text += text;
+    return;
+  }
+  runs.push({ column, text, role });
+}
+
+function richRows(width: number, height: number): GeneratedRun[][] {
+  const triangles = parseSvg();
+  return Array.from({ length: height }, (_, row) => {
+    const runs: GeneratedRun[] = [];
+    for (let x = 0; x < width; x += 1) {
+      const subcell = (part: number): Role | undefined => {
+        const roles = new Set<Role>();
+        let coverage = 0;
+        for (let sampleY = 0; sampleY < RICH_SAMPLE_GRID; sampleY += 1) {
+          for (let sampleX = 0; sampleX < RICH_SAMPLE_GRID; sampleX += 1) {
+            const role = sampleRole(
+              ((x + (sampleX + 0.5) / RICH_SAMPLE_GRID) * SVG_WIDTH) / width,
+              ((row + part * 0.5 + (sampleY + 0.5) / (RICH_SAMPLE_GRID * 2)) * SVG_HEIGHT) / height,
+              triangles,
+            );
+            if (role) {
+              coverage += 1;
+              roles.add(role);
+            }
+          }
+        }
+        if (roles.size > 1) throw new Error(`Rich subcell role conflict at ${x},${row}`);
+        return coverage >= RICH_OCCUPANCY_THRESHOLD
+          ? (roles.values().next().value as Role | undefined)
+          : undefined;
+      };
+      const top = subcell(0);
+      const bottom = subcell(1);
+      const composed = composeRichGlyph(top, bottom);
+      if (composed.glyph !== ' ') appendRun(runs, x, composed.glyph, `brand.${composed.role}`);
+    }
+    return runs;
+  });
+}
+
+export function composeRichGlyph(
+  top: Role | undefined,
+  bottom: Role | undefined,
+): {
+  glyph: string;
+  role: Role | undefined;
+} {
+  if (top && bottom && top !== bottom) throw new Error('Rich subcell role conflict');
+  return {
+    glyph: top && bottom ? '█' : top ? '▀' : bottom ? '▄' : ' ',
+    role: top ?? bottom,
+  };
+}
+
+function asciiRows(width: number, height: number): GeneratedRun[][] {
+  const cells = variantCells(width, height);
+  return cells.map((row, y) => {
+    const runs: GeneratedRun[] = [];
+    row.forEach((cell, x) => {
+      if (!cell.role) return;
+      const up = Boolean(cells[y - 1]?.[x]?.role);
+      const down = Boolean(cells[y + 1]?.[x]?.role);
+      const left = Boolean(row[x - 1]?.role);
+      const right = Boolean(row[x + 1]?.role);
+      const edge = !up || !down || !left || !right;
+      const northwest = Boolean(cells[y - 1]?.[x - 1]?.role);
+      const northeast = Boolean(cells[y - 1]?.[x + 1]?.role);
+      const southwest = Boolean(cells[y + 1]?.[x - 1]?.role);
+      const southeast = Boolean(cells[y + 1]?.[x + 1]?.role);
+      const rising = !northwest && northeast && southwest;
+      const falling = northwest && !northeast && southeast;
+      const tip =
+        (!northwest && northeast && !southwest && southeast) ||
+        (northwest && !northeast && southwest && !southeast);
+      const glyph = edge
+        ? tip
+          ? '>'
+          : rising
+            ? '/'
+            : falling
+              ? '\\'
+              : !left || !right
+                ? '|'
+                : '+'
+        : cell.role === 'small'
+          ? '#'
+          : cell.role === 'medium'
+            ? '+'
+            : '=';
+      appendRun(runs, x, glyph, `brand.${cell.role}`);
+    });
+    return runs;
+  });
+}
+
+function serializeRows(rows: GeneratedRun[][]): string {
+  const serialized = rows.map((row) => `    ${serializeRow(row)}`).join(',\n');
+  return `[\n${serialized}\n  ]`;
+}
+
+function serializeRow(row: GeneratedRun[]): string {
+  return `[${row.map((run) => `{ column: ${run.column}, text: ${JSON.stringify(run.text)}, role: ${JSON.stringify(run.role)} }`).join(', ')}]`;
+}
+
+function variantSource(): string {
+  const variants = Object.entries(VARIANTS).map(
+    ([name, size]) =>
+      `  ${name}: {\n    width: ${size.width}, height: ${size.height},\n    rich: ${serializeRows(richRows(size.width, size.height))},\n    ascii: ${serializeRows(asciiRows(size.width, size.height))},\n  },`,
+  );
+  return `export const BRAND_VARIANTS = {\n${variants.join('\n')}\n} as const;\n`;
 }
 
 function txt(cells: Cell[][]): string {
@@ -126,8 +283,9 @@ function runs(cells: Cell[][]): string {
   return `import type { BrandMotionRole } from './brand-motion';\n\nexport const CANONICAL_BRAND_WIDTH = ${WIDTH} as const;\nexport const CANONICAL_BRAND_HEIGHT = ${HEIGHT} as const;\nexport const CANONICAL_BRAND_MASK = [\n${rows.map((row) => `  ${row},`).join('\n')}\n] as const;\n`;
 }
 
-function motionRows(cells: Cell[][], frameIndex: number): string {
+function motionRows(cells: Cell[][], frameIndex: number, finalRows: GeneratedRun[][]): string {
   const final = frameIndex === DURATIONS.length - 1;
+  if (final) return finalRows.map((row) => `    ${serializeRow(row)}`).join(',\n');
   const density = ['.', ':', '+', '*', '#', '%', '@', '█'];
   return cells
     .map((row) => {
@@ -197,11 +355,12 @@ function generated(cells: Cell[][]): string {
     'export const CANONICAL_BRAND_WIDTH',
     'export type GeneratedBrandMotionRole = BrandMotionRole;\nexport const CANONICAL_BRAND_WIDTH',
   );
+  const finalRows = richRows(VARIANTS.wide.width, VARIANTS.wide.height);
   const frames = DURATIONS.map(
     (durationMs, index) =>
-      `  { durationMs: ${durationMs}, rows: [\n${motionRows(cells, index)}\n  ] },`,
+      `  { durationMs: ${durationMs}, rows: [\n${motionRows(cells, index, finalRows)}\n  ] },`,
   ).join('\n');
-  return `${header}export const BRAND_ANIMATION = { width: ${WIDTH}, height: ${HEIGHT}, frames: [\n${frames}\n] } as const;\n`;
+  return `${header}export const RICH_SAMPLE_GRID = ${RICH_SAMPLE_GRID} as const;\nexport const RICH_OCCUPANCY_THRESHOLD = ${RICH_OCCUPANCY_THRESHOLD} as const;\nexport const ASCII_OCCUPANCY_THRESHOLD = ${ASCII_OCCUPANCY_THRESHOLD} as const;\nexport const BRAND_ANIMATION = { width: ${WIDTH}, height: ${HEIGHT}, frames: [\n${frames}\n] } as const;\n${variantSource()}`;
 }
 
 function check(): void {
@@ -216,15 +375,64 @@ function check(): void {
     throw new Error('Generated brand data is stale; run npm run brand:generate');
 }
 
-function preview(): void {
+async function preview(): Promise<void> {
+  const [{ formatBrandArt, writeBrandArt }, { BRAND_ANIMATION, renderBrandFrame }] =
+    await Promise.all([import('../src/brand-art.js'), import('../src/brand-motion.js')]);
   const finalOnly = process.argv.includes('--final');
   const frameArg = process.argv.find((arg) => arg.startsWith('--frame='));
   const width = Number(
     process.argv.find((arg) => arg.startsWith('--width='))?.split('=')[1] ?? WIDTH,
   );
+  const height = Number(
+    process.argv.find((arg) => arg.startsWith('--height='))?.split('=')[1] ?? 48,
+  );
+  const variant = process.argv.find((arg) => arg.startsWith('--variant='))?.split('=')[1] ?? 'auto';
+  const ascii = process.argv.includes('--ascii');
+  const playback = process.argv.includes('--playback');
+  const colorDepth = process.argv.find((arg) => arg.startsWith('--color-depth='))?.split('=')[1];
   const noColor = process.argv.includes('--no-color') || process.env.NO_COLOR !== undefined;
-  if (!Number.isInteger(width) || width < WIDTH)
-    throw new Error('preview width must be at least 80');
+  if (!Number.isInteger(width) || width < 33) throw new Error('preview width must be at least 33');
+  if (!Number.isInteger(height) || height < 1) throw new Error('preview height must be positive');
+  if (variant !== 'auto' && !['wide', 'medium', 'compact'].includes(variant))
+    throw new Error(`unknown variant: ${variant}`);
+  if (colorDepth && !['none', 'ansi16', 'ansi256', 'truecolor'].includes(colorDepth))
+    throw new Error(`unknown color depth: ${colorDepth}`);
+  const stream = {
+    isTTY: true,
+    columns: width,
+    rows: height,
+    write: (chunk: string) => {
+      process.stdout.write(chunk);
+      return true;
+    },
+  };
+  const env = noColor
+    ? { ...process.env, NO_COLOR: '1' }
+    : colorDepth === 'truecolor'
+      ? { ...process.env, COLORTERM: 'truecolor' }
+      : colorDepth === 'ansi256'
+        ? { ...process.env, TERM: 'xterm-256color' }
+        : colorDepth === 'ansi16'
+          ? { ...process.env, TERM: 'xterm' }
+          : colorDepth === 'none'
+            ? { ...process.env, NO_COLOR: '1' }
+            : process.env;
+  if (variant !== 'auto' || ascii || playback) {
+    const previewOptions: { variant?: 'wide' | 'medium' | 'compact' } = {};
+    if (variant !== 'auto') previewOptions.variant = variant as 'wide' | 'medium' | 'compact';
+    if (playback) {
+      await writeBrandArt(ascii ? 'human-plain' : 'human-rich', stream, env, previewOptions);
+      return;
+    }
+    process.stdout.write(
+      formatBrandArt(ascii ? 'human-plain' : 'human-rich', stream, env, previewOptions),
+    );
+    return;
+  }
+  if (width < WIDTH) {
+    process.stdout.write(formatBrandArt('human-rich', stream, env, { center: true }));
+    return;
+  }
   const index = finalOnly
     ? BRAND_ANIMATION.frames.length - 1
     : frameArg
@@ -243,11 +451,17 @@ function preview(): void {
   );
 }
 
-const mode = process.argv[2] ?? 'check';
-if (mode === 'generate') {
-  const cells = rasterize();
-  fs.writeFileSync(TXT_PATH, txt(cells));
-  fs.writeFileSync(GENERATED_PATH, generated(cells));
-} else if (mode === 'check') check();
-else if (mode === 'preview') preview();
-else throw new Error(`Unknown brand motion mode: ${mode}`);
+if (path.basename(process.argv[1] ?? '') === 'brand-motion.ts') {
+  const mode = process.argv[2] ?? 'check';
+  if (mode === 'generate') {
+    const cells = rasterize();
+    fs.writeFileSync(TXT_PATH, txt(cells));
+    fs.writeFileSync(GENERATED_PATH, generated(cells));
+  } else if (mode === 'check') check();
+  else if (mode === 'preview')
+    preview().catch((error: unknown) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+  else throw new Error(`Unknown brand motion mode: ${mode}`);
+}

@@ -30,7 +30,7 @@ host owns agent execution, concurrency, branches, and worktrees.
 | Module                                                    | Responsibility                                                                           |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `sdd-agentic-flow.ts`                                     | CLI dispatch and presentation bootstrap                                                  |
-| `ui.ts`, `selector.ts`, `terminal-ui.ts`                  | Terminal capabilities, SAF-owned input semantics, and rich/plain presentation primitives |
+| `ui.ts`, `terminal-color.ts`, `selector.ts`, `terminal-ui.ts` | Terminal capabilities, centralized color detection, SAF-owned input semantics, and rich/plain presentation primitives |
 | `install.ts`, `install-domain.ts`, `install-preflight.ts` | Official bundle plan/apply, user installation, and v4 state                              |
 | `workspace.ts`, `git-context.ts`                          | Git-aware workspace plan/apply and identity; never a prerequisite for user install       |
 | `config.ts`, `config-domain.ts`, `configure.ts`           | Effective defaults and explicit overrides                                                |

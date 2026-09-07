@@ -107,8 +107,17 @@ async function terminalWelcome(
   const context = presentationContext(mode, output);
   const includeArt = mode === 'human-rich' || (Boolean(output.isTTY) && !quiet);
   if (includeArt) {
+    const welcomeText = renderWelcomeText(context, locale, { outerSpacing: false });
+    const contentRows =
+      welcomeText.split('\n').length +
+      SAF_THEME.spacing.major +
+      SAF_THEME.spacing.brandToContent +
+      1;
     if (mode === 'human-rich') output.write('\n'.repeat(SAF_THEME.spacing.major));
-    await writeBrand(mode, output, process.env, { center: mode === 'human-rich' });
+    await writeBrand(mode, output, process.env, {
+      center: mode === 'human-rich',
+      contentRows,
+    });
     if (mode === 'human-rich') output.write('\n'.repeat(SAF_THEME.spacing.brandToContent));
   }
   output.write(`${renderWelcomeText(context, locale, { outerSpacing: false })}\n\n`);

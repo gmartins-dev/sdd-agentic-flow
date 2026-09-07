@@ -56,10 +56,13 @@ function catalog(): string {
     ['120 pt-BR', 'human-rich', 120, 'pt-BR', true],
   ];
   return cases
-    .map(
-      ([label, mode, width, locale, noColor]) =>
-        `## ${label}\n\n\`\`\`text\n${stripAnsi(renderGallery(context(mode, width, noColor), locale))}\n\`\`\``,
-    )
+    .map(([label, mode, width, locale, noColor]) => {
+      const gallery = stripAnsi(renderGallery(context(mode, width, noColor), locale))
+        .split('\n')
+        .map((line) => line.trimEnd())
+        .join('\n');
+      return `## ${label}\n\n\`\`\`text\n${gallery}\n\`\`\``;
+    })
     .join('\n\n');
 }
 

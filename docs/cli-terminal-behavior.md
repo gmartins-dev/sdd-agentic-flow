@@ -10,7 +10,9 @@ stdout never prompt or redraw. `--json` never prompts and never emits ANSI or cu
 Selectors use raw arrows only when interactive raw input and cursor capabilities are present. Enter, numeric shortcuts, Space for multi-select, Escape, and Ctrl-C are supported; EOF cancels deterministically and restores terminal state. `--interactive` requires TTY stdin/stdout and an unset `CI`.
 
 Human content wraps at the detected terminal width using visible terminal-cell geometry. Rich TTY
-welcome branding uses a deterministic 590 ms materialization when the terminal is at least 80×48;
+welcome branding selects the largest generated wide/medium/compact variant that fits the sampled
+width, height, and localized welcome budget. A deterministic 590 ms materialization is admitted only for the wide variant
+when the terminal is at least 80×48;
 late output skips stale frames and settles on the exact static logo. `NO_COLOR` preserves motion
 without ANSI color. The supported evidence matrix covers 40, 54, 60, 80, and 120 columns in `en-US` and `pt-BR`; long command
 and path tokens remain intact on continuation lines. Rich TTY operations may use a transient

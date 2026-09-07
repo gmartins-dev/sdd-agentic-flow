@@ -25,6 +25,7 @@ async function certify(adapter: Adapter): Promise<void> {
     assert.equal(result.signal, null);
     assert.equal(result.status, 0, result.transcript.slice(-2000));
     assert.match(result.transcript, /█/);
+    assert.match(result.transcript, /[▀▄]/);
     assert.match(result.transcript.replaceAll('\r', ''), /SDD-AGENTIC-FLOW \(SAF\)/);
     const after = observeSandbox(sandbox);
     assert.deepEqual(after.entries, before.entries);

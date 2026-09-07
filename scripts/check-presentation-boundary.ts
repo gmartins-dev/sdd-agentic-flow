@@ -11,6 +11,7 @@ const presentationOwners = new Set([
   'terminal-components.ts',
   'terminal-theme.ts',
   'terminal-ui.ts',
+  'terminal-color.ts',
   'ui.ts',
 ]);
 const glyphOwners = new Set([
@@ -23,12 +24,13 @@ const glyphOwners = new Set([
 const colorOwners = new Set([
   'brand-art.ts',
   'brand-motion.ts',
+  'terminal-color.ts',
   'terminal-components.ts',
   'terminal-theme.ts',
   'terminal-ui.ts',
   'ui.ts',
 ]);
-const approvedStructuralGlyphs = /[┌│├└─┐┘◇◆✓✗→←↑↓↳▸▹›●○■□█]/;
+const approvedStructuralGlyphs = /[┌│├└─┐┘◇◆✓✗→←↑↓↳▸▹›●○■□█▀▄]/;
 const prohibitedPresentation =
   /(?:\uFE0E|\uFE0F|\u200D|[\uE000-\uF8FF]|[\u{F0000}-\u{FFFFD}]|[\u{100000}-\u{10FFFD}])/u;
 const violations: string[] = [];
@@ -54,6 +56,11 @@ function visit(directory: string) {
       /#[0-9A-Fa-f]{6}\b/.test(source)
     )
       violations.push(`${relative}: raw UI color outside terminal theme`);
+    if (
+      entry.name !== 'terminal-color.ts' &&
+      /env\.(?:COLORTERM|WT_SESSION|TERM_PROGRAM)/.test(source)
+    )
+      violations.push(`${relative}: terminal color environment read outside terminal-color.ts`);
     if (!glyphOwners.has(entry.name) && approvedStructuralGlyphs.test(source))
       violations.push(`${relative}: structural terminal glyph`);
     if (prohibitedPresentation.test(source))

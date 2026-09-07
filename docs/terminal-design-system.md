@@ -49,7 +49,7 @@ Stage       ◇ ◆
 Status      ✓ ! ✗ i
 Selection   ● ○ ■ □
 Navigation  → ← ↑ ↓ ↳ ▸ ▹
-Brand       `public/ascii/saf-ascii-art.txt` → generated filled 80×34 small/medium/large terminal mask
+Brand       `public/imgs/symbol.svg` → generated wide 80×34, medium 54×23, and compact 33×14 runs
 ```
 
 Every semantic token has a deterministic printable-ASCII fallback. EAW-A glyphs are valid in
@@ -90,8 +90,8 @@ summary after completion. Rendering never changes the selected value or transiti
 
 ## Welcome composition
 
-The human welcome uses one shared composition: the canonical 80×34 terminal mask from
-`public/ascii/saf-ascii-art.txt`, the display
+The human welcome uses one shared composition: generated wide, medium, or compact runs derived from
+`public/imgs/symbol.svg`, the display
 title `SDD-AGENTIC-FLOW (SAF)`, the localized product description, and the localized tagline.
 Rich interactive output centers each physical line by terminal-cell width and uses tokenized
 vertical rhythm. It does not center against the viewport height. The package version remains on
@@ -101,13 +101,15 @@ The tagline uses the semantic italic text role. `NO_COLOR` removes hue but prese
 structure and supported non-color emphasis. The terminal mask preserves the approved filled
 small→medium→large progression; its generated geometry is embedded in `brand-animation.generated.ts` and its palette is
 owned by `terminal-theme.ts`. Plain, ASCII, pipe, CI, and non-TTY output remain left-aligned and deterministic. At 80+
-columns and sufficient height, the mark uses the complete 80×34 canvas; smaller or short terminals use the progressive
-`›  ››  ›››` / `>  >>  >>>` fallback without splitting localized text or canonical command/path
+columns and sufficient height, the mark uses the wide canvas; medium and compact variants are selected by both width and
+height without splitting localized text or canonical command/path
 tokens.
 
-`public/ascii/saf-ascii-art.txt` is a geometry contract, not a suggestion. The file is generated
-from the three polygons in `public/imgs/symbol.svg` and checked byte-for-byte by `npm run brand:check`.
-Responsive behavior selects the separate compact or minimal fallback instead of transforming the 80×34 asset.
+`public/ascii/saf-ascii-art.txt` remains the wide geometry contract and is generated from the three
+polygons in `public/imgs/symbol.svg`. Rich variants use `▀`, `▄`, and `█` subcells with a frozen
+4×4 / 8-of-16 occupancy rule; ASCII variants
+use generated contour and semantic fill glyphs. Responsive behavior selects wide, medium, compact,
+or minimal output without runtime rasterization.
 
 Single-choice selectors show only the current focus while open: `◉` for the focused option and
 `○` for other options. Multiple-choice selectors use the corresponding square states `▣`, `■`, and

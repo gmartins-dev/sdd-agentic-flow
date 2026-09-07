@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.11.0
+
+- Add SVG-derived responsive wide, medium, and compact terminal brand variants with rich subcells
+  and outlined ASCII fallback.
+- Centralize color capability detection, including trustworthy Windows Terminal truecolor markers,
+  while preserving `NO_COLOR`, non-TTY, machine, and ASCII presentation policy.
+- Select welcome branding by width and height, preserve generated columns, and harden wide-only
+  motion against drain timeout and stream termination.
+- Preserve CLI commands, machine output, state, Skills, local-first safety, and zero runtime
+  dependencies.
+
 ## 7.10.2
 
 - Harden uninstall ownership, provenance validation, symlink/traversal preflight, and cleanup of

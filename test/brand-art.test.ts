@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
+import { composeRichGlyph } from '../scripts/brand-motion';
+import {
+  ASCII_OCCUPANCY_THRESHOLD,
+  BRAND_VARIANTS,
+  RICH_OCCUPANCY_THRESHOLD,
+  RICH_SAMPLE_GRID,
+} from '../src/brand-animation.generated';
 import {
   brandArtVariant,
   brandArtWidth,
@@ -11,7 +18,7 @@ import {
   shouldAnimateBrandArt,
   writeBrandArt,
 } from '../src/brand-art';
-import { BRAND_ANIMATION } from '../src/brand-motion';
+import { BRAND_ANIMATION, renderBrandFrame } from '../src/brand-motion';
 import { stripAnsi } from '../src/terminal-geometry';
 import { asBrandStream } from './helpers';
 
@@ -57,11 +64,51 @@ test('responsive policy preserves compact 54-column breakpoint and height rules'
   const stream = (columns: number, rows?: number) =>
     asBrandStream({ isTTY: true, columns, ...(rows === undefined ? {} : { rows }) });
   assert.equal(brandArtVariant('human-rich', stream(80, 48)), 'wide');
-  assert.equal(brandArtVariant('human-rich', stream(80, 47)), 'compact');
+  assert.equal(brandArtVariant('human-rich', stream(80, 47)), 'medium');
   assert.equal(brandArtVariant('human-rich', stream(80)), 'wide');
+  assert.equal(brandArtVariant('human-rich', stream(54, 23)), 'medium');
+  assert.equal(brandArtVariant('human-rich', stream(54, 22)), 'compact');
   assert.equal(brandArtVariant('human-rich', stream(54, 14)), 'compact');
-  assert.equal(brandArtVariant('human-rich', stream(53, 14)), 'minimal');
+  assert.equal(brandArtVariant('human-rich', stream(53, 14)), 'compact');
   assert.equal(brandArtVariant('human-rich', stream(80, 13)), 'minimal');
+  assert.equal(brandArtVariant('human-rich', stream(54, 40), undefined, 10), 'medium');
+  assert.equal(brandArtVariant('human-rich', stream(54, 32), undefined, 10), 'compact');
+});
+
+test('generated responsive variants preserve dimensions, subcells, and columns', () => {
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(BRAND_VARIANTS).map(([name, variant]) => [
+        name,
+        [variant.width, variant.height],
+      ]),
+    ),
+    { wide: [80, 34], medium: [54, 23], compact: [33, 14] },
+  );
+  assert.equal(RICH_SAMPLE_GRID, 4);
+  assert.equal(RICH_OCCUPANCY_THRESHOLD, 8);
+  assert.equal(ASCII_OCCUPANCY_THRESHOLD, 8);
+  const rich = BRAND_VARIANTS.compact.rich
+    .flat()
+    .map((run) => run.text)
+    .join('');
+  const ascii = BRAND_VARIANTS.compact.ascii
+    .flat()
+    .map((run) => run.text)
+    .join('');
+  assert.match(rich, /[▀▄█]/);
+  assert.match(ascii, /[#+=|/\\>]/);
+  for (const [name, variant] of Object.entries(BRAND_VARIANTS))
+    for (const row of variant.rich)
+      for (const run of row)
+        assert.ok(run.column >= 0 && run.column + run.text.length <= variant.width, name);
+});
+
+test('rich generator fixture rejects mixed roles and composes approved subcells', () => {
+  assert.deepEqual(composeRichGlyph('small', undefined), { glyph: '▀', role: 'small' });
+  assert.deepEqual(composeRichGlyph(undefined, 'medium'), { glyph: '▄', role: 'medium' });
+  assert.deepEqual(composeRichGlyph('large', 'large'), { glyph: '█', role: 'large' });
+  assert.throws(() => composeRichGlyph('small', 'medium'), /conflict/);
 });
 
 test('motion frames are finite, semantic, and settle on canonical runs', () => {
@@ -71,20 +118,20 @@ test('motion frames are finite, semantic, and settle on canonical runs', () => {
     [50, 55, 60, 65, 65, 70, 70, 75, 80, 0],
   );
   const final = BRAND_ANIMATION.frames.at(-1)!;
-  assert.deepEqual(
-    final.rows,
-    CANONICAL_MASK.map((row) =>
-      row.map(([column, end, component]) => ({
-        column,
-        text: '█'.repeat(end - column + 1),
-        role: `brand.${component}`,
-      })),
-    ),
-  );
+  assert.deepEqual(final.rows, BRAND_VARIANTS.wide.rich);
   assert.ok(
     BRAND_ANIMATION.frames
       .slice(0, -1)
       .some((frame) => frame.rows.some((row) => row.some((run) => run.role.startsWith('flow.')))),
+  );
+});
+
+test('static wide art and final motion normalize to the same generated grid', () => {
+  const stream = asBrandStream({ isTTY: true, columns: 80, rows: 48 });
+  const normalize = (value: string) => stripAnsi(value).replaceAll('\r', '').trimEnd();
+  assert.equal(
+    normalize(formatBrandArt('human-rich', stream, { NO_COLOR: '1' })),
+    normalize(renderBrandFrame(BRAND_ANIMATION.frames.at(-1)!, 80, { NO_COLOR: '1' }, false)),
   );
 });
 

@@ -41,4 +41,14 @@ pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
 fs.writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
 NODE
 
-npm publish --registry=https://npm.pkg.github.com
+if publish_output="$(npm publish --registry=https://npm.pkg.github.com 2>&1)"; then
+  printf '%s\n' "$publish_output"
+else
+  publish_status=$?
+  printf '%s\n' "$publish_output" >&2
+  if grep -qE 'E409|Cannot publish over existing version' <<<"$publish_output"; then
+    echo "GitHub Packages already contains this exact version; treating publish as idempotent."
+  else
+    exit "$publish_status"
+  fi
+fi

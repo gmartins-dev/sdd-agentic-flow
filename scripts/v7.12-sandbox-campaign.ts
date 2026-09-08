@@ -116,15 +116,23 @@ function npmExecutable(): string {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
 }
 
+function npmInvocation(args: string[]): { command: string; args: string[] } {
+  const npmCli = process.env.npm_execpath;
+  return npmCli
+    ? { command: process.execPath, args: [npmCli, ...args] }
+    : { command: npmExecutable(), args };
+}
+
 function packCandidate(root: string): { tarball: string; sha256: string } {
   const packDir = path.join(root, 'pack');
   fs.mkdirSync(packDir, { recursive: true });
-  const result = spawnSync(npmExecutable(), ['pack', '--json', '--pack-destination', packDir], {
+  const invocation = npmInvocation(['pack', '--json', '--pack-destination', packDir]);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: repoRoot,
     encoding: 'utf8',
     timeout: 120_000,
   });
-  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.status, 0, result.error?.message ?? result.stderr);
   const metadata = JSON.parse(result.stdout.slice(result.stdout.indexOf('['))) as Array<{
     filename: string;
   }>;

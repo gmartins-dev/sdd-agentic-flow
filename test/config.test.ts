@@ -37,6 +37,39 @@ test('config show prints policy summary', () => {
   assert.match(result.stdout, /Manual/);
 });
 
+test('public config commands ignore same-named keys outside their sections', () => {
+  const cwd = path.join(temporary, 'repeated-sections');
+  fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
+  const configPath = path.join(cwd, '.sdd-agentic-flow/config.yml');
+  fs.writeFileSync(
+    configPath,
+    `schema: saf-config/v3
+project:
+  execution_mode: plan
+  profile: project-profile
+workflow:
+  execution_mode: guided
+  autonomy_level: manual
+  feature_profile: medium_feature
+language:
+  profile: en-US
+  human_outputs: en-US
+`,
+    'utf8',
+  );
+  const shown = run(['config', 'show'], cwd);
+  assert.equal(shown.status, 0);
+  assert.match(shown.stdout, /Manual/);
+  const preview = run(['config', 'policy', '--plan', '--preset', 'supervised'], cwd);
+  assert.equal(preview.status, 0);
+  assert.match(preview.stdout, /Before\s+Manual/);
+  const applied = run(['config', 'policy', '--yes', '--preset', 'supervised'], cwd);
+  assert.equal(applied.status, 0);
+  const updated = fs.readFileSync(configPath, 'utf8');
+  assert.match(updated, /project:\n {2}execution_mode: plan/);
+  assert.match(updated, /workflow:\n {2}execution_mode: apply/);
+});
+
 test('config policy --plan never writes', () => {
   initConfig(temporary);
   const result = run(['config', 'policy', '--plan', '--preset', 'supervised'], temporary);

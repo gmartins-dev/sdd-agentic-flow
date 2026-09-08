@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.12.0
+
+- Correct evidence-sensor adequacy guidance so an unlocated counterexample is a recorded limitation,
+  while a surviving plausible wrong implementation remains a sensor gap.
+- Resolve configuration reads and writes by their intended YAML section while preserving valid
+  extensions, comments, ordering, and line endings.
+- Align maintainer version-stamp guidance with the actual generator and release workflow.
+- Preserve local-first execution, the 12-Skill bundle, zero runtime dependencies, and explicit
+  deferral of host certification and monetary cost measurement to future backlog work.
+
 ## 7.11.0
 
 - Add SVG-derived responsive wide, medium, and compact terminal brand variants with rich subcells

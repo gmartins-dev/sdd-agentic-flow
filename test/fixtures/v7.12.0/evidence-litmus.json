@@ -1,0 +1,14 @@
+[
+  {
+    "id": "surviving-counterexample",
+    "counterexampleIdentified": true,
+    "survivedApplicableSensors": true,
+    "expectedDisposition": "sensor-gap"
+  },
+  {
+    "id": "no-counterexample-identified",
+    "counterexampleIdentified": false,
+    "survivedApplicableSensors": false,
+    "expectedDisposition": "limitation"
+  }
+]

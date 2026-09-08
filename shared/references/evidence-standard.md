@@ -124,6 +124,11 @@ A sensor is adequate only when all that apply hold:
 `test exists` is not enough. `test passed` is not enough if tautological or disconnected from
 the spec.
 
+When checking sensor adequacy, a plausible wrong implementation that survives the applicable
+sensors is evidence of a sensor gap. Failure to identify such a counterexample is not, by itself,
+proof that the sensor is adequate or inadequate; record that limit and continue evaluating all
+adequacy criteria above.
+
 ## Anti-tautology / epistemic independence
 
 Verification **must not** derive its oracle, expectation, invariant, or acceptance condition

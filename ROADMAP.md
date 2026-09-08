@@ -1,6 +1,11 @@
 # Roadmap
 
-Current release: v7.11.0
+Current release: v7.12.0
+
+- **v7.12.0:** Corrects evidence-sensor adequacy guidance, makes configuration reads and writes
+  section-aware without changing the public CLI contract, and aligns version-stamp documentation
+  with the generator. Host certification and monetary cost measurement remain explicit future
+  backlog work; local-first, provider-neutral and zero-runtime-dependency boundaries are preserved.
 
 - **v7.11.0:** Adds SVG-derived responsive terminal branding with wide, medium, and compact
   variants, centralized truecolor detection for trustworthy Windows Terminal markers, rich

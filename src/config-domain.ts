@@ -134,9 +134,49 @@ function autonomyComboValid(executionMode: string, autonomyLevel: string): boole
   return !INVALID_AUTONOMY_COMBOS.has(`${executionMode}:${autonomyLevel}`);
 }
 
-function configValue(content: string, key: string): string | null {
-  const match = content.match(new RegExp(`^\\s+${key}:\\s*(.+)$`, 'm'));
-  return match?.[1]?.trim().replace(/^['"]|['"]$/g, '') ?? null;
+type ConfigPath = string | readonly string[];
+
+function configPathSegments(pathOrKey: ConfigPath): readonly string[] {
+  return typeof pathOrKey === 'string' ? [pathOrKey] : pathOrKey;
+}
+
+function scalarValue(raw: string): string | null {
+  const value = raw.trim();
+  return value ? value.replace(/^['"]|['"]$/g, '') : null;
+}
+
+function configLinePath(content: string, lineIndex: number): string[] | null {
+  const lines = content.split(/\r?\n/);
+  const line = lines[lineIndex] ?? '';
+  const match = /^( *)([A-Za-z0-9_-]+):(?:\s*(.*))?$/.exec(line);
+  if (!match) return null;
+  const indent = match[1]?.length ?? 0;
+  const path: string[] = [];
+  for (let index = lineIndex - 1; index >= 0; index -= 1) {
+    const parent = /^( *)([A-Za-z0-9_-]+):(?:\s*(.*))?$/.exec(lines[index] ?? '');
+    if (!parent || (parent[3] ?? '').trim()) continue;
+    const parentIndent = parent[1]?.length ?? 0;
+    if (parentIndent < indent) {
+      path.unshift(parent[2] as string);
+      if (parentIndent === 0) break;
+    }
+  }
+  path.push(match[2] as string);
+  return path;
+}
+
+function configValue(content: string, pathOrKey: ConfigPath): string | null {
+  const expected = configPathSegments(pathOrKey);
+  const lines = content.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const path = configLinePath(content, index);
+    if (!path || path.length !== expected.length || !path.every((part, i) => part === expected[i]))
+      continue;
+    const match = /^(?: *)(?:[A-Za-z0-9_-]+):(?:\s*(.*))?$/.exec(lines[index] ?? '');
+    const value = match?.[1];
+    if (value !== undefined) return scalarValue(value);
+  }
+  return null;
 }
 
 function presetEquivalentFor(executionMode: string, autonomyLevel: string): string | null {
@@ -181,10 +221,10 @@ function readConfig(configPath: string): ReadConfigResult {
       content: null,
     };
   }
-  const executionMode = configValue(content, 'execution_mode');
-  const autonomyLevel = configValue(content, 'autonomy_level');
-  const featureProfile = configValue(content, 'feature_profile');
-  const languageProfile = configValue(content, 'profile');
+  const executionMode = configValue(content, ['workflow', 'execution_mode']);
+  const autonomyLevel = configValue(content, ['workflow', 'autonomy_level']);
+  const featureProfile = configValue(content, ['workflow', 'feature_profile']);
+  const languageProfile = configValue(content, ['language', 'profile']);
   const errors: string[] = [];
   const schema = content.match(/^schema:\s*(\S+)$/m)?.[1];
   if (schema !== 'saf-config/v3') errors.push('unsupported config schema');
@@ -251,30 +291,38 @@ function replaceWorkflowField(
   key: string,
   value: string,
 ): { ok: true; content: string } | { ok: false; error: string } {
-  const pattern = new RegExp(`^(\\s+${key}:\\s*).+$`, 'm');
-  if (!pattern.test(content)) {
-    return { ok: false, error: `field ${key} not found` };
-  }
-  return { ok: true, content: content.replace(pattern, `$1${value}`) };
+  return replacePathField(content, ['workflow', key], value);
 }
 
-function replaceConfigField(
+function replacePathField(
   content: string,
-  key: string,
+  pathOrKey: ConfigPath,
   value: string,
 ): { ok: true; content: string } | { ok: false; error: string } {
-  const pattern = new RegExp(`^(\\s+${key}:\\s*).+$`, 'm');
-  if (!pattern.test(content)) return { ok: false, error: `field ${key} not found` };
-  return { ok: true, content: content.replace(pattern, `$1${value}`) };
+  const expected = configPathSegments(pathOrKey);
+  const lines = content.split(/\r?\n/);
+  const newline = content.includes('\r\n') ? '\r\n' : '\n';
+  for (let index = 0; index < lines.length; index += 1) {
+    const path = configLinePath(content, index);
+    if (!path || path.length !== expected.length || !path.every((part, i) => part === expected[i]))
+      continue;
+    const match = /^(\s*[A-Za-z0-9_-]+:\s*).*$/.exec(lines[index] ?? '');
+    if (!match) continue;
+    lines[index] = `${match[1]}${value}`;
+    return { ok: true, content: lines.join(newline) };
+  }
+  return { ok: false, error: `field ${expected.join('.')} not found` };
 }
 
 function upsertLanguageField(content: string, key: string, value: string): string {
-  const replaced = replaceConfigField(content, key, value);
+  const replaced = replacePathField(content, ['language', key], value);
   if (replaced.ok) return replaced.content;
+  const newline = content.includes('\r\n') ? '\r\n' : '\n';
   const language = /^language:\s*$/m;
-  if (language.test(content)) return content.replace(language, `language:\n  ${key}: ${value}`);
+  if (language.test(content))
+    return content.replace(language, `language:${newline}  ${key}: ${value}`);
   const schema = /^schema:\s*.+$/m;
-  return content.replace(schema, `$&\n\nlanguage:\n  ${key}: ${value}`);
+  return content.replace(schema, `$&${newline}${newline}language:${newline}  ${key}: ${value}`);
 }
 
 function addWorkflowField(content: string, key: string, value: string): string {
@@ -344,11 +392,11 @@ function applyPolicyMutation(
   );
   const selectedLanguage = languageProfile ?? language;
   const beforeProfile = current.content
-    ? configValue(current.content, 'profile')
+    ? configValue(current.content, ['language', 'profile'])
     : EFFECTIVE_DEFAULTS.language_profile;
   const beforeLanguage = current.languageProfile ?? EFFECTIVE_DEFAULTS.language_profile;
   const beforeHumanOutputs = current.content
-    ? configValue(current.content, 'human_outputs')
+    ? configValue(current.content, ['language', 'human_outputs'])
     : EFFECTIVE_DEFAULTS.language_profile;
   const beforeFeatureProfile = current.featureProfile ?? 'medium_feature';
   const afterLanguage = selectedLanguage ?? beforeLanguage;
@@ -380,13 +428,13 @@ function applyPolicyMutation(
     next = upsertLanguageField(next, 'profile', selectedLanguage);
     next = upsertLanguageField(next, 'human_outputs', selectedLanguage);
     if (
-      configValue(next, 'profile') !== selectedLanguage ||
-      configValue(next, 'human_outputs') !== selectedLanguage
+      configValue(next, ['language', 'profile']) !== selectedLanguage ||
+      configValue(next, ['language', 'human_outputs']) !== selectedLanguage
     )
       return { ok: false, errors: ['language fields not writable'], wrote: false };
   }
   if (featureProfile) {
-    const featureResult = replaceConfigField(next, 'feature_profile', featureProfile);
+    const featureResult = replacePathField(next, ['workflow', 'feature_profile'], featureProfile);
     next = featureResult.ok
       ? featureResult.content
       : addWorkflowField(next, 'feature_profile', featureProfile);

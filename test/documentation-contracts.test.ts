@@ -185,8 +185,8 @@ test('release documentation state rejects stale labels and mismatched versions',
 
 test('release documentation loader reads roadmap, changelog, and package version', () => {
   const state = loadReleaseDocumentationState();
-  assert.equal(state.packageVersion, '7.11.0');
-  assert.match(state.roadmap, /Current release: v7\.11\.0/);
-  assert.match(state.roadmap, /^- \*\*v7\.11\.0:\*\*/m);
-  assert.match(state.changelog, /^## 7\.11\.0/m);
+  assert.equal(state.packageVersion, '7.12.0');
+  assert.match(state.roadmap, /Current release: v7\.12\.0/);
+  assert.match(state.roadmap, /^- \*\*v7\.12\.0:\*\*/m);
+  assert.match(state.changelog, /^## 7\.12\.0/m);
 });

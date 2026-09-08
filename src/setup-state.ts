@@ -164,7 +164,7 @@ function targetRoots(cwd: string, homeDir: string, configContent: string | null)
   const projectProfile = projectKey ? install?.projects[projectKey] : undefined;
   if (projectProfile?.adoption_mode === 'team')
     return [{ id: 'project-agents', root: projectRoot }];
-  const configuredTarget = configContent ? configValue(configContent, 'target') : null;
+  const configuredTarget = configContent ? configValue(configContent, ['agent', 'target']) : null;
   const targetIds = install?.user.targets.length
     ? install.user.targets
     : configuredTarget && Object.hasOwn(USER_TARGETS, configuredTarget)

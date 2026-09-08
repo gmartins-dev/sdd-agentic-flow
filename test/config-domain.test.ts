@@ -46,6 +46,30 @@ test('readConfig parses policy and preset equivalent', () => {
   assert.equal(config.featureProfileExplicit, true);
 });
 
+test('readConfig resolves repeated keys by their YAML section', () => {
+  const file = writeConfig(
+    'repeated-keys.yml',
+    `schema: saf-config/v3
+project:
+  profile: project-profile
+  execution_mode: plan
+  target: cursor
+workflow:
+  execution_mode: guided
+  autonomy_level: manual
+  feature_profile: medium_feature
+language:
+  profile: pt-BR
+  human_outputs: pt-BR
+`,
+  );
+  const config = readConfig(file);
+  assert.equal(config.ok, true);
+  assert.equal(config.languageProfile, 'pt-BR');
+  assert.equal(config.featureProfile, 'medium_feature');
+  assert.equal(config.policy?.executionMode, 'guided');
+});
+
 test('readConfig treats missing config as healthy built-in defaults', () => {
   const config = readConfig(path.join(temporary, 'missing.yml'));
   assert.equal(config.ok, true);
@@ -182,6 +206,39 @@ test('policy mutation preserves comments and unrelated config content', () => {
   assert.match(content, /custom_extension: retained/);
   assert.match(content, /execution_mode: apply/);
   assert.match(content, /autonomy_level: supervised/);
+});
+
+test('policy mutation updates only the intended section when keys repeat', () => {
+  const file = writeConfig(
+    'repeated-write.yml',
+    `${SAMPLE.replace('workflow:\n', 'project:\n  profile: project-profile\nworkflow:\n')}`,
+  );
+  const result = applyPolicyMutation(file, {
+    executionMode: 'apply',
+    autonomyLevel: 'supervised',
+    languageProfile: 'pt-BR',
+    featureProfile: 'large_feature',
+  });
+  assert.equal(result.ok, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(content, /project:\n {2}profile: project-profile/);
+  assert.match(
+    content,
+    /workflow:\n {2}execution_mode: apply[\s\S]*feature_profile: large_feature/,
+  );
+  assert.match(content, /language:\n {2}profile: pt-BR/);
+});
+
+test('policy mutation preserves CRLF line endings', () => {
+  const file = writeConfig('crlf.yml', SAMPLE.replace(/\n/g, '\r\n'));
+  const result = applyPolicyMutation(file, {
+    executionMode: 'full',
+    autonomyLevel: 'autonomous',
+  });
+  assert.equal(result.ok, true);
+  const content = fs.readFileSync(file, 'utf8');
+  assert.match(content, /\r\n/);
+  assert.doesNotMatch(content.replace(/\r\n/g, ''), /\n/);
 });
 
 test('policy mutation updates language and feature profile without replacing YAML', () => {

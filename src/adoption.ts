@@ -86,7 +86,7 @@ function specsRootFor(cwd: string): ReturnType<typeof normalizeSpecsRoot> {
   if (!fs.existsSync(configPath)) return normalizeSpecsRoot(cwd);
   try {
     const content = fs.readFileSync(configPath, 'utf8');
-    return normalizeSpecsRoot(cwd, configValue(content, 'root') || '.specs/features');
+    return normalizeSpecsRoot(cwd, configValue(content, ['specs', 'root']) || '.specs/features');
   } catch {
     return { ok: false, error: 'specs.root could not be read from the SAF config' };
   }

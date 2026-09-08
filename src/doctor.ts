@@ -92,7 +92,7 @@ function setDoctorSmokeDeps(deps: SmokeCheckDeps): void {
 function resolveConfiguredAgent(cwd: string): string | null {
   const configPath = sddJoin(cwd, 'config.yml');
   if (!fs.existsSync(configPath)) return null;
-  const target = configValue(fs.readFileSync(configPath, 'utf8'), 'target');
+  const target = configValue(fs.readFileSync(configPath, 'utf8'), ['agent', 'target']);
   return target && KNOWN_AGENTS.includes(target) ? target : null;
 }
 
@@ -154,10 +154,10 @@ function languageReport(cwd: string) {
       message: 'language profile is not configured',
     };
   }
-  const profile = configValue(content, 'profile');
-  const humanOutputs = configValue(content, 'human_outputs');
-  const technicalTokens = configValue(content, 'technical_tokens');
-  const bilingualMode = configValue(content, 'bilingual_mode');
+  const profile = configValue(content, ['language', 'profile']);
+  const humanOutputs = configValue(content, ['language', 'human_outputs']);
+  const technicalTokens = configValue(content, ['language', 'technical_tokens']);
+  const bilingualMode = configValue(content, ['language', 'bilingual_mode']);
   if (!profile) {
     return {
       status: 'WARN',
@@ -293,7 +293,7 @@ function doctorChecks(
       : fs.existsSync(configPath)
         ? fs.readFileSync(configPath, 'utf8')
         : effectiveConfigYaml();
-  const specsRoot = configValue(safetyConfig, 'root');
+  const specsRoot = configValue(safetyConfig, ['specs', 'root']);
   const language = languageReport(cwd);
   const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd);
   const tddBaseline = isPackage
@@ -890,8 +890,8 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
   const configPath = sddJoin(cwd, 'config.yml');
   const configExists = fs.existsSync(configPath);
   const content = configExists ? fs.readFileSync(configPath, 'utf8') : null;
-  const executionMode = content ? configValue(content, 'execution_mode') : null;
-  const autonomyLevel = content ? configValue(content, 'autonomy_level') : null;
+  const executionMode = content ? configValue(content, ['workflow', 'execution_mode']) : null;
+  const autonomyLevel = content ? configValue(content, ['workflow', 'autonomy_level']) : null;
 
   let explicitlyInvalid = false;
   if (!configExists) {
@@ -1006,7 +1006,7 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
   }
 
   if (content) {
-    const maxIterations = configValue(content, 'max_iterations');
+    const maxIterations = configValue(content, ['workflow', 'autonomy_budget', 'max_iterations']);
     if (effectiveAutonomyLevel === 'autonomous' && !maxIterations) {
       add(
         'autonomy_budget',
@@ -1017,7 +1017,7 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
       add(
         'autonomy_budget',
         'PASS',
-        `budget: max_iterations=${maxIterations}, max_tokens=${configValue(content, 'max_tokens')}, max_runtime_hours=${configValue(content, 'max_runtime_hours')}`,
+        `budget: max_iterations=${maxIterations}, max_tokens=${configValue(content, ['workflow', 'autonomy_budget', 'max_tokens'])}, max_runtime_hours=${configValue(content, ['workflow', 'autonomy_budget', 'max_runtime_hours'])}`,
       );
     } else {
       add(

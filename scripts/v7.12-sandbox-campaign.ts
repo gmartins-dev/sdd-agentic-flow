@@ -112,10 +112,14 @@ function git(root: string, args: string[]): void {
   assert.equal(result.status, 0, result.stderr);
 }
 
+function npmExecutable(): string {
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
+}
+
 function packCandidate(root: string): { tarball: string; sha256: string } {
   const packDir = path.join(root, 'pack');
   fs.mkdirSync(packDir, { recursive: true });
-  const result = spawnSync('npm', ['pack', '--json', '--pack-destination', packDir], {
+  const result = spawnSync(npmExecutable(), ['pack', '--json', '--pack-destination', packDir], {
     cwd: repoRoot,
     encoding: 'utf8',
     timeout: 120_000,

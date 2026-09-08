@@ -112,16 +112,134 @@ for (const name of OFFICIAL_SKILLS) {
   if (vendor.test(fs.readFileSync(file, 'utf8'))) failures.push(`${name}: provider leakage`);
 }
 
+type EvalRecord = Record<string, unknown>;
+
+const AUTHORITY_ALLOWLIST = {
+  'shared/references/workflow-routing.md#discovery-versus-specification': {
+    file: 'shared/references/workflow-routing.md',
+    heading: '## Discovery versus specification',
+  },
+  'shared/references/workflow-routing.md#routing-matrix': {
+    file: 'shared/references/workflow-routing.md',
+    heading: '## Routing matrix',
+  },
+  'shared/references/spec-lifecycle.md#package-resolution': {
+    file: 'shared/references/spec-lifecycle.md',
+    heading: '## Package resolution',
+  },
+  'skills/saf-route/SKILL.md#safety': {
+    file: 'skills/saf-route/SKILL.md',
+    heading: '## Safety',
+  },
+  'shared/references/workflow-routing.md#precedence-and-gates': {
+    file: 'shared/references/workflow-routing.md',
+    heading: '## Precedence and gates',
+  },
+} as const;
+
+const REQUIRED_ROUTING_IDS = [
+  'route-discovery-durable',
+  'route-spec-ready',
+  'route-single-task',
+  'route-multi-task',
+  'route-package-not-ready',
+  'route-vague-intent',
+  'route-consequential-choice',
+  'route-spec-open-question',
+  'route-package-ambiguous',
+] as const;
+
+const REQUIRED_FIXTURE_IDS = [
+  'discovery-only-workspace',
+  'no-package-defaults-applied',
+  'named-package-ready-task',
+  'named-package-not-ready',
+  'named-package-dependent-tasks',
+  'two-plausible-packages',
+] as const;
+
+function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): string[] {
+  const corpusFailures: string[] = [];
+  for (const key of ['routing_cases', 'prompt_cases', 'behavior_cases']) {
+    if (!Array.isArray(evalCorpus[key]) || evalCorpus[key].length === 0)
+      corpusFailures.push(`eval corpus: missing ${key}`);
+  }
+  const fixtures = Array.isArray(evalCorpus.routing_fixtures)
+    ? evalCorpus.routing_fixtures.filter((item): item is EvalRecord =>
+        Boolean(item && typeof item === 'object'),
+      )
+    : [];
+  const fixtureIds = new Set<string>();
+  for (const fixture of fixtures) {
+    if (typeof fixture.id !== 'string' || !fixture.id.trim())
+      corpusFailures.push('eval corpus: fixture id must be a non-empty string');
+    else if (fixtureIds.has(fixture.id))
+      corpusFailures.push(`eval corpus: duplicate fixture id ${fixture.id}`);
+    else fixtureIds.add(fixture.id);
+    if (typeof fixture.description !== 'string' || !fixture.description.trim())
+      corpusFailures.push(`eval corpus: fixture ${String(fixture.id)} missing description`);
+  }
+  if (fixtures.length !== 6)
+    corpusFailures.push(`eval corpus: expected 6 routing fixtures, found ${fixtures.length}`);
+  for (const id of REQUIRED_FIXTURE_IDS)
+    if (!fixtureIds.has(id)) corpusFailures.push(`eval corpus: missing required fixture ${id}`);
+  const routingCases = Array.isArray(evalCorpus.routing_cases)
+    ? evalCorpus.routing_cases.filter((item): item is EvalRecord =>
+        Boolean(item && typeof item === 'object'),
+      )
+    : [];
+  const caseIds = new Set<string>();
+  const official = new Set<string>(OFFICIAL_SKILLS);
+  for (const item of routingCases) {
+    const id = typeof item.id === 'string' ? item.id : '';
+    if (!id) corpusFailures.push('eval corpus: routing case id must be a non-empty string');
+    else if (caseIds.has(id)) corpusFailures.push(`eval corpus: duplicate routing case id ${id}`);
+    else caseIds.add(id);
+    for (const field of ['prompt', 'fixture', 'authority_ref'])
+      if (typeof item[field] !== 'string' || !String(item[field]).trim())
+        corpusFailures.push(`eval corpus: ${id || 'routing case'} missing ${field}`);
+    if (typeof item.fixture === 'string' && !fixtureIds.has(item.fixture))
+      corpusFailures.push(`eval corpus: ${id} references unknown fixture ${item.fixture}`);
+    if (item.expected_route !== 'skill' && item.expected_route !== 'human-gate')
+      corpusFailures.push(`eval corpus: ${id} has invalid expected_route`);
+    if (item.expected_route === 'skill') {
+      if (typeof item.expected_skill !== 'string' || !official.has(item.expected_skill))
+        corpusFailures.push(`eval corpus: ${id} requires an official expected_skill`);
+    } else if ('expected_skill' in item)
+      corpusFailures.push(`eval corpus: ${id} must not declare expected_skill for human-gate`);
+    if (typeof item.authority_ref === 'string') {
+      const authority = AUTHORITY_ALLOWLIST[item.authority_ref as keyof typeof AUTHORITY_ALLOWLIST];
+      if (!authority)
+        corpusFailures.push(
+          `eval corpus: ${id} has unapproved authority_ref ${item.authority_ref}`,
+        );
+      else {
+        const file = path.join(repositoryRoot, authority.file);
+        if (!fs.existsSync(file))
+          corpusFailures.push(`eval corpus: authority file missing ${authority.file}`);
+        else if (!fs.readFileSync(file, 'utf8').includes(authority.heading))
+          corpusFailures.push(`eval corpus: authority heading missing ${authority.heading}`);
+      }
+    }
+    if (id === 'route-discovery-durable' && item.expected_mode !== 'durable discovery')
+      corpusFailures.push(
+        'eval corpus: route-discovery-durable expected_mode must remain durable discovery',
+      );
+  }
+  for (const id of REQUIRED_ROUTING_IDS)
+    if (!caseIds.has(id)) corpusFailures.push(`eval corpus: missing required routing case ${id}`);
+  return corpusFailures;
+}
+
 const evalCorpus = JSON.parse(
   fs.readFileSync(path.join(root, 'shared', 'evals', 'evals.json'), 'utf8'),
-) as Record<string, unknown>;
-for (const key of ['routing_cases', 'prompt_cases', 'behavior_cases']) {
-  if (!Array.isArray(evalCorpus[key]) || evalCorpus[key].length === 0)
-    failures.push(`eval corpus: missing ${key}`);
-}
+) as EvalRecord;
+failures.push(...validateEvalCorpus(evalCorpus));
 
 if (failures.length) {
   for (const failure of failures) console.error(failure);
   process.exit(1);
 }
 console.log('PASS skill contracts');
+
+export { AUTHORITY_ALLOWLIST, REQUIRED_FIXTURE_IDS, REQUIRED_ROUTING_IDS, validateEvalCorpus };

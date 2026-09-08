@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.13.0
+
+- Clarify state-first routing between discovery and specification while preserving explicit
+  package/task identity and human gates for unresolved authority.
+- Add fixture-aware routing cases and deterministic corpus validation with stable authority
+  references, while preserving existing routing IDs and durable discovery mode.
+- Preserve local-first execution, the 12-Skill bundle, zero runtime dependencies, and deferred
+  external host certification and monetary cost measurement.
+
 ## 7.12.0
 
 - Correct evidence-sensor adequacy guidance so an unlocated counterexample is a recorded limitation,

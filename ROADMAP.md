@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v7.12.0
+Current release: v7.13.0
+
+- **v7.13.0:** Clarifies state-first discovery/specification routing, preserves package/task
+  identity and human authority gates, adds fixture-aware routing cases and deterministic corpus
+  validation, and keeps external host certification and monetary cost measurement deferred.
 
 - **v7.12.0:** Corrects evidence-sensor adequacy guidance, makes configuration reads and writes
   section-aware without changing the public CLI contract, and aligns version-stamp documentation

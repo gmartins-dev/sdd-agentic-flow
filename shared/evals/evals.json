@@ -1,27 +1,103 @@
 {
-  "version": "6.0.0",
+  "version": "6.1.0",
   "purpose": "Curated expected-behavior corpus for SAF skills. These cases document intended routing and prompt behavior; they are not evidence of a host model's behavior without a separately configured runner.",
+  "routing_fixtures": [
+    {
+      "id": "discovery-only-workspace",
+      "description": "Concrete feature workspace with discovery.md, open questions, explicit persistence acceptance, and no spec package."
+    },
+    {
+      "id": "no-package-defaults-applied",
+      "description": "No package or config file; defaults are read-only preconditions recorded by the observer."
+    },
+    {
+      "id": "named-package-ready-task",
+      "description": "routing-demo package with eligible T3 and satisfied prerequisites."
+    },
+    {
+      "id": "named-package-not-ready",
+      "description": "routing-demo package with T3 blocked by an unresolved decision reserved to the maintainer."
+    },
+    {
+      "id": "named-package-dependent-tasks",
+      "description": "Named package with approved tasks, explicit dependencies, completed prerequisites, and bounded ownership."
+    },
+    {
+      "id": "two-plausible-packages",
+      "description": "Two plausible packages without a selected slug."
+    }
+  ],
   "routing_cases": [
     {
       "id": "route-discovery-durable",
       "prompt": "The desired direction is known, but architecture, feasibility, and product decisions remain unresolved across sessions.",
+      "fixture": "discovery-only-workspace",
+      "expected_route": "skill",
       "expected_skill": "saf-brainstorm",
-      "expected_mode": "durable discovery"
+      "expected_mode": "durable discovery",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
     },
     {
       "id": "route-spec-ready",
       "prompt": "The brief is converged and the feature needs observable requirements and design decisions.",
-      "expected_skill": "saf-create-spec"
+      "fixture": "no-package-defaults-applied",
+      "expected_route": "skill",
+      "expected_skill": "saf-create-spec",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
     },
     {
       "id": "route-single-task",
-      "prompt": "Implement approved task T3 from the named specification package.",
-      "expected_skill": "saf-implement"
+      "prompt": "Implement approved task T3 from the named specification package routing-demo.",
+      "fixture": "named-package-ready-task",
+      "expected_route": "skill",
+      "expected_skill": "saf-implement",
+      "authority_ref": "shared/references/workflow-routing.md#routing-matrix"
     },
     {
       "id": "route-multi-task",
-      "prompt": "Implement several approved tasks with declared dependencies and isolated ownership.",
-      "expected_skill": "saf-implement-multi"
+      "prompt": "Implement several approved tasks from routing-demo with declared dependencies and isolated ownership.",
+      "fixture": "named-package-dependent-tasks",
+      "expected_route": "skill",
+      "expected_skill": "saf-implement-multi",
+      "authority_ref": "shared/references/workflow-routing.md#routing-matrix"
+    },
+    {
+      "id": "route-package-not-ready",
+      "prompt": "Continue task T3 from routing-demo. The remaining product decision is reserved to the maintainer and has not been resolved.",
+      "fixture": "named-package-not-ready",
+      "expected_route": "human-gate",
+      "authority_ref": "shared/references/workflow-routing.md#precedence-and-gates"
+    },
+    {
+      "id": "route-vague-intent",
+      "prompt": "I want to improve onboarding, but I do not know which user problem or outcome to choose.",
+      "fixture": "no-package-defaults-applied",
+      "expected_route": "skill",
+      "expected_skill": "saf-brainstorm",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
+    },
+    {
+      "id": "route-consequential-choice",
+      "prompt": "We need to reduce abandonment, but the target audience and product direction still require a decision.",
+      "fixture": "no-package-defaults-applied",
+      "expected_route": "skill",
+      "expected_skill": "saf-brainstorm",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
+    },
+    {
+      "id": "route-spec-open-question",
+      "prompt": "Add JSON output to config show while preserving human output; final field names remain an implementation detail to resolve during specification.",
+      "fixture": "no-package-defaults-applied",
+      "expected_route": "skill",
+      "expected_skill": "saf-create-spec",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
+    },
+    {
+      "id": "route-package-ambiguous",
+      "prompt": "Continue the authentication feature.",
+      "fixture": "two-plausible-packages",
+      "expected_route": "human-gate",
+      "authority_ref": "shared/references/spec-lifecycle.md#package-resolution"
     }
   ],
   "prompt_cases": [

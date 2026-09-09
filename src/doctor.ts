@@ -1035,6 +1035,12 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
       'INFO',
       `no ${SDD_PATHS.loopState} yet; an agent creates it the first time it runs a supervised/autonomous workflow`,
     );
+  } else if (loopState.stateValidity !== 'valid') {
+    add(
+      'autonomy_loop_state',
+      'FAIL',
+      `loop state is invalid (${loopState.stateValidity}); human override was not interpreted`,
+    );
   } else if (loopState.stop) {
     add(
       'autonomy_loop_state',

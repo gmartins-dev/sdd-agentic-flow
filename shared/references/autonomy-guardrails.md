@@ -60,7 +60,7 @@ they do not turn a recoverable negative result into a claim of completed work.
 6. **Resource sufficiency** — the configured budget (`workflow.autonomy_budget` in
    `.sdd-agentic-flow/config.yml`: `max_iterations`, `max_tokens`, `max_runtime_hours`) is not exhausted, and
    `pause_on_warning` triggers a stop, not just a warning, once remaining budget drops below 20%.
-7. **Human override gate** — no `pause: true` or `stop: true` is recorded in
+7. **Human override gate** — no `pause=true` or `stop=true` is recorded in
    `.sdd-agentic-flow/autonomy/loop-state.md`. This is the one guardrail that is not evaluated automatically by
    construction — it exists specifically so a human can halt an in-flight autonomous run by
    editing state, without needing to kill a process.
@@ -79,9 +79,9 @@ means for it:
 ```yaml
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'spec.md, design.md, and tasks.md present; no unresolved requirements'
+  auto_continue_condition: 'spec.md and tasks.md present; design.md when required by profile or decision; no unresolved requirements'
   blocking_conditions: [missing_spec, inconsistent_design, unspecified_requirements]
-  evidence_required: [spec.md, design.md, tasks.md]
+  evidence_required: [spec.md, tasks.md, 'design.md when required by profile or decision']
 ```
 
 - `supported_levels` — which of the three levels this skill can run under. A skill whose output is
@@ -123,8 +123,8 @@ None.
 ```
 
 An agent appends a new "Current State" block after each skill completes; it never rewrites
-history, only adds to it. A human halts an autonomous run by setting `pause: true` or
-`stop: true` under Human override — guardrail 7 picks that up on the next check.
+history, only adds to it. A human halts an autonomous run by setting `pause=true` or
+`stop=true` under Human override — guardrail 7 picks that up on the next check.
 
 The `Skill:` value is not itself the SDD flow phase — `docs/sdd-methodology.md`'s
 `Phase | Typical skill` table is the existing mapping (`saf-brainstorm` through `saf-validate`) for

@@ -284,8 +284,8 @@ never overwrites an existing file.
 
 ### `autonomy_loop_state`: `WARN` "loop state recorded pause=true / stop=true"
 
-**Cause:** a human (or an agent honoring an explicit stop request) set `pause: true` or
-`stop: true` in `.sdd-agentic-flow/autonomy/loop-state.md` during a `supervised`/`autonomous` run.
+**Cause:** a human (or an agent honoring an explicit stop request) set `pause=true` or
+`stop=true` in `.sdd-agentic-flow/autonomy/loop-state.md` during a `supervised`/`autonomous` run.
 
 **Diagnose:** `npx sdd-agentic-flow context autonomy-state`.
 

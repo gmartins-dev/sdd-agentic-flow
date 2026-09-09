@@ -1,6 +1,12 @@
 # Roadmap
 
-Current release: v7.13.0
+Current release: v7.14.0
+
+- **v7.14.0:** Aligns conditional Skill artifacts and verifier authority, validates the canonical
+  human override against the selected loop-state section, bounds resume mutations while preserving
+  history and line endings, and rejects invalid effective configuration. Keeps external host
+  certification, expanded campaigns, monetary cost measurement, and dependency maintenance out of
+  scope.
 
 - **v7.13.0:** Clarifies state-first discovery/specification routing, preserves package/task
   identity and human authority gates, adds fixture-aware routing cases and deterministic corpus

@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.14.0
+
+- Align the 12 Skill contracts for conditional design artifacts, verifier authority, evidence,
+  and handoff without adding a new schema or Skill.
+- Validate the canonical human override in the latest loop-state section, preserve unrelated
+  content and line endings during resume, and reject malformed state before any override flag.
+- Make `context autonomy-state` reject invalid configuration instead of exposing partial policy or
+  defaults as effective state.
+- Preserve local-first execution, the 12-Skill bundle, zero runtime dependencies, and deferred
+  external host certification, campaign expansion, cost measurement, and dependency maintenance.
+
 ## 7.13.0
 
 - Clarify state-first routing between discovery and specification while preserving explicit

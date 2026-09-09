@@ -278,33 +278,79 @@ function loopStatePath(cwd: string) {
   return sddJoin(cwd, 'autonomy', 'loop-state.md');
 }
 
-function latestCurrentStateSection(content: string) {
-  const blocks = content.split(/^## Current State$/m);
-  if (blocks.length < 2) return content;
-  return blocks[blocks.length - 1]?.split(/^## /m)[0] ?? content;
-}
+type LoopStateValidity =
+  | 'valid'
+  | 'missing-section'
+  | 'missing-override'
+  | 'invalid-override'
+  | 'duplicate-override';
 
-function clearLastHumanOverride(content: string) {
-  const regex = /^- Human override:.*$/gm;
-  let lastMatch = null;
-  let match = regex.exec(content);
-  while (match) {
-    lastMatch = match;
-    match = regex.exec(content);
-  }
-  if (!lastMatch) return content;
-  const start = lastMatch.index;
-  const end = start + lastMatch[0].length;
-  return `${content.slice(0, start)}- Human override: pause=false, stop=false${content.slice(end)}`;
+type LoopStateSelection = {
+  currentStart: number | null;
+  currentEnd: number | null;
+  overrideStart: number | null;
+  overrideEnd: number | null;
+  overrideLogStart: number | null;
+  overrideLogEnd: number | null;
+};
+
+function sectionSelection(content: string, title: string): { start: number; end: number } | null {
+  const headings = [...content.matchAll(new RegExp(`^## ${title}[ \\t]*\\r?$`, 'gm'))];
+  const heading = headings.at(-1);
+  if (!heading || heading.index === undefined) return null;
+  const start = heading.index + heading[0].length;
+  const nextHeading = /^## [^\r\n]*(?:\r?\n|$)/gm;
+  nextHeading.lastIndex = start;
+  const next = nextHeading.exec(content);
+  return { start, end: next?.index ?? content.length };
 }
 
 function parseLoopState(content: string) {
-  const latest = latestCurrentStateSection(content);
+  const current = sectionSelection(content, 'Current State');
+  if (!current) {
+    return {
+      executionMode: content.match(/^Execution mode:\s*(.+)$/m)?.[1] ?? null,
+      autonomyLevel: content.match(/^Autonomy level:\s*(.+)$/m)?.[1] ?? null,
+      skill: null,
+      status: null,
+      next: null,
+      guardrails: null,
+      pause: false,
+      stop: false,
+      stateValidity: 'missing-section' as const,
+      selection: {
+        currentStart: null,
+        currentEnd: null,
+        overrideStart: null,
+        overrideEnd: null,
+        overrideLogStart: sectionSelection(content, 'Override Log')?.start ?? null,
+        overrideLogEnd: sectionSelection(content, 'Override Log')?.end ?? null,
+      } satisfies LoopStateSelection,
+    };
+  }
+  const latest = content.slice(current.start, current.end);
   const field = (label: string) => {
     const match = latest.match(new RegExp(`^- ${label}:\\s*(.+)$`, 'm'));
     return match?.[1]?.trim() ?? null;
   };
-  const overrideRaw = field('Human override') || '';
+  const overrideMatches = [...latest.matchAll(/^- Human override:[^\r\n]*/gm)];
+  const override = overrideMatches[0];
+  const overrideRaw = override?.[0] ?? null;
+  const canonical = overrideRaw
+    ? overrideRaw.match(
+        /^- Human override:[ \t]*pause[ \t]*=[ \t]*(true|false)[ \t]*,[ \t]*stop[ \t]*=[ \t]*(true|false)[ \t]*$/,
+      )
+    : null;
+  const validity: LoopStateValidity = !override
+    ? 'missing-override'
+    : overrideMatches.length > 1
+      ? 'duplicate-override'
+      : canonical
+        ? 'valid'
+        : 'invalid-override';
+  const pause = canonical?.[1] === 'true';
+  const stop = canonical?.[2] === 'true';
+  const overrideStart = override?.index === undefined ? null : current.start + override.index;
   return {
     executionMode: content.match(/^Execution mode:\s*(.+)$/m)?.[1] ?? null,
     autonomyLevel: content.match(/^Autonomy level:\s*(.+)$/m)?.[1] ?? null,
@@ -312,23 +358,38 @@ function parseLoopState(content: string) {
     status: field('Status'),
     next: field('Next'),
     guardrails: field('Guardrails'),
-    pause: /pause\s*=\s*true/.test(overrideRaw),
-    stop: /stop\s*=\s*true/.test(overrideRaw),
+    pause,
+    stop,
+    stateValidity: validity,
+    selection: {
+      currentStart: current.start,
+      currentEnd: current.end,
+      overrideStart,
+      overrideEnd: overrideStart === null ? null : overrideStart + (override?.[0].length ?? 0),
+      overrideLogStart: sectionSelection(content, 'Override Log')?.start ?? null,
+      overrideLogEnd: sectionSelection(content, 'Override Log')?.end ?? null,
+    } satisfies LoopStateSelection,
   };
 }
 
 export function readLoopState(cwd: string) {
   const file = loopStatePath(cwd);
   if (!fs.existsSync(file)) return null;
+  const content = fs.readFileSync(file, 'utf8');
   return {
     file,
-    content: fs.readFileSync(file, 'utf8'),
-    ...parseLoopState(fs.readFileSync(file, 'utf8')),
+    content,
+    ...parseLoopState(content),
   };
 }
 
 export function autonomyStateReport(cwd: string) {
-  const policy = readConfig(sddJoin(cwd, 'config.yml')).policy;
+  const config = readConfig(sddJoin(cwd, 'config.yml'));
+  if (!config.ok) {
+    fail(`invalid configuration: ${config.errors.join('; ')}`);
+    return;
+  }
+  const policy = config.policy;
   const executionMode = policy?.executionMode || EFFECTIVE_DEFAULTS.execution_mode;
   const autonomyLevel = policy?.autonomyLevel || EFFECTIVE_DEFAULTS.autonomy_level;
   log('INFO', `execution_mode: ${executionMode}`);
@@ -338,6 +399,12 @@ export function autonomyStateReport(cwd: string) {
     log(
       'WARN',
       `status: no ${LOOP_STATE_RELATIVE} found; it is created by an agent the first time it runs a supervised/autonomous workflow`,
+    );
+    return;
+  }
+  if (state.stateValidity !== 'valid') {
+    fail(
+      `invalid ${LOOP_STATE_RELATIVE}: ${state.stateValidity}; no effective human override was read`,
     );
     return;
   }
@@ -362,6 +429,10 @@ export function autonomousResume(cwd: string, options: ProjectContextOptions = {
     );
     return;
   }
+  if (state.stateValidity !== 'valid') {
+    fail(`invalid ${LOOP_STATE_RELATIVE}: ${state.stateValidity}; refusing to resume`);
+    return;
+  }
   if (!state.pause && !state.stop && !options.force && !options.overrideGuard) {
     log('PASS', `no active pause/stop recorded at skill '${state.skill}'; nothing to resume`);
     return;
@@ -370,10 +441,37 @@ export function autonomousResume(cwd: string, options: ProjectContextOptions = {
   const entry = options.overrideGuard
     ? `- ${timestamp}: guardrail ${options.overrideGuard} overridden by human. Reason: ${options.reason}`
     : `- ${timestamp}: resumed via \`autonomous-resume${options.force ? ' --force' : ''}\`.`;
-  let content = clearLastHumanOverride(state.content);
-  content = /^## Override Log$/m.test(content)
-    ? `${content.trimEnd()}\n${entry}\n`
-    : `${content.trimEnd()}\n\n## Override Log\n\n${entry}\n`;
+  const selection = state.selection;
+  if (selection.overrideStart === null || selection.overrideEnd === null) {
+    fail(`invalid ${LOOP_STATE_RELATIVE}: selected override has no writable location`);
+    return;
+  }
+  const lineEnding = state.content.includes('\r\n') ? '\r\n' : '\n';
+  const replacement = '- Human override: pause=false, stop=false';
+  const delta = replacement.length - (selection.overrideEnd - selection.overrideStart);
+  let content = `${state.content.slice(0, selection.overrideStart)}${replacement}${state.content.slice(selection.overrideEnd)}`;
+  const logEnd =
+    selection.overrideLogEnd === null
+      ? null
+      : selection.overrideLogEnd > selection.overrideEnd
+        ? selection.overrideLogEnd + delta
+        : selection.overrideLogEnd;
+  if (logEnd !== null) {
+    const separator = content.slice(0, logEnd).endsWith(lineEnding) ? '' : lineEnding;
+    content = `${content.slice(0, logEnd)}${separator}${entry}${lineEnding}${content.slice(logEnd)}`;
+  } else {
+    const currentEnd =
+      selection.currentEnd === null
+        ? null
+        : selection.currentEnd > selection.overrideEnd
+          ? selection.currentEnd + delta
+          : selection.currentEnd;
+    if (currentEnd === null) {
+      fail(`invalid ${LOOP_STATE_RELATIVE}: current state section disappeared before write`);
+      return;
+    }
+    content = `${content.slice(0, currentEnd)}${lineEnding}${lineEnding}## Override Log${lineEnding}${lineEnding}${entry}${lineEnding}${content.slice(currentEnd)}`;
+  }
   fs.writeFileSync(state.file, content, 'utf8');
   log('PASS', `resumed: cleared human override recorded at skill '${state.skill}'`);
   log('INFO', `next skill: ${state.next || `unknown — inspect ${SDD_PATHS.loopState}`}`);

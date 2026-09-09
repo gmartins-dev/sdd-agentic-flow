@@ -22,7 +22,7 @@ For level definitions and configuration, see [autonomy levels](autonomy-levels.m
 5. **Skill transition validity** — the proposed next Skill is an authorized normal or repair path
    (see [README](../README.md#how-it-works)).
 6. **Resource sufficiency** — `workflow.autonomy_budget` is not exhausted; `pause_on_warning: true` stops once remaining budget drops below roughly 20%.
-7. **Human override gate** — no `pause: true` or `stop: true` in `.sdd-agentic-flow/autonomy/loop-state.md`.
+7. **Human override gate** — no `pause=true` or `stop=true` in `.sdd-agentic-flow/autonomy/loop-state.md`.
 
 If a guardrail identifies an exceptional blocker or exhausted execution, the agent stops, records
 the reason in `.sdd-agentic-flow/autonomy/loop-state.md`, and waits for a human. A recoverable

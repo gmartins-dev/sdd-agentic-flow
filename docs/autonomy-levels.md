@@ -116,9 +116,9 @@ Each skill declares, in its `saf-contract.yml` sidecar:
 ```yaml
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'spec.md and design.md present with no unresolved Unknown finding'
+  auto_continue_condition: 'spec.md present; design.md when required by profile or decision; no unresolved Unknown finding'
   blocking_conditions: [missing_spec, inconsistent_design, unspecified_requirements]
-  evidence_required: [spec.md, design.md]
+  evidence_required: [spec.md, 'design.md when required by profile or decision']
 ```
 
 - `supported_levels`: a skill whose output is always a recommendation or explanation for a human

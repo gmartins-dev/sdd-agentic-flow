@@ -23,7 +23,7 @@ Do not use to implement fixes, validate a whole feature, create a PR, or review 
 
 1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, then resolve the task, base, and head context from local artifacts.
 2. Make two independent judgments: (1) spec/correctness against the SDD package, (2) engineering fit against `../sdd-agentic-flow-shared/references/engineering-principles.md` and repo conventions. Pretty code must not hide a spec miss. A spec-correct but over-engineered change is a quality finding, not an automatic block. Review acceptance criteria, changed behavior, tests, scope boundaries, and configured quality/security expectations.
-3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Separate blocking defects from non-blocking observations; do not invent CI results; do not invent done.
+3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. The review-findings artifact is local review evidence only; do not infer a persisted product report or handoff file unless the task contract explicitly requires it. Separate blocking defects from non-blocking observations; do not invent CI results; do not invent done.
 4. Produce a Markdown-first findings ledger with state (`confirmed`, `not-reproduced`, `evidence-gap`, `spec-conflict`, `human-judgment`, `resolved`, or `deferred`), severity, file/line, evidence, required remediation, and re-review focus. In autonomous mode, verified actionable findings authorize `saf-fix-pr` and re-review without a new confirmation; this Skill remains read-only.
 
 ## Safety

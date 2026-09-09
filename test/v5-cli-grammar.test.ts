@@ -152,6 +152,49 @@ test('invalid autonomous resume preserves an active loop state byte-for-byte', (
   assert.deepEqual(fs.readFileSync(loopState), before);
 });
 
+test('malformed human override is rejected before resume flags can mutate state', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-invalid-override-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const loopState = path.join(cwd, '.sdd-agentic-flow/autonomy/loop-state.md');
+  fs.mkdirSync(path.dirname(loopState), { recursive: true });
+  const original =
+    '# Loop state\n\n## Current State\n\n- Skill: saf-implement\n- Status: paused\n- Human override: pause: true, stop: false\n';
+  fs.writeFileSync(loopState, original);
+  for (const args of [
+    ['autonomous-resume'],
+    ['autonomous-resume', '--force'],
+    ['autonomous-resume', '--override-guard=3', '--reason=verified'],
+  ]) {
+    const result = spawnSync(process.execPath, [cli, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: cwd },
+    });
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /invalid .*loop-state|invalid/i);
+    assert.equal(fs.readFileSync(loopState, 'utf8'), original);
+  }
+});
+
+test('doctor fails closed on duplicate overrides even when the first is active', () => {
+  const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-duplicate-override-'));
+  spawnSync('git', ['init', '--quiet'], { cwd });
+  const loopState = path.join(cwd, '.sdd-agentic-flow/autonomy/loop-state.md');
+  fs.mkdirSync(path.dirname(loopState), { recursive: true });
+  fs.writeFileSync(
+    loopState,
+    '# Loop state\n\n## Current State\n\n- Skill: saf-implement\n- Status: paused\n- Next: saf-check-task\n- Guardrails: PASS\n- Human override: pause=true, stop=false\n- Human override: pause=false, stop=false\n',
+  );
+  const result = spawnSync(process.execPath, [cli, 'doctor', '--json', '--autonomy'], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: cwd },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /"name":"autonomy_loop_state","status":"FAIL"/);
+  assert.match(result.stdout, /duplicate-override/);
+});
+
 test('project installation rejects user-only targets without mutation', () => {
   const cwd = mkdtempSync(path.join(os.tmpdir(), 'saf-v7-project-target-'));
   spawnSync('git', ['init', '--quiet'], { cwd });

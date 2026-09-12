@@ -157,3 +157,29 @@ test('installation rejects destination symlinks before writing any managed file'
   assert.equal(fs.readFileSync(outside, 'utf8'), 'user data');
   assert.equal(fs.existsSync(path.join(target, firstSkill)), false);
 });
+
+test('install plans report an actionable external symlink blocker', (t) => {
+  const target = path.join(temporary, 'planned-linked-target');
+  const outside = path.join(temporary, 'planned-linked-victim');
+  fs.writeFileSync(outside, 'user data');
+  fs.mkdirSync(path.join(target, firstSkill), { recursive: true });
+  try {
+    fs.symlinkSync(outside, path.join(target, firstSkill, 'SKILL.md'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EPERM') throw error;
+    t.skip('symlink creation unavailable');
+    return;
+  }
+  const plan = buildInstallPlan({
+    packageRoot,
+    skills: officialSkills,
+    targets: [target],
+    officialSkills,
+    scope: 'user',
+  });
+  assert.equal(plan.blocked, true);
+  assert.equal(plan.applicability, 'blocked');
+  assert.match(plan.blockerReason || '', /symbolic link/i);
+  assert.match(plan.blockerReason || '', /choose another target|project scope/i);
+  assert.equal(fs.readFileSync(outside, 'utf8'), 'user data');
+});

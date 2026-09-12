@@ -47,6 +47,7 @@ type TargetReport = {
   foreignSkills: string[];
   staleManagedSkills: string[];
   blocked: boolean;
+  blockerReason?: string;
 };
 
 type InstallPlan = {
@@ -189,6 +190,7 @@ function buildInstallPlan({
   targetIds = [],
 }: BuildInstallPlanInput): InstallPlan {
   const targetReports: TargetReport[] = [];
+  const blockerReasons: string[] = [];
   const totals: ActionTotals = {
     CREATE: 0,
     UPDATE: 0,
@@ -202,14 +204,48 @@ function buildInstallPlan({
   for (const targetRoot of targets) {
     const label = targetLabelFor(targetRoot, scope);
     if (selectedTargets && !selectedTargets.includes(label)) continue;
-    const report = classifyTargetRoot(packageRoot, skills, targetRoot, officialSkills, scope);
+    let report: TargetReport;
+    try {
+      report = classifyTargetRoot(packageRoot, skills, targetRoot, officialSkills, scope);
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !/managed destination crosses a symbolic link/i.test(error.message)
+      )
+        throw error;
+      const reason = `${label}: ${error.message}`;
+      report = {
+        targetRoot,
+        label,
+        pairs: [],
+        classified: { missing: [], identical: [], differs: [] },
+        managed: false,
+        legacy: false,
+        summary: {
+          CREATE: 0,
+          UPDATE: 0,
+          PRESERVE: 0,
+          REMOVE: 0,
+          COLLISION: 0,
+          MANAGED_MODIFIED: 0,
+          PARTIAL: 0,
+          BLOCKED: 1,
+        },
+        partialWarnings: [],
+        foreignSkills: [],
+        staleManagedSkills: [],
+        blocked: true,
+        blockerReason: reason,
+      };
+      blockerReasons.push(reason);
+    }
     targetReports.push(report);
     for (const key of Object.keys(totals) as (keyof ActionTotals)[]) {
       totals[key] += report.summary[key] || 0;
     }
   }
   const blocked = totals.COLLISION > 0 || totals.BLOCKED > 0;
-  return {
+  const plan: InstallPlan = {
     modeLabel,
     scope,
     targetIds,
@@ -226,6 +262,8 @@ function buildInstallPlan({
           ]
         : [],
   };
+  if (blockerReasons.length) plan.blockerReason = blockerReasons.join(' ');
+  return plan;
 }
 
 function buildInstallProfilePlan({ cwd, homeDir, scope, profile }: InstallProfilePlanInput) {

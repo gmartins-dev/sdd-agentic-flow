@@ -9,6 +9,7 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | No `.sdd-agentic-flow/config.yml` | Continue with effective defaults as a read-only prelude; resolve the final route from the artifact state. |
 | Idea, problem, outcome, or consequential product direction is not yet defined | `saf-brainstorm` (durable mode for persistent investigations) |
 | Discovery-only workspace | `saf-brainstorm` to resume or converge; not implementation-ready |
+| Bounded outcome with ordinary technical design open | `saf-create-spec` |
 | Existing undocumented code needing specs | `saf-create-spec` (existing-code mode with an explicit bounded scope) |
 | Ready spec without task prompts | `saf-create-prompts` |
 | One eligible ready task | `saf-implement` |
@@ -24,6 +25,10 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 Recommend `saf-brainstorm` when formulating requirements would require the user or an authority to choose the problem, desired outcome, or consequential product direction. A missing technical approach, acceptance-criteria wording, or non-blocking implementation detail does not require discovery when the outcome is bounded and requirements can be made observable.
 
 Recommend `saf-create-spec` when the requested outcome is bounded enough to formulate observable requirements from the available intent and evidence. The specification step may derive acceptance criteria, record open questions, and make non-blocking design decisions within that outcome.
+
+Recommend `saf-brainstorm` design mode for a feasibility investigation only when the user explicitly
+requests investigation before specification. Do not require discovery merely because ordinary technical
+details remain open.
 
 If the evidence cannot distinguish these cases, or the required decision lacks authority, request a human decision. This rule is normative guidance with examples; it is not a natural-language classifier.
 

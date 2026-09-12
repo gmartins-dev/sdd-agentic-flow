@@ -2,9 +2,9 @@
 
 Every skill in `skills/` follows the same six-section skeleton. This reference documents that
 skeleton so a new skill starts from the standard instead of copying the closest existing
-`SKILL.md` and hoping the shape survives. `scripts/check-skills.sh` mechanically enforces the
-six section headers and the frontmatter contract fields; this document explains what belongs
-inside each one.
+`SKILL.md` and hoping the shape survives. Repository maintenance validation enforces the six
+section headers and frontmatter contract fields; this document explains what belongs inside each
+one.
 
 Method inspired by the Anthropic `skill-creator` draft → test → evaluate → iterate cycle and by
 general "writing for agents" principles (precision, determinism, testability). Cited here as a
@@ -57,7 +57,7 @@ Reason: <one line tying the status to the recommendation>
 ```
 
 This is a content requirement inside the existing `## Output` section, not a seventh section.
-It does not change the six-section contract that `scripts/check-skills.sh` already validates.
+It does not change the six-section contract that repository maintenance validation already checks.
 A skill keeps its own status vocabulary (`saf-check-task` uses `pass`/`needs changes`/`blocked`/
 `inconclusive`; `saf-validate` uses `ready`/`not ready`/`blocked`/`inconclusive`; `saf-route`
 itself uses a route recommendation instead of a pass/fail state). Only the three labels

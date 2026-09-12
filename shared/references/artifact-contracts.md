@@ -2,8 +2,8 @@
 
 This reference owns persisted SAF/SDD artifact materializations with mechanically recognizable
 landmarks. It is a structural contract and presence check, not a registry of every logical,
-ephemeral, composite, or projection output. The broader logical/materialization model belongs to
-`docs/information-representation-model.md`.
+ephemeral, composite, or projection output. It remains a structural presence contract, not a
+complete logical-information model.
 
 Every SDD artifact this package's skills produce has an implicit structure, mirrored by
 `shared/templates/*.template.md`. This file documents that structure explicitly so skills and

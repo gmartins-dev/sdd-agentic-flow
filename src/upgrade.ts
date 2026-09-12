@@ -110,8 +110,19 @@ function assertManagedDestination(root: string, relative: string): void {
   let current = path.resolve(boundary);
   for (const part of ['', ...path.relative(current, destination).split(path.sep)]) {
     current = path.join(current, part);
-    if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink())
-      throw new Error(`managed destination crosses a symbolic link: ${current}`);
+    if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      let target = '<unreadable target>';
+      try {
+        target = fs.readlinkSync(current);
+      } catch {
+        // Keep the safety failure actionable even when the link target cannot be read.
+      }
+      throw new Error(
+        `managed destination crosses a symbolic link: ${current} -> ${target}. ` +
+          'SAF will not write through symbolic links; remove or replace the link manually, ' +
+          'choose another target, or use project scope.',
+      );
+    }
   }
 }
 

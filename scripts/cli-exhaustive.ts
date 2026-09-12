@@ -166,9 +166,8 @@ async function runPackedInteractive(
     env,
     timeoutMs: 180_000,
     steps: [
-      { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
-      { waitFor: /Sharing/, input: '1' },
-      { waitFor: /Coding agents/, input: '1' },
+      { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\r' },
+      { waitFor: /Sharing/, input: '\r' },
       { waitFor: /Coding agents/, input: '\r' },
       { waitFor: /Workflow/, input: '\r' },
       { waitFor: /Ready to set up SAF/, input: '1\r' },

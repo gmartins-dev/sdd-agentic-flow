@@ -30,6 +30,11 @@ saf-route
 Use `saf-route` when the next state transition is unclear. A missing semantic
 artifact still blocks its consumer; missing optional config does not.
 
+Use `saf-brainstorm` for an undefined problem, unresolved consequential product
+direction, or an explicitly requested feasibility investigation. A bounded,
+observable outcome may go directly to `saf-create-spec` even when ordinary
+technical design remains open.
+
 For several tasks, `saf-implement-multi` derives dependency waves and defaults
 to sequential execution. Parallel work requires explicit worktree authority,
 host concurrency, and non-overlapping mutable boundaries. The host creates and

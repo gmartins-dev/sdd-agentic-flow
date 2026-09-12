@@ -1,7 +1,7 @@
 # Autonomy guardrails
 
 `workflow.autonomy_level` in `.sdd-agentic-flow/config.yml` is a **new axis orthogonal to** `workflow.execution_mode`
-(`plan`/`guided`/`apply`/`review`/`full`, see [execution modes](../../docs/execution-modes.md)).
+(`plan`/`guided`/`apply`/`review`/`full`).
 `execution_mode` answers "what is a skill authorized to do"; `autonomy_level` answers "does a
 skill need a human between it and the next one." Neither replaces the other, and neither changes
 the safety boundary. Absent configuration resolves to `apply` + `supervised`, as defined in
@@ -93,8 +93,8 @@ autonomy_profile:
 - `blocking_conditions` — the specific failure modes that stop this skill from reporting `PASS`.
 - `evidence_required` — the artifact(s) guardrail 2 checks for.
 
-`scripts/check-skills.sh` validates that every installed skill declares `autonomy_profile` and
-that `supported_levels` is a subset of `{manual, supervised, autonomous}`.
+Repository maintenance validation checks that every installed Skill declares `autonomy_profile`
+and that `supported_levels` is a subset of `{manual, supervised, autonomous}`.
 
 ## `.sdd-agentic-flow/autonomy/loop-state.md`
 
@@ -126,11 +126,10 @@ An agent appends a new "Current State" block after each skill completes; it neve
 history, only adds to it. A human halts an autonomous run by setting `pause=true` or
 `stop=true` under Human override — guardrail 7 picks that up on the next check.
 
-The `Skill:` value is not itself the SDD flow phase — `docs/sdd-methodology.md`'s
-`Phase | Typical skill` table is the existing mapping (`saf-brainstorm` through `saf-validate`) for
-reading which phase (Plan/Prompt/Implement/Check/PR/Review/Fix/Validate) a given entry
-corresponds to. No new field is needed to make `loop-state.md` phase-inspectable; the data already
-exists, this is just where to read it.
+The `Skill:` value is not itself the SDD flow phase. The canonical workflow sequence
+(`saf-brainstorm` through `saf-validate`) supplies the Plan/Prompt/Implement/Check/PR/Review/Fix/
+Validate mapping. No new field is needed to make `loop-state.md` phase-inspectable; the data
+already exists, this is just where to read it.
 
 ## Scope: what autonomy governs, and what it does not
 

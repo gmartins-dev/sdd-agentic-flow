@@ -135,7 +135,7 @@ and [evidence-standard.md](evidence-standard.md). This file is **not** a
 This toolkit does not fetch third-party skills. Do not install a public skill
 because it is popular. Evaluate provenance, permissions, network and filesystem
 access, and overlap with skills this package already ships. Human-facing trust
-boundaries: `docs/trust-model.md`. Agent handling of untrusted input:
+boundaries remain local-first and human-authorized. Agent handling of untrusted input:
 [workflow-safety.md](workflow-safety.md).
 
 ## Quality vs oracle

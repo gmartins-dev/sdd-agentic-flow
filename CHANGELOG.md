@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.15.0
+
+- Add deterministic consumer-closure verification for the installed 12-Skill bundle, including
+  source, dist, packed, project-scope, and supported user-target evidence.
+- Repair installed shared references that depended on repository-only documents or scripts, while
+  preserving local-first, provider-neutral Skill contracts and zero runtime dependencies.
+- Add local contract-audit and baseline/candidate evidence-diff reports; their structural results
+  remain distinct from semantic review and external host execution.
+- Clarify that bounded observable work with ordinary technical design open can proceed directly to
+  specification, while undefined problems, consequential product direction, and explicitly
+  requested feasibility investigation remain discovery work.
+- Keep installation fail-closed when a managed destination crosses an external symbolic link, and
+  report the link target with safe remediation guidance instead of an opaque preflight failure.
+
 ## 7.14.1
 
 - Add safe clean-reinstall recovery for invalid or interrupted SAF-owned setup state while

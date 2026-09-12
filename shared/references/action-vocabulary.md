@@ -2,8 +2,8 @@
 
 Skill bodies describe behavior with a small set of vendor-neutral verbs instead of naming a
 specific coding agent or product. This keeps every skill usable by any agent that can read
-Markdown and follow instructions, and lets `scripts/check-skills.sh` mechanically guard against
-vendor names creeping into skill bodies (see [compatibility promise](../../docs/compatibility-promise.md)).
+Markdown and follow instructions. Repository maintenance checks guard against vendor names
+creeping into skill bodies; the installed contract remains provider-neutral.
 
 An **Action** is one bounded operation, not a synonym for a Skill, Tool, or Hook. See the
 [canonical vocabulary](canonical-vocabulary.md) for the broader harness taxonomy.

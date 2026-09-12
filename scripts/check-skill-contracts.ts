@@ -5,9 +5,20 @@ import { parseContractArray, validateContractReferences } from '../src/contract-
 import { unknownContractKinds } from '../src/contract-kinds';
 import { parseSkillContract } from '../src/skill-contract';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
+import {
+  analyzeConsumerClosure,
+  consumerClosureExitCode,
+  materializeSourceProjection,
+} from './consumer-closure';
 
 const root = path.resolve(__dirname, '..');
 const failures: string[] = [];
+const closure = analyzeConsumerClosure({ entries: materializeSourceProjection(root) });
+const closureFailures = closure.findings.map(
+  (finding) =>
+    `consumer closure ${finding.rule}: ${finding.file}:${finding.location} ${finding.reference}`,
+);
+failures.push(...closureFailures);
 const descriptions = new Map<string, string>();
 const baselineRegistry = fs.readFileSync(path.join(root, 'shared/baselines/registry.yml'), 'utf8');
 const knownBaselineIds = [...baselineRegistry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)]
@@ -147,6 +158,9 @@ const REQUIRED_ROUTING_IDS = [
   'route-consequential-choice',
   'route-spec-open-question',
   'route-package-ambiguous',
+  'route-technical-design-open',
+  'route-product-direction-unresolved',
+  'route-feasibility-investigation',
 ] as const;
 
 const REQUIRED_FIXTURE_IDS = [
@@ -156,6 +170,9 @@ const REQUIRED_FIXTURE_IDS = [
   'named-package-not-ready',
   'named-package-dependent-tasks',
   'two-plausible-packages',
+  'technical-design-open',
+  'product-direction-unresolved',
+  'feasibility-investigation',
 ] as const;
 
 function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): string[] {
@@ -179,8 +196,8 @@ function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): stri
     if (typeof fixture.description !== 'string' || !fixture.description.trim())
       corpusFailures.push(`eval corpus: fixture ${String(fixture.id)} missing description`);
   }
-  if (fixtures.length !== 6)
-    corpusFailures.push(`eval corpus: expected 6 routing fixtures, found ${fixtures.length}`);
+  if (fixtures.length !== 9)
+    corpusFailures.push(`eval corpus: expected 9 routing fixtures, found ${fixtures.length}`);
   for (const id of REQUIRED_FIXTURE_IDS)
     if (!fixtureIds.has(id)) corpusFailures.push(`eval corpus: missing required fixture ${id}`);
   const routingCases = Array.isArray(evalCorpus.routing_cases)
@@ -238,7 +255,9 @@ failures.push(...validateEvalCorpus(evalCorpus));
 
 if (failures.length) {
   for (const failure of failures) console.error(failure);
-  process.exit(1);
+  const onlyClosureWasInconclusive =
+    closure.status === 'INCONCLUSIVE' && failures.length === closureFailures.length;
+  process.exit(onlyClosureWasInconclusive ? consumerClosureExitCode(closure.status) : 1);
 }
 console.log('PASS skill contracts');
 

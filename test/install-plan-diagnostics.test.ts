@@ -41,6 +41,35 @@ test('blocked install plan is diagnostic, non-mutating, and does not become appl
   assert.equal(fs.existsSync(path.join(target, 'saf-route')), false);
 });
 
+test('external symlink blocks apply with actionable diagnostics and no mutation', () => {
+  const homeDir = path.join(temporary, 'symlink-home');
+  const cwd = path.join(temporary, 'symlink-project');
+  const target = path.join(homeDir, '.agents', 'skills');
+  const outside = path.join(homeDir, 'outside');
+  fs.mkdirSync(path.join(target, 'saf-route'), { recursive: true });
+  fs.writeFileSync(outside, 'keep me\n', 'utf8');
+  try {
+    fs.symlinkSync(outside, path.join(target, 'saf-route', 'SKILL.md'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EPERM') throw error;
+    return;
+  }
+  fs.mkdirSync(cwd, { recursive: true });
+  process.exitCode = undefined;
+
+  const result = install(cwd, {
+    homeDir,
+    scope: 'user',
+    targets: ['agents'],
+    yes: true,
+    quiet: true,
+  });
+
+  assert.equal(result, false);
+  assert.equal(process.exitCode, 1);
+  assert.equal(fs.readFileSync(outside, 'utf8'), 'keep me\n');
+});
+
 test('user installation with personal adoption works outside Git', () => {
   const homeDir = path.join(temporary, 'no-git-home');
   const cwd = path.join(temporary, 'no-git-cwd');

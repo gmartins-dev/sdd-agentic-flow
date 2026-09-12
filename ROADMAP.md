@@ -1,6 +1,12 @@
 # Roadmap
 
-Current release: v7.14.1
+Current release: v7.15.0
+
+- **v7.15.0:** Adds deterministic consumer-closure verification across source, dist, packed,
+  project, and supported user-target installations; keeps maintenance-only audit/diff evidence
+  local; aligns discovery/specification routing for ordinary technical uncertainty; and reports
+  actionable diagnostics when an external symbolic link blocks installation. No runtime, public CLI
+  command, telemetry, external host certification, or automatic remote mutation is added.
 
 - **v7.14.1:** Adds safe clean-reinstall recovery for invalid or interrupted SAF-owned setup
   state, preserves foreign paths and collisions, and keeps healthy user-only setup navigable

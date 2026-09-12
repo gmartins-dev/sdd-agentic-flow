@@ -25,6 +25,18 @@
     {
       "id": "two-plausible-packages",
       "description": "Two plausible packages without a selected slug."
+    },
+    {
+      "id": "technical-design-open",
+      "description": "A bounded observable outcome whose ordinary technical design remains open."
+    },
+    {
+      "id": "product-direction-unresolved",
+      "description": "A clear problem with an unresolved consequential product direction."
+    },
+    {
+      "id": "feasibility-investigation",
+      "description": "A bounded outcome where the user explicitly requests a feasibility investigation before specification."
     }
   ],
   "routing_cases": [
@@ -98,6 +110,31 @@
       "fixture": "two-plausible-packages",
       "expected_route": "human-gate",
       "authority_ref": "shared/references/spec-lifecycle.md#package-resolution"
+    },
+    {
+      "id": "route-technical-design-open",
+      "prompt": "Add an exportable report with the requested fields; choose the ordinary internal implementation during specification.",
+      "fixture": "technical-design-open",
+      "expected_route": "skill",
+      "expected_skill": "saf-create-spec",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
+    },
+    {
+      "id": "route-product-direction-unresolved",
+      "prompt": "The reliability problem is clear, but retaining the current workflow or introducing a new user-visible policy is still undecided.",
+      "fixture": "product-direction-unresolved",
+      "expected_route": "skill",
+      "expected_skill": "saf-brainstorm",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
+    },
+    {
+      "id": "route-feasibility-investigation",
+      "prompt": "Before specification, explicitly investigate whether the requested integration is technically feasible.",
+      "fixture": "feasibility-investigation",
+      "expected_route": "skill",
+      "expected_skill": "saf-brainstorm",
+      "expected_mode": "design investigation",
+      "authority_ref": "shared/references/workflow-routing.md#discovery-versus-specification"
     }
   ],
   "prompt_cases": [

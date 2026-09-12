@@ -52,6 +52,20 @@ Both `doctor` and the bare-invocation status screen (`npx sdd-agentic-flow`) sur
 
 **Fix:** `npx sdd-agentic-flow install` again (idempotent; fills in only what's missing).
 
+### `install`: "managed destination crosses a symbolic link"
+
+**Cause:** a managed destination already exists as a symbolic link. This commonly occurs when
+another local skill manager exposes a shared store through `~/.agents/skills/`. SAF blocks the
+write before changing any file because following that link could overwrite content outside the
+selected installation root.
+
+**Diagnose:** `npx sdd-agentic-flow install --plan` and `readlink ~/.agents/skills/<skill>`.
+
+**Fix:** choose another supported target, install into the repository with
+`npx sdd-agentic-flow install --scope project --adoption-mode team`, or manually replace the link
+only after confirming that its owner and target can be changed safely. SAF never writes through
+an external symbolic link.
+
 ### `project_readiness`: based on config and selected skills
 
 **Cause:** derived from `config` and `skills` above — fix those first.

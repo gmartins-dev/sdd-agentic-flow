@@ -158,22 +158,32 @@ async function runPackedInteractive(
     HOME: state.home,
     USERPROFILE: state.home,
     SDD_NO_UPDATE_PROMPT: '1',
-    PATH: [path.dirname(process.execPath), '/usr/bin', '/bin'].join(path.delimiter),
   };
   delete env.CI;
-  return runScriptPty(`stty cols 80 rows 24; exec ${cli}`, {
-    cwd: state.cwd,
-    env,
-    timeoutMs: 180_000,
-    steps: [
-      { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\r' },
-      { waitFor: /Sharing/, input: '\r' },
-      { waitFor: /Coding agents/, input: '\r' },
-      { waitFor: /Workflow/, input: '\r' },
-      { waitFor: /Ready to set up SAF/, input: '1\r' },
-      { waitFor: /Ready/, input: '' },
-    ],
-  });
+  // Keep host detection deterministic: only expose the tools required by the
+  // PTY wrapper and npm, never globally installed agent commands.
+  const ptyBin = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-pty-bin-'));
+  for (const tool of ['script', 'stty', 'sh', 'git'])
+    fs.symlinkSync(`/usr/bin/${tool}`, path.join(ptyBin, tool));
+  fs.writeFileSync(path.join(ptyBin, 'codex'), '');
+  env.PATH = [ptyBin, path.dirname(process.execPath)].join(path.delimiter);
+  try {
+    return await runScriptPty(`stty cols 80 rows 24; exec ${cli}`, {
+      cwd: state.cwd,
+      env,
+      timeoutMs: 180_000,
+      steps: [
+        { waitFor: /Choose your language \/ Escolha o idioma/, input: '1\r' },
+        { waitFor: /Sharing/, input: '\r' },
+        { waitFor: /Coding agents/, input: '\r' },
+        { waitFor: /Workflow/, input: '\r' },
+        { waitFor: /Ready to set up SAF/, input: '1\r' },
+        { waitFor: /Ready/, input: '' },
+      ],
+    });
+  } finally {
+    fs.rmSync(ptyBin, { recursive: true, force: true });
+  }
 }
 
 function record(id: string, journey: string, command: string, fn: () => unknown): void {

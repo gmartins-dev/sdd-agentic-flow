@@ -1,5 +1,12 @@
 # Changelog
 
+## 7.14.1
+
+- Add safe clean-reinstall recovery for invalid or interrupted SAF-owned setup state while
+  preserving foreign paths and collisions.
+- Keep healthy user-only setup valid outside Git and return to its menu after reviewing the
+  installation plan instead of exiting on **Back**.
+
 ## 7.14.0
 
 - Align the 12 Skill contracts for conditional design artifacts, verifier authority, evidence,

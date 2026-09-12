@@ -253,3 +253,29 @@ test('recognized managed roots outside user intent cannot classify as Ready', ()
   assert.equal(inspectSetupState(cwd, homeDir).state, 'Blocked');
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test('setup state records foreign target collisions for recovery gating', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-collision-'));
+  const homeDir = path.join(root, 'home');
+  const cwd = path.join(root, 'project');
+  fs.mkdirSync(cwd, { recursive: true });
+  fs.mkdirSync(homeDir, { recursive: true });
+  execFileSync('git', ['init', '--quiet'], { cwd });
+  fs.mkdirSync(path.join(cwd, '.sdd-agentic-flow'), { recursive: true });
+  fs.writeFileSync(
+    path.join(cwd, '.sdd-agentic-flow', 'config.yml'),
+    'schema: saf-config/v99\n',
+    'utf8',
+  );
+  fs.mkdirSync(path.join(homeDir, '.agents', 'skills', 'saf-route'), { recursive: true });
+  fs.writeFileSync(
+    path.join(homeDir, '.agents', 'skills', 'saf-route', 'SKILL.md'),
+    'foreign\n',
+    'utf8',
+  );
+  try {
+    assert.equal(inspectSetupState(cwd, homeDir).collision, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

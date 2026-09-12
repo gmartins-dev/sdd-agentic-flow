@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v7.14.0
+Current release: v7.14.1
+
+- **v7.14.1:** Adds safe clean-reinstall recovery for invalid or interrupted SAF-owned setup
+  state, preserves foreign paths and collisions, and keeps healthy user-only setup navigable
+  outside Git by returning to its menu after **Back**.
 
 - **v7.14.0:** Aligns conditional Skill artifacts and verifier authority, validates the canonical
   human override against the selected loop-state section, bounds resume mutations while preserving

@@ -206,10 +206,14 @@ function resolveSetupPlan(
   const recovery = planRecovery({
     setupState: state.state,
     ...(state.installationIntent ? { installationKind: state.installationIntent } : {}),
+    projectStateInvalid: state.config === 'invalid' || state.workspace === 'invalid',
+    collision: Boolean(state.collision) || installationPlan.totals.COLLISION > 0,
+    knownStateBlocker: state.evidence.blockers.some((blocker) =>
+      /interrupted apply|outside the authoritative selection/.test(blocker),
+    ),
     installationDrift: installationPlan.blocked,
     projectDrift: workspacePlan.applicability === 'blocked',
     sourceControlVisibilityDrift: adoption.sourceControlVisibilityDrift,
-    collision: installationPlan.totals.COLLISION > 0,
     gitAvailable: Boolean(workspacePlan.git),
   });
   const targetReconciliation = targets.map((target) =>

@@ -33,6 +33,11 @@ function summarizeChecks(checks: DoctorCheck[] = []): StatusCounts {
 function primaryRemediation(checks: DoctorCheck[] = []): string | null {
   const byName = new Map(checks.map((check) => [check.name, check]));
   if (byName.get('git_workspace')?.status === 'FAIL') return 'npx sdd-agentic-flow install';
+  if (
+    byName.get('config')?.status === 'FAIL' &&
+    /unsupported config schema/.test(byName.get('config')?.message ?? '')
+  )
+    return 'npx sdd-agentic-flow uninstall --plan --purge';
   if (['WARN', 'FAIL'].includes(byName.get('config')?.status ?? ''))
     return 'npx sdd-agentic-flow init';
   if (['WARN', 'FAIL'].includes(byName.get('skills')?.status ?? ''))

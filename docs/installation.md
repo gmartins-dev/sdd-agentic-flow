@@ -35,5 +35,11 @@ Recognized pre-v7 state requires an exact reset preview and `--yes` before
 deletion. Unknown and future state, foreign skills, `.specs/**`, credentials,
 source, documentation, tests, and Git history are preserved.
 
+When interactive setup detects invalid or interrupted SAF-owned control state,
+it offers **Repair installation**. It first shows the same
+`uninstall --plan --purge` preview, then requires confirmation before clearing
+recognized SAF state and returning to setup. It does not remove feature specs,
+source code, Git history, or foreign paths.
+
 See [installation scope](installation-scope.md), [configuration](configuration.md),
 and [environment compatibility](environment-compatibility.md).

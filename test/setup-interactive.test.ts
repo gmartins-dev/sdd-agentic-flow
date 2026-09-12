@@ -55,6 +55,39 @@ test('no-Git setup asks Language before coding agents and stays user-only', asyn
   }
 });
 
+test('healthy user installation outside Git returns to its menu after Back', async (t) => {
+  if (!hasScriptPty()) {
+    t.skip('Linux script PTY wrapper unavailable');
+    return;
+  }
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-pty-back-'));
+  const home = path.join(root, 'home');
+  const project = path.join(root, 'project');
+  fs.mkdirSync(home);
+  fs.mkdirSync(project);
+  const env = setupEnv(home);
+  try {
+    execFileSync(process.execPath, [cli, 'install', '--scope', 'user', '--yes'], {
+      cwd: project,
+      env,
+      stdio: 'pipe',
+    });
+    const result = await runScriptPty(`'${process.execPath}' '${cli}'`, {
+      cwd: project,
+      env,
+      steps: [
+        { waitFor: /SAF is already installed/, input: '1\r' },
+        { waitFor: /Installation details/, input: '1\r' },
+        { waitFor: /SAF is already installed/, input: '2\r' },
+      ],
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal((result.transcript.match(/SAF is already installed/g) || []).length, 2);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Git setup keeps PT-BR through review, Apply, validation, and persisted language fields', async (t) => {
   if (!hasScriptPty()) {
     t.skip('Linux script PTY wrapper unavailable');

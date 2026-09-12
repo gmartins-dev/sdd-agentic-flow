@@ -113,6 +113,15 @@ marker. Before apply, **Back** only changes in-memory choices. After apply, **Wo
 change, not a rollback. A handled failure keeps the human in the flow with retry, validation,
 change, or exit.
 
+When setup is blocked by invalid or interrupted SAF-owned state, the menu also offers
+**Repair installation**. It displays the canonical purge preview before asking for a
+clean-reinstall confirmation, then returns to setup after the recognized SAF state is removed.
+It is not offered for foreign-path collisions, which require the conflicting path to be resolved.
+
+Outside a Git workspace, a healthy user installation remains user-only. **Review details** shows
+the read-only installation plan; choosing **Back** returns to the same menu, while **Exit** ends
+the interactive session. Run SAF again from a Git repository to configure that workspace.
+
 The first-use journey records four decisions: language profile, sharing mode, explicitly selected
 coding-agent hosts, and workflow mode (including a custom execution/autonomy pair); Team adoption
 also records specs visibility. A valid project configuration supplies the initial locale during

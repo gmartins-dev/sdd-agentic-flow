@@ -13,8 +13,8 @@ import {
   repositoryKey,
   USER_TARGETS,
 } from './install-domain';
-import { buildInstallProfilePlan, isPlanEmpty } from './install-preflight';
-import { SDD_PATHS, sddJoin, userSkillsDirsForTargets, VERSION } from './paths';
+import { buildInstallPlan, buildInstallProfilePlan, isPlanEmpty } from './install-preflight';
+import { PACKAGE_ROOT, SDD_PATHS, sddJoin, userSkillsDirsForTargets, VERSION } from './paths';
 import { OFFICIAL_SKILLS } from './skill-identity';
 import { readInstallProvenance } from './upgrade';
 import { WORKSPACE_MARKER } from './workspace';
@@ -38,6 +38,7 @@ type SetupStateFacts = {
   homeDir?: string;
   git?: 'available' | 'unavailable';
   installationIntent?: 'none' | 'current' | 'legacy' | 'future' | 'unknown';
+  collision?: boolean;
   targets?: SetupTargetEvidence[];
   warnings?: string[];
   blockers?: string[];
@@ -215,6 +216,19 @@ function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts
   );
   const hasAnySkills = targets.some((target) => target.present.length > 0);
   const allTargetsComplete = targets.length > 0 && targets.every((target) => target.complete);
+  const collision = targets.some(({ id, root }) => {
+    const scope = id === 'project-agents' ? 'project' : 'user';
+    return (
+      buildInstallPlan({
+        packageRoot: PACKAGE_ROOT,
+        skills: OFFICIAL_SKILLS,
+        officialSkills: OFFICIAL_SKILLS,
+        scope,
+        targetIds: [id],
+        targets: [root],
+      }).totals.COLLISION > 0
+    );
+  });
   const installState = classifyInstallIntent(homeDir);
   const warnings = targets
     .filter((target) => target.present.length > 0 && !target.complete)
@@ -267,6 +281,7 @@ function collectSetupFacts(cwd: string, homeDir = os.homedir()): SetupStateFacts
     homeDir,
     git: resolveGitContext(cwd).ok ? 'available' : 'unavailable',
     installationIntent: installState.kind,
+    collision,
     targets,
     warnings,
     blockers,

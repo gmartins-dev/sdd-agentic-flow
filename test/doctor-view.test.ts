@@ -37,6 +37,13 @@ test('doctor recommends user installation outside Git', () => {
   );
 });
 
+test('doctor routes an unsupported SAF config schema to a safe reset preview', () => {
+  assert.equal(
+    primaryRemediation([{ name: 'config', status: 'FAIL', message: 'unsupported config schema' }]),
+    'npx sdd-agentic-flow uninstall --plan --purge',
+  );
+});
+
 test('doctor prefers non-destructive skill refresh over purge when both drift', () => {
   assert.equal(
     primaryRemediation([

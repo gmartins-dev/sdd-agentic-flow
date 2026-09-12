@@ -25,6 +25,8 @@ type RecoveryAction = {
 type RecoveryFacts = {
   setupState: SetupState;
   installationKind?: InstallationKind;
+  projectStateInvalid?: boolean;
+  knownStateBlocker?: boolean;
   installationDrift?: boolean;
   projectDrift?: boolean;
   sourceControlVisibilityDrift?: boolean;
@@ -47,22 +49,31 @@ function action(
 
 function planRecovery(facts: RecoveryFacts): RecoveryPlan {
   const actions: RecoveryAction[] = [];
+  const cleanReinstall = (reason: string, scope: RecoveryScope = 'user') =>
+    facts.collision ||
+    actions.push(action('clean_reinstall', reason, { scope, destructive: true }));
   if (facts.installationKind === 'future')
     actions.push(
       action('upgrade_cli', 'A newer SAF installation format was found.', {
         scope: 'user',
       }),
-      action('clean_reinstall', 'Reset only SAF locations known to this CLI.', {
-        scope: facts.projectDrift ? 'combined' : 'user',
-        destructive: true,
-      }),
+    );
+  if (facts.installationKind === 'future')
+    cleanReinstall(
+      'Reset only SAF locations known to this CLI.',
+      facts.projectDrift || facts.projectStateInvalid ? 'combined' : 'user',
     );
   else if (facts.installationKind === 'legacy' || facts.installationKind === 'unknown')
-    actions.push(
-      action('clean_reinstall', 'The SAF installation cannot be used safely.', {
-        scope: facts.projectDrift ? 'combined' : 'user',
-        destructive: true,
-      }),
+    cleanReinstall(
+      'The SAF installation cannot be used safely.',
+      facts.projectDrift || facts.projectStateInvalid ? 'combined' : 'user',
+    );
+  else if (facts.projectStateInvalid)
+    cleanReinstall('SAF project control state is invalid.', 'combined');
+  else if (facts.knownStateBlocker)
+    cleanReinstall(
+      'Recognized SAF state was left incomplete.',
+      facts.projectDrift ? 'combined' : 'user',
     );
   if (facts.collision)
     actions.push(

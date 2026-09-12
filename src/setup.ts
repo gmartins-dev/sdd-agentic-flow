@@ -31,6 +31,7 @@ import {
   sddJoin,
   USAGE_GUIDE_URL,
 } from './paths';
+import { planRecovery } from './recovery';
 import { select } from './selector';
 import {
   detectSetupHosts,
@@ -1174,6 +1175,17 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     }
   };
 
+  const canCleanReinstall = (snapshot: SetupStateSnapshot) =>
+    planRecovery({
+      setupState: snapshot.state,
+      ...(snapshot.installationIntent ? { installationKind: snapshot.installationIntent } : {}),
+      projectStateInvalid: snapshot.config === 'invalid' || snapshot.workspace === 'invalid',
+      collision: Boolean(snapshot.collision),
+      knownStateBlocker: snapshot.evidence.blockers.some((blocker) =>
+        /interrupted apply|outside the authoritative selection/.test(blocker),
+      ),
+    }).actions.some((action) => action.code === 'clean_reinstall');
+
   const mode =
     options.mode ??
     outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
@@ -1188,22 +1200,24 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   const hasGitWorkspace = resolveGitContext(cwd).ok;
   const userInstallation = inspectUserInstallation(homeDir);
   if (!hasGitWorkspace && userInstallation.state === 'healthy') {
-    process.stdout.write(
-      `\n${t(locale, 'setup.userInstalledTitle')}\n\n${t(locale, 'setup.userInstalledBody')}\n\n${t(locale, 'setup.userReadyNext')}\n\n`,
-    );
-    const action = await choose(t(locale, 'menu.question'), [
-      { value: 'review', label: t(locale, 'menu.details') },
-      { value: 'exit', label: t(locale, 'menu.exit'), action: true },
-    ]);
-    if (action.cancelled || action.value === 'exit') return;
-    let result: unknown;
-    try {
-      result = await runCommand('install', ['--plan'], cwd);
-    } catch (error: unknown) {
-      result = { error: errorMessage(error) };
+    for (;;) {
+      transition();
+      process.stdout.write(
+        `\n${t(locale, 'setup.userInstalledTitle')}\n\n${t(locale, 'setup.userInstalledBody')}\n\n${t(locale, 'setup.userReadyNext')}\n\n`,
+      );
+      const action = await choose(t(locale, 'menu.question'), [
+        { value: 'review', label: t(locale, 'menu.details') },
+        { value: 'exit', label: t(locale, 'menu.exit'), action: true },
+      ]);
+      if (action.cancelled || action.value === 'exit') return;
+      let result: unknown;
+      try {
+        result = await runCommand('install', ['--plan'], cwd);
+      } catch (error: unknown) {
+        result = { error: errorMessage(error) };
+      }
+      if (await showOperationResult(t(locale, 'install.details'), result)) return;
     }
-    await showOperationResult(t(locale, 'install.details'), result);
-    return;
   }
   process.stdout.write(`\n${invocationStateContent(snapshot, locale, mode)}\n\n`);
 
@@ -1288,12 +1302,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
         transition();
         process.stdout.write(`\n${t(locale, 'welcome.blockedTitle')}\n`);
       }
-      const recoveryActions =
-        snapshot.installationIntent === 'future' ||
-        snapshot.installationIntent === 'unknown' ||
-        snapshot.installationIntent === 'legacy'
-          ? [{ value: 'repair', label: t(locale, 'menu.repair') }]
-          : [];
+      const recoveryActions = canCleanReinstall(snapshot)
+        ? [{ value: 'repair', label: t(locale, 'menu.repair') }]
+        : [];
       const action = await choose(t(locale, 'menu.question'), [
         ...recoveryActions,
         { value: 'change', label: t(locale, 'menu.change') },
@@ -1302,6 +1313,12 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
       ]);
       if (action.cancelled || action.value === 'exit') return;
       if (action.value === 'repair') {
+        try {
+          await runCommand('uninstall', ['--plan', '--purge'], cwd);
+        } catch (error: unknown) {
+          process.stdout.write(`\n${errorMessage(error)}\n`);
+          continue;
+        }
         const confirmation = await choose(t(locale, 'recovery.confirm'), [
           { value: 'apply', label: t(locale, 'recovery.cleanReinstall') },
           { value: 'cancel', label: t(locale, 'menu.back'), action: true },
@@ -1380,12 +1397,13 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     printSetupPlan(plan, locale, mode);
     if (plan.blocked) {
       log('FAIL', plan.blockers.join('; '), locale);
-      const installationState = inspectSetupState(cwd, homeDir).installationIntent;
-      if (
-        installationState === 'future' ||
-        installationState === 'unknown' ||
-        installationState === 'legacy'
-      ) {
+      if (plan.recoveryActions.some((recovery) => recovery.code === 'clean_reinstall')) {
+        try {
+          await runCommand('uninstall', ['--plan', '--purge'], cwd);
+        } catch (error: unknown) {
+          process.stdout.write(`\n${errorMessage(error)}\n`);
+          continue;
+        }
         const repair = await select(
           t(locale, 'recovery.question'),
           [

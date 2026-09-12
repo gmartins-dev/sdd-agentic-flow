@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v7.15.0
+Current release: v7.15.1
+
+- **v7.15.1:** Fixes interactive Team/project setup target selection, makes the configured specs
+  root visible during review, and preserves shared specs visibility through workspace initialization.
+  No runtime, public CLI command, telemetry, or automatic remote mutation is added.
 
 - **v7.15.0:** Adds deterministic consumer-closure verification across source, dist, packed,
   project, and supported user-target installations; keeps maintenance-only audit/diff evidence

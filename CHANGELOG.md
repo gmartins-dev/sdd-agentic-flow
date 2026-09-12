@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.15.1
+
+- Fix interactive Team/project setup so user-only coding-agent targets are not passed to project
+  installation, show the configured specs root, and preserve shared specs visibility through
+  workspace initialization.
+
 ## 7.15.0
 
 - Add deterministic consumer-closure verification for the installed 12-Skill bundle, including

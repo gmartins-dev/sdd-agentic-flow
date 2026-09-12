@@ -17,6 +17,7 @@ export type WorkspaceInitializationPlan = {
   error?: string;
   git?: GitContext;
   adoptionMode?: AdoptionMode;
+  specsVisibility?: 'local' | 'shared';
   create: string[];
   preserve: string[];
   excludes: string[];
@@ -75,6 +76,7 @@ export function planWorkspaceInitialization(
     applicability: 'applicable',
     git: resolved.context,
     adoptionMode,
+    specsVisibility: adoption.specsVisibility,
     create: [
       ...(!fs.existsSync(marker) ? [SDD_PATHS.workspace] : []),
       ...(!contextExists ? [SDD_PATHS.projectContext] : []),
@@ -111,6 +113,7 @@ export function applyWorkspaceInitialization(
     cwd: plan.git.projectRoot,
     scope: plan.adoptionMode === 'team' ? 'project' : 'user',
     adoptionMode: plan.adoptionMode,
+    ...(plan.specsVisibility ? { specsVisibility: plan.specsVisibility } : {}),
   });
   if (!fs.existsSync(path.join(plan.git.projectRoot, SDD_PATHS.projectContext)))
     discoverProject(plan.git.projectRoot, { force: false, quiet: true });

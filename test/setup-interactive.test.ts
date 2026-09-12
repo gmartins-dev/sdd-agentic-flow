@@ -129,3 +129,46 @@ test('Git setup keeps PT-BR through review, Apply, validation, and persisted lan
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('Team setup installs only project skills and shows the specs root', async (t) => {
+  if (!hasScriptPty()) {
+    t.skip('Linux script PTY wrapper unavailable');
+    return;
+  }
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-pty-team-'));
+  const home = path.join(root, 'home');
+  const project = path.join(root, 'project');
+  fs.mkdirSync(home);
+  fs.mkdirSync(project);
+  execFileSync('git', ['init', '--quiet'], { cwd: project });
+  try {
+    const result = await runScriptPty(`'${process.execPath}' '${cli}'`, {
+      cwd: project,
+      env: setupEnv(home),
+      steps: [
+        { waitFor: /Choose your language \/ Escolha o idioma/, input: '1' },
+        { waitFor: /Sharing/, input: '3\r' },
+        { waitFor: /Workflow/, input: '\r' },
+        { waitFor: /Feature specs/, input: '2\r' },
+        { waitFor: /Specs root[\s\S]*\.specs\/features/, input: '1\r' },
+        { waitFor: /Workflow: Supervised/, input: '' },
+      ],
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.transcript, /Project agent skills/);
+    assert.match(result.transcript, /Specs root:\s+\.specs\/features/);
+    assert.match(result.transcript, /Feature specs: Share them through the repository/);
+    assert.doesNotMatch(result.transcript, /Codex \(detected\)/);
+    assert.ok(fs.existsSync(path.join(project, '.agents', 'skills', 'saf-route', 'SKILL.md')));
+    assert.match(
+      fs.readFileSync(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'utf8'),
+      /specs_visibility: shared/,
+    );
+    assert.equal(fs.existsSync(path.join(home, '.agents', 'skills')), false);
+    assert.equal(fs.existsSync(path.join(home, '.cursor', 'skills')), false);
+    assert.equal(fs.existsSync(path.join(home, '.claude', 'skills')), false);
+    assert.equal(fs.existsSync(path.join(home, '.copilot', 'skills')), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

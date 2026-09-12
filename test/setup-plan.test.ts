@@ -100,6 +100,47 @@ test('resolves an inspectable plan with no executable callbacks', () => {
   }
 });
 
+test('team project setup plans only the project skill destination', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-plan-team-'));
+  const home = path.join(root, 'home');
+  const project = path.join(root, 'project');
+  fs.mkdirSync(home, { recursive: true });
+  fs.mkdirSync(project, { recursive: true });
+  execFileSync('git', ['init', '--quiet'], { cwd: project });
+  try {
+    const snapshot = {
+      config: 'absent',
+      workspace: 'absent',
+      skills: 'absent',
+      context: false,
+      homeDir: home,
+      evidence: { warnings: [], blockers: [], targetSet: [], targetEvidence: [] },
+      state: 'Fresh',
+    } as unknown as Parameters<typeof resolveSetupPlan>[1];
+    const plan = resolveSetupPlan(
+      project,
+      snapshot,
+      {
+        sharing: 'team',
+        selectedHosts: ['codex', 'cursor', 'claude-code', 'vscode-copilot'],
+        workflow: 'supervised',
+        specsVisibility: 'local',
+        language: 'en-US',
+      },
+      home,
+    );
+    assert.equal(plan.scope, 'project');
+    assert.deepEqual(plan.targets, ['project-agents']);
+    assert.deepEqual(plan.installationPlan.targetIds, ['project-agents']);
+    assert.deepEqual(
+      plan.targetReconciliation.map((item) => item.target),
+      ['project-agents'],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('switches from user installation to workspace setup inside Git', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-setup-transition-'));
   const home = path.join(root, 'home');

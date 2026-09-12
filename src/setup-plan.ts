@@ -173,6 +173,7 @@ function resolveSetupPlan(
       ? 'workspace-setup'
       : 'combined';
   const scope = !git.ok ? 'user' : adoptionModeForScope(intent.sharing);
+  const planTargets = scope === 'project' ? ['project-agents'] : targets;
   const blockers = [...state.evidence.blockers];
   if (!targets.length && scope === 'user')
     blockers.push('at least one coding-agent host must be selected');
@@ -192,7 +193,11 @@ function resolveSetupPlan(
         : userSkillsDirsForTargets(targets, homeDir),
   });
   const plannedWorkspace = planWorkspaceInitialization(cwd, homeDir);
-  const workspacePlan = { ...plannedWorkspace, adoptionMode: intent.sharing };
+  const workspacePlan = {
+    ...plannedWorkspace,
+    adoptionMode: intent.sharing,
+    ...(intent.specsVisibility ? { specsVisibility: intent.specsVisibility } : {}),
+  };
   if (installationPlan.blocked && installationPlan.blockerReason)
     blockers.push(installationPlan.blockerReason);
   if (workspacePlan.applicability === 'blocked' && workspacePlan.error)
@@ -216,7 +221,7 @@ function resolveSetupPlan(
     sourceControlVisibilityDrift: adoption.sourceControlVisibilityDrift,
     gitAvailable: Boolean(workspacePlan.git),
   });
-  const targetReconciliation = targets.map((target) =>
+  const targetReconciliation = planTargets.map((target) =>
     action('reconcile-target', target, `install or update the official skill bundle for ${target}`),
   );
   return {
@@ -224,7 +229,7 @@ function resolveSetupPlan(
     installRequired,
     blocked: blockers.length > 0,
     scope,
-    targets,
+    targets: planTargets,
     expectedState: operation === 'user-install' ? 'UserInstallationReady' : 'Ready',
     precondition,
     homeDir,

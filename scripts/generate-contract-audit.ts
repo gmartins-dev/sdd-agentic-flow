@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { CONTRACT_KINDS } from '../src/contract-kinds';
+import { VERSION } from '../src/paths';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
 
 export type ContractAuditRecord = {
@@ -122,7 +123,7 @@ if (process.argv[1]?.endsWith('generate-contract-audit.ts')) {
   const root = path.resolve(__dirname, '..');
   const output =
     process.env.SAF_CONTRACT_AUDIT_REPORT ||
-    path.join(root, '.local', 'gmm', 'sdd-agentic-flow', 'v7.15.0-contract-audit.md');
+    path.join(root, '.local', 'gmm', 'sdd-agentic-flow', `v${VERSION}-contract-audit.md`);
   fs.mkdirSync(path.dirname(output), { recursive: true });
   const audit = buildContractAudit(root);
   const errors = validateContractAudit(audit, root);

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { VERSION } from '../src/paths';
 
 import {
   analyzeConsumerClosure,
@@ -269,7 +270,7 @@ if (process.argv[1]?.endsWith('diff-contract-evidence.ts')) {
   const diff = diffContractEvidence(snapshotFromGit(root, 'HEAD'), candidateSnapshot(root));
   const output =
     process.env.SAF_CONTRACT_DIFF_REPORT ||
-    path.join(root, '.local', 'gmm', 'sdd-agentic-flow', 'v7.15.0-contract-diff.md');
+    path.join(root, '.local', 'gmm', 'sdd-agentic-flow', `v${VERSION}-contract-diff.md`);
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, renderContractEvidenceDiff(diff), 'utf8');
   console.log(`PASS contract evidence diff: ${output}`);

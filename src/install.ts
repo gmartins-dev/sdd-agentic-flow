@@ -500,6 +500,28 @@ async function configureInteractive(
     return { error: 'unknown adoption mode' };
   const adoptionMode = adoption.value as AdoptionMode;
   const scope = adoptionModeForScope(adoptionMode);
+  let specsVisibility: 'local' | 'shared' | undefined = project?.specs_visibility;
+  if (adoptionMode === 'team') {
+    const selectedSpecs = await select(
+      t(locale, 'setup.featureSpecs'),
+      [
+        {
+          value: 'local',
+          label: t(locale, 'setup.keepSpecsLocal'),
+          selected: specsVisibility !== 'shared',
+        },
+        {
+          value: 'shared',
+          label: t(locale, 'setup.shareSpecs'),
+          selected: specsVisibility === 'shared',
+        },
+      ],
+      { locale },
+    );
+    if (selectedSpecs.cancelled || typeof selectedSpecs.value !== 'string')
+      return { cancelled: true };
+    specsVisibility = selectedSpecs.value === 'shared' ? 'shared' : 'local';
+  }
   let targets = [...(saved.user.targets.length ? saved.user.targets : DEFAULT_USER_TARGETS)];
   if (scope === 'user') {
     const selected = await select(
@@ -535,6 +557,7 @@ async function configureInteractive(
     cwd,
     scope,
     adoptionMode,
+    ...(specsVisibility ? { specsVisibility } : {}),
     ...(scope === 'user' ? { targets } : {}),
     plan: true,
   });
@@ -562,6 +585,7 @@ async function configureInteractive(
     cwd,
     scope,
     adoptionMode,
+    ...(specsVisibility ? { specsVisibility } : {}),
     ...(scope === 'user' ? { targets } : {}),
     plan: false,
   });
@@ -575,6 +599,9 @@ async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()
     scope: configured.scope,
     ...(isUserInstallProfile(configured.after) ? { targets: configured.after.targets } : {}),
     ...(configured.adoptionMode ? { adoptionMode: configured.adoptionMode } : {}),
+    ...(isProjectInstallProfile(configured.after) && configured.after.specs_visibility
+      ? { specsVisibility: configured.after.specs_visibility }
+      : {}),
   });
   return applied ? { ...configured, wrote: true } : { error: 'installation apply failed' };
 }

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { type AdoptionMode, adoptionModeForScope } from './adoption';
+import { type AdoptionMode, adoptionModeForScope, inspectAdoption } from './adoption';
 import { renderCliCommand } from './cli-command';
 import {
   AUTONOMY_LEVELS,
@@ -105,6 +105,7 @@ type SetupCommandOptions = {
   policyFromCli?: boolean | undefined;
   localGitExclude?: boolean | undefined;
   showSummary?: boolean | undefined;
+  reconfigure?: boolean | undefined;
   [key: string]: unknown;
 };
 
@@ -619,7 +620,7 @@ async function collectSetupIntent(
   options: SetupCommandOptions,
   homeDir: string,
 ): Promise<SetupIntentResult> {
-  const persisted = persistedSetupIntent(cwd, homeDir);
+  const persisted = options.reconfigure ? {} : persistedSetupIntent(cwd, homeDir);
   let sessionLocale = resolveLocale({
     explicit: options.language || persisted.language || locale,
   });
@@ -667,8 +668,11 @@ async function collectSetupIntent(
     'claude-code': 'Claude Code',
     'vscode-copilot': 'GitHub Copilot',
   };
-  let selectedHosts: SetupIntent['selectedHosts'] = persisted.selectedHosts ?? [];
-  if (!selectedHosts.length) {
+  const projectScope = gitAvailable && sharing.value === 'team';
+  let selectedHosts: SetupIntent['selectedHosts'] = projectScope
+    ? []
+    : (persisted.selectedHosts ?? []);
+  if (!projectScope && !selectedHosts.length) {
     for (;;) {
       const hosts = await choose(
         t(sessionLocale, 'install.agentsPrompt'),
@@ -785,17 +789,23 @@ function printSetupPlan(
   const targetLabels = plan.targets.map((target) =>
     target === 'agents'
       ? t(locale, 'install.targetShared')
-      : target === 'claude'
-        ? t(locale, 'install.targetClaude')
-        : target === 'copilot'
-          ? t(locale, 'install.targetCopilot')
-          : target === 'cursor'
-            ? 'Cursor'
-            : target,
+      : target === 'project-agents'
+        ? t(locale, 'install.targetProject')
+        : target === 'claude'
+          ? t(locale, 'install.targetClaude')
+          : target === 'copilot'
+            ? t(locale, 'install.targetCopilot')
+            : target === 'cursor'
+              ? 'Cursor'
+              : target,
   );
   const languageLabel = plan.intent?.language === 'pt-BR' ? 'Português (Brasil)' : 'English';
   const none = locale === 'pt-BR' ? '(nenhum)' : '(none)';
   const detail = (value: string) => translateText(locale, value);
+  const specsRoot = inspectAdoption(
+    plan.workspacePlan.git?.projectRoot || process.cwd(),
+    plan.homeDir || os.homedir(),
+  ).specsRoot;
   if (mode === 'human-rich') {
     const operations = [
       ...plan.cleanupActions,
@@ -821,6 +831,7 @@ function printSetupPlan(
               ] as const,
             ]
           : []),
+        [t(locale, 'setup.specsRoot'), specsRoot],
         [
           t(locale, 'plan.scope'),
           plan.scope === 'project' ? t(locale, 'setup.scopeProject') : t(locale, 'setup.scopeUser'),
@@ -850,6 +861,7 @@ function printSetupPlan(
     process.stdout.write(
       `  ${t(locale, 'setup.featureSpecs')}  ${plan.intent?.specsVisibility === 'shared' ? t(locale, 'setup.shareSpecs') : t(locale, 'setup.keepSpecsLocal')}\n`,
     );
+  process.stdout.write(`  ${t(locale, 'setup.specsRoot')}     ${specsRoot}\n`);
   process.stdout.write(
     `  ${t(locale, 'plan.scope')}    ${plan.scope === 'project' ? t(locale, 'setup.scopeProject') : t(locale, 'setup.scopeUser')}\n`,
   );
@@ -1451,7 +1463,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     const draft: SetupDraft = {
       install: true,
       scope: adoptionModeForScope(intent.sharing),
-      targets: targetsForHosts(intent.selectedHosts),
+      ...(intent.sharing === 'personal' || intent.sharing === 'specs-shared'
+        ? { targets: targetsForHosts(intent.selectedHosts) }
+        : {}),
       adoptionMode: intent.sharing,
       ...(intent.specsVisibility ? { specsVisibility: intent.specsVisibility } : {}),
       language: intent.language,
@@ -1476,6 +1490,7 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
     if (recovery.cancelled || recovery.value === 'exit') return;
     if (recovery.value === 'validate')
       await doctor(cwd, { ascii: Boolean(options.ascii), homeDir });
+    if (recovery.value === 'change') options.reconfigure = true;
   }
 }
 

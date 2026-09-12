@@ -120,7 +120,7 @@ runtime requirement of the distributed CLI (see `docs/environment-compatibility.
 Run `git config core.hooksPath .githooks` once after cloning to enable the tracked
 `commit-msg` hook, which strips any `Co-Authored-By:` trailer naming an AI coding agent
 (Claude Code, Cursor, Codex, Copilot, and similar) before a commit is finalized — this
-repository's contributor graph must attribute only the human maintainer (see `CLAUDE.md`).
+repository's contributor graph must attribute only the human maintainer (see [AGENTS.md](AGENTS.md#commit-attribution)).
 
 ## Policy constraints
 

@@ -12,12 +12,12 @@ agent_coauthor_pattern='^Co-Authored-By:.*(claude|anthropic|cursor|cursoragent|c
 if grep -qiE "$agent_coauthor_pattern" "$message_file"; then
   grep -viE "$agent_coauthor_pattern" "$message_file" > "$message_file.tmp"
   mv "$message_file.tmp" "$message_file"
-  echo "commit-msg hook: removed an AI-agent Co-Authored-By trailer (see CLAUDE.md)" >&2
+  echo "commit-msg hook: removed an AI-agent Co-Authored-By trailer (see AGENTS.md)" >&2
 fi
 
 # Also strip any remaining Co-Authored-By line — this repo allows only the human maintainer.
 if grep -qiE '^Co-Authored-By:' "$message_file"; then
   grep -viE '^Co-Authored-By:' "$message_file" > "$message_file.tmp"
   mv "$message_file.tmp" "$message_file"
-  echo "commit-msg hook: removed Co-Authored-By trailer(s); sole author must be the maintainer (see CLAUDE.md)" >&2
+  echo "commit-msg hook: removed Co-Authored-By trailer(s); sole author must be the maintainer (see AGENTS.md)" >&2
 fi

@@ -1,6 +1,12 @@
 # Roadmap
 
-Current release: v8.0.0
+Current release: v8.1.0
+
+- **v8.1.0:** Adds compact v8 evidence references and canonical-artifact reconciliation for resumed
+  task work, required continuity corpus coverage, and the published-source TypeScript boundary in
+  the normal typecheck. Preserves local-first behavior, zero runtime dependencies, legacy report
+  visibility, and human release authority; no new CLI command, runtime loop, telemetry, automatic
+  migration, or remote mutation is added.
 
 - **v8.0.0:** Adds declared-scope evidence provenance, deterministic v1 report resolution, and
   explicit-baseline maintainer audit behavior. Legacy reports remain historical context; no runtime

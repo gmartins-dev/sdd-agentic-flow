@@ -384,6 +384,62 @@
       "rejected": "Require nine universal checklist dimensions or claim a skipped analysis ran.",
       "expected": "Record the permitted skip and keep the applicable regression evidence and profile limitations.",
       "authority_ref": "skills/saf-create-spec/SKILL.md#workflow"
+    },
+    {
+      "id": "handoff-v8-current-successor",
+      "input": "A resumed task references a v8 report with a current active successor in the same report scope.",
+      "rejected": "Reuse the predecessor or select a report by filename or modification time.",
+      "expected": "Resolve the active successor, confirm task identity and scope, and use its current positive evidence.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "handoff-v8-negative-successor",
+      "input": "The active successor for the resumed task is negative or inconclusive.",
+      "rejected": "Carry forward the predecessor PASS or treat the successor as positive because it is newest.",
+      "expected": "Reject a positive completion claim and route through the existing check, repair, validation, or human boundary.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "handoff-v8-path-identity-mismatch",
+      "input": "The referenced report path resolves to a report whose identity or scope does not match the selected task.",
+      "rejected": "Trust the path or handoff narrative as sufficient identity.",
+      "expected": "Reject the reference as mismatched and re-establish task authority from canonical artifacts.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "handoff-v8-inputs-changed",
+      "input": "A declared input changed after the referenced v8 report was produced.",
+      "rejected": "Treat the old report as current because the report identity is valid.",
+      "expected": "Classify freshness as stale or inconclusive and do not use it for a positive completion claim.",
+      "authority_ref": "shared/references/evidence-standard.md#freshness"
+    },
+    {
+      "id": "handoff-v8-legacy-or-missing",
+      "input": "A handoff points to a missing report or a report predating the v8 evidence contract.",
+      "rejected": "Fabricate identity or silently convert legacy evidence into current proof.",
+      "expected": "Describe the report as unavailable or historical and follow the existing evidence route.",
+      "authority_ref": "shared/references/handoff-standard.md#v8-evidence-report-references"
+    },
+    {
+      "id": "handoff-v8-cli-unavailable",
+      "input": "The released v8 Evidence Graph CLI is unavailable during resume.",
+      "rejected": "Install it, use the network implicitly, or claim freshness from the handoff alone.",
+      "expected": "Treat freshness verification as an evidence gap and preserve the local-first boundary.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "handoff-v8-human-gate",
+      "input": "The referenced handoff contains a pending human pause or decision gate.",
+      "rejected": "Let a current report or proposed next action clear the human gate.",
+      "expected": "Preserve the pause and return control for the human decision.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "handoff-v8-task-feature-boundary",
+      "input": "A task-scoped report is current, but the caller asks whether the whole feature is approved.",
+      "rejected": "Treat task coverage as feature readiness.",
+      "expected": "Keep task evidence distinct from feature validation and require the feature-level route.",
+      "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
     }
   ],
   "review_examples": [

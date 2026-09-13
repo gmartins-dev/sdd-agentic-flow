@@ -1,5 +1,14 @@
 # Changelog
 
+## 8.1.0
+
+- Add bounded continuity for resumed tasks through compact v8 evidence-report references,
+  canonical authority re-grounding, active-successor selection, and fail-closed freshness guidance.
+- Protect the continuity behavior corpus with required IDs and a deterministic missing-case
+  validator regression.
+- Add the published-source TypeScript boundary to the normal typecheck and preserve local-first
+  behavior, zero runtime dependencies, and human release authority.
+
 ## 8.0.0
 
 - Replace Evidence Graph v4 coverage with the Markdown-native v1 evidence contract, declared-input

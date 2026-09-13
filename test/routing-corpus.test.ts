@@ -52,6 +52,18 @@ test('routing corpus rejects missing required fields and cases', () => {
   assert.ok(failures.some((failure) => failure.includes('missing required fixture')));
 });
 
+test('routing corpus rejects a removed required continuity behavior', () => {
+  const invalid = copyCorpus();
+  invalid.behavior_cases = (invalid.behavior_cases as Array<Record<string, unknown>>).filter(
+    (item) => item.id !== 'handoff-v8-current-successor',
+  );
+  assert.ok(
+    validateEvalCorpus(invalid).some((failure) =>
+      failure.includes('missing required behavior handoff-v8-current-successor'),
+    ),
+  );
+});
+
 test('routing corpus rejects a removed authority heading', () => {
   const failures = validateEvalCorpus(corpus, '/tmp/nonexistent-saf-root');
   assert.ok(failures.some((failure) => failure.includes('authority file missing')));

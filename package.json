@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "8.0.0",
+  "version": "8.1.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -31,7 +31,7 @@
     "ROADMAP.md"
   ],
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit",
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsdown src/sdd-agentic-flow.ts --format cjs --out-dir dist --target es2022 --platform node --no-dts --no-sourcemap --no-report && node -e \"require('node:fs').renameSync('dist/sdd-agentic-flow.cjs','dist/sdd-agentic-flow.js'); require('node:fs').copyFileSync('LICENSES/CLI-UI-BUNDLED.txt','dist/third-party-notices.txt')\"",
     "lint:biome": "biome check .",
     "lint:biome:fix": "biome check . --write",

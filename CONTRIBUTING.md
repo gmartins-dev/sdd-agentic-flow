@@ -15,7 +15,7 @@ tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell ga
 
 | Command                  | Role                                                                         |
 | ------------------------ | ---------------------------------------------------------------------------- |
-| `npm run typecheck`      | Strict TypeScript on `src/`, `test/`, `scripts/` (`tsconfig.json`)           |
+| `npm run typecheck`      | Strict TypeScript on `src/`, `test/`, `scripts/`, then the published `src/` boundary (`tsconfig.json` and `tsconfig.build.json`) |
 | `npm run build`          | Clean, non-minified self-contained bundle of the CLI entrypoint into `dist/` |
 | `npm run lint:biome`     | Biome format + lint (no type semantics — that is `tsc`)                      |
 | `npm run lint:biome:fix` | Apply Biome fixes and organize imports                                       |

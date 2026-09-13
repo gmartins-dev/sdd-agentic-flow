@@ -15,6 +15,8 @@ existing spec/design/tasks artifacts by path; never duplicate their content here
 
 {{completed_work}}
 
+{{v8_report_reference}}
+
 ## Unsatisfied completion criteria
 
 {{unsatisfied_criteria}}

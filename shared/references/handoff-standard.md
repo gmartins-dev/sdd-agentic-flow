@@ -79,6 +79,43 @@ Never duplicate full logs or evidence tables in handoff; reference check/validat
 - **Suggested next step**: the specific skill or human action to resume with, matching
   `skill-authoring-standard.md`'s `Next recommended skill` convention.
 
+## v8 evidence report references
+
+When a non-terminal handoff refers to a released v8 saf-evidence/v1 report, record the reference
+inside the existing `## Current state` or `## Completed work` text using only:
+
+```text
+Report path: <repository-relative path>
+Report identity: <released report identity field>
+Report scope: <released report scope field>
+```
+
+An individual record ID may be cited only when it identifies an unsatisfied criterion and is
+qualified by the report identity. Do not copy observations, manifests, command output, evidence
+tables, or report digests into the handoff. A legacy or missing report is described as historical
+or unavailable; never fabricate its identity.
+
+## Resume reconciliation
+
+On resume, `saf-implement` performs this ordered procedure before reusing handoff evidence or
+progressing work:
+
+1. Resolve the canonical feature, task, effective configuration, current spec, task contract,
+   applicable decision gates, and implementation state.
+2. Treat handoff goal, status, and proposed next action as supporting context. Re-establish
+   authority and semantic scope from canonical artifacts; a handoff cannot clear a human pause or
+   broaden delegated work.
+3. Resolve the referenced report through the released v8 active-report interface. Confirm its
+   identity and scope match the selected task, then assess validity and freshness through the
+   released projection.
+4. A current positive active report may inform the existing transition rules. A successor replaces
+   its predecessor; no prior PASS carries forward by path, timestamp, or narrative alone.
+5. A missing, legacy, ambiguous, negative, malformed, stale, or inconclusive result cannot support
+   a positive completion claim. State the gap and use the existing check, validation, repair, or
+   human-decision route matching its cause.
+6. Recompute the next admissible action. Preserve prior findings and decisions; update the existing
+   handoff only when it remains non-terminal under this standard.
+
 ## Who reads and writes it
 
 Same posture as every other shared reference: the skill and the invoking agent honor this

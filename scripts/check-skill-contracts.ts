@@ -162,6 +162,14 @@ const AUTHORITY_ALLOWLIST = {
     file: 'shared/references/handoff-standard.md',
     heading: '## What belongs in each `handoff.template.md` section',
   },
+  'shared/references/handoff-standard.md#v8-evidence-report-references': {
+    file: 'shared/references/handoff-standard.md',
+    heading: '## v8 evidence report references',
+  },
+  'shared/references/handoff-standard.md#resume-reconciliation': {
+    file: 'shared/references/handoff-standard.md',
+    heading: '## Resume reconciliation',
+  },
   'skills/saf-create-spec/SKILL.md#workflow': {
     file: 'skills/saf-create-spec/SKILL.md',
     heading: '## Workflow',
@@ -213,6 +221,17 @@ const REQUIRED_FIXTURE_IDS = [
   'technical-design-open',
   'product-direction-unresolved',
   'feasibility-investigation',
+] as const;
+
+const REQUIRED_BEHAVIOR_IDS = [
+  'handoff-v8-current-successor',
+  'handoff-v8-negative-successor',
+  'handoff-v8-path-identity-mismatch',
+  'handoff-v8-inputs-changed',
+  'handoff-v8-legacy-or-missing',
+  'handoff-v8-cli-unavailable',
+  'handoff-v8-human-gate',
+  'handoff-v8-task-feature-boundary',
 ] as const;
 
 // Declared neighboring operations in workflow-routing.md; both directions need an example.
@@ -451,6 +470,11 @@ function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): stri
       validateAuthority(item, repositoryRoot, corpusFailures);
     }
   }
+  const behaviorIds = new Set(
+    records(evalCorpus.behavior_cases, 'behavior_cases', corpusFailures).map((item) => item.id),
+  );
+  for (const id of REQUIRED_BEHAVIOR_IDS)
+    if (!behaviorIds.has(id)) corpusFailures.push(`eval corpus: missing required behavior ${id}`);
   corpusFailures.push(...validateReviewExamples(evalCorpus.review_examples, repositoryRoot));
   return corpusFailures;
 }
@@ -468,4 +492,10 @@ if (failures.length) {
 }
 console.log('PASS skill contracts');
 
-export { AUTHORITY_ALLOWLIST, REQUIRED_FIXTURE_IDS, REQUIRED_ROUTING_IDS, validateEvalCorpus };
+export {
+  AUTHORITY_ALLOWLIST,
+  REQUIRED_BEHAVIOR_IDS,
+  REQUIRED_FIXTURE_IDS,
+  REQUIRED_ROUTING_IDS,
+  validateEvalCorpus,
+};

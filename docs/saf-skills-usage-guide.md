@@ -70,5 +70,14 @@ From v8 onward, task checks and feature validation persist the bounded v1 eviden
 contract. Migration is rerun-based: upgrade SAF, rerun checks and validation, then
 inspect the Evidence Graph; legacy reports remain historical context.
 
+When work resumes from a non-terminal handoff, the handoff is supporting context,
+not a replacement for the canonical feature, task, configuration, spec, decision
+gates, or implementation state. `saf-implement` re-establishes those artifacts,
+then resolves a referenced v8 report by its released identity and scope and
+rechecks validity and declared-input freshness. A current positive successor may
+inform the existing transition rules; missing, legacy, ambiguous, negative,
+malformed, stale, or inconclusive evidence cannot establish completion. Report
+paths, filenames, timestamps, and handoff narrative never select active evidence.
+
 See [installation](installation.md), [trust model](trust-model.md),
 [execution modes](execution-modes.md), and [safety model](safety-model.md).

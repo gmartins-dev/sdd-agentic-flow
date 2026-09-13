@@ -1,6 +1,6 @@
 ---
 name: saf-fix-pr
-description: Apply the smallest task-scoped fixes for verified SDD pull-request findings. Use only when the user explicitly asks to repair actionable PR findings; not for a general refactor or automatic push.
+description: Apply authorized fixes to verified findings from one SDD task review; does not perform the review, redesign the feature, or publish changes.
 compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
@@ -26,7 +26,7 @@ Do not use for unverified comments, broad cleanup, feature redesign, sibling tas
 1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, then resolve one task and its permitted scope.
 2. Build a findings ledger, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Fix only findings with reproducible evidence; classify preferences, missing evidence, and spec drift without changing them. In autonomous mode, reconcile intent-preserving spec drift through `saf-create-spec` rather than editing the contract here. Do not close findings by reclassifying missing evidence as preference or by silently changing delegated intent.
 3. Apply `../sdd-agentic-flow-shared/references/engineering-principles.md`. Apply the smallest patch per actionable finding and add or update focused regression evidence. No opportunistic cleanup.
-4. Run configured targeted checks, update the ledger, and hand off to `saf-review-pr` for focused re-review.
+4. Run configured targeted checks and update the ledger under `../sdd-agentic-flow-shared/references/reviewability.md`: preserve finding IDs, record fix evidence and unresolved items, then hand off to `saf-review-pr` to confirm resolution. A repair claim alone does not close a finding.
 
 ## Safety
 
@@ -39,7 +39,10 @@ Return the findings ledger, changes and checks, unresolved items, re-review scop
 ### Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels. In autonomous mode, advancing
-back to `saf-review-pr` requires `fix-evidence` and every actionable finding resolved or explicitly
-deferred with a reason. An unresolved authority boundary or scope violation blocks the transition;
+back to `saf-review-pr` requires `fix-evidence` and every actionable finding addressed for reviewer
+confirmation or explicitly deferred with a reason. An unresolved authority boundary or scope violation blocks the transition;
 verified local findings do not require a new human confirmation. See
 `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+
+The sidecar's `findings_unresolved` blocks unaddressed actionable repairs; pending reviewer
+confirmation alone does not block returning current fix evidence for re-review.

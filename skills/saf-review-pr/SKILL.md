@@ -1,6 +1,6 @@
 ---
 name: saf-review-pr
-description: Review one task-scoped pull request against its SDD, diff, and configured checks. Use for an evidence-based PR review; not for fixing findings or mutating PR metadata.
+description: Review one task-scoped local change or pull request against its SDD and evidence, including re-review after fixes; does not implement repairs or publish reviews.
 compatibility: Requires Git and a compatible Agent Skills host.
 ---
 
@@ -22,9 +22,10 @@ Do not use to implement fixes, validate a whole feature, create a PR, or review 
 ## Workflow
 
 1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, then resolve the task, base, and head context from local artifacts.
+   Before judging the diff, read `../sdd-agentic-flow-shared/references/reviewability.md` for review identity, available deterministic checks, typed evidence, and prior-round resolution. Use `../sdd-agentic-flow-shared/templates/pr-review.template.md` for the returned ledger.
 2. Make two independent judgments: (1) spec/correctness against the SDD package, (2) engineering fit against `../sdd-agentic-flow-shared/references/engineering-principles.md` and repo conventions. Pretty code must not hide a spec miss. A spec-correct but over-engineered change is a quality finding, not an automatic block. Review acceptance criteria, changed behavior, tests, scope boundaries, and configured quality/security expectations.
 3. Verify findings with code or reproducible evidence, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. The review-findings artifact is local review evidence only; do not infer a persisted product report or handoff file unless the task contract explicitly requires it. Separate blocking defects from non-blocking observations; do not invent CI results; do not invent done.
-4. Produce a Markdown-first findings ledger with state (`confirmed`, `not-reproduced`, `evidence-gap`, `spec-conflict`, `human-judgment`, `resolved`, or `deferred`), severity, file/line, evidence, required remediation, and re-review focus. In autonomous mode, verified actionable findings authorize `saf-fix-pr` and re-review without a new confirmation; this Skill remains read-only.
+4. Produce the Markdown-first findings ledger and resolution table under `reviewability.md`, preserving IDs across rounds and distinguishing unsupported claims from confirmed defects. In autonomous mode, verified actionable findings authorize `saf-fix-pr` and re-review without a new confirmation; this Skill remains read-only.
 
 ## Safety
 

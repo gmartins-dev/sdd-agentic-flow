@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.16.0
+
+- Clarify Skill selection and conditional context, including authorized local PR preparation
+  and repair, without changing remote publication authority or the 12-Skill roster.
+- Strengthen observable obligations and enumerated requirement-to-task-to-evidence coverage
+  within existing specification, prompt, check, and validation contracts.
+- Add stable finding IDs, typed evidence, and resolution tables for local review and re-review;
+  repair evidence remains subject to reviewer confirmation.
+- Expand positive and negative routing examples for every Skill and add structural regression
+  checks for narrative cases and review carry-over. These checks do not certify host behavior.
+
 ## 7.15.1
 
 - Fix interactive Team/project setup so user-only coding-agent targets are not passed to project

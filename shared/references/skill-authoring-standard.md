@@ -32,8 +32,8 @@ that order, with no additional top-level sections. Each one has one job:
 - **`## Workflow`**: a numbered sequence, each step an action plus its stop condition. Steps
   read shared references explicitly by path rather than restating their content (see
   [evidence-standard.md](evidence-standard.md) below for the most duplicated example of this).
-  _Minimal example:_ "1. Read `.sdd-agentic-flow/config.yml` first. If it is missing, ask the user to run
-  `npx sdd-agentic-flow init`; otherwise use its paths, commands, and policy."
+  _Minimal example:_ "1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use effective
+  defaults as read-only preconditions. Resolve one eligible package before acting."
 - **`## Safety`**: what the skill will never do by default (mutate Git, publish, install, cross
   scope) and which shared safety reference governs it.
   _Minimal example:_ "This is read-only except for disposable test artifacts permitted by
@@ -84,6 +84,20 @@ evidence-standard.md for the six skills that already do), but the vocabulary mus
 contradict the shared principle.
 
 ## Capability contract guidance
+
+Descriptions name the triggering situation and nearest boundary, rather than listing every
+related topic. Check the description, use/non-use sections, routing, and sidecar together before
+adding instructions; discovery wording must preserve authorized autonomous transitions.
+
+Use the context classes in [task-context-package.md](task-context-package.md). Keep shared steps
+and mandatory safety/authority pointers in the root Skill; load branch-specific references only
+when that branch applies. A short Skill needs no extra router. Keep each rule in its owning
+reference, with an explicit read condition at its consumer. Installed references must resolve.
+
+Use small canonical examples for demonstrated ambiguities. A trigger or boundary change needs
+positive and negative corpus cases with an authority reference. Structural checks validate the
+examples' declared contract, not a host's selection or semantic judgment. Word counts locate
+review candidates; they are neither a quality score nor a reason to remove a guardrail.
 
 Every skill must make discoverable (within the six-section shape, no new frontmatter fields):
 

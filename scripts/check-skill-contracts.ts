@@ -126,6 +126,46 @@ for (const name of OFFICIAL_SKILLS) {
 type EvalRecord = Record<string, unknown>;
 
 const AUTHORITY_ALLOWLIST = {
+  'shared/references/prompt-authoring-standard.md': {
+    file: 'shared/references/prompt-authoring-standard.md',
+    heading: '# Prompt authoring standard',
+  },
+  'shared/references/evidence-standard.md#requirement-coverage': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Requirement coverage',
+  },
+  'shared/references/evidence-standard.md#adequacy': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Adequacy',
+  },
+  'shared/references/evidence-standard.md#authority-order': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Authority order',
+  },
+  'shared/references/evidence-standard.md#freshness': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Freshness',
+  },
+  'shared/references/evidence-standard.md#anti-tautology--epistemic-independence': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Anti-tautology / epistemic independence',
+  },
+  'shared/references/reviewability.md#review-identity-and-evidence': {
+    file: 'shared/references/reviewability.md',
+    heading: '## Review identity and evidence',
+  },
+  'shared/references/reviewability.md#re-review-and-resolution': {
+    file: 'shared/references/reviewability.md',
+    heading: '## Re-review and resolution',
+  },
+  'shared/references/handoff-standard.md#what-belongs-in-each-handofftemplatemd-section': {
+    file: 'shared/references/handoff-standard.md',
+    heading: '## What belongs in each `handoff.template.md` section',
+  },
+  'skills/saf-create-spec/SKILL.md#workflow': {
+    file: 'skills/saf-create-spec/SKILL.md',
+    heading: '## Workflow',
+  },
   'shared/references/workflow-routing.md#discovery-versus-specification': {
     file: 'shared/references/workflow-routing.md',
     heading: '## Discovery versus specification',
@@ -175,17 +215,154 @@ const REQUIRED_FIXTURE_IDS = [
   'feasibility-investigation',
 ] as const;
 
+// Declared neighboring operations in workflow-routing.md; both directions need an example.
+const ROUTING_BOUNDARIES = [
+  ['saf-brainstorm', 'saf-create-spec'],
+  ['saf-create-spec', 'saf-create-prompts'],
+  ['saf-implement', 'saf-implement-multi'],
+  ['saf-check-task', 'saf-validate'],
+  ['saf-create-pr', 'saf-review-pr'],
+  ['saf-review-pr', 'saf-fix-pr'],
+  ['saf-route', 'saf-implement'],
+  ['saf-explain', 'saf-implement'],
+] as const;
+
+function validateAuthority(item: EvalRecord, repositoryRoot: string, errors: string[]): void {
+  const authority =
+    typeof item.authority_ref === 'string' && Object.hasOwn(AUTHORITY_ALLOWLIST, item.authority_ref)
+      ? AUTHORITY_ALLOWLIST[item.authority_ref as keyof typeof AUTHORITY_ALLOWLIST]
+      : undefined;
+  if (!authority) {
+    errors.push(
+      `eval corpus: ${String(item.id)} has unapproved authority_ref ${String(item.authority_ref)}`,
+    );
+    return;
+  }
+  const file = path.join(repositoryRoot, authority.file);
+  if (!fs.existsSync(file)) errors.push(`eval corpus: authority file missing ${authority.file}`);
+  else if (!fs.readFileSync(file, 'utf8').includes(authority.heading))
+    errors.push(`eval corpus: authority heading missing ${authority.heading}`);
+}
+
+// These checks validate maintained examples, not arbitrary consumer reports or semantic truth.
+function records(value: unknown, label: string, errors: string[]): EvalRecord[] {
+  if (!Array.isArray(value)) {
+    errors.push(`eval corpus: ${label} must be an array`);
+    return [];
+  }
+  return value.filter((item): item is EvalRecord => {
+    const valid = Boolean(item && typeof item === 'object' && !Array.isArray(item));
+    if (!valid) errors.push(`eval corpus: ${label} contains a non-record`);
+    return valid;
+  });
+}
+
+function requiredText(item: EvalRecord, fields: string[], label: string, errors: string[]): void {
+  for (const field of fields)
+    if (typeof item[field] !== 'string' || !item[field].trim())
+      errors.push(`eval corpus: ${label} missing ${field}`);
+}
+
+function validateReviewExamples(value: unknown, repositoryRoot: string): string[] {
+  const errors: string[] = [];
+  const states = new Set([
+    'confirmed',
+    'not-reproduced',
+    'evidence-gap',
+    'spec-conflict',
+    'human-judgment',
+    'resolved',
+    'deferred',
+  ]);
+  const examples = records(value, 'review_examples', errors);
+  if (!examples.length) errors.push('eval corpus: missing review_examples');
+  const exampleIds = new Set<unknown>();
+  for (const example of examples) {
+    requiredText(example, ['id', 'purpose', 'authority_ref'], 'review example', errors);
+    if (exampleIds.has(example.id))
+      errors.push(`eval corpus: duplicate review example ${String(example.id)}`);
+    exampleIds.add(example.id);
+    validateAuthority(example, repositoryRoot, errors);
+    const rounds = records(example.rounds, 'review rounds', errors);
+    if (rounds.length < 2)
+      errors.push(`eval corpus: ${String(example.id)} needs two review rounds`);
+    let prior = new Map<unknown, unknown>();
+    const allocated = new Set<string>();
+    for (const [index, round] of rounds.entries()) {
+      const label = `${String(example.id)}/${index + 1}`;
+      requiredText(round, ['task', 'context', 'previous'], label, errors);
+      if (round.round !== index + 1 || round.task !== rounds[0]?.task)
+        errors.push(`eval corpus: ${label} invalid round/task identity`);
+      if (round.previous !== (index === 0 ? 'none' : `${String(example.id)}/${index}`))
+        errors.push(`eval corpus: ${label} invalid previous review reference`);
+      const current = new Map<unknown, unknown>();
+      for (const finding of records(round.findings, `${label} findings`, errors)) {
+        requiredText(
+          finding,
+          ['finding_id', 'state', 'impact', 'location', 'remediation', 'focus'],
+          label,
+          errors,
+        );
+        if (typeof finding.finding_id !== 'string' || !/^F\d{3,}$/.test(finding.finding_id))
+          errors.push(`eval corpus: ${label} invalid finding_id`);
+        if (current.has(finding.finding_id))
+          errors.push(`eval corpus: ${label} duplicate finding_id`);
+        current.set(finding.finding_id, finding.state);
+        if (!states.has(String(finding.state)))
+          errors.push(`eval corpus: ${label} invalid finding state`);
+        const entries = records(finding.evidence, `${label} evidence`, errors);
+        if (!entries.length) errors.push(`eval corpus: ${label} missing finding evidence`);
+        for (const entry of entries) {
+          requiredText(entry, ['source', 'result'], label, errors);
+          if (!['internal', 'repro', 'external'].includes(String(entry.type)))
+            errors.push(`eval corpus: ${label} invalid evidence type`);
+        }
+      }
+      const newIds = [...current.keys()]
+        .filter((id): id is string => typeof id === 'string' && !allocated.has(id))
+        .sort((left, right) => Number(left.slice(1)) - Number(right.slice(1)));
+      for (const id of newIds) {
+        if (id !== `F${String(allocated.size + 1).padStart(3, '0')}`)
+          errors.push(`eval corpus: ${label} nonsequential finding_id ${id}`);
+        allocated.add(id);
+      }
+      if (index > 0) {
+        const resolution = records(round.resolution, `${label} resolution table`, errors);
+        const seen = new Set<unknown>();
+        for (const row of resolution) {
+          requiredText(
+            row,
+            ['finding_id', 'previous_state', 'current_state', 'evidence', 'next_action'],
+            label,
+            errors,
+          );
+          if (seen.has(row.finding_id))
+            errors.push(`eval corpus: ${label} duplicate resolution ID`);
+          seen.add(row.finding_id);
+          if (
+            !prior.has(row.finding_id) ||
+            row.previous_state !== prior.get(row.finding_id) ||
+            row.current_state !== current.get(row.finding_id)
+          )
+            errors.push(`eval corpus: ${label} resolution state mismatch`);
+        }
+        for (const id of prior.keys())
+          if (!seen.has(id) || !current.has(id))
+            errors.push(`eval corpus: ${label} omitted carry-over ${String(id)}`);
+      }
+      prior = current;
+    }
+  }
+  return errors;
+}
+
 function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): string[] {
   const corpusFailures: string[] = [];
   for (const key of ['routing_cases', 'prompt_cases', 'behavior_cases']) {
     if (!Array.isArray(evalCorpus[key]) || evalCorpus[key].length === 0)
       corpusFailures.push(`eval corpus: missing ${key}`);
   }
-  const fixtures = Array.isArray(evalCorpus.routing_fixtures)
-    ? evalCorpus.routing_fixtures.filter((item): item is EvalRecord =>
-        Boolean(item && typeof item === 'object'),
-      )
-    : [];
+  const fixtures = records(evalCorpus.routing_fixtures, 'routing_fixtures', corpusFailures);
   const fixtureIds = new Set<string>();
   for (const fixture of fixtures) {
     if (typeof fixture.id !== 'string' || !fixture.id.trim())
@@ -196,17 +373,13 @@ function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): stri
     if (typeof fixture.description !== 'string' || !fixture.description.trim())
       corpusFailures.push(`eval corpus: fixture ${String(fixture.id)} missing description`);
   }
-  if (fixtures.length !== 9)
-    corpusFailures.push(`eval corpus: expected 9 routing fixtures, found ${fixtures.length}`);
   for (const id of REQUIRED_FIXTURE_IDS)
     if (!fixtureIds.has(id)) corpusFailures.push(`eval corpus: missing required fixture ${id}`);
-  const routingCases = Array.isArray(evalCorpus.routing_cases)
-    ? evalCorpus.routing_cases.filter((item): item is EvalRecord =>
-        Boolean(item && typeof item === 'object'),
-      )
-    : [];
+  const routingCases = records(evalCorpus.routing_cases, 'routing_cases', corpusFailures);
   const caseIds = new Set<string>();
   const official = new Set<string>(OFFICIAL_SKILLS);
+  const selected = new Set<string>();
+  const rejected = new Set<string>();
   for (const item of routingCases) {
     const id = typeof item.id === 'string' ? item.id : '';
     if (!id) corpusFailures.push('eval corpus: routing case id must be a non-empty string');
@@ -222,21 +395,21 @@ function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): stri
     if (item.expected_route === 'skill') {
       if (typeof item.expected_skill !== 'string' || !official.has(item.expected_skill))
         corpusFailures.push(`eval corpus: ${id} requires an official expected_skill`);
+      else selected.add(item.expected_skill);
     } else if ('expected_skill' in item)
       corpusFailures.push(`eval corpus: ${id} must not declare expected_skill for human-gate`);
-    if (typeof item.authority_ref === 'string') {
-      const authority = AUTHORITY_ALLOWLIST[item.authority_ref as keyof typeof AUTHORITY_ALLOWLIST];
-      if (!authority)
-        corpusFailures.push(
-          `eval corpus: ${id} has unapproved authority_ref ${item.authority_ref}`,
-        );
-      else {
-        const file = path.join(repositoryRoot, authority.file);
-        if (!fs.existsSync(file))
-          corpusFailures.push(`eval corpus: authority file missing ${authority.file}`);
-        else if (!fs.readFileSync(file, 'utf8').includes(authority.heading))
-          corpusFailures.push(`eval corpus: authority heading missing ${authority.heading}`);
-      }
+    if (item.expected_route === 'human-gate')
+      requiredText(item, ['gate_reason'], id, corpusFailures);
+    validateAuthority(item, repositoryRoot, corpusFailures);
+    if ('rejected_skills' in item) {
+      if (!Array.isArray(item.rejected_skills) || !item.rejected_skills.length)
+        corpusFailures.push(`eval corpus: ${id} rejected_skills must be a non-empty array`);
+      else
+        for (const name of item.rejected_skills) {
+          if (typeof name !== 'string' || !official.has(name) || name === item.expected_skill)
+            corpusFailures.push(`eval corpus: ${id} invalid rejected skill`);
+          else rejected.add(name);
+        }
     }
     if (id === 'route-discovery-durable' && item.expected_mode !== 'durable discovery')
       corpusFailures.push(
@@ -245,6 +418,40 @@ function validateEvalCorpus(evalCorpus: EvalRecord, repositoryRoot = root): stri
   }
   for (const id of REQUIRED_ROUTING_IDS)
     if (!caseIds.has(id)) corpusFailures.push(`eval corpus: missing required routing case ${id}`);
+  for (const name of official) {
+    if (!selected.has(name)) corpusFailures.push(`eval corpus: missing positive route for ${name}`);
+    if (!rejected.has(name)) corpusFailures.push(`eval corpus: missing negative route for ${name}`);
+  }
+  for (const boundary of ROUTING_BOUNDARIES)
+    for (const [selectedSkill, rejectedSkill] of [boundary, [...boundary].reverse()])
+      if (
+        !routingCases.some(
+          (item) =>
+            item.expected_route === 'skill' &&
+            item.expected_skill === selectedSkill &&
+            Array.isArray(item.rejected_skills) &&
+            item.rejected_skills.includes(rejectedSkill),
+        )
+      )
+        corpusFailures.push(
+          `eval corpus: missing boundary ${selectedSkill} instead of ${rejectedSkill}`,
+        );
+  for (const key of ['prompt_cases', 'behavior_cases']) {
+    const ids = new Set<unknown>();
+    for (const item of records(evalCorpus[key], key, corpusFailures)) {
+      requiredText(
+        item,
+        ['id', 'input', 'rejected', 'expected', 'authority_ref'],
+        key,
+        corpusFailures,
+      );
+      if (ids.has(item.id))
+        corpusFailures.push(`eval corpus: duplicate ${key} id ${String(item.id)}`);
+      ids.add(item.id);
+      validateAuthority(item, repositoryRoot, corpusFailures);
+    }
+  }
+  corpusFailures.push(...validateReviewExamples(evalCorpus.review_examples, repositoryRoot));
   return corpusFailures;
 }
 

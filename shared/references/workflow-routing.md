@@ -19,6 +19,16 @@ Use this reference to recommend a local SDD next step. It is guidance, not autom
 | Change ready for review | `saf-review-pr` |
 | Accepted review findings | `saf-fix-pr`, then `saf-review-pr` |
 | Integrated feature | `saf-validate` |
+| User requests an explanation of a specified or implemented feature | `saf-explain` |
+| User asks which workflow step fits | `saf-route` |
+
+The requested operation distinguishes neighboring Skills even when their inputs overlap:
+specification authoring uses `saf-create-spec`; encoding ready tasks as prompts uses
+`saf-create-prompts`. A task check uses `saf-check-task`; accumulated feature readiness uses
+`saf-validate`. Preparing a review package uses `saf-create-pr`; assessing its diff uses
+`saf-review-pr`; authorized repairs to verified findings use `saf-fix-pr`.
+Explanation does not authorize execution. An explicit eligible task implementation request
+can use `saf-implement` directly; `saf-route` is not a mandatory preflight Skill.
 
 ## Discovery versus specification
 

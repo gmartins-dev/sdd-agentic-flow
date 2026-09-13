@@ -1,6 +1,6 @@
 ---
 name: saf-create-pr
-description: Prepare a task-scoped pull-request package from validated SDD evidence. Use only when the user explicitly asks to create or prepare a PR; do not use for implementation, review, or automatic publishing.
+description: Prepare an authorized local pull-request package from validated evidence for one SDD task; does not implement changes, review the diff, or publish remotely.
 compatibility: Requires Git and a compatible Agent Skills host.
 ---
 

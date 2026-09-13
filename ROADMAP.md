@@ -1,6 +1,12 @@
 # Roadmap
 
-Current release: v7.15.1
+Current release: v7.16.0
+
+- **v7.16.0:** Refines Skill discovery and conditional context, observable obligations and
+  enumerated evidence coverage, and local review convergence through stable findings and
+  resolution tables. Expands the existing corpus and structural validators instead of adding
+  a context auditor, runtime, public schema, or host certification. Preserves the 12-Skill roster,
+  existing local outcome vocabularies, and all remote authorization boundaries.
 
 - **v7.15.1:** Fixes interactive Team/project setup target selection, makes the configured specs
   root visible during review, and preserves shared specs visibility through workspace initialization.

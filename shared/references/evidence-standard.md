@@ -208,6 +208,12 @@ irrelevant sensor. Gap is **not** automatically `blocked`.
 
 ## Requirement coverage
 
+At specification time, separate independently verifiable obligations and state an observable
+outcome for each acceptance criterion. For a negative guarantee, identify the mechanism and
+observation that could expose a violation, or record the unresolved proof obligation. An
+unjustified `N/A` is a gap, not coverage. Apply this within existing artifacts and the selected
+feature profile; do not invent requirements or require a fixed surface checklist.
+
 Every required behavior maps to:
 
 ```text
@@ -217,6 +223,12 @@ requirement → sensor → current result
 Record the mapping inside existing `## Evidence`. No new artifact. An uncovered requirement is
 an evidence gap. A green suite with an unmapped acceptance criterion is **not** fully verified
 (`silent gap` and/or `green-but-wrong`) and must not silently PASS.
+
+Where implementation tasks exist, retain their requirement anchors in the mapping:
+requirement → task → sensor → current result. If a requirement enumerates states, boundaries,
+or consumers, account for each named member in the existing evidence summary. A single sensor
+may cover several members when its observations demonstrate that coverage; "all cases pass"
+does not establish the join. Record uncovered members and sensor limitations explicitly.
 
 ## RED / PASS
 

@@ -9,6 +9,6 @@ conflicts: []
 requires_cli: null
 autonomy_profile:
   supported_levels: [manual, supervised, autonomous]
-  auto_continue_condition: 'fix-evidence present and every actionable finding on the findings ledger is resolved or explicitly deferred with a reason'
+  auto_continue_condition: 'fix-evidence present and every actionable finding is addressed for reviewer confirmation or explicitly deferred with a reason'
   blocking_conditions: [findings_unresolved, scope_exceeded]
   evidence_required: [fix-evidence]

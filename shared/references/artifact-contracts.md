@@ -52,7 +52,7 @@ format. This is a presence check, not full-schema validation. It does not verify
 - change-review-package: required `# {feature_slug} — {task_id}`, `## Scope`, `## Evidence`.
   Produced by `saf-create-pr`.
 
-## Requirement identity (v4)
+## Requirement identity (v4 legacy and v1)
 
 `REQ-*` identity is semantic, not presentation order:
 
@@ -76,4 +76,6 @@ See [system-invariants.md](system-invariants.md), [bounded-execution.md](bounded
 ## Legacy optional convention (pre-v4)
 
 Pre-v4 artifacts may omit `Feature:` and evidence tables; they remain human-readable history but
-cannot satisfy v4 graph coverage.
+cannot satisfy v1 graph coverage. V1 reports add the evidence-contract v1 envelope, `Record IDs` in
+the index, and directly joined `EV-*` evidence records; only their unambiguous active terminal can
+satisfy current Evidence Graph coverage.

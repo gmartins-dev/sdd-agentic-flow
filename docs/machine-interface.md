@@ -18,4 +18,8 @@ emits ANSI, persists credentials, or grants mutation authority.
 Schema 2 remains compatible for the 7.x line. New fields may be additive;
 removal, renaming, or incompatible semantic changes wait for a future major.
 
+The v8 Evidence Graph is an intentional machine-data boundary: its JSON projection
+uses the v1 evidence contract and `contract_compatible` in place of `v4Compatible`.
+Consumers must rerun task checks and validation before reading the new projection.
+
 See [information representation model](information-representation-model.md).

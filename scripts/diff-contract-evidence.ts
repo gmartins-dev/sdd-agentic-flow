@@ -506,11 +506,32 @@ export function renderContractEvidenceDiff(diff: ContractEvidenceDiff): string {
 
 if (process.argv[1]?.endsWith('diff-contract-evidence.ts')) {
   const root = path.resolve(__dirname, '..');
-  const baseRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: root,
-    encoding: 'utf8',
-  }).trim();
-  const diff = diffContractEvidence(snapshotFromGit(root, baseRevision), candidateSnapshot(root));
+  const args = process.argv.slice(2);
+  const valueAfter = (flag: string): string | null => {
+    const index = args.indexOf(flag);
+    return index >= 0 ? (args[index + 1] ?? null) : null;
+  };
+  const baselineArg = valueAfter('--baseline');
+  const candidateArg = valueAfter('--candidate');
+  const workingTree = args.includes('--working-tree');
+  if (!baselineArg || (!candidateArg && !workingTree) || (candidateArg && workingTree)) {
+    throw new Error(
+      'usage: diff-contract-evidence --baseline <git-revision> (--candidate <git-revision> | --working-tree)',
+    );
+  }
+  const resolveCommit = (revision: string) =>
+    execFileSync('git', ['rev-parse', '--verify', `${revision}^{commit}`], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+  const baselineRevision = resolveCommit(baselineArg);
+  const candidateRevision = candidateArg ? resolveCommit(candidateArg) : null;
+  if (workingTree && process.env.SAF_RELEASE_CERTIFICATION === '1')
+    throw new Error('--working-tree is forbidden for release certification');
+  const diff = diffContractEvidence(
+    snapshotFromGit(root, baselineRevision),
+    candidateRevision ? snapshotFromGit(root, candidateRevision) : candidateSnapshot(root),
+  );
   const output =
     process.env.SAF_CONTRACT_DIFF_REPORT ||
     path.join(root, '.local', 'gmm', 'sdd-agentic-flow', `v${VERSION}-contract-diff.md`);

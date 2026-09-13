@@ -17,6 +17,47 @@ import { collectPurgeTargets } from '../src/uninstall';
 
 const fixtureRoot = path.join(__dirname, 'fixtures', 'v4');
 
+function v1Check(feature: string, task: string): string {
+  return `# Task check — ${task}
+
+Feature: ${feature}
+Evidence contract: saf-evidence/v1
+Report ID: 123e4567-e89b-42d3-a456-426614174000
+Report scope: check:${feature}:${task}
+Supersedes: none
+
+## Evidence
+
+| Requirement anchor | Sensor | Record IDs | Result | Freshness |
+| --- | --- | --- | --- | --- |
+| REQ-1 | graph-test | EV-001 | pass | current |
+
+## Evidence records
+
+### EV-001
+
+Requirement anchors: REQ-1
+Sensor: graph-test
+Sensor class: unitary
+Oracle: REQ-1 acceptance criterion
+Seam: resolved graph
+Surface: src/evidence-graph.ts
+Revision: 0123456789abcdef0123456789abcdef01234567
+Run state before: clean
+Run state after: clean
+Inputs:
+| Path | SHA-256 | Status | Reason |
+| --- | --- | --- | --- |
+Command: npx tsx --test test/evidence-graph.test.ts
+Exit status: 0
+Observation: pass
+Observation digest: sha256:d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1
+Result: pass
+Freshness: current
+Confidence limit: Declared scope does not trace runtime-loaded dependencies.
+`;
+}
+
 test('parseRequirementIds extracts REQ-* headings', () => {
   const content = fs.readFileSync(path.join(fixtureRoot, 'valid-spec.md'), 'utf8');
   assert.deepEqual(parseRequirementIds(content), ['REQ-1', 'REQ-2']);
@@ -70,7 +111,7 @@ test('legacy check without Feature is non-v4 for graph', () => {
   assert.equal(parsed.featureSlug, null);
 });
 
-test('collectEvidenceGraph reports current path for valid v4 package', () => {
+test('collectEvidenceGraph preserves valid v4 reports as legacy context', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-graph-'));
   const feature = 'sample-feature';
   const specDir = path.join(temp, '.specs', 'features', feature);
@@ -83,7 +124,28 @@ test('collectEvidenceGraph reports current path for valid v4 package', () => {
     path.join(temp, '.sdd-agentic-flow', 'reports', 'T1-check.md'),
   );
   const result = collectEvidenceGraph(temp, feature);
-  assert.equal(result.requirements.find((node) => node.reqId === 'REQ-1')?.status, 'current');
+  assert.equal(result.requirements.find((node) => node.reqId === 'REQ-1')?.status, 'legacy-report');
+  fs.rmSync(temp, { recursive: true, force: true });
+});
+
+test('collectEvidenceGraph accepts current positive v1 task coverage', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-graph-v1-'));
+  const feature = 'sample-feature';
+  const specDir = path.join(temp, '.specs', 'features', feature);
+  fs.mkdirSync(path.join(temp, '.sdd-agentic-flow', 'reports'), { recursive: true });
+  fs.mkdirSync(specDir, { recursive: true });
+  fs.writeFileSync(path.join(specDir, 'spec.md'), '# Specification\n\n### REQ-1 — one\n');
+  fs.writeFileSync(
+    path.join(specDir, 'tasks.md'),
+    '# Tasks\n\n## T1\nRequirement anchors: REQ-1\nDependencies: none\n',
+  );
+  fs.writeFileSync(
+    path.join(temp, '.sdd-agentic-flow', 'reports', 'T1-check.md'),
+    v1Check(feature, 'T1'),
+  );
+  const result = collectEvidenceGraph(temp, feature);
+  assert.equal(result.contractCompatible, true);
+  assert.equal(result.requirements[0]?.status, 'current');
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
@@ -151,7 +213,10 @@ test('collectEvidenceGraph isolates cross-feature task IDs', () => {
   const resultA = collectEvidenceGraph(temp, 'feature-a');
   assert.notEqual(resultA.requirements.find((node) => node.reqId === 'REQ-1')?.status, 'current');
   const resultB = collectEvidenceGraph(temp, 'feature-b');
-  assert.equal(resultB.requirements.find((node) => node.reqId === 'REQ-1')?.status, 'current');
+  assert.equal(
+    resultB.requirements.find((node) => node.reqId === 'REQ-1')?.status,
+    'legacy-report',
+  );
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
@@ -211,7 +276,10 @@ test('collectEvidenceGraph marks stale and summary-only evidence correctly', () 
     path.join(staleTemp, '.sdd-agentic-flow', 'reports', 'T1-stale.md'),
   );
   const staleResult = collectEvidenceGraph(staleTemp, feature);
-  assert.equal(staleResult.requirements.find((node) => node.reqId === 'REQ-1')?.status, 'stale');
+  assert.equal(
+    staleResult.requirements.find((node) => node.reqId === 'REQ-1')?.status,
+    'legacy-report',
+  );
   fs.rmSync(staleTemp, { recursive: true, force: true });
 
   const summaryTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-graph-summary-'));
@@ -227,7 +295,7 @@ test('collectEvidenceGraph marks stale and summary-only evidence correctly', () 
   const summaryResult = collectEvidenceGraph(summaryTemp, feature);
   assert.equal(
     summaryResult.requirements.find((node) => node.reqId === 'REQ-1')?.status,
-    'no-current-evidence',
+    'legacy-report',
   );
   fs.rmSync(summaryTemp, { recursive: true, force: true });
 });

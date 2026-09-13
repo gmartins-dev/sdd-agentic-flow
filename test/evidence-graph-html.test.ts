@@ -6,7 +6,9 @@ import { renderEvidenceGraphHtml } from '../src/evidence-graph-html';
 test('Evidence Graph HTML escapes artifact content and has no active markup', () => {
   const result = {
     featureSlug: '<img src=x>',
-    v4Compatible: true,
+    evidenceContract: 'saf-evidence/v1' as const,
+    contractCompatible: true,
+    reports: [],
     errors: ['<script>alert(1)</script> https://example.test'],
     requirements: [
       {

@@ -66,5 +66,9 @@ existing permission; unavailable research is a gap. Checks must cover the named
 requirements and states, not merely report a green suite. Structural corpus checks
 do not certify a host's behavior. See the [evidence standard](../shared/references/evidence-standard.md).
 
+From v8 onward, task checks and feature validation persist the bounded v1 evidence
+contract. Migration is rerun-based: upgrade SAF, rerun checks and validation, then
+inspect the Evidence Graph; legacy reports remain historical context.
+
 See [installation](installation.md), [trust model](trust-model.md),
 [execution modes](execution-modes.md), and [safety model](safety-model.md).

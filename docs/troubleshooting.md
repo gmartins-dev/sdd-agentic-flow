@@ -134,6 +134,14 @@ project override.
 
 **Fix:** set `quality.require_evidence_before_completion: true` in `.sdd-agentic-flow/config.yml`.
 
+### Evidence Graph shows legacy or stale reports
+
+**Cause:** reports from before the v8 evidence contract, or declared inputs changed after a
+check ran.
+
+**Fix:** upgrade or install the current skills, rerun the affected task checks and feature
+validation, then run `npx sdd-agentic-flow doctor --evidence-graph <feature>`.
+
 ### `language_profile`: `WARN`/`FAIL`
 
 **Cause:** `WARN` — no `language.profile` configured (legacy config), or the profile guidance

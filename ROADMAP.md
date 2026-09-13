@@ -1,6 +1,11 @@
 # Roadmap
 
-Current release: v7.17.0
+Current release: v8.0.0
+
+- **v8.0.0:** Adds declared-scope evidence provenance, deterministic v1 report resolution, and
+  explicit-baseline maintainer audit behavior. Legacy reports remain historical context; no runtime
+  dependency, provider behavior, telemetry, implicit network access, or automatic remote mutation
+  is added.
 
 - **v7.17.0:** Adds independent maintainer evidence records, deterministic tree/input manifests,
   bounded sanitization, fail-closed freshness, explicit closure-versus-review finding boundaries,

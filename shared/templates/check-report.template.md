@@ -4,6 +4,11 @@ Status: {{status}}
 
 Feature: {{feature_slug}}
 
+Evidence contract: saf-evidence/v1
+Report ID: {{uuid_v4}}
+Report scope: check:{{feature_slug}}:{{task_id}}
+Supersedes: {{none_or_report_id}}
+
 ## Validation scope
 
 <!-- Record impact, obligations, selected sensors, and omitted sensors with reasons. -->
@@ -17,11 +22,15 @@ A passing sensor is evidence, not a correctness verdict.
 Record requirement → sensor → current result in the table below AND detailed evidence prose.
 -->
 
-| Requirement anchor | Sensor | Result | Freshness |
-| --- | --- | --- | --- |
-| {{requirement_anchor}} | {{sensor}} | {{result}} | {{freshness}} |
+| Requirement anchor | Sensor | Record IDs | Result | Freshness |
+| --- | --- | --- | --- | --- |
+| {{requirement_anchor}} | {{sensor}} | {{record_ids}} | {{result}} | {{freshness}} |
 
 {{evidence}}
+
+## Evidence records
+
+{{v1_evidence_records}}
 
 ## TDD evidence
 

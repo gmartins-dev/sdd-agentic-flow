@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.0.0
+
+- Replace Evidence Graph v4 coverage with the Markdown-native v1 evidence contract, declared-input
+  freshness, deterministic report supersession, and unified text, JSON, and HTML projections.
+- Require explicit maintainer audit baselines and preserve legacy reports as visible context rather
+  than current proof.
+- Preserve local-first behavior, zero runtime dependencies, and human release authority.
+
 ## 7.17.0
 
 - Add deterministic internal evidence records with tree manifests, bounded sanitization, and

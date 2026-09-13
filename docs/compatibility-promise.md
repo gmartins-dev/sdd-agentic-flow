@@ -13,6 +13,8 @@ skill, configuration, artifact, and workflow contracts.
   are allowed, incompatible removal or semantic changes are not.
 - SAF remains local-first, agent-neutral, and performs no automatic Git or
   remote release action.
+- Evidence Graph reports use the bounded v1 evidence contract from v8 onward;
+  legacy reports remain historical context and are not converted automatically.
 
 ## Clean-slate upgrade
 

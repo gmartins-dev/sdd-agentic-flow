@@ -102,8 +102,8 @@ regenerated; it must not silently become a second writer or an alternative inter
 
 The shared artifact contract owns mechanically recognizable landmarks. The skill-authoring
 reference owns universal closeout semantics. The machine-interface document owns CLI JSON. The
-evidence contract owns freshness semantics. This model relates those owners; it does not replace
-them with a global database or registry.
+v1 evidence contract owns freshness semantics and declared-input identity. This model relates
+those owners; it does not replace them with a global database or registry.
 
 ## Selection and persistence criteria
 

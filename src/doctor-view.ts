@@ -69,7 +69,12 @@ function buildDoctorView(checks: DoctorCheck[], options: DoctorViewOptions = {})
 }
 
 function formatEvidenceGraph(result: EvidenceGraphResult): string {
-  const lines: string[] = [`Evidence graph — ${result.featureSlug}`, ''];
+  const lines: string[] = [
+    `Evidence graph — ${result.featureSlug}`,
+    `Evidence contract: ${result.evidenceContract}`,
+    `Contract compatible: ${result.contractCompatible ? 'yes' : 'no'}`,
+    '',
+  ];
   if (result.errors.length) {
     for (const error of result.errors) lines.push(`ERROR: ${error}`);
     lines.push('');

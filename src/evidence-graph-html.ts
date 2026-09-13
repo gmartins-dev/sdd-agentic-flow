@@ -36,7 +36,8 @@ function renderEvidenceGraphHtml(result: EvidenceGraphResult): string {
 <body>
 <main>
 <h1>Evidence graph — ${escapeHtml(result.featureSlug)}</h1>
-<p>v4 compatible: ${result.v4Compatible ? 'yes' : 'no'}</p>
+<p>Evidence contract: ${escapeHtml(result.evidenceContract)}</p>
+<p>Contract compatible: ${result.contractCompatible ? 'yes' : 'no'}</p>
 ${errors ? `<section class="errors"><h2>Errors</h2><ul>${errors}</ul></section>` : ''}
 <table><thead><tr><th>Requirement</th><th>Status</th><th>Tasks</th><th>Checks</th></tr></thead><tbody>${requirements}</tbody></table>
 </main>

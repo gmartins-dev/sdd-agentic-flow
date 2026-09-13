@@ -9,6 +9,17 @@ and decision (v1.14.0). Do not collapse those four terms. v1.15.0 adds the false
 catalog, requirement coverage mapping, and evidence strength ladder on top of that contract
 without changing the four terms or the Status enum.
 
+## Evidence report contract (saf-evidence/v1)
+
+Task checks and feature validation reports use the `Evidence contract` v1 value, a UUIDv4
+`Report ID`, a task or validation `Report scope`, and `Supersedes` before `## Evidence`. Their
+index is `| Requirement anchor | Sensor | Record IDs | Result | Freshness |`; every ID joins a
+direct child `### EV-*` record. V1 records declare their oracle, seam, surface, revision/run
+state, bounded sanitized observation, command/exit status, confidence limit, and a canonical
+declared-input manifest. `pass/current` requires current positive declared inputs; legacy reports
+remain visible context and cannot satisfy v1 coverage. Migrate by rerunning checks and validation,
+never by editing old reports to appear current.
+
 ## The principle
 
 - A claim of completion, correctness, or readiness is valid only when it is backed by evidence

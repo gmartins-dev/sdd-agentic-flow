@@ -39,6 +39,10 @@ still relevant to the current state. Verification independently evaluates whethe
 adequately supports `REQ-1` through `REQ-3`. The Evidence Graph is read-only traceability, never
 orchestration authority. See [canonical vocabulary](../shared/references/canonical-vocabulary.md).
 
+The v8 evidence contract makes this boundary explicit with declared inputs, bounded observations,
+and rerun-based migration. A legacy report can remain visible for history but cannot become current
+proof without a new check.
+
 **Illustrative example.** A test may become stale after the handler changes; the Evidence Graph
 can show its old requirement link but cannot authorize work. Verification can block progression
 despite green agent-authored tests when the exactly-one oracle is absent.

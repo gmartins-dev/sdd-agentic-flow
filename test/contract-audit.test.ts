@@ -7,6 +7,7 @@ import {
   renderContractAudit,
   validateContractAudit,
 } from '../scripts/generate-contract-audit';
+import { resolveContractProvenance, validateContractReferences } from '../src/contract-graph';
 
 const root = path.resolve(__dirname, '..');
 
@@ -19,6 +20,7 @@ test('contract audit projects all official Skills without creating a second auth
   assert.ok(audit.records.every((record) => record.evidenceRequired.length > 0));
   assert.deepEqual(validateContractAudit(audit, root), []);
   assert.match(renderContractAudit(audit), /# Contract audit/);
+  assert.match(renderContractAudit(audit), /Provenance/);
 });
 
 test('contract audit rejects duplicate IDs and unresolved structured references', () => {
@@ -36,4 +38,28 @@ test('contract audit rejects duplicate IDs and unresolved structured references'
   assert.ok(errors.some((error) => error.includes('unresolved test')));
   assert.ok(errors.some((error) => error.includes('unknown contract kind')));
   assert.ok(errors.some((error) => error.includes('missing handoff')));
+});
+
+test('contract provenance distinguishes direct, inherited, and undeclared fields', () => {
+  const provenance = resolveContractProvenance([
+    { name: 'base', frontmatter: 'requires: [spec-package]\nextends: null\n' },
+    { name: 'child', frontmatter: 'extends: base\n' },
+    { name: 'empty', frontmatter: '' },
+  ]);
+  assert.equal(provenance.get('base')?.requires?.source, 'direct');
+  assert.equal(provenance.get('child')?.requires?.source, 'inherited');
+  assert.equal(provenance.get('child')?.requires?.declaredBy, 'base');
+  assert.equal(provenance.get('empty')?.requires?.source, 'not-declared');
+});
+
+test('contract graph rejects unknown extends targets and cycles', () => {
+  const unknown = validateContractReferences([
+    { name: 'child', frontmatter: 'extends: missing\n' },
+  ]);
+  assert.ok(unknown.failures.some((failure) => failure.includes('extends references unknown')));
+  const cycle = validateContractReferences([
+    { name: 'a', frontmatter: 'extends: b\n' },
+    { name: 'b', frontmatter: 'extends: a\n' },
+  ]);
+  assert.deepEqual(cycle.cycles, [['a', 'b', 'a']]);
 });

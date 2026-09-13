@@ -51,6 +51,14 @@ function findCycle(adjacency: Map<string, string[]>): string[] | null {
 
 type SkillContract = { name: string; frontmatter: string };
 
+export type ContractFieldOrigin = {
+  source: 'direct' | 'inherited' | 'not-declared';
+  declaredBy?: string;
+  chain: string[];
+};
+
+export type ContractProvenance = Record<string, ContractFieldOrigin>;
+
 type ValidateContractOptions = {
   knownBaselineIds?: string[] | null;
 };
@@ -59,6 +67,69 @@ type ValidateContractResult = {
   failures: string[];
   cycles: string[][];
 };
+
+const CONTRACT_FIELDS = [
+  'extends',
+  'requires',
+  'consumes',
+  'produces',
+  'baseline',
+  'depends_on',
+  'conflicts',
+  'requires_cli',
+] as const;
+
+function directField(frontmatter: string, field: string): boolean {
+  return new RegExp(`^${field}:`, 'm').test(frontmatter);
+}
+
+function extendsTarget(frontmatter: string): string | null {
+  const match = frontmatter.match(/^extends:\s*(\S+)\s*$/m)?.[1];
+  return match && match !== 'null' ? match : null;
+}
+
+export function resolveContractProvenance(
+  skills: SkillContract[],
+  fields: readonly string[] = CONTRACT_FIELDS,
+): Map<string, ContractProvenance> {
+  const byName = new Map(skills.map((skill) => [skill.name, skill]));
+  const cache = new Map<string, ContractProvenance>();
+  const visit = (name: string, trail: string[]): ContractProvenance => {
+    const cached = cache.get(name);
+    if (cached) return cached;
+    const skill = byName.get(name);
+    const result: ContractProvenance = {};
+    if (!skill) {
+      for (const field of fields)
+        result[field] = { source: 'not-declared', chain: [...trail, name] };
+      return result;
+    }
+    const parent = extendsTarget(skill.frontmatter);
+    const inherited = parent && !trail.includes(name) ? visit(parent, [...trail, name]) : {};
+    for (const field of fields) {
+      if (directField(skill.frontmatter, field)) {
+        result[field] = { source: 'direct', declaredBy: name, chain: [name] };
+      } else if (inherited[field] && inherited[field].source !== 'not-declared') {
+        result[field] = inherited[field]?.declaredBy
+          ? {
+              source: 'inherited',
+              declaredBy: inherited[field].declaredBy,
+              chain: [name, ...(inherited[field].chain ?? [])],
+            }
+          : {
+              source: 'inherited',
+              chain: [name, ...(inherited[field]?.chain ?? [])],
+            };
+      } else {
+        result[field] = { source: 'not-declared', chain: [name] };
+      }
+    }
+    cache.set(name, result);
+    return result;
+  };
+  for (const skill of skills) visit(skill.name, []);
+  return cache;
+}
 
 function validateContractReferences(
   skills: SkillContract[],
@@ -76,9 +147,10 @@ function validateContractReferences(
       if (!names.has(target))
         failures.push(`${name}: depends_on references unknown skill '${target}'`);
 
-    const extendsMatch = frontmatter.match(/^extends:\s*(\S+)\s*$/m);
-    const extendsTarget = extendsMatch?.[1] && extendsMatch[1] !== 'null' ? extendsMatch[1] : null;
-    extendsGraph.set(name, extendsTarget ? [extendsTarget] : []);
+    const target = extendsTarget(frontmatter);
+    extendsGraph.set(name, target ? [target] : []);
+    if (target && !names.has(target))
+      failures.push(`${name}: extends references unknown skill '${target}'`);
 
     if (options.knownBaselineIds) {
       const baseline = parseContractArray(frontmatter, 'baseline') ?? [];

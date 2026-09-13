@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { VERSION } from '../src/paths';
@@ -10,10 +11,43 @@ import {
   materializeSourceProjection,
 } from './consumer-closure';
 
+export type EvidenceInput = {
+  path: string;
+  kind: 'file' | 'directory' | 'symlink' | 'revision' | 'command';
+  digest: string | null;
+  included: boolean;
+  exclusion?: string;
+};
+
+export type EvidenceRecord = {
+  record_id: string;
+  obligation: string;
+  sensor: string;
+  sensor_class: 'structural' | 'unitary' | 'integration' | 'contract' | 'black-box' | 'review';
+  oracle: string;
+  seam: string;
+  surface: string;
+  inputs: EvidenceInput[];
+  command: { text: string; exit_status?: number } | null;
+  observation: { summary: string; digest: string } | null;
+  result: 'pass' | 'fail' | 'inconclusive' | 'not-run';
+  freshness: 'current' | 'stale' | 'inconclusive';
+  confidence_limit: string;
+  affected_findings: string[];
+};
+
+export type TreeManifestEntry = {
+  path: string;
+  kind: 'file' | 'directory' | 'symlink' | 'unreadable';
+  digest: string | null;
+};
+
 export type EvidenceSnapshot = {
   revision: string;
   version: string;
   artifactIdentity: string;
+  treeManifest: TreeManifestEntry[];
+  records: EvidenceRecord[];
   findings: string[];
   inspectedPaths: string[];
   rules: string[];
@@ -46,11 +80,154 @@ export type ContractEvidenceDiff = {
   persistent: string[];
   resolved: string[];
   omitted: string[];
+  omittedFindings: string[];
   metadata: EvidenceMetadataDiff;
+};
+
+export type ClosureFindingDelta = {
+  identity: string;
+  status: 'new' | 'persistent' | 'resolved' | 'omitted';
 };
 
 function sorted(values: Iterable<string>): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+}
+
+function digest(value: string | Buffer): string {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function stableRecordId(
+  record: Pick<EvidenceRecord, 'obligation' | 'sensor' | 'seam' | 'surface'>,
+): string {
+  return [record.obligation, record.sensor, record.seam, record.surface]
+    .map((part) => part.trim().replaceAll('|', '/'))
+    .join('|');
+}
+
+export function sanitizeObservation(
+  value: string,
+  limit = 2048,
+): {
+  summary: string;
+  digest: string;
+  inconclusive: boolean;
+} {
+  const inconclusive = /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}/i.test(value);
+  const sanitized = value
+    .replace(/(authorization|token|password|secret)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+    .replace(/\/(?:home|Users)\/[^\s]+/g, '[PATH]')
+    .split('')
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return (code < 32 && ![9, 10, 13].includes(code)) || code === 127 ? '�' : character;
+    })
+    .join('');
+  const bounded =
+    Buffer.byteLength(sanitized) > limit
+      ? `${Buffer.from(sanitized).subarray(0, limit).toString('utf8')}…`
+      : sanitized;
+  return { summary: bounded, digest: digest(sanitized), inconclusive };
+}
+
+export function assessFreshness(
+  record: EvidenceRecord,
+  currentInputs: readonly EvidenceInput[],
+): EvidenceRecord['freshness'] {
+  if (record.inputs.some((input) => input.included && input.digest === null)) return 'inconclusive';
+  const current = new Map(currentInputs.map((input) => [input.path, input]));
+  for (const input of record.inputs) {
+    const observed = current.get(input.path);
+    if (observed?.included && observed.digest === null) return 'inconclusive';
+    if (!observed || (input.included && input.digest !== observed.digest)) return 'stale';
+  }
+  if (
+    currentInputs.some(
+      (input) => input.included && !record.inputs.some((item) => item.path === input.path),
+    )
+  )
+    return 'stale';
+  return 'current';
+}
+
+function treeManifest(root: string, paths: string[]): TreeManifestEntry[] {
+  return paths.map((relativePath) => {
+    const absolutePath = path.join(root, relativePath);
+    try {
+      const stat = fs.lstatSync(absolutePath);
+      if (stat.isSymbolicLink())
+        return {
+          path: relativePath,
+          kind: 'symlink',
+          digest: digest(fs.readlinkSync(absolutePath)),
+        };
+      if (stat.isDirectory()) return { path: relativePath, kind: 'directory', digest: null };
+      return {
+        path: relativePath,
+        kind: 'file',
+        digest: digest(fs.readFileSync(absolutePath)),
+      };
+    } catch {
+      return { path: relativePath, kind: 'unreadable', digest: null };
+    }
+  });
+}
+
+function recordForClosure(
+  result: ReturnType<typeof analyzeConsumerClosure>,
+  inputs: EvidenceInput[],
+  revision: string,
+): EvidenceRecord {
+  const observation = sanitizeObservation(
+    `${result.status}\n${result.findings.map((finding) => finding.normalizedReference).join('\n')}`,
+  );
+  const resultStatus = observation.inconclusive
+    ? 'inconclusive'
+    : result.status === 'PASS'
+      ? 'pass'
+      : result.status === 'FAIL'
+        ? 'fail'
+        : 'inconclusive';
+  const exitStatus = resultStatus === 'pass' ? 0 : resultStatus === 'fail' ? 1 : 2;
+  const record = {
+    obligation: 'consumer-closure',
+    sensor: 'consumer-closure',
+    sensor_class: 'contract' as const,
+    oracle: 'consumer closure rules',
+    seam: 'installed bundle references',
+    surface: 'source/dist/packed consumer projection',
+  };
+  return {
+    record_id: stableRecordId(record),
+    ...record,
+    inputs: [
+      ...inputs,
+      { path: '<revision>', kind: 'revision' as const, digest: revision, included: true },
+    ].sort((left, right) => left.path.localeCompare(right.path)),
+    command: { text: 'consumer closure inspection', exit_status: exitStatus },
+    observation: observation.inconclusive ? null : observation,
+    result: resultStatus,
+    freshness: observation.inconclusive ? 'inconclusive' : 'current',
+    confidence_limit:
+      'Mechanical closure only; semantic review and host execution remain separate.',
+    affected_findings: result.findings.map(
+      (finding) => `${finding.rule}|${finding.file}|${finding.normalizedReference}`,
+    ),
+  };
+}
+
+function projectionInputs(entries: readonly ConsumerClosureEntry[]): EvidenceInput[] {
+  return entries.map((entry) => ({
+    path: sourcePath(entry.relativePath),
+    kind: entry.kind === 'symlink' ? 'symlink' : 'file',
+    digest: entry.readError
+      ? null
+      : digest(entry.kind === 'symlink' ? (entry.target ?? '') : (entry.content ?? '')),
+    included: !entry.readError,
+    ...(entry.readError
+      ? { exclusion: 'unreadable projection input; record is inconclusive' }
+      : {}),
+  }));
 }
 
 function setDelta(before: string[], after: string[]): SetDelta {
@@ -84,6 +261,12 @@ export function diffContractEvidence(
 ): ContractEvidenceDiff {
   const baselineFindings = new Set(baseline.findings);
   const candidateFindings = new Set(candidate.findings);
+  const omittedFindings = sorted(
+    [...baselineFindings].filter((finding) => {
+      const file = finding.split('|')[1];
+      return !candidate.inspectedPaths.includes(file ?? '');
+    }),
+  );
   return {
     baseline: {
       ...baseline,
@@ -97,12 +280,28 @@ export function diffContractEvidence(
     },
     newFindings: sorted([...candidateFindings].filter((item) => !baselineFindings.has(item))),
     persistent: sorted([...candidateFindings].filter((item) => baselineFindings.has(item))),
-    resolved: sorted([...baselineFindings].filter((item) => !candidateFindings.has(item))),
+    resolved: sorted(
+      [...baselineFindings].filter((item) => {
+        if (candidateFindings.has(item) || omittedFindings.includes(item)) return false;
+        const file = item.split('|')[1];
+        return candidate.inspectedPaths.includes(file ?? '');
+      }),
+    ),
     omitted: sorted(
       baseline.inspectedPaths.filter((item) => !candidate.inspectedPaths.includes(item)),
     ),
+    omittedFindings,
     metadata: metadataDiff(baseline, candidate),
   };
+}
+
+export function closureFindingLedger(diff: ContractEvidenceDiff): ClosureFindingDelta[] {
+  return [
+    ...diff.newFindings.map((identity) => ({ identity, status: 'new' as const })),
+    ...diff.persistent.map((identity) => ({ identity, status: 'persistent' as const })),
+    ...diff.resolved.map((identity) => ({ identity, status: 'resolved' as const })),
+    ...diff.omittedFindings.map((identity) => ({ identity, status: 'omitted' as const })),
+  ];
 }
 
 function sourcePath(installedPath: string): string {
@@ -156,7 +355,14 @@ function snapshotMetadata(
   candidate: boolean,
 ): Omit<
   EvidenceSnapshot,
-  'revision' | 'version' | 'artifactIdentity' | 'findings' | 'inspectedPaths' | 'evidence'
+  | 'revision'
+  | 'version'
+  | 'artifactIdentity'
+  | 'findings'
+  | 'inspectedPaths'
+  | 'treeManifest'
+  | 'records'
+  | 'evidence'
 > {
   const paths = candidate ? changedPaths(root) : [];
   const authorityChanges = paths.filter(
@@ -200,10 +406,20 @@ function snapshotFromGit(root: string, revision: string): EvidenceSnapshot {
   const version = JSON.parse(
     execFileSync('git', ['show', `${revision}:package.json`], { cwd: root, encoding: 'utf8' }),
   ).version as string;
+  const closureInputs = entries.map((entry) => ({
+    path: sourcePath(entry.relativePath),
+    kind: 'revision' as const,
+    digest: entry.readError ? null : digest(entry.content ?? ''),
+    included: !entry.readError,
+    ...(entry.readError ? { exclusion: 'unreadable revision input; record is inconclusive' } : {}),
+  }));
+  const closure = recordForClosure(result, closureInputs, revision);
   return {
     revision,
     version,
     artifactIdentity: `sdd-agentic-flow@${version} installed bundle`,
+    treeManifest: [],
+    records: [closure],
     findings: result.findings.map(
       (finding) => `${finding.rule}|${finding.file}|${finding.normalizedReference}`,
     ),
@@ -214,13 +430,25 @@ function snapshotFromGit(root: string, revision: string): EvidenceSnapshot {
 }
 
 function candidateSnapshot(root: string): EvidenceSnapshot {
-  const result = analyzeConsumerClosure({ entries: materializeSourceProjection(root) });
+  const projection = materializeSourceProjection(root);
+  const result = analyzeConsumerClosure({ entries: projection });
+  const paths = changedPaths(root);
+  const manifest = treeManifest(root, paths);
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const closure = recordForClosure(result, projectionInputs(projection), revision);
+  const treeIdentity = digest(JSON.stringify(manifest));
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+    version: string;
+  };
   return {
-    revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
-    version: (
-      JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { version: string }
-    ).version,
-    artifactIdentity: `sdd-agentic-flow@${(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { version: string }).version} installed bundle`,
+    revision,
+    version: packageJson.version,
+    artifactIdentity: `sdd-agentic-flow@${packageJson.version} installed bundle; tree=${treeIdentity}`,
+    treeManifest: manifest,
+    records: [closure],
     findings: result.findings.map(
       (finding) => `${finding.rule}|${finding.file}|${finding.normalizedReference}`,
     ),
@@ -236,6 +464,7 @@ export function renderContractEvidenceDiff(diff: ContractEvidenceDiff): string {
     '',
     `Baseline: ${diff.baseline.version} / ${diff.baseline.revision}`,
     `Candidate: ${diff.candidate.version} / ${diff.candidate.revision}`,
+    `Candidate tree entries: ${diff.candidate.treeManifest.length}`,
     '',
     '## Findings',
     '',
@@ -243,6 +472,7 @@ export function renderContractEvidenceDiff(diff: ContractEvidenceDiff): string {
     `- Persistent: ${diff.persistent.join(', ') || 'none'}`,
     `- Resolved: ${diff.resolved.join(', ') || 'none'}`,
     `- Omitted: ${diff.omitted.join(', ') || 'none'}`,
+    `- Omitted findings (not resolved): ${diff.omittedFindings.join(', ') || 'none'}`,
     '',
     '## Metadata',
     '',
@@ -261,13 +491,26 @@ export function renderContractEvidenceDiff(diff: ContractEvidenceDiff): string {
     `- Candidate: ${diff.candidate.evidence}`,
     '- Host execution: not-run',
     '- Semantic authority review: not-run',
+    '',
+    '## Evidence records',
+    '',
+    '| Record | Result | Freshness | Inputs | Observation | Limit |',
+    '| --- | --- | --- | ---: | --- | --- |',
+    ...diff.candidate.records.map(
+      (record) =>
+        `| ${record.record_id} | ${record.result} | ${record.freshness} | ${record.inputs.length} | ${record.observation?.digest ?? 'not persisted'} | ${record.confidence_limit} |`,
+    ),
   ];
   return `${lines.join('\n')}\n`;
 }
 
 if (process.argv[1]?.endsWith('diff-contract-evidence.ts')) {
   const root = path.resolve(__dirname, '..');
-  const diff = diffContractEvidence(snapshotFromGit(root, 'HEAD'), candidateSnapshot(root));
+  const baseRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const diff = diffContractEvidence(snapshotFromGit(root, baseRevision), candidateSnapshot(root));
   const output =
     process.env.SAF_CONTRACT_DIFF_REPORT ||
     path.join(root, '.local', 'gmm', 'sdd-agentic-flow', `v${VERSION}-contract-diff.md`);

@@ -1,6 +1,13 @@
 # Roadmap
 
-Current release: v7.16.0
+Current release: v7.17.0
+
+- **v7.17.0:** Adds independent maintainer evidence records, deterministic tree/input manifests,
+  bounded sanitization, fail-closed freshness, explicit closure-versus-review finding boundaries,
+  and contract provenance for direct, inherited, and undeclared fields. Preserves the 12-Skill
+  roster, local-first behavior, zero runtime dependencies, and human release authority. No runtime
+  registry, public evidence schema, new CLI command, telemetry, implicit network behavior, or
+  mandatory host certification is added.
 
 - **v7.16.0:** Refines Skill discovery and conditional context, observable obligations and
   enumerated evidence coverage, and local review convergence through stable findings and

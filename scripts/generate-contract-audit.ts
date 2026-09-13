@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { type ContractProvenance, resolveContractProvenance } from '../src/contract-graph';
 import { CONTRACT_KINDS } from '../src/contract-kinds';
 import { VERSION } from '../src/paths';
 import { OFFICIAL_SKILLS } from '../src/skill-identity';
@@ -18,6 +19,7 @@ export type ContractAuditRecord = {
   handoff: string;
   writes: string;
   failureModes: string;
+  provenance: ContractProvenance;
   verificationStatus: 'structural-pass';
   semanticReview: 'required';
 };
@@ -60,6 +62,8 @@ export function validateContractAudit(audit: ContractAudit, root: string): strin
       errors.push(`contract audit: ${record.skill} missing write authority note`);
     if (!record.failureModes?.trim())
       errors.push(`contract audit: ${record.skill} missing failure modes`);
+    if (!record.provenance || typeof record.provenance !== 'object')
+      errors.push(`contract audit: ${record.skill} missing provenance`);
   }
   return errors.sort((left, right) => left.localeCompare(right));
 }
@@ -79,26 +83,34 @@ function stableId(skill: string): string {
 }
 
 export function buildContractAudit(root: string): ContractAudit {
-  const records = OFFICIAL_SKILLS.map((skill) => {
-    const sidecar = fs.readFileSync(path.join(root, 'skills', skill, 'saf-contract.yml'), 'utf8');
-    return {
-      id: stableId(skill),
-      skill,
-      authority: [`skills/${skill}/SKILL.md`, `skills/${skill}/saf-contract.yml`],
-      consumers: yamlArray(sidecar, 'consumes'),
-      produces: yamlArray(sidecar, 'produces'),
-      prerequisites: yamlArray(sidecar, 'requires'),
-      evidence: yamlArray(sidecar, 'baseline'),
-      evidenceRequired: yamlArray(sidecar, 'evidence_required'),
-      tests: ['scripts/check-skill-contracts.ts'],
-      handoff: 'As declared by the Skill output and handoff standard when continuity is required.',
-      writes: 'Human semantic review required; sidecars do not fully encode write authority.',
-      failureModes:
-        'Human semantic review required; structural parser validates declared contracts.',
-      verificationStatus: 'structural-pass' as const,
-      semanticReview: 'required' as const,
-    };
-  }).sort((left, right) => left.id.localeCompare(right.id));
+  const skills = OFFICIAL_SKILLS.map((name) => ({
+    name,
+    frontmatter: fs.readFileSync(path.join(root, 'skills', name, 'saf-contract.yml'), 'utf8'),
+  }));
+  const provenance = resolveContractProvenance(skills);
+  const records = skills
+    .map(({ name: skill, frontmatter: sidecar }) => {
+      return {
+        id: stableId(skill),
+        skill,
+        authority: [`skills/${skill}/SKILL.md`, `skills/${skill}/saf-contract.yml`],
+        consumers: yamlArray(sidecar, 'consumes'),
+        produces: yamlArray(sidecar, 'produces'),
+        prerequisites: yamlArray(sidecar, 'requires'),
+        evidence: yamlArray(sidecar, 'baseline'),
+        evidenceRequired: yamlArray(sidecar, 'evidence_required'),
+        tests: ['scripts/check-skill-contracts.ts'],
+        handoff:
+          'As declared by the Skill output and handoff standard when continuity is required.',
+        writes: 'Human semantic review required; sidecars do not fully encode write authority.',
+        failureModes:
+          'Human semantic review required; structural parser validates declared contracts.',
+        provenance: provenance.get(skill) ?? {},
+        verificationStatus: 'structural-pass' as const,
+        semanticReview: 'required' as const,
+      };
+    })
+    .sort((left, right) => left.id.localeCompare(right.id));
   return { records };
 }
 
@@ -108,12 +120,16 @@ export function renderContractAudit(audit: ContractAudit): string {
     '',
     'Status: structural projection; semantic review required.',
     '',
-    '| ID | Authority | Inputs | Outputs | Prerequisites | Evidence required | Tests | Semantic review |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| ID | Authority | Inputs | Outputs | Prerequisites | Evidence required | Provenance | Tests | Semantic review |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const record of audit.records) {
     lines.push(
-      `| ${record.id} | ${record.authority.join('<br>')} | ${record.consumers.join(', ') || 'none'} | ${record.produces.join(', ') || 'none'} | ${record.prerequisites.join(', ') || 'none'} | ${record.evidenceRequired.join(', ') || 'none'} | ${record.tests.join(', ')} | ${record.semanticReview} |`,
+      `| ${record.id} | ${record.authority.join('<br>')} | ${record.consumers.join(', ') || 'none'} | ${record.produces.join(', ') || 'none'} | ${record.prerequisites.join(', ') || 'none'} | ${record.evidenceRequired.join(', ') || 'none'} | ${Object.entries(
+        record.provenance,
+      )
+        .map(([field, origin]) => `${field}:${origin.source}`)
+        .join('<br>')} | ${record.tests.join(', ')} | ${record.semanticReview} |`,
     );
   }
   return `${lines.join('\n')}\n`;

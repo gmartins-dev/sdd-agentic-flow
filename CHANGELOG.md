@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.17.0
+
+- Add deterministic internal evidence records with tree manifests, bounded sanitization, and
+  fail-closed freshness classification for maintainer release evidence.
+- Keep mechanical consumer-closure findings separate from semantic review findings and preserve
+  explicit omission and invalidation states.
+- Add direct, inherited, and `not-declared` provenance to the contract audit while validating
+  unknown `extends` references and cycles without introducing a public schema or runtime registry.
+- Preserve the 12-Skill roster, zero runtime dependencies, local-first behavior, and human release
+  authority. Host execution and semantic authority review remain separate evidence limits.
+
 ## 7.16.0
 
 - Clarify Skill selection and conditional context, including authorized local PR preparation

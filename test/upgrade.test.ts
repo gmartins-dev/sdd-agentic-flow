@@ -7,11 +7,15 @@ import { OFFICIAL_SKILLS } from '../src/skill-identity';
 import {
   applyManagedPairs,
   checkForUpdate,
+  classifyManagedImpact,
   classifyManagedPairs,
   collectManagedPairs,
   detectExecutionMode,
   formatCheckReport,
+  managedHashesForPairs,
   readInstallProvenance,
+  runNpmGlobalInstall,
+  runNpmSkillsUpgrade,
   writeInstallProvenance,
 } from '../src/upgrade';
 
@@ -56,7 +60,7 @@ test('install provenance uses canonical ordering and atomic-target shape', () =>
     content,
     /^package: sdd-agentic-flow\npackage_version: 6\.0\.1\nschema: saf-install-provenance\/v3\n/,
   );
-  assert.match(content, /\nmanaged_paths:\n {2}- saf-route\/SKILL\.md\n$/);
+  assert.match(content, /\nmanaged_paths:\n {2}- saf-route\/SKILL\.md\nmanaged_hashes:\n$/);
   assert.equal(fs.existsSync(`${file}.tmp`), false);
   fs.rmSync(root, { recursive: true, force: true });
 });
@@ -78,6 +82,65 @@ test('managed refresh never silently overwrites differing files', () => {
   assert.equal(overwritten.refreshed, 1);
   assert.notEqual(fs.readFileSync(first.dest, 'utf8'), 'locally-modified\n');
   fs.rmSync(target, { recursive: true, force: true });
+});
+
+test('managed impact separates package changes from local-only edits', () => {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-impact-'));
+  const pairs = collectManagedPairs(PACKAGE_ROOT, OFFICIAL_SKILLS, target);
+  const first = pairs[0];
+  assert.ok(first);
+  const provenanceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-impact-provenance-'));
+  writeInstallProvenance(provenanceRoot, {
+    packageVersion: '8.0.0',
+    managedSkills: [first.rel.split(path.sep)[0] || 'saf-route'],
+    managedPaths: [first.rel],
+    managedHashes: managedHashesForPairs([first]),
+  });
+  const local = classifyManagedImpact([first], readInstallProvenance(provenanceRoot));
+  assert.equal(local.localOnly.length, 1);
+  assert.equal(local.packageChanged.length, 0);
+
+  const changed = classifyManagedImpact([first], {
+    ...readInstallProvenance(provenanceRoot)!,
+    managedHashes: { [first.rel]: '0'.repeat(64) },
+  });
+  assert.equal(changed.packageChanged.length, 1);
+  assert.equal(changed.localOnly.length, 0);
+
+  const unknown = classifyManagedImpact([first], null);
+  assert.equal(unknown.unknown.length, 1);
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.rmSync(provenanceRoot, { recursive: true, force: true });
+});
+
+test('npm upgrade commands pin the checked version and preserve the supplied environment', () => {
+  const calls: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv }> = [];
+  const execFileSyncImpl = ((
+    _file: string,
+    args: readonly string[],
+    options: { env?: NodeJS.ProcessEnv },
+  ) => {
+    calls.push({ args, env: options.env ?? {} });
+    return Buffer.from('');
+  }) as typeof import('node:child_process').execFileSync;
+  const env = { PATH: '/test/bin', SDD_AGENTIC_FLOW_TEST_NPM_INSTALL: 'run' };
+
+  runNpmGlobalInstall({ version: '8.1.0', execFileSyncImpl, env });
+  runNpmSkillsUpgrade({ version: '8.1.0', execFileSyncImpl, env });
+
+  assert.deepEqual(
+    calls.map((call) => call.args),
+    [
+      ['install', '-g', 'sdd-agentic-flow@8.1.0'],
+      ['exec', '--yes', 'sdd-agentic-flow@8.1.0', '--', 'upgrade', '--skills-only'],
+    ],
+  );
+  assert.equal(calls[0]?.env, env);
+  assert.equal(calls[1]?.env, env);
+  assert.throws(
+    () => runNpmSkillsUpgrade({ version: 'latest', execFileSyncImpl, env }),
+    /invalid package version/,
+  );
 });
 
 test('formatCheckReport and checkForUpdate distinguish offline from up-to-date', async () => {

@@ -6,9 +6,13 @@ import path from 'node:path';
 import test from 'node:test';
 
 const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
+const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-v5-cli-home-'));
 
 function run(args: string[]) {
-  return spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
+  return spawnSync(process.execPath, [cli, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: testHome },
+  });
 }
 
 test('rejects removed top-level commands before domain work', () => {
@@ -70,6 +74,21 @@ test('install help documents the supported non-interactive grammar', () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /--plan/);
   assert.match(result.stdout, /install .*--plan\|--yes/);
+});
+
+test('upgrade plan pins the checked version and remains read-only', () => {
+  const result = spawnSync(process.execPath, [cli, 'upgrade', '--plan'], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      HOME: testHome,
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0',
+    },
+  });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Latest CLI: 8\.2\.0/);
+  assert.match(result.stdout, /npm exec --yes sdd-agentic-flow@8\.2\.0 -- upgrade --skills-only/);
+  assert.match(result.stdout, /No changes were made\./);
 });
 
 test('init plan and doctor use machine schema 2 without bundle-selection data', () => {

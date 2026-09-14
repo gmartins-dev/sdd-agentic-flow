@@ -232,7 +232,7 @@ completion bash|zsh|fish              Print shell completion
 help [command]                        Show the command reference, or one command's usage
 ```
 
-`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. See [the trust model](docs/trust-model.md) and [the compatibility policy](docs/compatibility-promise.md).
+`doctor --json` writes parseable JSON only. `doctor --smoke` validates init, install, preservation, and doctor in an isolated temporary directory. `doctor --check-updates` is a diagnostic update check; `upgrade --check` is the upgrade-specific read-only check; `upgrade` confirms before mutating. A confirmed upgrade runs the verified package version and reconciles only missing or changed skill/shared files. See [the trust model](docs/trust-model.md) and [the compatibility policy](docs/compatibility-promise.md).
 
 `install` defaults to `--scope user` (writes only to global skill directories). Pass `--scope project --adoption-mode team` to install into `.agents/skills/` inside the project; project scope requires persisted or explicit Team adoption. Use `config installation --plan` to preview target paths. See [installation scope](docs/installation-scope.md).
 
@@ -315,7 +315,7 @@ For decision help, see [choosing a feature profile](docs/guides/choosing-a-featu
 
 ## Safety boundaries
 
-The CLI does not call external APIs, require a tracker, sync remotely, or perform Git/release operations by default. Opt-in update paths (`doctor --check-updates`, `upgrade`, welcome ask) never mutate without confirmation; `upgrade` may run `npm install -g` or refresh skills only after you say yes. This toolkit is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them. See [safety model](docs/safety-model.md).
+The CLI does not call external APIs, require a tracker, sync remotely, or perform Git/release operations by default. Opt-in update paths (`doctor --check-updates`, `upgrade`, welcome ask) never mutate without confirmation. A confirmed `upgrade` uses the exact registry version it checked, updates the global package only when the current installation is global, and reconciles only missing or changed managed skill/shared files. Divergent local files remain protected unless you explicitly confirm overwriting them. This toolkit is not a compliance, security, or production-readiness guarantee. Review outputs and local changes before accepting them. See [safety model](docs/safety-model.md).
 
 ## Publishing
 

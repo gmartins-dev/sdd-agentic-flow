@@ -31,6 +31,7 @@ import { OFFICIAL_SKILLS } from './skill-identity';
 import { terminalNote, terminalSpinner } from './terminal-ui';
 import type { DisplayMode } from './ui';
 import {
+  managedHashesForPairs,
   readInstallProvenance,
   removeManagedTargetContent,
   writeInstallProvenance,
@@ -366,6 +367,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       target: plan.targetIds[index] || 'project-agents',
       managedSkills: [...OFFICIAL_SKILLS],
       managedPaths: targetReport.pairs.map((pair) => pair.rel),
+      managedHashes: managedHashesForPairs(targetReport.pairs),
       applyState: 'applying',
     });
     const progress = terminalSpinner({ mode: options.mode || 'human-plain' });
@@ -385,6 +387,7 @@ function install(cwd: string, options: InstallCommandOptions = {}): boolean {
       target: plan.targetIds[index] || 'project-agents',
       managedSkills: [...OFFICIAL_SKILLS],
       managedPaths: targetReport.pairs.map((pair) => pair.rel),
+      managedHashes: managedHashesForPairs(targetReport.pairs),
       applyState: 'complete',
     });
   }

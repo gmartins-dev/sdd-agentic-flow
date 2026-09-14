@@ -1058,7 +1058,9 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
             ? 'error'
             : operationStatus === 'WARN'
               ? 'warning'
-              : 'success';
+              : operationStatus === 'INFO'
+                ? 'informational'
+                : 'success';
     const summary =
       state === 'error' && result && typeof result === 'object' && 'error' in result
         ? String(result.error)
@@ -1070,13 +1072,15 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
               : String(result.errors)
             : state === 'cancelled'
               ? t(locale, 'setup.cancelled')
-              : operationStatus === 'FAIL' || operationStatus === 'WARN'
-                ? operationStatus === 'FAIL'
-                  ? t(locale, 'doctor.needsAction')
-                  : t(locale, 'doctor.related')
-                : locale === 'pt-BR'
-                  ? 'operação concluída'
-                  : 'operation completed';
+              : result && typeof result === 'object' && 'message' in result
+                ? String(result.message)
+                : operationStatus === 'FAIL' || operationStatus === 'WARN'
+                  ? operationStatus === 'FAIL'
+                    ? t(locale, 'doctor.needsAction')
+                    : t(locale, 'doctor.related')
+                  : locale === 'pt-BR'
+                    ? 'operação concluída'
+                    : 'operation completed';
     process.stdout.write(renderOperationResult(title, state, summary, locale));
     const next = await choose(t(locale, 'menu.question'), [
       { value: 'back', label: t(locale, 'menu.back'), action: true },

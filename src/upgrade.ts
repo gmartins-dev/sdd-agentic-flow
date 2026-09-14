@@ -3,12 +3,14 @@
 //   upgrade --plan         registry + concrete plan (never mutates)
 //   upgrade --skills-only  no registry; refresh skills from the executing package only
 //   upgrade (default)      interactive confirms on human TTY; machine = check-only
-// See docs/trust-model.md and docs/upgrading.md.
+// See docs/trust-model.md and README.md's upgrade command reference.
 
 import { type ExecFileSyncOptionsWithStringEncoding, execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { checkForUpdate, type UpdateCheckResult } from './update-check';
+import { parseVersion } from './version-compat';
 
 const PROVENANCE_REL = path.join('sdd-agentic-flow-shared', 'install-provenance.yml');
 const CURRENT_PROVENANCE_SCHEMA = 'saf-install-provenance/v3';
@@ -24,6 +26,7 @@ type InstallProvenance = {
   target?: string;
   managedSkills?: string[];
   managedPaths?: string[];
+  managedHashes?: Record<string, string>;
   applyState?: 'applying' | 'complete';
 };
 
@@ -36,6 +39,7 @@ type ProvenanceInput =
       skillIdentity?: string;
       managedSkills?: string[];
       managedPaths?: string[];
+      managedHashes?: Record<string, string>;
       applyState?: 'applying' | 'complete';
     };
 
@@ -53,6 +57,12 @@ type ClassifiedPairs = {
   differs: ManagedPair[];
 };
 
+type ClassifiedImpact = {
+  packageChanged: ManagedPair[];
+  localOnly: ManagedPair[];
+  unknown: ManagedPair[];
+};
+
 type ApplySummary = {
   installed: number;
   refreshed: number;
@@ -63,7 +73,7 @@ type ApplySummary = {
 type NpmInstallOptions = {
   execFileSyncImpl?: typeof execFileSync;
   env?: NodeJS.ProcessEnv;
-  packageName?: string;
+  version: string;
 };
 
 type NpmInstallError = Error & { status?: number };
@@ -144,6 +154,10 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
     ...(value.managedSkills || []).map((skill) => `  - ${skill}`),
     'managed_paths:',
     ...(value.managedPaths || value.managedSkills || []).map((managedPath) => `  - ${managedPath}`),
+    'managed_hashes:',
+    ...Object.entries(value.managedHashes || {})
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([managedPath, hash]) => `  ${managedPath}: ${hash}`),
     '',
   ];
   const temporary = `${dest}.tmp`;
@@ -182,6 +196,23 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
     };
     const managedSkills = list('managed_skills');
     const managedPaths = list('managed_paths');
+    const managedHashes: Record<string, string> = {};
+    let readingHashes = false;
+    for (const line of text.split(/\r?\n/)) {
+      if (line.trim() === 'managed_hashes:') {
+        readingHashes = true;
+        continue;
+      }
+      if (!readingHashes) continue;
+      const match = line.match(/^\s{2}([^:]+):\s*(\S+)$/);
+      if (!match) {
+        if (line.trim() && !/^\s/.test(line)) readingHashes = false;
+        continue;
+      }
+      const relative = match[1]?.trim();
+      const hash = match[2];
+      if (relative && hash) managedHashes[relative] = hash;
+    }
     if (
       managedSkills.some((skill) => !/^[a-z0-9][a-z0-9-]*$/.test(skill)) ||
       managedPaths.some((relative) => {
@@ -192,11 +223,22 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
           parts.some((part) => !part || part === '.' || part === '..') ||
           (parts[0] !== 'sdd-agentic-flow-shared' && !managedSkills.includes(parts[0] ?? ''))
         );
+      }) ||
+      Object.entries(managedHashes).some(([relative, hash]) => {
+        const parts = relative.split(/[\\/]/);
+        return (
+          !/^[a-f0-9]{64}$/.test(hash) ||
+          path.isAbsolute(relative) ||
+          path.win32.isAbsolute(relative) ||
+          parts.some((part) => !part || part === '.' || part === '..') ||
+          (parts[0] !== 'sdd-agentic-flow-shared' && !managedSkills.includes(parts[0] ?? ''))
+        );
       })
     )
       throw new Error('unsafe installation provenance paths; preserve and repair the metadata');
     if (managedSkills.length) provenance.managedSkills = managedSkills;
     if (managedPaths.length) provenance.managedPaths = managedPaths;
+    if (Object.keys(managedHashes).length) provenance.managedHashes = managedHashes;
     return provenance;
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('unsafe installation provenance'))
@@ -309,6 +351,34 @@ function classifyManagedPairs(pairs: ManagedPair[]): ClassifiedPairs {
   return { missing, identical, differs };
 }
 
+function sourceHash(file: string): string {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function managedHashesForPairs(pairs: readonly ManagedPair[]): Record<string, string> {
+  return Object.fromEntries(pairs.map((pair) => [pair.rel, sourceHash(pair.source)]));
+}
+
+function classifyManagedImpact(
+  pairs: readonly ManagedPair[],
+  provenance: InstallProvenance | null,
+): ClassifiedImpact {
+  const packageChanged: ManagedPair[] = [];
+  const localOnly: ManagedPair[] = [];
+  const unknown: ManagedPair[] = [];
+  for (const pair of pairs) {
+    const previousHash = provenance?.managedHashes?.[pair.rel];
+    if (!previousHash) {
+      unknown.push(pair);
+    } else if (previousHash === sourceHash(pair.source)) {
+      localOnly.push(pair);
+    } else {
+      packageChanged.push(pair);
+    }
+  }
+  return { packageChanged, localOnly, unknown };
+}
+
 function applyManagedPairs(
   pairs: ManagedPair[],
   { overwriteDiffers = false }: { overwriteDiffers?: boolean } = {},
@@ -341,21 +411,45 @@ function applyManagedPairs(
   return summary;
 }
 
+function packageSpec(version: string): string {
+  if (!parseVersion(version)) throw new Error(`invalid package version: ${version}`);
+  return `sdd-agentic-flow@${version}`;
+}
+
 function runNpmGlobalInstall({
   execFileSyncImpl = execFileSync,
   env = process.env,
-  packageName = 'sdd-agentic-flow@latest',
-}: NpmInstallOptions = {}): { simulated: boolean } {
+  version,
+}: NpmInstallOptions): { simulated: boolean } {
   if (env.SDD_AGENTIC_FLOW_TEST_NPM_INSTALL === 'fail') {
     const error: NpmInstallError = new Error('simulated npm install failure');
     error.status = 1;
     throw error;
   }
   if (env.SDD_AGENTIC_FLOW_TEST_NPM_INSTALL === 'ok') return { simulated: true };
-  execFileSyncImpl('npm', ['install', '-g', packageName], {
+  execFileSyncImpl('npm', ['install', '-g', packageSpec(version)], {
     stdio: 'inherit',
-    env: process.env,
+    env,
   });
+  return { simulated: false };
+}
+
+function runNpmSkillsUpgrade({
+  version,
+  execFileSyncImpl = execFileSync,
+  env = process.env,
+}: NpmInstallOptions): { simulated: boolean } {
+  if (env.SDD_AGENTIC_FLOW_TEST_NPM_INSTALL === 'fail') {
+    const error: NpmInstallError = new Error('simulated npm skills upgrade failure');
+    error.status = 1;
+    throw error;
+  }
+  if (env.SDD_AGENTIC_FLOW_TEST_NPM_INSTALL === 'ok') return { simulated: true };
+  execFileSyncImpl(
+    'npm',
+    ['exec', '--yes', packageSpec(version), '--', 'upgrade', '--skills-only'],
+    { stdio: 'inherit', env },
+  );
   return { simulated: false };
 }
 
@@ -384,17 +478,20 @@ export {
   applyManagedPairs,
   assertManagedDestination,
   checkForUpdate,
+  classifyManagedImpact,
   classifyManagedPairs,
   classifyPair,
   collectManagedPairs,
   detectExecutionMode,
   formatCheckReport,
+  managedHashesForPairs,
   managedRemovalPaths,
   PROVENANCE_REL,
   provenancePath,
   readInstallProvenance,
   removeManagedTargetContent,
   runNpmGlobalInstall,
+  runNpmSkillsUpgrade,
   writeInstallProvenance,
 };
 

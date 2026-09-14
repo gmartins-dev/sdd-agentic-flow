@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v8.1.0
+Current release: v8.1.1
+
+- **v8.1.1:** Makes CLI upgrades pin the verified package version and reconcile only affected managed
+  files. Preserves locally modified skills when package sources are unchanged, updates skills when
+  the published bundle changes, and clarifies upgrade status, provenance, and read-only planning.
 
 - **v8.1.0:** Adds compact v8 evidence references and canonical-artifact reconciliation for resumed
   task work, required continuity corpus coverage, and the published-source TypeScript boundary in

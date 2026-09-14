@@ -183,7 +183,7 @@ bounded previous state and is not rewritten until a reviewed mutation.
 ### Install provenance / saf-install-provenance/v3
 
 `src/upgrade.ts` writes schema, package/version identity, apply state, scope/target, skill identity,
-and lists for managed skills and managed paths. It emits stable field/list ordering and a
+lists for managed skills and managed paths, and source hashes for managed files. It emits stable field/list ordering and a
 final newline, and persists through a temporary file followed by rename. The reader recognizes
 supported scalars/lists and ignores unsupported content rather than claiming general YAML parsing.
 The supported-field guarantee is **semantic** and the canonical serialization is **structural**.

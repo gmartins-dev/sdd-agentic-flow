@@ -68,12 +68,15 @@ import { purgeKnownSafState, uninstall } from './uninstall';
 import { checkForUpdate } from './update-check';
 import {
   applyManagedPairs,
+  classifyManagedImpact,
   classifyManagedPairs,
   collectManagedPairs,
   detectExecutionMode,
   formatCheckReport,
+  managedHashesForPairs,
   readInstallProvenance,
   runNpmGlobalInstall,
+  runNpmSkillsUpgrade,
   writeInstallProvenance,
 } from './upgrade';
 import { applyWorkspaceInitialization, planWorkspaceInitialization } from './workspace';
@@ -434,32 +437,38 @@ async function welcome(cwd: string, options: CommandOptions = {}) {
 
 function refreshSkillsAtTarget(
   target: string,
-  { overwriteDiffers = false }: { overwriteDiffers?: boolean } = {},
+  {
+    overwriteDiffers = false,
+    overwritePaths,
+  }: { overwriteDiffers?: boolean; overwritePaths?: ReadonlySet<string> } = {},
 ) {
   const pairs = collectManagedPairs(PACKAGE_ROOT, OFFICIAL_SKILLS, target);
   const classified = classifyManagedPairs(pairs);
   const missing = applyManagedPairs(classified.missing, { overwriteDiffers: true });
+  const eligibleDiffers = classified.differs.filter(
+    (pair) => !overwritePaths || overwritePaths.has(pair.rel),
+  );
   const changed = overwriteDiffers
-    ? applyManagedPairs(classified.differs, { overwriteDiffers: true })
+    ? applyManagedPairs(eligibleDiffers, { overwriteDiffers: true })
     : {
         installed: 0,
         refreshed: 0,
         skippedIdentical: 0,
-        skippedDiffers: classified.differs.length,
+        skippedDiffers: eligibleDiffers.length,
       };
   const totals = {
     installed: missing.installed,
     refreshed: changed.refreshed,
     skippedIdentical: classified.identical.length,
-    skippedDiffers: changed.skippedDiffers,
+    skippedDiffers: changed.skippedDiffers + classified.differs.length - eligibleDiffers.length,
     differs: classified.differs.map((pair) => pair.rel),
   };
-  if (totals.installed + totals.refreshed > 0)
-    writeInstallProvenance(target, {
-      packageVersion: VERSION,
-      managedSkills: [...OFFICIAL_SKILLS],
-      managedPaths: pairs.map((pair) => pair.rel),
-    });
+  writeInstallProvenance(target, {
+    packageVersion: VERSION,
+    managedSkills: [...OFFICIAL_SKILLS],
+    managedPaths: pairs.map((pair) => pair.rel),
+    managedHashes: managedHashesForPairs(pairs),
+  });
   return totals;
 }
 
@@ -483,11 +492,25 @@ async function refreshInstalledSkills(cwd: string, options: CommandOptions = {})
     }
   }
 
-  const allDiffers = targets.flatMap((target) =>
-    classifyManagedPairs(collectManagedPairs(PACKAGE_ROOT, OFFICIAL_SKILLS, target)).differs.map(
-      (pair) => `${target}: ${pair.rel}`,
-    ),
+  const targetPlans = targets.map((target) => {
+    const provenance = readInstallProvenance(target);
+    const pairs = collectManagedPairs(PACKAGE_ROOT, OFFICIAL_SKILLS, target);
+    const classified = classifyManagedPairs(pairs);
+    const impact = classifyManagedImpact(classified.differs, provenance);
+    return {
+      target,
+      overwritePaths: new Set(
+        [...impact.packageChanged, ...impact.unknown].map((pair) => pair.rel),
+      ),
+      affected: [...impact.packageChanged, ...impact.unknown],
+      localOnly: impact.localOnly,
+    };
+  });
+  const allDiffers = targetPlans.flatMap(({ target, affected }) =>
+    affected.map((pair) => `${target}: ${pair.rel}`),
   );
+  const localOnlyCount = targetPlans.reduce((total, plan) => total + plan.localOnly.length, 0);
+  if (localOnlyCount) log('INFO', `${localOnlyCount} locally changed managed file(s) preserved`);
   let overwriteDiffers = false;
   if (allDiffers.length) {
     log('WARN', `${allDiffers.length} managed file(s) differ from the bundled package`);
@@ -501,19 +524,28 @@ async function refreshInstalledSkills(cwd: string, options: CommandOptions = {})
 
   let wrote = 0;
   let skippedDiffers = 0;
-  for (const target of targets) {
-    const summary = refreshSkillsAtTarget(target, { overwriteDiffers });
+  for (const plan of targetPlans) {
+    const summary = refreshSkillsAtTarget(plan.target, {
+      overwriteDiffers,
+      overwritePaths: plan.overwritePaths,
+    });
     wrote += summary.installed + summary.refreshed;
     skippedDiffers += summary.skippedDiffers;
     log(
       'PASS',
-      `refreshed official bundle at ${target}: ${summary.installed} new, ${summary.refreshed} updated, ${summary.skippedIdentical} identical, ${summary.skippedDiffers} differed (skipped)`,
+      `reconciled official bundle at ${plan.target}: ${summary.installed} new, ${summary.refreshed} updated, ${summary.skippedIdentical} identical, ${summary.skippedDiffers} differed (skipped)`,
     );
   }
   return { ok: true, wrote, skippedDiffers };
 }
 
-async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
+type UpgradeOutcome = {
+  status: 'PASS' | 'WARN' | 'INFO' | 'FAIL';
+  message: string;
+  cancelled?: boolean;
+};
+
+async function upgradeCommand(cwd: string, options: CommandOptions = {}): Promise<UpgradeOutcome> {
   const mode = resolveMode({ quiet: options.quiet, ascii: Boolean(options.ascii) });
   const interactive = canPromptInteractively(mode) && !options.check && !options.plan;
   const execMode = detectExecutionMode(PACKAGE_ROOT);
@@ -524,14 +556,24 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
         `Execution mode: ${execMode}\n` +
           `Registry check: none (--skills-only)\n` +
           `CLI package: unchanged\n` +
-          `Plan:\n  1. Refresh the official bundle from the currently executing package (${VERSION})\n\n` +
-          'Mutations (if applied):\n  managed skill files (after confirms / diff rules)\n\n' +
+          `Plan:\n  1. Reconcile the official bundle from the currently executing package (${VERSION})\n\n` +
+          'Mutations (if applied):\n  missing or changed managed skill files (after confirms / diff rules)\n\n' +
           'No changes were made.\n',
       );
-      return;
+      return { status: 'INFO', message: 'No changes were made.' };
     }
-    await refreshInstalledSkills(cwd, { mode, interactive, homeDir: options.homeDir });
-    return;
+    const refreshed = await refreshInstalledSkills(cwd, {
+      mode,
+      interactive,
+      homeDir: options.homeDir,
+    });
+    if (!refreshed.ok) return { status: 'FAIL', message: 'Skill reconciliation was blocked.' };
+    return {
+      status: refreshed.skippedDiffers ? 'WARN' : 'PASS',
+      message: refreshed.wrote
+        ? `Reconciled ${refreshed.wrote} managed file(s).`
+        : 'Installed skills are already current.',
+    };
   }
 
   const result = await checkForUpdate({ currentVersion: VERSION });
@@ -543,7 +585,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
         `\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade')}\n`,
       );
       process.exitCode = 1;
-      return;
+      return { status: 'INFO', message: 'Unable to check for updates.' };
     }
     if (!options.check && result.updateAvailable) {
       process.stdout.write(
@@ -551,7 +593,10 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
           `Run \`${renderCliCommand('upgrade')}\` in a TTY to confirm CLI/skills updates.\n`,
       );
     }
-    return;
+    return {
+      status: result.updateAvailable ? 'WARN' : 'PASS',
+      message: result.message,
+    };
   }
 
   if (options.plan) {
@@ -561,7 +606,7 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
         `\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade', '--plan')}\n`,
       );
       process.exitCode = 1;
-      return;
+      return { status: 'INFO', message: 'Unable to check for updates.' };
     }
     process.stdout.write(
       `Current CLI: ${VERSION}\n` +
@@ -574,88 +619,68 @@ async function upgradeCommand(cwd: string, options: CommandOptions = {}) {
         process.stdout.write(`  1. Upgrade CLI -> ${result.latest} (npm install -g)\n`);
       else
         process.stdout.write(
-          `  1. Re-run via npx/local: npx sdd-agentic-flow@latest (no in-process self-replace)\n`,
+          `  1. Run the verified package: npm exec --yes sdd-agentic-flow@${result.latest} -- upgrade --skills-only\n`,
         );
-      process.stdout.write('  2. Refresh the installed official bundle\n');
+      process.stdout.write(
+        '  2. Reconcile only missing or changed skill/shared files from the new package\n',
+      );
     } else {
       process.stdout.write('  1. CLI already up to date — no package install\n');
-      process.stdout.write('  2. Optional official-bundle refresh from current package\n');
+      process.stdout.write('  2. Reconcile skills only when files are missing or changed\n');
     }
     process.stdout.write(
       '\nMutations (if applied):\n  npm global installation (global mode only)\n' +
         '  managed skill files (after confirms / diff rules)\n\nNo changes were made.\n',
     );
-    return;
+    return { status: 'INFO', message: 'No changes were made.' };
   }
 
-  // Interactive path
   if (!result.reachable) {
     log('WARN', 'unable to check for updates');
     process.stdout.write(
       `\nReason:\n  network unavailable or registry unreachable\n\nNo changes were made.\n\nTo retry:\n  ${renderCliCommand('upgrade')}\n`,
     );
-    return;
+    return { status: 'INFO', message: 'Unable to check for updates.' };
   }
 
-  if (!result.updateAvailable) {
+  if (!result.updateAvailable || !result.latest) {
     log('PASS', `up to date (${VERSION})`);
     process.stdout.write('\nNo update is required.\n');
     process.stdout.write(
-      `To refresh skills deliberately, run ${renderCliCommand('upgrade', '--skills-only')}.\n`,
+      `To reconcile skills deliberately, run ${renderCliCommand('upgrade', '--skills-only')}.\n`,
     );
-    return;
+    return { status: 'PASS', message: 'No update is required.' };
   }
 
   log('WARN', `update available: ${VERSION} -> ${result.latest}`);
-  let cliOk = null;
-  const upgradeCli = await askYesNo(`Upgrade CLI to ${result.latest} now?`);
-  if (upgradeCli) {
+  if (!(await askYesNo(`Upgrade CLI to ${result.latest} and reconcile affected skills now?`))) {
+    return {
+      status: 'INFO',
+      cancelled: true,
+      message: 'CLI and skill updates were cancelled; no changes were made.',
+    };
+  }
+
+  try {
     if (execMode === 'global') {
-      try {
-        process.stdout.write(`Updating the global SAF installation...\n`);
-        runNpmGlobalInstall();
-        log('PASS', `CLI upgraded toward ${result.latest}`);
-        cliOk = true;
-      } catch (error) {
-        cliOk = false;
-        fail(`CLI upgrade failed: ${errorMessage(error)}`, {
-          reason: 'npm install -g exited non-zero.',
-          try: [
-            'npm install -g sdd-agentic-flow@latest',
-            renderCliCommand('upgrade', '--skills-only'),
-          ],
-        });
-      }
-    } else {
-      process.stdout.write(
-        '\nThis session is running via npx/local, so the CLI cannot self-replace in-place.\n\n' +
-          'Run:\n  npx sdd-agentic-flow@latest\n\n' +
-          'Then, if you want skills refreshed from that newer package:\n' +
-          '  npx sdd-agentic-flow@latest upgrade --skills-only\n',
-      );
-      return;
+      process.stdout.write('Updating the global SAF installation...\n');
+      runNpmGlobalInstall({ version: result.latest });
     }
-  }
-
-  const refreshSkills = await askYesNo('Refresh installed skills from this package?');
-  let skillsOk = null;
-  if (refreshSkills) {
-    try {
-      await refreshInstalledSkills(cwd, { mode, interactive: true });
-      skillsOk = true;
-    } catch (error) {
-      skillsOk = false;
-      log('FAIL', `skill refresh failed: ${errorMessage(error)}`);
-    }
-  }
-
-  if (cliOk === true && skillsOk === false) {
-    process.stdout.write(
-      '\nCLI upgrade succeeded.\nSkill refresh failed.\n\n' +
-        `Result:\n  CLI: toward ${result.latest}\n  skills: previous / partial\n\n` +
-        `No automatic rollback was attempted.\n\nRecovery:\n  ${renderCliCommand('upgrade', '--skills-only')}\n`,
-    );
-    process.exitCode = 1;
+    runNpmSkillsUpgrade({ version: result.latest });
+    return {
+      status: 'PASS',
+      message: `CLI ${result.latest} is active and affected skills were reconciled selectively.`,
+    };
+  } catch (error) {
+    const message = errorMessage(error);
+    fail(`CLI upgrade failed: ${message}`, {
+      reason: 'The verified npm package or its selective skill reconciliation exited non-zero.',
+      try: [
+        `npm exec --yes sdd-agentic-flow@${result.latest} -- upgrade --skills-only`,
+        renderCliCommand('upgrade', '--plan'),
+      ],
+    });
+    return { status: 'FAIL', message };
   }
 }
 
@@ -1110,13 +1135,14 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
         try: [renderCliCommand('upgrade', '--check'), renderCliCommand('upgrade', '--skills-only')],
       });
     if (args.includes('--check') && args.includes('--skills-only')) return;
-    await upgradeCommand(cwd, {
+    const upgradeResult = await upgradeCommand(cwd, {
       check: args.includes('--check'),
       plan: args.includes('--plan'),
       skillsOnly: args.includes('--skills-only'),
       quiet: args.includes('--quiet'),
       ascii,
     });
+    if (upgradeResult.status === 'FAIL') process.exitCode = 1;
   } else if (command === 'autonomous-resume') {
     const usage = USAGE['autonomous-resume'];
     if (args.includes('--help')) {

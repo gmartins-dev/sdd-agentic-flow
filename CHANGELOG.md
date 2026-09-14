@@ -1,5 +1,12 @@
 # Changelog
 
+## 8.1.1
+
+- Make CLI upgrades pin the verified package version and reconcile only affected managed files.
+- Preserve locally modified skills when package sources are unchanged, while updating skills when
+  the published bundle changes.
+- Clarify upgrade status, provenance, and read-only planning behavior across supported contexts.
+
 ## 8.1.0
 
 - Add bounded continuity for resumed tasks through compact v8 evidence-report references,

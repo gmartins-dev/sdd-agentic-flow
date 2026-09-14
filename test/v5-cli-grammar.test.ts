@@ -8,10 +8,10 @@ import test from 'node:test';
 const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
 const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-v5-cli-home-'));
 
-function run(args: string[]) {
+function run(args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cli, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: testHome },
+    env: { ...process.env, HOME: testHome, ...extraEnv },
   });
 }
 
@@ -89,6 +89,51 @@ test('upgrade plan pins the checked version and remains read-only', () => {
   assert.match(result.stdout, /Latest CLI: 8\.2\.0/);
   assert.match(result.stdout, /npm exec --yes sdd-agentic-flow@8\.2\.0 -- upgrade --skills-only/);
   assert.match(result.stdout, /No changes were made\./);
+});
+
+test('doctor renders the checks label only once', () => {
+  const result = run(['doctor']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Checks: \d+ PASS, \d+ INFO, \d+ WARN, \d+ FAIL/);
+  assert.doesNotMatch(result.stdout, /Checks: Checks:/);
+});
+
+test('upgrade check is read-only and reports the checked version', () => {
+  const result = run(['upgrade', '--check'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Latest version: 8\.2\.0/);
+  assert.match(result.stdout, /Update available: yes/);
+  assert.doesNotMatch(result.stdout, /npm install|npm exec/);
+});
+
+test('skills-only plan skips the registry and remains read-only', () => {
+  const result = run(['upgrade', '--skills-only', '--plan'], {
+    SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: 'offline',
+  });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Registry check: none \(--skills-only\)/);
+  assert.match(result.stdout, /No changes were made\./);
+});
+
+test('non-interactive upgrade never mutates after finding an update', () => {
+  const result = run(['upgrade'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /This invocation is non-interactive; no mutations were performed/);
+  assert.doesNotMatch(result.stdout, /Updating the global SAF installation/);
+});
+
+test('offline upgrade check fails clearly without claiming current state', () => {
+  const result = run(['upgrade', '--check'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: 'offline' });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /No changes were made\./);
+  assert.match(result.stdout, /unable to check for updates/i);
+  assert.doesNotMatch(result.stdout, /Update available: no/);
+});
+
+test('upgrade rejects mutually exclusive check and skills-only modes', () => {
+  const result = run(['upgrade', '--check', '--skills-only']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /cannot be combined/);
 });
 
 test('init plan and doctor use machine schema 2 without bundle-selection data', () => {

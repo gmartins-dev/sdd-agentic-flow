@@ -23,6 +23,10 @@ test('message catalogs keep parity and locale resolution is deterministic', () =
   assert.equal(t('en-US', 'menu.changeInstall'), 'Change installation setup');
   assert.equal(t('en-US', 'setup.policySupervised'), 'Supervised — recommended');
   assert.equal(t('pt-BR', 'doctor.next'), 'Próxima etapa');
+  assert.doesNotMatch(
+    t('en-US', 'doctor.summary', { pass: 21, info: 1, warn: 0, fail: 0 }),
+    /^Checks:/,
+  );
   assert.match(t('en-US', 'selector.multiple'), /Space toggle/);
   assert.match(t('pt-BR', 'selector.multiple'), /Espaço alterna/);
   assert.equal(t('en-US', 'unknown.key'), 'unknown.key');

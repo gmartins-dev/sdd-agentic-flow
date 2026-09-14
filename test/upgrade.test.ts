@@ -141,6 +141,15 @@ test('npm upgrade commands pin the checked version and preserve the supplied env
     () => runNpmSkillsUpgrade({ version: 'latest', execFileSyncImpl, env }),
     /invalid package version/,
   );
+  assert.throws(
+    () =>
+      runNpmGlobalInstall({
+        version: '8.1.1',
+        env: { ...env, SDD_AGENTIC_FLOW_TEST_NPM_INSTALL: 'fail' },
+      }),
+    (error: unknown) =>
+      error instanceof Error && (error as Error & { status?: number }).status === 1,
+  );
 });
 
 test('formatCheckReport and checkForUpdate distinguish offline from up-to-date', async () => {

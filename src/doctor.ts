@@ -1115,7 +1115,7 @@ function renderDoctor(checks: DoctorCheck[], options: DoctorCommandOptions = {})
     `\n${view.title}${view.hasProblems ? '' : ` — ${t(locale, 'doctor.passed')}`}\n`,
   );
   process.stdout.write(
-    `${t(locale, 'doctor.summary', {
+    `${t(locale, 'doctor.checksLabel')}: ${t(locale, 'doctor.summary', {
       pass: view.counts.PASS,
       info: view.counts.INFO,
       warn: view.counts.WARN,

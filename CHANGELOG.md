@@ -1,5 +1,12 @@
 # Changelog
 
+## 8.1.2
+
+- Fix duplicate `Checks` labels in human-readable doctor output.
+- Expand black-box coverage for read-only, offline, non-interactive, and failure paths in the CLI
+  update flow.
+- Preserve the existing selective skill reconciliation and zero-runtime-dependency boundaries.
+
 ## 8.1.1
 
 - Make CLI upgrades pin the verified package version and reconcile only affected managed files.

@@ -1,6 +1,10 @@
 # Roadmap
 
-Current release: v8.1.1
+Current release: v8.1.2
+
+- **v8.1.2:** Fixes duplicate `Checks` labels in human-readable doctor output and expands black-box
+  coverage for read-only, offline, non-interactive, and failure paths in the CLI update flow.
+  Preserves selective skill reconciliation and zero runtime dependencies.
 
 - **v8.1.1:** Makes CLI upgrades pin the verified package version and reconcile only affected managed
   files. Preserves locally modified skills when package sources are unchanged, updates skills when

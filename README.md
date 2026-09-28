@@ -309,6 +309,7 @@ Language profiles select human-facing output language; a domain glossary records
 
 ## Inspiration and guides
 
+- [MySpec](https://myspec.dev) — Interactive spec discovery platform compiling guided developer discovery interviews into deterministic 4-file specification bundles (`constitution.md`, `requirements.md`, `solution.md`, `tasks.md`) with Model Context Protocol (MCP) server integration.
 The toolkit adapts TLC and TDD baselines and combines Spec-Driven Development, Markdown-first skills, and local safety practices. Those inspirations now include epistemic roles; project contracts remain authoritative. See [inspirations](docs/inspirations.md), [NOTICE](NOTICE), [LICENSING.md](LICENSING.md), the [compatibility promise](docs/compatibility-promise.md), the [compatibility matrix](docs/compatibility-matrix.md), and the [Portuguese skills guide](docs/saf-skills-usage-guide.pt-BR.md).
 
 For decision help, see [choosing a feature profile](docs/guides/choosing-a-feature-profile.md), [adopting in a brownfield repo](docs/guides/adopting-in-a-brownfield-repo.md), and [condensed vs. full TLC/TDD](docs/guides/condensed-vs-full-tlc-tdd.md).

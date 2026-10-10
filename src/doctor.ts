@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { inspectAdoption } from './adoption';
+import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
 import {
   AUTONOMY_LEVELS,
@@ -1257,7 +1258,7 @@ function evidenceGraphDoctor(
     const html = renderEvidenceGraphHtml(result);
     if (options.output) {
       const output = path.resolve(cwd, options.output);
-      fs.writeFileSync(output, html);
+      writeFileAtomic(output, html);
       process.stdout.write(`${output}\n`);
     } else process.stdout.write(html);
   } else if (options.json) {

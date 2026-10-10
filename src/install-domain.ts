@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { writeFileAtomic } from './atomic-write';
 import { resolveGitContext } from './git-context';
 import { compareVersions } from './version-compat';
 
@@ -233,11 +234,7 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
 }
 
 function writeInstallConfig(config: InstallConfig, homeDir: string): void {
-  const file = installConfigPath(homeDir);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.tmp`;
-  fs.writeFileSync(temporary, serializeInstallConfig(config), 'utf8');
-  fs.renameSync(temporary, file);
+  writeFileAtomic(installConfigPath(homeDir), serializeInstallConfig(config));
 }
 
 function shouldUseInteractiveInstall({

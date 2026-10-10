@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { type AdoptionMode, expectedExcludes, inspectAdoption } from './adoption';
+import { writeFileAtomic } from './atomic-write';
 import { configureIntent } from './configure';
 import { type GitContext, resolveGitContext } from './git-context';
 import { classifyInstallIntent, readInstallConfig } from './install-domain';
@@ -105,8 +106,7 @@ export function applyWorkspaceInitialization(
     return { ok: false, error: plan.error || 'workspace initialization plan is not applicable' };
   const marker = path.join(plan.git.projectRoot, SDD_PATHS.workspace);
   if (!fs.existsSync(marker)) {
-    fs.mkdirSync(path.dirname(marker), { recursive: true });
-    fs.writeFileSync(marker, WORKSPACE_MARKER, 'utf8');
+    writeFileAtomic(marker, WORKSPACE_MARKER);
   }
   configureIntent({
     homeDir,

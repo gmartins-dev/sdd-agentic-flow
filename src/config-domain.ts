@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
+
+import { writeFileAtomic } from './atomic-write';
 
 const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'] as const;
 const AUTONOMY_LEVELS = ['manual', 'supervised', 'autonomous'] as const;
@@ -444,8 +445,7 @@ function applyPolicyMutation(
   replaced = replaceWorkflowField(next, 'autonomy_level', autonomyLevel);
   if (!replaced.ok) return { ok: false, errors: [replaced.error], wrote: false };
   next = replaced.content;
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, next, 'utf8');
+  writeFileAtomic(configPath, next);
   return { ok: true, preview, wrote: true };
 }
 

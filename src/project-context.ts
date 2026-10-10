@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
 import { EFFECTIVE_DEFAULTS, readConfig } from './config-domain';
+import { GIT_TIMEOUT_MS } from './git-context';
 import { resolveLocale, t, translateText } from './messages';
 import { SDD_PATHS, sddJoin, VERSION } from './paths';
 import { terminalLog, terminalNext } from './terminal-ui';
@@ -90,6 +92,7 @@ export function gitInfo(cwd: string) {
         cwd,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: GIT_TIMEOUT_MS,
       }).trim();
     } catch {
       return null;
@@ -212,8 +215,7 @@ export function discoverProject(cwd: string, options: ProjectContextOptions = {}
     return false;
   }
   const provenance = { generatedAt: new Date().toISOString(), ...gitInfo(cwd) };
-  fs.mkdirSync(path.dirname(contextPath), { recursive: true });
-  fs.writeFileSync(contextPath, projectContextFor(scanProjectSignals(cwd), provenance), 'utf8');
+  writeFileAtomic(contextPath, projectContextFor(scanProjectSignals(cwd), provenance));
   if (!options.quiet) log('PASS', `created ${SDD_PATHS.projectContext}`);
   if (!options.quiet) nextStep(renderCliCommand('doctor'), { quiet: options.quiet });
   return true;
@@ -472,7 +474,7 @@ export function autonomousResume(cwd: string, options: ProjectContextOptions = {
     }
     content = `${content.slice(0, currentEnd)}${lineEnding}${lineEnding}## Override Log${lineEnding}${lineEnding}${entry}${lineEnding}${content.slice(currentEnd)}`;
   }
-  fs.writeFileSync(state.file, content, 'utf8');
+  writeFileAtomic(state.file, content);
   log('PASS', `resumed: cleared human override recorded at skill '${state.skill}'`);
   log('INFO', `next skill: ${state.next || `unknown — inspect ${SDD_PATHS.loopState}`}`);
   log('INFO', 'the invoking agent re-checks all 7 guardrails before advancing to it.');

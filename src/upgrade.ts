@@ -9,6 +9,7 @@ import { type ExecFileSyncOptionsWithStringEncoding, execFileSync } from 'node:c
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeFileAtomic } from './atomic-write';
 import { checkForUpdate, type UpdateCheckResult } from './update-check';
 import { parseVersion } from './version-compat';
 
@@ -92,6 +93,7 @@ function detectExecutionMode(
     const globalRoot = execFileSync('npm', ['root', '-g'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: NPM_QUERY_TIMEOUT_MS,
     } as ExecFileSyncOptionsWithStringEncoding).trim();
     if (globalRoot && normalized.startsWith(`${path.resolve(globalRoot)}${path.sep}`))
       return 'global';
@@ -140,7 +142,6 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
   const dest = provenancePath(skillsRoot);
   assertManagedDestination(skillsRoot, PROVENANCE_REL);
   assertManagedDestination(skillsRoot, `${PROVENANCE_REL}.tmp`);
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
   const value = typeof provenance === 'string' ? { packageVersion: provenance } : provenance;
   const lines = [
     'package: sdd-agentic-flow',
@@ -160,9 +161,7 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
       .map(([managedPath, hash]) => `  ${managedPath}: ${hash}`),
     '',
   ];
-  const temporary = `${dest}.tmp`;
-  fs.writeFileSync(temporary, lines.join('\n'), 'utf8');
-  fs.renameSync(temporary, dest);
+  writeFileAtomic(dest, lines.join('\n'));
 }
 
 function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
@@ -411,6 +410,10 @@ function applyManagedPairs(
   return summary;
 }
 
+// npm queries are local and quick; installs may download, so they get a generous but finite bound.
+const NPM_QUERY_TIMEOUT_MS = 10_000;
+const NPM_COMMAND_TIMEOUT_MS = 10 * 60_000;
+
 function packageSpec(version: string): string {
   if (!parseVersion(version)) throw new Error(`invalid package version: ${version}`);
   return `sdd-agentic-flow@${version}`;
@@ -430,6 +433,7 @@ function runNpmGlobalInstall({
   execFileSyncImpl('npm', ['install', '-g', packageSpec(version)], {
     stdio: 'inherit',
     env,
+    timeout: NPM_COMMAND_TIMEOUT_MS,
   });
   return { simulated: false };
 }
@@ -448,7 +452,7 @@ function runNpmSkillsUpgrade({
   execFileSyncImpl(
     'npm',
     ['exec', '--yes', packageSpec(version), '--', 'upgrade', '--skills-only'],
-    { stdio: 'inherit', env },
+    { stdio: 'inherit', env, timeout: NPM_COMMAND_TIMEOUT_MS },
   );
   return { simulated: false };
 }
@@ -486,6 +490,7 @@ export {
   formatCheckReport,
   managedHashesForPairs,
   managedRemovalPaths,
+  NPM_COMMAND_TIMEOUT_MS,
   PROVENANCE_REL,
   provenancePath,
   readInstallProvenance,

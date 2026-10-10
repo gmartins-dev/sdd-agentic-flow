@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { GIT_TIMEOUT_MS } from './git-context';
 import { USER_TARGETS } from './install-domain';
 
 type PackageJson = { version: string };
@@ -185,7 +186,10 @@ export function filesystemWritable() {
 
 export function gitAvailable() {
   try {
-    execFileSync('git', ['--version'], { stdio: ['ignore', 'ignore', 'ignore'] });
+    execFileSync('git', ['--version'], {
+      stdio: ['ignore', 'ignore', 'ignore'],
+      timeout: GIT_TIMEOUT_MS,
+    });
     return true;
   } catch {
     return false;

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { type AdoptionMode, adoptionModeForScope, inspectAdoption } from './adoption';
+import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
 import {
   AUTONOMY_LEVELS,
@@ -382,15 +383,13 @@ function persistWorkspaceSetupConfig(
 ): { ok: boolean; error?: string } {
   const configPath = sddJoin(cwd, 'config.yml');
   if (!fs.existsSync(configPath)) {
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(
+    writeFileAtomic(
       configPath,
       configFor(cwd, {
         profile: locale,
         executionMode: policy.executionMode,
         autonomyLevel: policy.autonomyLevel,
       }),
-      'utf8',
     );
     return { ok: true };
   }

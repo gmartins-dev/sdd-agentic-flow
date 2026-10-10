@@ -64,3 +64,60 @@ test('future or untrusted state fails closed before cleanup', () => {
   assert.equal(fs.readFileSync(path.join(target, 'saf-route', 'SKILL.md'), 'utf8'), 'untouched');
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+function legacyFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-clean-upgrade-'));
+  const home = path.join(root, 'home');
+  const cwd = path.join(root, 'project');
+  const target = path.join(home, '.agents', 'skills');
+  write(path.join(home, '.sdd-agentic-flow', 'install.yml'), 'schema: saf-install-intent/v1\n');
+  write(path.join(target, 'saf-route', 'SKILL.md'), 'legacy');
+  write(path.join(cwd, '.sdd-agentic-flow', 'config.yml'), 'schema: saf-config/v1\n');
+  return { root, home, cwd, target };
+}
+
+test('clean upgrade stages beside each original instead of the volatile temporary directory', () => {
+  const { root, home, cwd, target } = legacyFixture();
+  const before = new Set(fs.readdirSync(os.tmpdir()));
+  const session = prepareCleanUpgrade(
+    inspectCleanUpgrade({ cwd, homeDir: home, targetRoots: [target] }),
+  );
+  const created = fs
+    .readdirSync(os.tmpdir())
+    .filter((name) => !before.has(name) && name.startsWith('saf-clean-upgrade-'));
+  assert.deepEqual(created, []);
+  assert.ok(fs.readdirSync(target).some((name) => name.startsWith('.saf-clean-upgrade-')));
+  session.commit();
+  assert.equal(
+    fs.readdirSync(target).some((name) => name.startsWith('.saf-clean-upgrade-')),
+    false,
+  );
+  assert.equal(fs.existsSync(path.join(target, 'saf-route')), false);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('clean upgrade falls back to copy and remove when rename crosses devices', () => {
+  const { root, home, cwd, target } = legacyFixture();
+  let renameAttempts = 0;
+  const crossDevice = () => {
+    renameAttempts += 1;
+    throw Object.assign(new Error('EXDEV: cross-device link not permitted'), { code: 'EXDEV' });
+  };
+  const session = prepareCleanUpgrade(
+    inspectCleanUpgrade({ cwd, homeDir: home, targetRoots: [target] }),
+    { rename: crossDevice },
+  );
+  assert.ok(renameAttempts > 0);
+  assert.equal(fs.existsSync(path.join(target, 'saf-route')), false);
+  session.rollback();
+  assert.equal(fs.readFileSync(path.join(target, 'saf-route', 'SKILL.md'), 'utf8'), 'legacy');
+  assert.equal(
+    fs.readFileSync(path.join(cwd, '.sdd-agentic-flow', 'config.yml'), 'utf8'),
+    'schema: saf-config/v1\n',
+  );
+  assert.equal(
+    fs.readdirSync(target).some((name) => name.startsWith('.saf-clean-upgrade-')),
+    false,
+  );
+  fs.rmSync(root, { recursive: true, force: true });
+});

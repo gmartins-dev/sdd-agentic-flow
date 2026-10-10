@@ -7,6 +7,12 @@ import test from 'node:test';
 
 const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
 const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-cli-grammar-home-'));
+// A registry answer newer than the running package, derived so a version bump cannot break it.
+const packageVersion: string = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'),
+).version;
+const newerVersion = `${Number(packageVersion.split('.')[0]) + 1}.0.0`;
+const newerPattern = newerVersion.replace(/\./g, '\\.');
 
 function run(args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cli, ...args], {
@@ -82,12 +88,15 @@ test('upgrade plan pins the checked version and remains read-only', () => {
     env: {
       ...process.env,
       HOME: testHome,
-      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0',
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion,
     },
   });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Latest CLI: 8\.2\.0/);
-  assert.match(result.stdout, /npm exec --yes sdd-agentic-flow@8\.2\.0 -- upgrade --skills-only/);
+  assert.match(result.stdout, new RegExp(`Latest CLI: ${newerPattern}`));
+  assert.match(
+    result.stdout,
+    new RegExp(`npm exec --yes sdd-agentic-flow@${newerPattern} -- upgrade --skills-only`),
+  );
   assert.match(result.stdout, /No changes were made\./);
 });
 
@@ -99,9 +108,11 @@ test('doctor renders the checks label only once', () => {
 });
 
 test('upgrade check is read-only and reports the checked version', () => {
-  const result = run(['upgrade', '--check'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  const result = run(['upgrade', '--check'], {
+    SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion,
+  });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Latest version: 8\.2\.0/);
+  assert.match(result.stdout, new RegExp(`Latest version: ${newerPattern}`));
   assert.match(result.stdout, /Update available: yes/);
   assert.doesNotMatch(result.stdout, /npm install|npm exec/);
 });
@@ -116,7 +127,7 @@ test('skills-only plan skips the registry and remains read-only', () => {
 });
 
 test('non-interactive upgrade never mutates after finding an update', () => {
-  const result = run(['upgrade'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  const result = run(['upgrade'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion });
   assert.equal(result.status, 0);
   assert.match(result.stdout, /This invocation is non-interactive; no mutations were performed/);
   assert.doesNotMatch(result.stdout, /Updating the global SAF installation/);

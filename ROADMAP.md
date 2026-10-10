@@ -1,6 +1,6 @@
 # Roadmap
 
-Current release: v8.1.2
+Current release: v8.2.0
 
 This file records direction and one-paragraph release summaries. Detailed release notes live
 in [CHANGELOG.md](CHANGELOG.md).
@@ -58,6 +58,12 @@ without a reproducible benchmark backing them (see the token economics note in
 promises.
 
 ## Release history
+
+- **v8.2.0:** Release integrity and state durability. Closes a fork-reachable release-workflow
+  trust gap and hardens the release supply chain; makes state writes atomic, clean upgrade
+  cross-device safe, and subprocesses bounded; aligns handled failures with exit `1`; thins the
+  CLI entrypoint; adds coverage floors, wider contract guards, a complete architecture layout,
+  and synced Portuguese guides. No new command, runtime dependency, telemetry, or remote mutation.
 
 - **v8.1.2:** Fixes duplicate `Checks` labels in human-readable doctor output and expands black-box
   coverage for read-only, offline, non-interactive, and failure paths in the CLI update flow.

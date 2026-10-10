@@ -1,5 +1,32 @@
 # Changelog
 
+## 8.2.0
+
+- Restrict the privileged release workflow to a successful CI run caused by a push to this
+  repository, so a fork pull request on a branch named `main` cannot reach it. The release job
+  now installs with `--ignore-scripts`, pins its npm CLI, serializes runs, passes step outputs
+  through `env:`, and every GitHub Action is pinned to a commit SHA (`test/workflow-policy.test.ts`).
+- Make state durable: install intent, provenance, workspace config, project context, loop state,
+  Git exclude blocks, and evidence graph HTML are written atomically; clean-upgrade staging stays
+  beside each original with a cross-device fallback, so recovery works when the temporary
+  directory is another filesystem; git and npm subprocesses have timeouts.
+- Exit with `1`, not `2`, for expected state refusals such as missing Git metadata for project
+  scope, an interrupted apply, unsupported intent, or unsafe provenance, as documented in
+  `docs/cli-interaction.md`.
+- Fix the rich `uninstall --purge --plan` hint to the canonical `uninstall --yes --purge`, accept
+  the documented `--preset` aliases (`man`, `assist`, `assisted`, `auto`), and detect the branch of
+  a freshly initialized repository without commits.
+- Remove the environment override that could redirect the update check to another registry.
+- Refactor the CLI entrypoint into a thin router with dedicated upgrade, welcome, output, and
+  config-installation homes; remove unused exports and dead code.
+- Add focused tests and `src/` coverage floors; `npm run check` no longer builds twice.
+- Extend provider-neutrality and shared-reference guards, require every source module in the
+  architecture layout, block maintainer-local paths in publishable files, and wrap skill prose at
+  100 characters without changing any obligation.
+- Package contents: `CHANGELOG.md`, `ROADMAP.md`, and `CONTRIBUTING.md` are no longer shipped in the
+  npm tarball; they remain in the repository.
+- Sync the Portuguese README, skills usage guide, and language profile guide with English.
+
 ## 8.1.2
 
 - Fix duplicate `Checks` labels in human-readable doctor output.

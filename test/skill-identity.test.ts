@@ -32,10 +32,10 @@ test('a legacy-looking prefix does not grant deletion authority', () => {
 });
 
 test('multi implementation contract keeps waves, isolation, checking, and integration explicit', () => {
-  const skill = fs.readFileSync(
-    path.join(__dirname, '..', 'skills', 'saf-implement-multi', 'SKILL.md'),
-    'utf8',
-  );
+  // Skill prose wraps freely, so match phrases on whitespace-normalized text.
+  const skill = fs
+    .readFileSync(path.join(__dirname, '..', 'skills', 'saf-implement-multi', 'SKILL.md'), 'utf8')
+    .replace(/\s+/g, ' ');
   for (const required of [
     'DAG',
     'waves',

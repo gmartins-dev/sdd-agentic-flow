@@ -8,37 +8,99 @@ compatibility: Requires Git and a compatible Agent Skills host.
 
 ## When to use
 
-Use when accumulated feature work is ready for feature-level validation, or when the user asks whether one implemented feature is ready against its SDD. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use when accumulated feature work is ready for feature-level validation, or when the user asks
+whether one implemented feature is ready against its SDD. Read [the TLC
+baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD
+baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact
+validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task
+slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [feature
+profiles](../sdd-agentic-flow-shared/references/feature-profiles.md), [spec
+lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety
+rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
-Do not use to implement code, repair findings, validate only one task, create a PR, or infer a feature identity from ambiguous branch names. Reject a discovery-only workspace because it is not a spec package and has no normative requirements to validate. For a single task before handoff/PR, use `saf-check-task` instead — this skill assumes several already-checked tasks have accumulated.
+Do not use to implement code, repair findings, validate only one task, create a PR, or infer a
+feature identity from ambiguous branch names. Reject a discovery-only workspace because it is not a
+spec package and has no normative requirements to validate. For a single task before handoff/PR, use
+`saf-check-task` instead — this skill assumes several already-checked tasks have accumulated.
 
 ## Inputs
 
 - One feature identifier.
-- Optional `.sdd-agentic-flow/config.yml` overrides, feature context/spec/design/tasks artifacts, accumulated implementation, and validation gates.
+- Optional `.sdd-agentic-flow/config.yml` overrides, feature context/spec/design/tasks artifacts,
+  accumulated implementation, and validation gates.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults. Resolve exactly one feature and its validation paths and commands.
-2. Follow this **fresh-eyes** order at feature scope (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh independent verifier context when the host provides one; otherwise explicitly re-ground the oracle from canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read the feature package's persisted `Feature profile` when present; only use a physically present valid `workflow.feature_profile` as a legacy fallback, and otherwise use `medium_feature` compatibility rigor. Do not independently infer semantic profile classification during validation.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults.
+   Resolve exactly one feature and its validation paths and commands.
+2. Follow this **fresh-eyes** order at feature scope (state-checking, not narrative-judging):
+   re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run
+   current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor
+   → current result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh
+   independent verifier context when the host provides one; otherwise explicitly re-ground the
+   oracle from canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and
+   `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Read the feature package's
+   persisted `Feature profile` when present; only use a physically present valid
+   `workflow.feature_profile` as a legacy fallback, and otherwise use `medium_feature` compatibility
+   rigor. Do not independently infer semantic profile classification during validation.
 The semantic quality of a profile is validated from actual skill execution
 artifacts and rationale. CLI certification must not simulate Agent Skill
 classification with a duplicate runtime classifier.
-3. Re-read the spec **and** normative repo contracts. Derive feature-scoped validation obligations from requirements, accumulated diff, affected seams, architecture, work intent, feature profile, and risk, following `change-impact-validation.md`. Select the smallest adequate sensor set; record each omitted higher-level sensor and its requirement-based reason. Confirm task-level TDD evidence for code changes: behavior, contractual seams, current passing-sensor commands, explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale results as context, not current proof. Record explicit evidence gaps. Distinguish verification limits from implementation failures. For each required behavior, assess the non-shallow litmus by considering a plausible wrong implementation that would survive the selected sensors. A surviving counterexample is a sensor gap; inability to identify one is recorded as a limitation and does not prove adequacy or inadequacy. If the selected sensors cannot discriminate the required behavior, record **Shallow sensor** or an evidence gap — not `Status: ready`.
-4. Confirm task slices have independent checks or recorded horizontal-slice justifications and dependencies. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still materially underdetermined, do not PASS / `Status: ready` an implementation of one interpretation. On intent-preserving drift, record `not ready` with a reconciliation note and route to the canonical writer; do not rewrite the spec from this read-only Skill.
-5. Run only configured, safe, applicable validation gates, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands and results in evidence-contract v1 records; evidence from prior runs is context, not proof. Emit the v1 envelope, evidence index (`| Requirement anchor | Sensor | Record IDs | Result | Freshness |`), and detailed `EV-*` records while distinguishing selected obligations, intentionally omitted sensors, unsatisfied completion criteria, and human-judgment boundaries. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence. This skill must not inherit author narrative. If the effective contract changed, re-evaluate affected evidence freshness before deciding readiness; a pending proposal is not an effective contract.
-6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all mandatory criteria have current adequate evidence and required gates pass. In autonomous mode, an attributable `not ready` result authorizes the owning repair path and revalidation; `blocked` and `inconclusive` require cause classification. Never silent PASS. Never write `Status: ready` on a false-positive catalog hit.
-7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; this is the only persisted feature-validation output authorized by this Skill. Never create `validation.md` under `.specs`, alter product files, requirements, or the feature package to obtain readiness, or move/delete `.specs/features/<slug>/`. After a PASS report, **may recommend** the human set `Lifecycle: implemented`; must not write that line itself.
+3. Re-read the spec **and** normative repo contracts. Derive feature-scoped validation obligations
+   from requirements, accumulated diff, affected seams, architecture, work intent, feature profile,
+   and risk, following `change-impact-validation.md`. Select the smallest adequate sensor set;
+   record each omitted higher-level sensor and its requirement-based reason. Confirm task-level TDD
+   evidence for code changes: behavior, contractual seams, current passing-sensor commands,
+   explained deviations, untested risks, and requirement-to-evidence traceability. Treat stale
+   results as context, not current proof. Record explicit evidence gaps. Distinguish verification
+   limits from implementation failures. For each required behavior, assess the non-shallow litmus by
+   considering a plausible wrong implementation that would survive the selected sensors. A surviving
+   counterexample is a sensor gap; inability to identify one is recorded as a limitation and does
+   not prove adequacy or inadequacy. If the selected sensors cannot discriminate the required
+   behavior, record **Shallow sensor** or an evidence gap — not `Status: ready`.
+4. Confirm task slices have independent checks or recorded horizontal-slice justifications and
+   dependencies. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage
+   matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still materially
+   underdetermined, do not PASS / `Status: ready` an implementation of one interpretation. On
+   intent-preserving drift, record `not ready` with a reconciliation note and route to the canonical
+   writer; do not rewrite the spec from this read-only Skill.
+5. Run only configured, safe, applicable validation gates, applying
+   `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record actual **current** commands
+   and results in evidence-contract v1 records; evidence from prior runs is context, not proof. Emit
+   the v1 envelope, evidence index (`| Requirement anchor | Sensor | Record IDs | Result | Freshness
+   |`), and detailed `EV-*` records while distinguishing selected obligations, intentionally omitted
+   sensors, unsatisfied completion criteria, and human-judgment boundaries. A passing sensor is
+   evidence, not a correctness verdict. Self-report is not evidence. This skill must not inherit
+   author narrative. If the effective contract changed, re-evaluate affected evidence freshness
+   before deciding readiness; a pending proposal is not an effective contract.
+6. Decide `ready`, `not ready`, `blocked`, or `inconclusive`. A feature is ready only when all
+   mandatory criteria have current adequate evidence and required gates pass. In autonomous mode, an
+   attributable `not ready` result authorizes the owning repair path and revalidation; `blocked` and
+   `inconclusive` require cause classification. Never silent PASS. Never write `Status: ready` on a
+   false-positive catalog hit.
+7. Produce a sanitized local report in `.sdd-agentic-flow/reports` when configuration permits; this
+   is the only persisted feature-validation output authorized by this Skill. Never create
+   `validation.md` under `.specs`, alter product files, requirements, or the feature package to
+   obtain readiness, or move/delete `.specs/features/<slug>/`. After a PASS report, **may
+   recommend** the human set `Lifecycle: implemented`; must not write that line itself.
 
 ## Safety
 
-Remain read-only except for permitted local report or disposable test artifacts. Do not change code, specs, Git history, PR metadata, trackers, remote services, or default configuration. Preserve existing work and redact secrets, PII, and absolute paths. Self-report is not evidence. This skill must not inherit author narrative.
+Remain read-only except for permitted local report or disposable test artifacts. Do not change code,
+specs, Git history, PR metadata, trackers, remote services, or default configuration. Preserve
+existing work and redact secrets, PII, and absolute paths. Self-report is not evidence. This skill
+must not inherit author narrative.
 
 ## Output
 
-Return feature identity, validation scope (impact, obligations, selected and omitted sensors), decision, requirement/task evidence counts, required gate results, ranked gaps, report location if written, and next step. Include `Status`, `Next recommended skill`, and `Reason`. When the decision is `not ready`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return feature identity, validation scope (impact, obligations, selected and omitted sensors),
+decision, requirement/task evidence counts, required gate results, ranked gaps, report location if
+written, and next step. Include `Status`, `Next recommended skill`, and `Reason`. When the decision
+is `not ready`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent
+boundary, write or update `handoff.md` per
+`../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ### Autonomy
 

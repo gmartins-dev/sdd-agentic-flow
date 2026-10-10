@@ -24,6 +24,7 @@ const baselineRegistry = fs.readFileSync(path.join(root, 'shared/baselines/regis
 const knownBaselineIds = [...baselineRegistry.matchAll(/^\s*-\s*id:\s*(\S+)\s*$/gm)]
   .map((match) => match[1])
   .filter((id): id is string => Boolean(id));
+const MAX_SKILL_LINE = 100;
 const skills = OFFICIAL_SKILLS.map((name) => {
   const content = fs.readFileSync(path.join(root, 'skills', name, 'SKILL.md'), 'utf8');
   const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1];
@@ -61,7 +62,10 @@ const skills = OFFICIAL_SKILLS.map((name) => {
   const canonical = ['When to use', 'When not to use', 'Inputs', 'Workflow', 'Safety', 'Output'];
   if (JSON.stringify(headings) !== JSON.stringify(canonical))
     failures.push(`${name}: must contain exactly the six canonical H2 sections`);
-  const output = content.match(/^## Output\n([\s\S]*?)(?=^### Autonomy)/m)?.[1] ?? '';
+  const output = (content.match(/^## Output\n([\s\S]*?)(?=^### Autonomy)/m)?.[1] ?? '').replace(
+    /\s+/g,
+    ' ',
+  );
   for (const label of ['Status', 'Next recommended skill', 'Reason'])
     if (!output.includes(label)) failures.push(`${name}: output missing ${label}`);
   for (const { field, value } of unknownContractKinds({
@@ -70,15 +74,23 @@ const skills = OFFICIAL_SKILLS.map((name) => {
     produces: parseContractArray(sidecar, 'produces') ?? [],
   }))
     failures.push(`${name}: unknown ${field} contract kind '${value}'`);
+  // Skill prose is read by agents and reviewed in diffs; keep body lines short and reviewable.
+  const body = content.replace(/^---\n[\s\S]*?\n---\n/, '');
+  body.split('\n').forEach((line, index) => {
+    if (line.length > MAX_SKILL_LINE && !/^\s*(?:#|\|)/.test(line))
+      failures.push(`${name}: body line ${index + 1} exceeds ${MAX_SKILL_LINE} characters`);
+  });
+  // Prose may wrap anywhere, so phrase contracts compare whitespace-normalized text.
+  const prose = content.replace(/\s+/g, ' ');
   if (name === 'saf-create-spec') {
     for (const token of ['Feature profile', 'explicit-override', 'inferred'])
-      if (!content.includes(token))
+      if (!prose.includes(token))
         failures.push(`${name}: missing feature-profile writer contract '${token}'`);
   }
   if (name === 'saf-implement' || name === 'saf-validate') {
     if (
-      !content.includes('Do not re-infer profile depth') &&
-      !content.includes('Do not independently infer')
+      !prose.includes('Do not re-infer profile depth') &&
+      !prose.includes('Do not independently infer')
     )
       failures.push(`${name}: downstream profile consumers must not re-infer`);
   }

@@ -20,6 +20,11 @@ name: Release
 # needs no stored secret either way (see the Trusted Publishing / OIDC step below). npmjs.com
 # allows only one Trusted Publisher per package, registered to this workflow's filename
 # (release.yml) — see docs/publishing.md.
+#
+# Trust boundary: CI also runs for pull requests, including pull requests from forks whose
+# branch may be named `main`. This privileged job therefore accepts only a successful CI run
+# caused by a `push` to this repository; a fork's code must never be checked out here. All
+# step outputs reach shell code through `env:` rather than `${{ }}` interpolation inside `run:`.
 on:
   workflow_run:
     workflows: ['CI']
@@ -28,36 +33,52 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
       id-token: write
+    env:
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - run: npm ci --prefer-offline --no-audit --fund=false
+      # Lifecycle scripts of development dependencies never run in this privileged job; the
+      # build needs none of them.
+      - run: npm ci --ignore-scripts --prefer-offline --no-audit --fund=false
       - run: npm run build
 
-      - name: Read package.json version
+      - name: Read and validate package.json version
         id: pkg
-        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> "$GITHUB_OUTPUT"
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json version '$version' is not a valid x.y.z version" >&2
+            exit 2
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Find latest existing release tag
         id: latest_tag
@@ -65,6 +86,9 @@ jobs:
 
       - name: Decide whether package.json is a new, unreleased version
         id: decide
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
         run: |
           result="$(node -e "
             const [pkgVersion, latestTag] = process.argv.slice(1);
@@ -87,14 +111,15 @@ jobs:
               process.exit(2);
             }
             console.log(!latestVersion || compare(pkgVersion, latestVersion) > 0 ? 'true' : 'false');
-          " "${{ steps.pkg.outputs.version }}" "${{ steps.latest_tag.outputs.tag }}")"
+          " "$VERSION" "$LATEST_TAG")"
           echo "should_release=$result" >> "$GITHUB_OUTPUT"
 
       - name: Check whether this exact tag already exists
         id: tag_exists
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          version="${{ steps.pkg.outputs.version }}"
-          if git rev-parse "refs/tags/v${version}" >/dev/null 2>&1; then
+          if git rev-parse "refs/tags/v${VERSION}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -102,9 +127,10 @@ jobs:
 
       - name: Check whether this version is already published on npm
         id: npm_check
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          version="${{ steps.pkg.outputs.version }}"
-          if npm view "sdd-agentic-flow@${version}" version >/dev/null 2>&1; then
+          if npm view "sdd-agentic-flow@${VERSION}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
@@ -114,9 +140,9 @@ jobs:
         id: gpr_check
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          version="${{ steps.pkg.outputs.version }}"
-          if npm view "@gmartins-dev/sdd-agentic-flow@${version}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+          if npm view "@gmartins-dev/sdd-agentic-flow@${VERSION}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
@@ -127,26 +153,28 @@ jobs:
       # grep) so its result is available on a retry too, not only on the version's first attempt.
       - name: Require a matching CHANGELOG.md section (guards against an accidental bump)
         id: changelog
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          if npx tsx scripts/extract-changelog-section.ts "${{ steps.pkg.outputs.version }}" > /tmp/release-notes.md; then
+          if npx tsx scripts/extract-changelog-section.ts "$VERSION" > "$RUNNER_TEMP/release-notes.md"; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::package.json is at ${{ steps.pkg.outputs.version }} but CHANGELOG.md has no matching '## ${{ steps.pkg.outputs.version }}' section — skipping tag/release and npm publish. If this version bump was intentional, add the changelog entry and push again."
+            echo "::warning::package.json is at ${VERSION} but CHANGELOG.md has no matching '## ${VERSION}' section — skipping tag/release and npm publish. If this version bump was intentional, add the changelog entry and push again."
           fi
 
       - name: Create annotated tag and GitHub release
         if: steps.decide.outputs.should_release == 'true' && steps.tag_exists.outputs.exists == 'false' && steps.changelog.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          version="${{ steps.pkg.outputs.version }}"
-          tag="v${version}"
+          tag="v${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$tag" -m "$tag" "${{ github.event.workflow_run.head_sha }}"
+          git tag -a "$tag" -m "$tag" "$HEAD_SHA"
           git push origin "$tag"
-          gh release create "$tag" --title "$tag" --notes-file /tmp/release-notes.md
+          gh release create "$tag" --title "$tag" --notes-file "$RUNNER_TEMP/release-notes.md"
 
       # This version is "legit" to publish if it's either the version freshly detected as new
       # this run (should_release), or a tag already exists for it (a retry picking up after tag
@@ -154,11 +182,14 @@ jobs:
       # already-superseded version that merely never made it to npm for an unrelated reason.
       - name: Decide whether npm publish should run
         id: should_publish
+        env:
+          PUBLISHED: ${{ steps.npm_check.outputs.published }}
+          CHANGELOG_FOUND: ${{ steps.changelog.outputs.found }}
+          SHOULD_RELEASE: ${{ steps.decide.outputs.should_release }}
+          TAG_EXISTS: ${{ steps.tag_exists.outputs.exists }}
         run: |
-          if [[ "${{ steps.npm_check.outputs.published }}" == "false" \
-                && "${{ steps.changelog.outputs.found }}" == "true" \
-                && ( "${{ steps.decide.outputs.should_release }}" == "true" \
-                     || "${{ steps.tag_exists.outputs.exists }}" == "true" ) ]]; then
+          if [[ "$PUBLISHED" == "false" && "$CHANGELOG_FOUND" == "true" \
+                && ( "$SHOULD_RELEASE" == "true" || "$TAG_EXISTS" == "true" ) ]]; then
             echo "value=true" >> "$GITHUB_OUTPUT"
           else
             echo "value=false" >> "$GITHUB_OUTPUT"
@@ -166,21 +197,24 @@ jobs:
 
       - name: Decide whether GitHub Packages publish should run
         id: should_publish_gpr
+        env:
+          PUBLISHED: ${{ steps.gpr_check.outputs.published }}
+          CHANGELOG_FOUND: ${{ steps.changelog.outputs.found }}
+          SHOULD_RELEASE: ${{ steps.decide.outputs.should_release }}
+          TAG_EXISTS: ${{ steps.tag_exists.outputs.exists }}
         run: |
-          if [[ "${{ steps.gpr_check.outputs.published }}" == "false" \
-                && "${{ steps.changelog.outputs.found }}" == "true" \
-                && ( "${{ steps.decide.outputs.should_release }}" == "true" \
-                     || "${{ steps.tag_exists.outputs.exists }}" == "true" ) ]]; then
+          if [[ "$PUBLISHED" == "false" && "$CHANGELOG_FOUND" == "true" \
+                && ( "$SHOULD_RELEASE" == "true" || "$TAG_EXISTS" == "true" ) ]]; then
             echo "value=true" >> "$GITHUB_OUTPUT"
           else
             echo "value=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1; pin to latest rather than trust
-      # whatever version the runner's Node 22 image happens to bundle.
+      # Trusted Publishing (OIDC) requires npm CLI >= 11.5.1. Pin an exact, reviewed version
+      # rather than trusting the runner image or a moving `latest` dist-tag.
       - name: Ensure npm CLI supports Trusted Publishing (OIDC)
         if: steps.should_publish.outputs.value == 'true'
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.21.0
 
       - name: Sanity-check the package contents before publishing
         if: steps.should_publish.outputs.value == 'true' || steps.should_publish_gpr.outputs.value == 'true'

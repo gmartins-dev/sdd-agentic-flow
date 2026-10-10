@@ -290,3 +290,62 @@ test('init JSON is one final document after apply', () => {
   assert.equal(result.stdout.trim().split('\n').length, 1);
   assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/workspace.yml')));
 });
+
+test('project installation intent outside Git is a handled failure, not an internal error', () => {
+  const outsideGit = mkdtempSync(path.join(os.tmpdir(), 'saf-non-git-'));
+  for (const args of [
+    ['config', 'installation', '--plan', '--scope', 'project'],
+    ['config', 'installation', '--yes', '--scope', 'project'],
+  ]) {
+    const result = spawnSync(process.execPath, [cli, ...args], {
+      cwd: outsideGit,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: testHome, CI: '1', GIT_CEILING_DIRECTORIES: os.tmpdir() },
+    });
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /Git repository metadata is required/);
+  }
+  fs.rmSync(outsideGit, { recursive: true, force: true });
+});
+
+test('fail-closed installation state refusals exit 1 with an actionable message', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'saf-state-refusal-'));
+  const home = path.join(root, 'home');
+  const project = path.join(root, 'project');
+  fs.mkdirSync(project, { recursive: true });
+  spawnSync('git', ['init', '-q'], { cwd: project });
+  const provenance = path.join(home, '.agents', 'skills', 'sdd-agentic-flow-shared');
+  fs.mkdirSync(provenance, { recursive: true });
+  const write = (applyState: string, skill: string) =>
+    fs.writeFileSync(
+      path.join(provenance, 'install-provenance.yml'),
+      [
+        'package: sdd-agentic-flow',
+        'package_version: 8.1.2',
+        'schema: saf-install-provenance/v3',
+        `apply_state: ${applyState}`,
+        'scope: user',
+        'target: agents',
+        'managed_skills:',
+        `  - ${skill}`,
+        '',
+      ].join('\n'),
+    );
+  const runIn = (args: string[]) =>
+    spawnSync(process.execPath, [cli, ...args], {
+      cwd: project,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: home, CI: '1' },
+    });
+  write('applying', 'saf-route');
+  const interrupted = runIn(['uninstall', '--plan']);
+  assert.equal(interrupted.status, 1);
+  assert.match(interrupted.stderr, /interrupted apply/);
+  write('complete', '../../outside');
+  for (const args of [['uninstall', '--plan'], ['install', '--plan'], ['doctor']]) {
+    const unsafe = runIn(args);
+    assert.equal(unsafe.status, 1, args.join(' '));
+    assert.match(`${unsafe.stdout}${unsafe.stderr}`, /unsafe installation provenance/);
+  }
+  fs.rmSync(root, { recursive: true, force: true });
+});

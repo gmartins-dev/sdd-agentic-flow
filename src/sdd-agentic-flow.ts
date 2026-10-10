@@ -19,6 +19,7 @@ import {
   resolveConfiguredAgent,
   resolveSkillsRoot,
 } from './doctor';
+import { HandledError } from './handled-error';
 import {
   changeInstallationInteractive,
   configureCommand,
@@ -937,14 +938,27 @@ async function runCommand(command: string, rawArgs: string[], cwd: string) {
       );
       return;
     }
-    const result = configureIntent({
-      homeDir: os.homedir(),
-      cwd,
-      scope: effectiveScope as 'user' | 'project',
-      ...(targets.length ? { targets } : {}),
-      ...(adoptionMode ? { adoptionMode } : {}),
-      plan,
-    });
+    let result: ReturnType<typeof configureIntent>;
+    try {
+      result = configureIntent({
+        homeDir: os.homedir(),
+        cwd,
+        scope: effectiveScope as 'user' | 'project',
+        ...(targets.length ? { targets } : {}),
+        ...(adoptionMode ? { adoptionMode } : {}),
+        plan,
+      });
+    } catch (error) {
+      // Missing Git metadata or adoption are expected user conditions, not internal errors.
+      fail(errorMessage(error), {
+        reason: 'Project installation intent belongs to a Git workspace with an adoption mode.',
+        try: [
+          renderCliCommand('config', 'installation', '--plan', '--scope', 'user'),
+          renderCliCommand('init'),
+        ],
+      });
+      return;
+    }
     if (plan) {
       const effectiveScope = adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user';
       process.stdout.write(
@@ -1266,5 +1280,5 @@ async function main() {
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  fail(message, 2);
+  fail(message, error instanceof HandledError ? 1 : 2);
 });

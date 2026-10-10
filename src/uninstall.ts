@@ -282,7 +282,7 @@ export function uninstall(args: string[], cwd: string): boolean | undefined {
           [
             ['Remove', `${removable.length} recognized SAF targets`],
             ['Preserve', `${preserved.length} protected paths`],
-            ['Apply', renderCliCommand('uninstall', '--purge', '--apply')],
+            ['Apply', renderCliCommand('uninstall', '--yes', '--purge')],
           ],
           { mode },
         );

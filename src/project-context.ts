@@ -100,7 +100,10 @@ export function gitInfo(cwd: string) {
   };
   return {
     revision: runGit(['rev-parse', 'HEAD']),
-    branch: runGit(['rev-parse', '--abbrev-ref', 'HEAD']),
+    // An unborn branch (fresh `git init`) has no HEAD revision yet; its name is still symbolic.
+    branch:
+      runGit(['rev-parse', '--abbrev-ref', 'HEAD']) ??
+      runGit(['symbolic-ref', '--short', '-q', 'HEAD']),
   };
 }
 

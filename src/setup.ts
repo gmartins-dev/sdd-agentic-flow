@@ -296,7 +296,9 @@ function onboardingStateFor(cwd: string) {
 
 function savedSetupProfile(cwd: string, homeDir = os.homedir()): Record<string, unknown> | null {
   const saved = readInstallConfig(homeDir) || defaultInstallConfig();
-  const project = saved.projects[repositoryKey(cwd)];
+  // Outside Git there is no project key; only the user profile can apply.
+  const git = resolveGitContext(cwd);
+  const project = git.ok ? saved.projects[git.context.adoptionKey] : undefined;
   if (project?.adoption_mode === 'team')
     return { scope: 'project', profile: project as Record<string, unknown> };
   if (project?.adoption_mode)

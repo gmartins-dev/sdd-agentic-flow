@@ -169,7 +169,7 @@ O toolkit usa um baseline TLC para planejamento e um baseline TDD para implement
 | Arquitetura | [docs/architecture.md](docs/architecture.md) |
 | As 12 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Setup por agente | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |
-| Política de idioma | [docs/i18n.md](docs/i18n.md) |
+| Política de idioma | [docs/i18n.md](docs/i18n.md) · [README in English](README.md) |
 | Contribuir | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## Para quem é indicado?
@@ -183,17 +183,178 @@ Scripts descartáveis, agentes sem revisão humana, pipelines automáticos de re
 <details>
 <summary><strong>Referência técnica</strong> (CLI, bundle oficial, skill map, confiança, segurança)</summary>
 
-A referência completa de comandos, bundle oficial, modos de execução, níveis de autonomia, mapa de skills, vocabulário de domínio e limites de segurança está no [README em inglês](README.md) (seção colapsável **Technical reference**).
+## Por que confiar neste toolkit?
 
-Resumo de confiança: código inspecionável, zero dependências npm externas em runtime, sem telemetria ou rede por padrão. As bibliotecas de build usadas pela UI rica do terminal são incorporadas ao artefato publicado. As exceções de rede são `doctor --check-updates`, `upgrade` e a pergunta opcional do welcome interativo. O toolkit não faz commit, push, merge, deploy ou publish automaticamente. Por padrão, `install --scope user` não cria arquivos no projeto. Veja [modelo de confiança](docs/trust-model.md) e [escopo de instalação](docs/installation-scope.md).
+- O código, a CLI, os docs, as skills e os checks são open source e inspecionáveis.
+- A CLI é pequena, local-first e tem zero dependências npm externas em runtime. As bibliotecas de
+  build usadas pela UI rica do terminal são incorporadas ao artefato publicado.
+- Não há telemetria, script de postinstall nem acesso de rede da CLI por padrão. O acesso à rede
+  se limita a três pontos explícitos: `doctor --check-updates`, `upgrade` (e `--check`/`--plan`) e
+  uma pergunta no welcome interativo (TTY human-rich, padrão N). Veja o
+  [modelo de confiança](docs/trust-model.md).
+- O toolkit não faz commit, push, merge, deploy ou publish automaticamente.
+- A instalação é explícita; por padrão (`--scope user`) grava apenas nos diretórios globais de
+  skills de cada agente e não cria nenhum arquivo no seu projeto. A configuração é explícita em
+  `.sdd-agentic-flow/config.yml`. Veja [escopo de instalação](docs/installation-scope.md).
+- `doctor` e `doctor --smoke` validam o setup local, e os arquivos publicáveis são verificados
+  contra marcadores de contexto privado.
+- Licenciamento e atribuição TLC estão documentados em [NOTICE](NOTICE) e [LICENSING.md](LICENSING.md).
+- A revisão humana continua sendo a autoridade final.
 
-Desinstalação:
+Veja o [modelo de confiança](docs/trust-model.md) para escopo e limites.
+
+## Comandos
+
+```text
+init [--plan] [--json] [--quiet] [--ascii] [--yes]  Inicializa exatamente o workspace Git atual
+config installation [--scope user|project] [--target ...] [--adoption-mode personal|specs-shared|team] [--plan|--yes]  Salva a intenção
+context refresh                       Atualiza o contexto do projeto
+context [status|refresh|autonomy-state]  Mostra ou atualiza a proveniência do contexto, ou o estado do loop de autonomia
+install [--scope user|project] [--target ...] [--plan|--yes] [--quiet]  Instala o bundle oficial
+doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Valida o pacote ou o setup do projeto
+upgrade [--check|--plan|--skills-only] Verifica / aplica atualizações da CLI e das skills (com confirmação)
+autonomous-resume [--force] [--override-guard=N --reason=...]  Retoma um workflow autônomo pausado num guardrail
+uninstall --plan                      Mostra apenas os assets do toolkit que seriam removidos
+uninstall --yes [--purge] [--scope user|project|all] [--target ...] [--verbose] [--quiet]  Remove os assets gerenciados
+learn-sdd                             Mostra um resumo de SDD em uma tela
+version                               Mostra a identidade do pacote
+completion bash|zsh|fish              Imprime o completion do shell
+help [command]                        Mostra a referência de comandos, ou o uso de um comando
+```
+
+`doctor --json` escreve apenas JSON parseável. `doctor --smoke` valida init, install, preservação
+e doctor num diretório temporário isolado. `doctor --check-updates` é uma checagem de atualização
+diagnóstica; `upgrade --check` é a checagem somente leitura do upgrade; `upgrade` pede confirmação
+antes de alterar algo. Um upgrade confirmado executa a versão verificada do pacote e reconcilia
+apenas arquivos de skill/shared ausentes ou alterados. Veja o
+[modelo de confiança](docs/trust-model.md) e a [política de compatibilidade](docs/compatibility-promise.md).
+
+`install` usa `--scope user` por padrão (grava apenas nos diretórios globais de skills). Passe
+`--scope project --adoption-mode team` para instalar em `.agents/skills/` dentro do projeto; o
+escopo de projeto exige adoção Team persistida ou explícita. Use `config installation --plan` para
+ver os caminhos de destino. Veja [escopo de instalação](docs/installation-scope.md).
+
+Se o `doctor` reportar um `WARN`/`FAIL` que você não entende, veja
+[troubleshooting](docs/troubleshooting.md). Todo comando aceita `--help` (equivalente a
+`help <command>`) com uso completo e exemplos. Adicione `--quiet` a `init`/`install`/`uninstall`
+para suprimir a saída decorativa de sucesso.
+
+Rodar `npx sdd-agentic-flow` sem comando mostra uma tela de status contextual (o que já está
+configurado e um próximo comando sugerido) em vez da referência completa. Ela nunca executa nada
+sozinha. Num terminal realmente interativo (TTY real e sem a variável `CI`), ela também oferece um
+menu numerado abaixo da tela de status; escolher uma entrada executa exatamente o mesmo comando que
+a invocação digitada equivalente, e a entrada de uninstall apenas pré-visualiza (`--plan`), nunca
+aplica. Saída em pipe, scripts, CI e invocações de agentes veem só a tela de status, sem mudança.
+Rode `npx sdd-agentic-flow help` para a referência completa, ou `help <command>` /
+`<command> --help` para o uso e os exemplos de um comando.
+
+Comandos e nomes de agente desconhecidos recebem uma sugestão "Did you mean `<closest match>`?"
+num bloco estruturado `Try:`. A saída de status colorida (`PASS`/`WARN`/`FAIL`/...) aparece
+automaticamente num terminal real; defina `NO_COLOR=1` para forçar texto puro, ou use pipe ou
+redirecionamento, que desativam cor automaticamente. Um pipe ou uma execução em CI continuam
+gerando texto legível e determinístico; `doctor --json` é o contrato explícito para máquinas.
+`FORCE_COLOR` só é respeitado num TTY real; `--ascii` / `SDD_ASCII=1` força símbolos ASCII. Exit
+codes: `0` sucesso, `1` falha tratada/de validação, `2` erro inesperado/interno. Veja
+[interação da CLI](docs/cli-interaction.md).
+
+O bundle oficial contém 12 skills e a camada shared. Overrides de idioma e de política são
+configuração opcional do projeto; use `config policy` quando precisar de um override explícito.
+Veja [configuração](docs/configuration.md).
+
+## Modos de execução
+
+O toolkit documenta cinco modos locais de operação: `plan`, `guided`, `apply`, `review` e `full`.
+`full` significa um workflow local coordenado, não autonomia irrestrita. Veja
+[modos de execução](docs/execution-modes.md).
+
+## Níveis de autonomia
+
+`workflow.autonomy_level` (`manual`/`supervised`/`autonomous`, padrão `supervised`) é um segundo
+eixo, ortogonal: `execution_mode` diz o que uma skill pode fazer, e `autonomy_level` diz se ela
+precisa de um humano antes da próxima rodar. Configuração ausente resolve para
+`apply + supervised`; use `config policy` para um override explícito. Audite com
+`doctor --autonomy` e inspecione uma execução em andamento com `context autonomy-state` /
+`autonomous-resume`. Veja [níveis de autonomia](docs/autonomy-levels.md) e
+[guardrails de autonomia](docs/autonomy-guardrails.md).
+
+## Desinstalação e rollback
 
 ```bash
 npx sdd-agentic-flow uninstall --plan
 npx sdd-agentic-flow uninstall --yes
 ```
 
-Veja [desinstalação](docs/uninstall.md) e a [política de compatibilidade](docs/compatibility-promise.md).
+O uninstall remove apenas os assets gerenciados atuais reconhecidos, dos dois escopos por padrão.
+Ele preserva specs, código-fonte e caminhos desconhecidos. Use `--scope`/`--target` para escolher
+uma instalação. Para resetar o estado de projeto reconhecido, use `uninstall --yes --purge`, que
+também remove o estado regenerável do toolkit; `.specs/features` nunca é removido por nenhuma flag.
+Adicione `--quiet` para suprimir a linha explicativa final "preserves ...". Use `--purge` para o
+reset documentado entre escopos. Veja [desinstalação](docs/uninstall.md) e a
+[política de compatibilidade](docs/compatibility-promise.md).
+
+## Mapa de skills
+
+Para a versão longa desta tabela, veja o [catálogo de skills](docs/skills-catalog.md).
+
+| Skill | Propósito | Entrada | Saída | Altera arquivos? | Modo padrão | Recomendado quando |
+| --- | --- | --- | --- | --- | --- | --- |
+| `saf-route` | Recomendar a próxima skill local | Pedido/artefatos | Recomendação de rota | Não | plan | O próximo passo não está claro |
+| `saf-brainstorm` | Dar forma a uma ideia vaga | Ideia bruta | Brief pronto para spec | Sim, quando convergir | guided | A ideia ainda não está pronta para spec |
+| `saf-create-spec` | Planejar specs de feature | Item de origem OU codebase existente | Conjunto de specs da feature | Sim, quando autorizado | plan | Requisitos precisam de estrutura, ou código sem documentação precisa de specs |
+| `saf-explain` | Explicar uma feature especificada | Pacote de spec | Explicação em linguagem simples | Sim, quando autorizado | guided | Alguém precisa de contexto sem ler todos os artefatos |
+| `saf-create-prompts` | Gerar prompts de tarefa | Specs/tarefas | Prompts prontos para agentes | Sim, quando autorizado | plan | O trabalho precisa ser delegado |
+| `saf-implement` | Implementar uma tarefa | Tarefa aprovada | Código e evidência | Sim, quando autorizado | apply | Uma tarefa delimitada está pronta |
+| `saf-implement-multi` | Planejar execução multi-task | Conjunto de tarefas | Plano de execução | Sim, quando autorizado | guided | As tarefas têm dependências |
+| `saf-check-task` | Checagem independente da tarefa | Evidência da tarefa | Check report | Não | review | Antes de aceitar uma tarefa |
+| `saf-create-pr` | Preparar PR | Mudança concluída | Pacote de PR | Sim, quando autorizado | guided | É preciso um pacote de revisão |
+| `saf-review-pr` | Revisar PR | PR/conjunto de mudanças | Findings | Não | review | Ao revisar uma mudança |
+| `saf-fix-pr` | Corrigir findings do PR | Findings | Mudança local corrigida | Sim, quando autorizado | apply | Os findings foram aceitos |
+| `saf-validate` | Validar a feature | Evidência da feature | Validation report | Não | review | Antes da conclusão |
+
+## Workflows com agentes
+
+Leia o [guia de uso das skills](docs/saf-skills-usage-guide.pt-BR.md), a
+[jornada do desenvolvedor](docs/developer-journey.md), [Codex CLI](docs/using-with-codex.md),
+[Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md),
+[VS Code + GitHub Copilot](docs/using-with-vscode-copilot.md) e as
+[receitas de prompt](docs/prompt-recipes.md). Para ferramentas complementares opcionais, veja a
+[stack complementar recomendada](docs/recommended-harness.md).
+
+As skills são Markdown-first e instaladas localmente. Veja
+[compatibilidade com agentes](docs/agent-compatibility.md) para workflows validados e limites.
+
+## Vocabulário de domínio
+
+Language profiles escolhem o idioma da saída para humanos; um glossário de domínio registra termos
+do produto. O glossário é opcional, nunca é criado pelo `init` e só pode ser proposto ou escrito com
+autorização explícita. Veja [vocabulário de domínio](docs/domain-vocabulary.md).
+
+## Inspirações e guias
+
+O toolkit adapta os baselines TLC e TDD e combina Spec-Driven Development, skills Markdown-first e
+práticas locais de segurança. Essas inspirações agora incluem papéis epistêmicos; os contratos do
+projeto continuam sendo a autoridade. Veja [inspirações](docs/inspirations.md), [NOTICE](NOTICE),
+[LICENSING.md](LICENSING.md), a [promessa de compatibilidade](docs/compatibility-promise.md) e a
+[matriz de compatibilidade](docs/compatibility-matrix.md).
+
+Para apoio a decisões, veja
+[escolhendo um feature profile](docs/guides/choosing-a-feature-profile.md),
+[adoção num repositório brownfield](docs/guides/adopting-in-a-brownfield-repo.md) e
+[TLC/TDD condensado vs. completo](docs/guides/condensed-vs-full-tlc-tdd.md).
+
+## Limites de segurança
+
+A CLI não chama APIs externas, não exige tracker, não sincroniza remotamente nem faz operações de
+Git/release por padrão. Os caminhos opcionais de atualização (`doctor --check-updates`, `upgrade`,
+pergunta do welcome) nunca alteram nada sem confirmação. Um `upgrade` confirmado usa exatamente a
+versão do registry que verificou, atualiza o pacote global só quando a instalação atual é global e
+reconcilia apenas arquivos gerenciados de skill/shared ausentes ou alterados. Arquivos locais
+divergentes continuam protegidos, a menos que você confirme explicitamente a sobrescrita. Este
+toolkit não é garantia de compliance, segurança ou prontidão para produção. Revise as saídas e as
+mudanças locais antes de aceitá-las. Veja o [modelo de segurança](docs/safety-model.md).
+
+## Publicação
+
+Maintainers: veja [publicação](docs/publishing.md).
 
 </details>

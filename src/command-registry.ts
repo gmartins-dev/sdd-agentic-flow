@@ -48,7 +48,7 @@ export const COMMAND_REGISTRY: readonly CommandDefinition[] = definitions.map(
 
 export const CANONICAL_COMMANDS = COMMAND_REGISTRY.map((command) => command.path.join(' '));
 
-export const REMOVED_COMMANDS = ['discover', 'configure', 'list'] as const;
+const REMOVED_COMMANDS = ['discover', 'configure', 'list'] as const;
 
 export function isRemovedCommand(command: string): boolean {
   return (REMOVED_COMMANDS as readonly string[]).includes(command);

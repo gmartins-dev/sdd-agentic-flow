@@ -349,14 +349,4 @@ function renderGallery(context: PresentationContext, locale = 'en-US'): string {
 }
 
 export type { CardEntry, ComponentStatus, JourneyStep };
-export {
-  renderBrand,
-  renderCard,
-  renderFoundationGallery,
-  renderGallery,
-  renderJourney,
-  renderStatus,
-  renderText,
-  renderWelcomeComposition,
-  renderWelcomeText,
-};
+export { renderCard, renderGallery, renderJourney, renderStatus, renderWelcomeText };

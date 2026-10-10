@@ -375,4 +375,4 @@ async function runConfigCommand(
 }
 
 export type { CommandResult, ConfigCommandOptions };
-export { renderPolicySummary, runConfigCommand, runConfigPolicy, runConfigShow };
+export { renderPolicySummary, runConfigCommand };

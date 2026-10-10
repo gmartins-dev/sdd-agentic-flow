@@ -4,11 +4,12 @@ import path from 'node:path';
 import { hasManagedExcludeBlocks, removeManagedExcludeBlocksFromFile } from './adoption';
 import { renderCliCommand } from './cli-command';
 import { USAGE } from './cli-help';
-import { languageReport } from './doctor';
+import { asString, fail, logStatus } from './cli-output';
+import { projectLocale } from './doctor';
 import { resolveGitContext } from './git-context';
 import { readInstallConfig, USER_TARGETS, writeInstallConfig } from './install-domain';
 import { targetLabelFor } from './install-preflight';
-import { resolveLocale, t, translateText } from './messages';
+import { t } from './messages';
 import {
   gitInfoExcludePath,
   KNOWN_AGENTS,
@@ -19,8 +20,8 @@ import {
   userSkillsDirsForTargets,
 } from './paths';
 import { listManagedSkillDirNames } from './skill-identity';
-import { terminalLog, terminalNote } from './terminal-ui';
-import { outputMode, shortenPath, styleStatus } from './ui';
+import { terminalNote } from './terminal-ui';
+import { outputMode, shortenPath } from './ui';
 import {
   assertManagedDestination,
   managedRemovalPaths,
@@ -30,25 +31,10 @@ import {
 
 type PurgeTarget = { path: string; kind: string; preserve?: boolean; reason?: string };
 
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function localeFor(cwd: string, explicit?: string) {
-  return resolveLocale({ explicit, configured: languageReport(cwd).profile });
-}
+const localeFor = projectLocale;
 
 function log(status: string, message: string, explicitLocale?: string) {
-  const locale = explicitLocale || localeFor(process.cwd());
-  terminalLog(status, translateText(locale, message), {
-    mode: outputMode({ stdin: process.stdin, stdout: process.stdout }, process.env),
-  });
-}
-
-function fail(message: string, code = 1) {
-  process.stderr.write(`${styleStatus('FAIL', process.stderr)} ${message}\n`);
-  process.exitCode = code;
-  return false;
+  logStatus(status, message, localeFor(process.cwd(), explicitLocale));
 }
 
 function describePath(cwd: string, target: string) {

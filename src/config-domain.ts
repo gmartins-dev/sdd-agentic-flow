@@ -449,17 +449,28 @@ function applyPolicyMutation(
   return { ok: true, preview, wrote: true };
 }
 
+// Documented input shorthands for `--preset`; the canonical preset name is what gets stored.
+const PRESET_ALIASES = {
+  man: 'manual',
+  assist: 'supervised',
+  assisted: 'supervised',
+  auto: 'autonomous',
+} as const;
+
 function resolvePolicyFromPreset(presetName: string): {
   executionMode: ExecutionMode;
   autonomyLevel: AutonomyLevel;
   presetName: string;
 } | null {
-  if (!(presetName in OPERATING_PRESETS)) return null;
-  const preset = OPERATING_PRESETS[presetName as OperatingPresetName];
+  const canonical = Object.hasOwn(PRESET_ALIASES, presetName)
+    ? PRESET_ALIASES[presetName as keyof typeof PRESET_ALIASES]
+    : presetName;
+  if (!Object.hasOwn(OPERATING_PRESETS, canonical)) return null;
+  const preset = OPERATING_PRESETS[canonical as OperatingPresetName];
   return {
     executionMode: preset.executionMode,
     autonomyLevel: preset.autonomyLevel,
-    presetName,
+    presetName: canonical,
   };
 }
 
@@ -504,10 +515,6 @@ function defaultOnboardingPolicy(): SetupPolicyDraft {
   return draft;
 }
 
-function formatPolicyPair(executionMode: string, autonomyLevel: string): string {
-  return `${executionMode} + ${autonomyLevel}`;
-}
-
 function policyDisplayTitle(draft: SetupPolicyDraft): string {
   if (draft.presetName) {
     return draft.presetName.charAt(0).toUpperCase() + draft.presetName.slice(1);
@@ -533,13 +540,10 @@ export {
   EFFECTIVE_DEFAULTS,
   EXECUTION_MODES,
   effectiveConfigYaml,
-  formatPolicyPair,
   ONBOARDING_DEFAULT_PRESET,
-  ONBOARDING_PRESET_ORDER,
   OPERATING_PRESETS,
   onboardingPresetOrder,
   policyDisplayTitle,
-  presetEquivalentFor,
   readConfig,
   resolvePolicyFromPreset,
   setupPolicyFromPair,

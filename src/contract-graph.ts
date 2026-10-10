@@ -170,4 +170,4 @@ function validateContractReferences(
 }
 
 export type { SkillContract, ValidateContractOptions, ValidateContractResult };
-export { findCycle, parseContractArray, validateContractReferences };
+export { parseContractArray, validateContractReferences };

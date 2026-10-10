@@ -46,4 +46,4 @@ ${errors ? `<section class="errors"><h2>Errors</h2><ul>${errors}</ul></section>`
 `;
 }
 
-export { escapeHtml, renderEvidenceGraphHtml };
+export { renderEvidenceGraphHtml };

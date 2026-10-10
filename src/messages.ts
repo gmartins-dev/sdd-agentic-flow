@@ -663,4 +663,4 @@ function validateCatalogParity(): boolean {
 }
 
 export type { Locale, MessageKey, MessageValues };
-export { CATALOGS, normalizeLocale, resolveLocale, t, translateText, validateCatalogParity };
+export { normalizeLocale, resolveLocale, t, translateText, validateCatalogParity };

@@ -3,12 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
+import { asString, fail, logStatus, renderNextStep } from './cli-output';
 import { EFFECTIVE_DEFAULTS, readConfig } from './config-domain';
 import { GIT_TIMEOUT_MS } from './git-context';
-import { resolveLocale, t, translateText } from './messages';
+import { resolveLocale } from './messages';
 import { SDD_PATHS, sddJoin, VERSION } from './paths';
-import { terminalLog, terminalNext } from './terminal-ui';
-import { type DisplayMode, outputMode, styleStatus } from './ui';
+import type { DisplayMode } from './ui';
 
 type ProjectSignals = {
   readme: boolean;
@@ -44,41 +44,19 @@ type NextStepOptions = ProjectContextOptions & {
   mode?: DisplayMode | undefined;
 };
 
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
-
 function localeFor(cwd: string): string {
   const config = readConfig(sddJoin(cwd, 'config.yml'));
   return resolveLocale({ configured: config.ok ? config.languageProfile : null });
 }
 
-function resolveMode(flags: ProjectContextOptions = {}): DisplayMode {
-  return outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
-    ascii:
-      Boolean(flags.ascii) || process.argv.includes('--ascii') || process.env.SDD_ASCII === '1',
-    quiet: Boolean(flags.quiet),
-  });
-}
-
+// Project context is read by doctor, so it resolves its locale from config directly rather
+// than through doctor.
 function log(status: string, message: string, explicitLocale?: string) {
-  const locale = explicitLocale || localeFor(process.cwd());
-  terminalLog(status, translateText(locale, message), { mode: resolveMode() });
-}
-
-function fail(message: string, code = 1) {
-  process.stderr.write(`${styleStatus('FAIL', process.stderr)} ${message}\n`);
-  process.exitCode = code;
+  logStatus(status, message, explicitLocale || localeFor(process.cwd()));
 }
 
 function nextStep(line: string | string[], options: NextStepOptions = {}) {
-  if (options.quiet) return;
-  const mode = options.mode ?? resolveMode(options);
-  if (mode === 'machine') return;
-  const list = (Array.isArray(line) ? line : [line]).filter(Boolean);
-  if (!list.length) return;
-  const locale = localeFor(process.cwd());
-  terminalNext(list, { mode, title: t(locale, 'init.next') });
+  renderNextStep(line, options, localeFor(process.cwd()));
 }
 
 function existingPaths(cwd: string, names: string[]) {

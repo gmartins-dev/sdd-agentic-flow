@@ -41,4 +41,4 @@ function unknownContractKinds(fields: Partial<Record<ContractField, readonly str
 }
 
 export type { ContractField, ContractKind };
-export { CONTRACT_KINDS, isContractKind, unknownContractKinds };
+export { CONTRACT_KINDS, unknownContractKinds };

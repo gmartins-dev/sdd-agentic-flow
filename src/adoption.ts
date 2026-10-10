@@ -409,10 +409,6 @@ function applyAdoption(
   };
 }
 
-function adoptionProfileFor(mode: AdoptionMode, scope: 'user' | 'project') {
-  return { adoption_mode: mode, scope };
-}
-
 function adoptionModeForScope(mode: AdoptionMode): 'user' | 'project' {
   return mode === 'team' ? 'project' : 'user';
 }
@@ -461,15 +457,12 @@ export type { AdoptionInspection, AdoptionMode, AdoptionResult, AdoptionState, S
 export {
   ADOPTION_MODES,
   adoptionModeForScope,
-  adoptionProfileFor,
   applyAdoption,
   expectedExcludes,
   hasManagedExcludeBlocks,
   inspectAdoption,
   isAdoptionMode,
   normalizeSpecsRoot,
-  projectAdoptionMode,
   removeManagedExcludeBlocksFromFile,
   removeUntrackedProjectAssets,
-  repositoryRoot,
 };

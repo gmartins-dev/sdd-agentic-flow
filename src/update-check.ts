@@ -126,4 +126,4 @@ async function checkForUpdate({
 }
 
 export type { CheckForUpdateOptions, UpdateCheckResult };
-export { checkForUpdate, DEFAULT_REGISTRY_URL };
+export { checkForUpdate };

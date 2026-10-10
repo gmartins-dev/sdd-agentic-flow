@@ -191,6 +191,11 @@ function languageReport(cwd: string) {
   };
 }
 
+// The human output locale for a workspace: an explicit choice, else its configured profile.
+function projectLocale(cwd: string, explicit?: string): string {
+  return resolveLocale({ explicit, configured: languageReport(cwd).profile });
+}
+
 function installationStatus(target: string): boolean {
   if (!fs.existsSync(target)) return false;
   return (
@@ -1281,6 +1286,7 @@ export {
   languageReport,
   officialSkillsPresence,
   officialSkillsPresenceForTargets,
+  projectLocale,
   resolveConfiguredAgent,
   resolveSkillsRoot,
   setDoctorInstallPlanResolver,

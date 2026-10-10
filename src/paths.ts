@@ -12,49 +12,16 @@ export const VERSION = (
   JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')) as PackageJson
 ).version;
 export const LANGUAGE_PROFILES = ['en-US', 'pt-BR'];
-export const FEATURE_PROFILES = ['small_fix', 'medium_feature', 'large_feature', 'epic'];
 export const EXECUTION_MODES = ['plan', 'guided', 'apply', 'review', 'full'];
 export const AUTONOMY_LEVELS = ['manual', 'supervised', 'autonomous'];
 // v1.8.0: autonomy_level is a new axis orthogonal to execution_mode (docs/execution-modes.md,
 // shared/references/autonomy-guardrails.md) — `plan`/`guided` never combine with `autonomous`:
 // a plan-only workflow has nothing to auto-advance into, and step-by-step confirmation is the
 // entire point of `guided`.
-export const INVALID_AUTONOMY_COMBOS = new Set(['plan:autonomous', 'guided:autonomous']);
+const INVALID_AUTONOMY_COMBOS = new Set(['plan:autonomous', 'guided:autonomous']);
 
 export function autonomyComboValid(executionMode: string, autonomyLevel: string) {
   return !INVALID_AUTONOMY_COMBOS.has(`${executionMode}:${autonomyLevel}`);
-}
-
-// Operating presets are UX over the two existing fields. Not a third stored axis.
-// Aliases are input sugar for --preset and --autonomy-level only.
-export const OPERATING_PRESETS: Record<string, { executionMode: string; autonomyLevel: string }> = {
-  manual: { executionMode: 'guided', autonomyLevel: 'manual' },
-  supervised: { executionMode: 'apply', autonomyLevel: 'supervised' },
-  autonomous: { executionMode: 'full', autonomyLevel: 'autonomous' },
-};
-export const AUTONOMY_ALIASES: Record<string, string> = {
-  man: 'manual',
-  assist: 'supervised',
-  assisted: 'supervised',
-  auto: 'autonomous',
-};
-export const OPERATING_PRESET_HELP =
-  'manual|supervised|autonomous (aliases: man, assist|assisted, auto)';
-
-export function resolveAutonomyToken(token: string) {
-  if (!token || String(token).startsWith('--')) return null;
-  if (AUTONOMY_LEVELS.includes(token)) return token;
-  return AUTONOMY_ALIASES[token] || null;
-}
-
-export function resolveOperatingPreset(token: string) {
-  const canonical = resolveAutonomyToken(token);
-  if (!canonical || !OPERATING_PRESETS[canonical]) return null;
-  return {
-    name: canonical,
-    alias: token === canonical ? null : token,
-    ...OPERATING_PRESETS[canonical],
-  };
 }
 
 export const REQUIRED_CONTRACT_FIELDS = ['extends', 'requires', 'consumes', 'produces', 'baseline'];
@@ -79,11 +46,7 @@ export const SDD_PATHS = {
 };
 export const USAGE_GUIDE_URL =
   'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/saf-skills-usage-guide.md';
-export const USAGE_GUIDE_PT_BR_URL =
-  'https://github.com/gmartins-dev/sdd-agentic-flow/blob/main/docs/saf-skills-usage-guide.pt-BR.md';
-export const LOCAL_GIT_EXCLUDE_COMMENT = '# sdd-agentic-flow init --local-git-exclude';
-export const LOCAL_GIT_EXCLUDE_ENTRY = `${SDD_ROOT}/`;
-export const USER_INSTALL_CONFIG = `${SDD_ROOT}/install.yml`;
+const USER_INSTALL_CONFIG = `${SDD_ROOT}/install.yml`;
 
 export function userInstallConfigPath(homeDir: string = os.homedir()) {
   return path.join(homeDir, USER_INSTALL_CONFIG);
@@ -93,20 +56,8 @@ export function projectSddRoot(cwd: string) {
   return path.join(cwd, SDD_ROOT);
 }
 
-export function defaultSpecsRoot(cwd: string) {
-  return path.join(cwd, '.specs', 'features');
-}
-
 export function sddJoin(cwd: string, ...segments: string[]) {
   return path.join(cwd, SDD_ROOT, ...segments);
-}
-
-export function explanationPath(cwd: string, featureSlug: string) {
-  return sddJoin(cwd, 'explanations', `${featureSlug}.md`);
-}
-
-export function explanationRelativePath(featureSlug: string) {
-  return `${SDD_PATHS.explanationsDir}/${featureSlug}.md`;
 }
 
 export function legacySddJoin(cwd: string, ...segments: string[]) {
@@ -117,7 +68,7 @@ export function legacySddJoin(cwd: string, ...segments: string[]) {
 // each verified against the agent's own documentation (see docs/installation-scope.md).
 // Segments are joined onto a home directory, never hardcoded as absolute paths, so this
 // stays cross-platform (Milestone 2) — the only place in the CLI that resolves os.homedir().
-export const AGENT_USER_DIR_SEGMENTS: Record<string, string[][]> = {
+const AGENT_USER_DIR_SEGMENTS: Record<string, string[][]> = {
   codex: [['.agents', 'skills']],
   cursor: [
     ['.agents', 'skills'],
@@ -130,7 +81,7 @@ export const KNOWN_AGENTS = Object.keys(AGENT_USER_DIR_SEGMENTS);
 // Default (no --agent): the 3 fixed targets documented in docs/installation-scope.md —
 // covers Codex CLI + Cursor (+ Copilot's `.agents/skills` fallback), Claude Code, and
 // GitHub Copilot's own `.copilot/skills` convention.
-export const DEFAULT_USER_DIR_SEGMENTS = [
+const DEFAULT_USER_DIR_SEGMENTS = [
   ['.agents', 'skills'],
   ['.claude', 'skills'],
   ['.copilot', 'skills'],

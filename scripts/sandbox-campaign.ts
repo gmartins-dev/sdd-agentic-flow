@@ -361,7 +361,7 @@ export function runCampaign(input: CampaignOptions = {}): {
 
   let ctx: RunContext | null = null;
   if (blocked.length === 0 || options.mode === 'dry-run') {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-v7.12-campaign-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-sandbox-campaign-'));
     const project = path.join(root, 'project');
     const evidence = path.join(
       repoRoot,

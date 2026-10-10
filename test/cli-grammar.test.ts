@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
-const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-v5-cli-home-'));
+const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-cli-grammar-home-'));
 
 function run(args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cli, ...args], {

@@ -1,8 +1,8 @@
 # Publishing
 
 Run `npm run release:check` first. It chains `npm run check`, `npm run pack:dry`,
-`npx sdd-agentic-flow doctor --smoke`, and a version-consistency check across `package.json`, every
-`skills/*/SKILL.md`, every `saf-contract.yml`, and package-lock root metadata, stopping at the first failure. It replaces the
+`npx sdd-agentic-flow doctor --smoke`, and a version-consistency check across `package.json`, the
+package-lock root metadata, and the CLI source version contract, stopping at the first failure. It replaces the
 manual command list this section used to carry, so this doc never needs an edit on a routine
 version bump again.
 

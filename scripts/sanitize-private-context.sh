@@ -16,6 +16,8 @@ patterns=(
   L2hvbWUvZ3VpbGhlcm1l
 )
 private_id_patterns=('ADO-[0-9]+' 'US-[0-9]+' 'Task-[0-9]+' 'AB#[0-9]+')
+# Maintainer-local report and plan paths belong in the Git-ignored .local/ tree only.
+private_path_patterns=('\.local/[A-Za-z0-9_-]+/')
 
 # Portable read loop instead of `mapfile` (bash 4+ only) — macOS ships bash 3.2.
 files=()
@@ -44,6 +46,17 @@ for pattern in "${private_id_patterns[@]}"; do
     [[ -f "$target" ]] || continue
     if grep -E -q -- "$pattern" "$target"; then
       echo "FAIL private tracker identifier in $file" >&2
+      exit 1
+    fi
+  done
+done
+
+for pattern in "${private_path_patterns[@]}"; do
+  for file in "${files[@]}"; do
+    target="$root/$file"
+    [[ -f "$target" ]] || continue
+    if grep -E -q -- "$pattern" "$target"; then
+      echo "FAIL private maintainer path in $file" >&2
       exit 1
     fi
   done

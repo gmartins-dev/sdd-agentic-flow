@@ -24,5 +24,9 @@ is absent, skills use the shared effective defaults. Missing semantic inputs
 remain blockers. Sidecar `requires`, `consumes`, `produces`, `depends_on`, and
 `conflicts` values are validated during repository and package checks.
 
+Skills resolve shared references from the installed sibling directory and leave external or
+irreversible authority with the user and host.
+
 See [architecture](architecture.md#capability-contracts),
-[invocation model](invocation-model.md), and the [usage guide](saf-skills-usage-guide.md).
+[invocation model](invocation-model.md), [compatibility matrix](compatibility-matrix.md), and the
+[usage guide](saf-skills-usage-guide.md).

@@ -34,6 +34,7 @@ const LEGACY_PATTERNS = [
 ];
 const REPRESENTATION_MODEL = 'docs/information-representation-model.md';
 const ARTIFACT_CONTRACTS = 'shared/references/artifact-contracts.md';
+const ARCHITECTURE = 'docs/architecture.md';
 
 function activeMarkdownFiles(root: string): string[] {
   return execFileSync('git', ['ls-files', '*.md'], { cwd: root, encoding: 'utf8' })
@@ -108,6 +109,26 @@ function addRepresentationFindings(
       file: ARTIFACT_CONTRACTS,
       message: 'current artifact contract must not declare an L2 structured island',
     });
+}
+
+// The maintainer source layout must name every source module, so the documented ownership map
+// cannot silently fall behind the code (run from the repository root, like the literal checks).
+function addArchitectureLayoutFindings(
+  findings: DocumentationFinding[],
+  documents: ReadonlyMap<string, string>,
+): void {
+  const architecture = documents.get(ARCHITECTURE);
+  if (architecture === undefined || !fs.existsSync('src')) return;
+  const section = architecture.split('## Maintainer source layout')[1]?.split(/\n## /)[0] ?? '';
+  for (const module of fs
+    .readdirSync('src')
+    .filter((file) => file.endsWith('.ts'))
+    .sort())
+    if (!section.includes(`\`${module}\``))
+      findings.push({
+        file: ARCHITECTURE,
+        message: `source module missing from layout: ${module}`,
+      });
 }
 
 function parseVersion(value: string): [number, number, number] | null {
@@ -266,6 +287,7 @@ export function checkDocumentationContracts(
   }
 
   addRepresentationFindings(findings, documents);
+  addArchitectureLayoutFindings(findings, documents);
 
   return findings;
 }

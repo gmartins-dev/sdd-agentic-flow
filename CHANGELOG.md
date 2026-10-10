@@ -1026,7 +1026,7 @@ layers + SDD), README "Beyond prompts" / pt-BR "Além dos prompts", cross-agent 
 
 ## 1.9.2
 
-Docs-only patch, no breaking changes. Closes 2 of the 3 items from a `.local/gmm` candidate
+Docs-only patch, no breaking changes. Closes 2 of the 3 items from a maintainer-local candidate
 skeleton ("Flow State & Skill Transition Semantics"), following the same audit-first discipline
 as every release since v1.5: only a gap confirmed by reading the current repository became a
 change, the speculative sketch was not applied as written.

@@ -21,6 +21,11 @@ tsc (strict) → build (dist/) → Biome (format + style) → YAML/docs/shell ga
 | `npm run lint:biome:fix` | Apply Biome fixes and organize imports                                       |
 | `npm run lint`           | `typecheck` then `lint:biome`                                                |
 | `npm run lint:fix:all`   | Biome fix + YAML Prettier + markdown fix                                     |
+| `npm test`               | Build, then `test:unit`                                                      |
+| `npm run test:unit`      | All tests against the current `dist/`, with `src/` coverage floors (lines, branches, functions); `check` uses it after its own build |
+
+Coverage floors only move up. Raise them when a change lifts coverage durably; never lower them
+to make a change pass.
 
 Biome config: `biome.json` (ignores `dist/`, `.specs/`, `.local/`; TypeScript uses the same
 formatter rules as JavaScript). Do not reintroduce retired `node --check` file lists.

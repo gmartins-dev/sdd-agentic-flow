@@ -88,6 +88,21 @@ test('documentation contracts reject a missing representation token', () => {
   );
 });
 
+test('documentation contracts require every source module in the architecture layout', () => {
+  const architecture = fs.readFileSync('docs/architecture.md', 'utf8');
+  assert.deepEqual(
+    checkDocumentationContracts(new Map([['docs/architecture.md', architecture]])),
+    [],
+  );
+  const findings = checkDocumentationContracts(
+    new Map([['docs/architecture.md', architecture.replace('`atomic-write.ts`, ', '')]]),
+  );
+  assert.deepEqual(
+    findings.map((finding) => finding.message),
+    ['source module missing from layout: atomic-write.ts'],
+  );
+});
+
 test('release documentation state matches current package and planned semver', () => {
   assert.deepEqual(
     checkReleaseDocumentationState({

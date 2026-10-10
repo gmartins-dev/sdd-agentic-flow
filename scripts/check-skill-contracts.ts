@@ -118,10 +118,48 @@ else {
 }
 const vendor =
   /\b(github|gitlab|bitbucket|jira|linear|azure devops|claude|cursor|codex|gemini|copilot)\b/i;
-for (const name of OFFICIAL_SKILLS) {
-  const file = path.join(root, 'skills', name, 'SKILL.md');
-  if (vendor.test(fs.readFileSync(file, 'utf8'))) failures.push(`${name}: provider leakage`);
+// The package's own repository link is the only provider-specific text a portable asset may carry.
+const REPOSITORY_URL = /https:\/\/github\.com\/gmartins-dev\/sdd-agentic-flow\S*/g;
+const portableAssets = [
+  ...OFFICIAL_SKILLS.flatMap((name) => [
+    path.join('skills', name, 'SKILL.md'),
+    path.join('skills', name, 'saf-contract.yml'),
+  ]),
+  ...['shared/references', 'shared/templates'].flatMap((dir) =>
+    fs.readdirSync(path.join(root, dir)).map((file) => path.join(dir, file)),
+  ),
+];
+for (const relative of portableAssets) {
+  const text = fs.readFileSync(path.join(root, relative), 'utf8').replace(REPOSITORY_URL, '');
+  if (vendor.test(text)) failures.push(`${relative}: provider leakage`);
 }
+
+// Shared references reach consumers through Skill links. A reference no Skill cites must be
+// listed here with the reason it still ships, so orphaned contracts cannot accumulate silently.
+const INDIRECT_REFERENCES: Record<string, string> = {
+  'canonical-vocabulary.md': 'cited by other shared references and the docs',
+  'effective-defaults.md': 'projection of CLI defaults validated by this checker',
+  'language-policy.md': 'cited by the language profile documentation',
+  'sdd-global-guidance.md': 'cited by other shared references',
+  'skill-authoring-standard.md': 'standard for authoring the Skills themselves',
+  'system-invariants.md': 'cited by other shared references',
+};
+const skillText = OFFICIAL_SKILLS.map((name) =>
+  fs.readFileSync(path.join(root, 'skills', name, 'SKILL.md'), 'utf8'),
+).join('\n');
+const referenceFiles = fs
+  .readdirSync(path.join(root, 'shared/references'))
+  .filter((file) => file.endsWith('.md'));
+for (const file of referenceFiles) {
+  const cited = skillText.includes(`sdd-agentic-flow-shared/references/${file}`);
+  if (!cited && !Object.hasOwn(INDIRECT_REFERENCES, file))
+    failures.push(`shared/references/${file}: not cited by any Skill nor declared indirect`);
+  if (cited && Object.hasOwn(INDIRECT_REFERENCES, file))
+    failures.push(`shared/references/${file}: cited by a Skill; remove it from the indirect list`);
+}
+for (const file of Object.keys(INDIRECT_REFERENCES))
+  if (!referenceFiles.includes(file))
+    failures.push(`shared/references/${file}: declared indirect but missing`);
 
 type EvalRecord = Record<string, unknown>;
 

@@ -25,10 +25,7 @@
     "NOTICE",
     "LICENSING.md",
     "LICENSES",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "CHANGELOG.md",
-    "ROADMAP.md"
+    "SECURITY.md"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit",
@@ -68,7 +65,7 @@
     "cli:certify:packed": "tsx scripts/cli-certification.ts --profile packed",
     "consumer-closure:dist": "tsx scripts/consumer-closure-certification.ts --profile=dist",
     "consumer-closure:packed": "tsx scripts/consumer-closure-certification.ts --profile=packed",
-    "saf:v7.12:sandbox": "tsx scripts/v7.12-sandbox-campaign.ts",
+    "saf:sandbox-campaign": "tsx scripts/sandbox-campaign.ts",
     "cli:brand-motion:dist": "tsx scripts/cli-brand-motion-certification.ts --profile=dist",
     "cli:brand-motion:packed": "tsx scripts/cli-brand-motion-certification.ts --profile=packed",
     "cli:packed-smoke": "tsx scripts/cli-sandbox.ts --clean doctor --json",

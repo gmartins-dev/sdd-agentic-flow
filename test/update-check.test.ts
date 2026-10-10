@@ -102,3 +102,22 @@ test('checkForUpdate never invokes the real global fetch during tests', async ()
   }
   assert.equal(realFetchCalled, false);
 });
+
+test('the published update check cannot be redirected to another registry by environment', async () => {
+  const previous = process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL;
+  process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL = 'http://attacker.invalid/sdd-agentic-flow';
+  const urls: string[] = [];
+  try {
+    await checkForUpdate({
+      currentVersion: '1.0.0',
+      fetchImpl: async (url) => {
+        urls.push(String(url));
+        return jsonResponse({ version: '1.0.0' });
+      },
+    });
+  } finally {
+    if (previous === undefined) delete process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL;
+    else process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL = previous;
+  }
+  assert.deepEqual(urls, ['https://registry.npmjs.org/sdd-agentic-flow/latest']);
+});

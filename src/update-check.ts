@@ -86,8 +86,8 @@ function offlineResult(currentVersion: string): UpdateCheckResult {
 async function checkForUpdate({
   currentVersion,
   fetchImpl = fetch,
-  // Internal, undocumented test-only seams — see test/cli.test.ts.
-  registryUrl = process.env.SDD_AGENTIC_FLOW_TEST_REGISTRY_URL || DEFAULT_REGISTRY_URL,
+  // In-process test seam only; the published CLI always queries the public npm registry.
+  registryUrl = DEFAULT_REGISTRY_URL,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   // When set, skip network entirely (sandbox-safe). Prefer over loopback stub servers.
   testLatestVersion = process.env.SDD_AGENTIC_FLOW_TEST_LATEST_VERSION,

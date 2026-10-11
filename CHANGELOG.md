@@ -1,5 +1,29 @@
 # Changelog
 
+## 8.3.0
+
+- Add a maintainer skill-behavior instrument: 12 fixtures in six families (evidence before
+  completion, sensor adequacy, resume freshness, authority, unknown effects, independent
+  verification), each with a development and a reserved case grounded in existing corpus IDs and
+  system invariants. Oracles read final disk state, sensor stamps, Git-ignored sentinels, and a
+  hidden truth table; a test proves every oracle accepts compliant behavior and flags the scripted
+  violation as critical.
+- Rebuild `npm run saf:sandbox-campaign` on those oracles: an exit code is an observation, never a
+  verdict; a forbidden effect fails even after a timeout; timeouts, budget stops, and missing
+  capabilities never count as PASS. Cases come from the manifest, the report version follows
+  `package.json`, a Claude Code adapter joins Codex and Cursor with isolated profiles, and an
+  offline stub host exercises the pipeline without model calls.
+- Add `npm run saf:skill-behavior:compare`, an offline baseline/candidate comparison that refuses
+  unpaired, duplicated, or mixed data and never aggregates across hosts or models.
+- Document the protocol in `docs/skill-behavior-evaluation.md`, correct `docs/inspirations.md` (SAF
+  contract fields live in `saf-contract.yml`), update the ROADMAP direction, and clarify that
+  rewind and rollback are host capabilities.
+- Fix `doctor` ignoring its `homeDir` option when resolving user skill directories, installation
+  intent, contracts, and autonomy checks.
+- No model campaign ran for this release: no skill instruction changed, and no behavior
+  improvement, host certification, or cost claim is made. No new command, flag, runtime
+  dependency, telemetry, or public schema.
+
 ## 8.2.0
 
 - Restrict the privileged release workflow to a successful CI run caused by a push to this

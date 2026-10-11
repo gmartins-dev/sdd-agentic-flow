@@ -1,6 +1,6 @@
 # Roadmap
 
-Current release: v8.2.0
+Current release: v8.3.0
 
 This file records direction and one-paragraph release summaries. Detailed release notes live
 in [CHANGELOG.md](CHANGELOG.md).
@@ -62,6 +62,12 @@ without a reproducible benchmark backing them (see the token economics note in
 promises.
 
 ## Release history
+
+- **v8.3.0:** Behavioral evidence instrument for skill evolution. Adds oracle-based fixtures,
+  an offline baseline/candidate comparator, and a campaign runner whose verdicts come from
+  external observation rather than exit codes; documents the evaluation protocol; fixes `doctor`
+  ignoring its `homeDir` option. No model campaign ran, so no skill behavior or host claim is
+  made. No new command, runtime dependency, telemetry, or remote mutation.
 
 - **v8.2.0:** Release integrity and state durability. Closes a fork-reachable release-workflow
   trust gap and hardens the release supply chain; makes state writes atomic, clean upgrade

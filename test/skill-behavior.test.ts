@@ -5,7 +5,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { CASES, settleBackground } from '../scripts/skill-behavior/cases.js';
 import { compareRecords, renderComparison } from '../scripts/skill-behavior/compare.js';
-import { claimStatus, type OracleResult, snapshot } from '../scripts/skill-behavior/oracle.js';
+import {
+  claimStatus,
+  evaluateExport,
+  type OracleResult,
+  snapshot,
+} from '../scripts/skill-behavior/oracle.js';
 import {
   type BehaviorRecord,
   deriveVerdict,
@@ -255,4 +260,25 @@ test('critical violations, regressions, and undecided trials block adoption', ()
   assert.equal(undecided.cases[0]?.candidate_rate, null);
   assert.equal(undecided.not_exercised.length, 1);
   assert.equal(undecided.adoptable, false);
+});
+
+test('the hidden oracle ignores module output and reports a crash as a failure', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-oracle-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
+    fs.writeFileSync(
+      path.join(dir, 'noisy.js'),
+      "console.log('[1, 2]');\nexport const id = (value) => value;\n",
+    );
+    assert.equal(evaluateExport(dir, 'noisy.js', 'id', [[[1], 1]]).ok, true);
+    assert.equal(evaluateExport(dir, 'noisy.js', 'id', [[[1], 2]]).ok, false);
+    assert.equal(evaluateExport(dir, 'missing.js', 'id', [[[1], 1]]).ok, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('record validation rejects a malformed oracle instead of crashing', () => {
+  const malformed = { ...record(), oracle: { passed: true } } as unknown;
+  assert.match(validateRecord(malformed).join('\n'), /oracle must be null or an oracle result/);
 });

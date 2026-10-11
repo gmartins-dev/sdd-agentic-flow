@@ -155,6 +155,17 @@ export function validateRecord(value: unknown, label = 'record'): string[] {
       CONFIDENCE.has(String(record.attribution?.confidence)),
     'attribution is invalid',
   );
+  const oracle = record.oracle as Partial<OracleResult> | null | undefined;
+  need(
+    oracle === null ||
+      (Boolean(oracle) &&
+        typeof oracle === 'object' &&
+        (oracle.passed === true || oracle.passed === false || oracle.passed === null) &&
+        isStringArray(oracle.violations) &&
+        isStringArray(oracle.critical) &&
+        isStringArray(oracle.observations)),
+    'oracle must be null or an oracle result',
+  );
   if (errors.length) return errors;
   // The stored verdict must be the one the observations imply; a hand-edited PASS is rejected.
   const derived = deriveVerdict({

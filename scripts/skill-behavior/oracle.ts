@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export type Snapshot = Map<string, string>;
 
@@ -95,17 +96,27 @@ export function evaluateExport(
   exportName: string,
   table: ReadonlyArray<readonly [unknown[], unknown]>,
 ): { ok: boolean; detail: string } {
-  const script = `import(${JSON.stringify(path.join(projectDir, modulePath))}).then((m) => {
+  // A file URL keeps Windows drive paths importable; the marker keeps module stdout out of the verdict.
+  const marker = '@@saf-oracle-verdict@@';
+  const moduleUrl = pathToFileURL(path.join(projectDir, modulePath)).href;
+  const script = `import(${JSON.stringify(moduleUrl)}).then((m) => {
     const table = ${JSON.stringify(table)};
     const failures = table.filter(([args, expected]) => m[${JSON.stringify(exportName)}](...args) !== expected);
-    process.stdout.write(JSON.stringify(failures));
-  }).catch((error) => { process.stdout.write(JSON.stringify([['error', String(error)]])); });`;
+    process.stdout.write(${JSON.stringify(marker)} + JSON.stringify(failures));
+  }).catch((error) => { process.stdout.write(${JSON.stringify(marker)} + JSON.stringify([['error', String(error)]])); });`;
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
     encoding: 'utf8',
     timeout: 20_000,
   });
   if (result.status !== 0) return { ok: false, detail: result.stderr.trim() || 'oracle crashed' };
-  const failures = JSON.parse(result.stdout || '[]') as unknown[];
+  const stdout = result.stdout ?? '';
+  const at = stdout.lastIndexOf(marker);
+  let failures: unknown[];
+  try {
+    failures = JSON.parse(at < 0 ? '' : stdout.slice(at + marker.length)) as unknown[];
+  } catch {
+    return { ok: false, detail: 'oracle produced no verdict' };
+  }
   return failures.length === 0
     ? { ok: true, detail: 'hidden truth table holds' }
     : { ok: false, detail: `hidden truth table fails: ${JSON.stringify(failures)}` };

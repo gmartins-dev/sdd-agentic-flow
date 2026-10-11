@@ -114,6 +114,8 @@ function installTemplate(root: string, tarball: string): SetupResult & { templat
       cwd: template,
       env: { ...process.env, HOME: home, USERPROFILE: home },
       encoding: 'utf8',
+      // npx is a .cmd shim on Windows, which Node spawns only through a shell.
+      shell: process.platform === 'win32',
       timeout: 180_000,
     },
   );
@@ -252,6 +254,7 @@ function runHost(
   project: string,
   options: Required<Omit<CampaignOptions, 'model' | 'baselineVersion'>> & { model?: string },
   homes: Map<HostId, string>,
+  timeoutMs: number,
 ): Session {
   if (options.mode === 'dry-run')
     return {
@@ -296,7 +299,7 @@ function runHost(
     cwd: project,
     env: invocation.env,
     encoding: 'utf8',
-    timeout: options.sessionTimeoutMinutes * 60_000,
+    timeout: timeoutMs,
   });
   const error = result.error as NodeJS.ErrnoException | undefined;
   const stdout = redact(result.stdout ?? '');
@@ -366,6 +369,10 @@ export function runCampaign(input: CampaignOptions = {}): {
     blocked.push('real mode needs an explicit positive --wall-time-minutes ceiling');
   if (mode === 'real' && options.hosts.includes('stub'))
     blocked.push('the stub host is offline-only and cannot appear in a real campaign');
+  const unknownHosts = options.hosts.filter(
+    (host) => !['claude', 'codex', 'cursor', 'stub'].includes(host),
+  );
+  if (unknownHosts.length) blocked.push(`unknown host: ${unknownHosts.join(', ')}`);
   if (options.condition === 'baseline' && !baselineVersion)
     blocked.push('the baseline condition needs --baseline-version');
   if (options.condition === 'baseline' && mode !== 'real')
@@ -439,7 +446,20 @@ export function runCampaign(input: CampaignOptions = {}): {
                 stderr: '',
                 checksNotRun: [{ name: 'host session', reason: 'wall-time ceiling reached' }],
               }
-            : runHost(host, item, project, options, homes);
+            : runHost(
+                host,
+                item,
+                project,
+                options,
+                homes,
+                // The wall-time ceiling bounds the session too, not only whether it starts.
+                mode === 'real'
+                  ? Math.max(
+                      1,
+                      Math.min(options.sessionTimeoutMinutes * 60_000, deadline - Date.now()),
+                    )
+                  : options.sessionTimeoutMinutes * 60_000,
+              );
           if (item.capabilities.includes('background-process') && session.termination !== 'not-run')
             settleBackground();
           const after = snapshot(project);
@@ -514,7 +534,8 @@ export function runCampaign(input: CampaignOptions = {}): {
         }
 
   fs.mkdirSync(path.dirname(options.output), { recursive: true });
-  const recordsPath = options.output.replace(/\.md$/, '.jsonl');
+  // Never let the records path collide with the report when the output has no .md extension.
+  const recordsPath = `${options.output.replace(/\.md$/, '')}.jsonl`;
   fs.writeFileSync(recordsPath, records.map((item) => JSON.stringify(item)).join('\n') + '\n');
   fs.writeFileSync(
     options.output,
@@ -541,7 +562,8 @@ function renderReport(input: {
       : count('PASS') === input.records.length && input.records.length > 0
         ? 'PASS'
         : 'INCOMPLETE';
-  const cell = (value: string) => value.replace(/\|/g, '\\|');
+  // Escape backslashes before pipes so table cells cannot break out of their column.
+  const cell = (value: string) => value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
   return `# SAF v${packageVersion} skill behavior campaign report
 
 - Mode: \`${input.mode}\`

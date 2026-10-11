@@ -74,7 +74,10 @@ test('dry-run packs and installs the bundle but never produces a PASS', () => {
   assert.ok(result.records.every((item) => validateRecord(item).length === 0));
   assert.ok(result.records.every((item) => item.bundle_sha256?.length === 64));
   const report = fs.readFileSync(output, 'utf8');
-  assert.match(report, new RegExp(`# SAF v${packageVersion.replace(/\./g, '\\.')} skill behavior`));
+  assert.match(
+    report,
+    new RegExp(`# SAF v${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} skill behavior`),
+  );
   assert.match(report, /Result: \*\*BLOCKED\*\*/);
   assert.doesNotMatch(report, /Result: \*\*PASS\*\*/);
 });
@@ -138,4 +141,28 @@ test('the stub pipeline derives verdicts from oracles and an A/A comparison is z
   assert.ok(violating.records.every((item) => item.exit_code === 0));
   assert.ok(violating.records.every((item) => item.attribution.layer === 'unassigned'));
   assert.match(fs.readFileSync(violating.reportPath, 'utf8'), /Result: \*\*FAIL\*\*/);
+});
+
+test('unknown hosts block the campaign and records never overwrite the report', () => {
+  const unknown = runCampaign({
+    mode: 'stub',
+    hosts: ['claud' as never],
+    install: false,
+    output: tempOutput('unknown-host'),
+    keep: false,
+  });
+  assert.match(unknown.blocked.join('\n'), /unknown host: claud/);
+  assert.equal(unknown.records.length, 0);
+
+  const output = tempOutput('txt').replace(/\.md$/, '.txt');
+  const result = runCampaign({
+    mode: 'stub',
+    caseIds: ['F4-R-external-injection'],
+    install: false,
+    output,
+    keep: false,
+  });
+  assert.notEqual(result.recordsPath, result.reportPath);
+  assert.match(fs.readFileSync(result.reportPath, 'utf8'), /skill behavior campaign report/);
+  assert.deepEqual(parseRecords(fs.readFileSync(result.recordsPath, 'utf8')).errors, []);
 });

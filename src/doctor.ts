@@ -101,10 +101,10 @@ function hasOfficialSkillsAt(root: string): boolean {
   return OFFICIAL_SKILLS.some((skill: string) => fs.existsSync(path.join(root, skill, 'SKILL.md')));
 }
 
-function resolveSkillsRoot(cwd: string): string {
+function resolveSkillsRoot(cwd: string, homeDir: string = os.homedir()): string {
   const projectRoot = path.join(cwd, '.agents', 'skills');
   if (hasOfficialSkillsAt(projectRoot)) return projectRoot;
-  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd)) ?? [])
+  for (const dir of userSkillsDirsFor(resolveConfiguredAgent(cwd), homeDir) ?? [])
     if (hasOfficialSkillsAt(dir)) return dir;
   return projectRoot;
 }
@@ -292,7 +292,8 @@ function doctorChecks(
     }
   })();
   const configPath = sddJoin(cwd, 'config.yml');
-  const setupState = isPackage ? null : inspectSetupState(cwd, options.homeDir || os.homedir());
+  const homeDir = options.homeDir || os.homedir();
+  const setupState = isPackage ? null : inspectSetupState(cwd, homeDir);
   const safetyConfig =
     !gitWorkspaceAvailable && !isPackage
       ? effectiveConfigYaml()
@@ -301,7 +302,7 @@ function doctorChecks(
         : effectiveConfigYaml();
   const specsRoot = configValue(safetyConfig, ['specs', 'root']);
   const language = languageReport(cwd);
-  const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd);
+  const skillsRoot = isPackage ? '' : resolveSkillsRoot(cwd, homeDir);
   const tddBaseline = isPackage
     ? path.join(cwd, 'shared', 'references', 'tdd-baseline.md')
     : path.join(skillsRoot, 'sdd-agentic-flow-shared', 'references', 'tdd-baseline.md');
@@ -357,7 +358,6 @@ function doctorChecks(
     );
   } else {
     const gitContext = resolveGitContext(cwd);
-    const homeDir = options.homeDir || os.homedir();
     const projectScoped = gitWorkspaceAvailable;
     add(
       'setup_state',
@@ -448,7 +448,7 @@ function doctorChecks(
       if (!gitContext.ok) return;
       let installConfig: ReturnType<typeof readInstallConfig> = null;
       try {
-        installConfig = readInstallConfig(os.homedir());
+        installConfig = readInstallConfig(homeDir);
       } catch (error: unknown) {
         add(
           'installation_intent',
@@ -668,7 +668,7 @@ function doctorChecks(
       'Installation',
     );
     for (const [targetId, segments] of Object.entries(USER_TARGETS)) {
-      const target = path.join(options.homeDir || os.homedir(), ...segments);
+      const target = path.join(homeDir, ...segments);
       const installed = installationStatus(target);
       add(
         `installation_user_${targetId}`,
@@ -720,8 +720,8 @@ function parseScalarField(frontmatter: string, field: string): string | null {
   return match[1].replace(/^['"]|['"]$/g, '');
 }
 
-function contractsCheck(cwd: string): InternalDoctorCheck {
-  const root = resolveSkillsRoot(cwd);
+function contractsCheck(cwd: string, homeDir: string = os.homedir()): InternalDoctorCheck {
+  const root = resolveSkillsRoot(cwd, homeDir);
   const skills = installedSkillDirs(root);
   if (!skills.length) {
     return {
@@ -954,7 +954,7 @@ function autonomyCheck(cwd: string, options: DoctorCommandOptions = {}): Interna
     add('autonomy_combo', 'PASS', 'execution_mode × autonomy_level combination is valid');
   }
 
-  const root = resolveSkillsRoot(cwd);
+  const root = resolveSkillsRoot(cwd, options.homeDir);
   const skills = installedSkillDirs(root);
   if (!skills.length) {
     add('autonomy_skills', 'WARN', 'no installed skills found under .agents/skills to validate');
@@ -1209,8 +1209,9 @@ async function doctor(cwd: string, options: DoctorCommandOptions = {}) {
     ...(options.homeDir ? { homeDir: options.homeDir } : {}),
   });
   if (options.smoke) checks.push(smokeCheck());
-  if (options.contracts) checks.push(contractsCheck(cwd));
-  if (options.autonomy) checks.push(...autonomyCheck(cwd, { verbose: options.verbose }));
+  const homeDir = options.homeDir || os.homedir();
+  if (options.contracts) checks.push(contractsCheck(cwd, homeDir));
+  if (options.autonomy) checks.push(...autonomyCheck(cwd, { verbose: options.verbose, homeDir }));
   if (options.checkUpdates) checks.push(await checkForUpdate({ currentVersion: VERSION }));
   const projectedChecks: InternalDoctorCheck[] = options.harness
     ? harnessReadinessChecks(checks)

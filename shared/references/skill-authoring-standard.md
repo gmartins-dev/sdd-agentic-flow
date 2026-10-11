@@ -97,7 +97,10 @@ reference, with an explicit read condition at its consumer. Installed references
 Use small canonical examples for demonstrated ambiguities. A trigger or boundary change needs
 positive and negative corpus cases with an authority reference. Structural checks validate the
 examples' declared contract, not a host's selection or semantic judgment. Word counts locate
-review candidates; they are neither a quality score nor a reason to remove a guardrail.
+review candidates; they are neither a quality score nor a reason to remove a guardrail. A claim
+that a change improves agent behavior needs paired baseline and candidate runs, confirmed on
+cases that did not inform the change; without them, describe the change as a contract
+clarification only.
 
 Every skill must make discoverable (within the six-section shape, no new frontmatter fields):
 

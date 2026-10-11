@@ -103,6 +103,26 @@ test('a workspace outside Git defers project checks instead of failing them', ()
   );
 });
 
+test('doctorChecks resolves user skill directories from its homeDir option', () => {
+  const cwd = workspace('home-override');
+  const otherHome = path.join(root, 'other-home');
+  const skillsRoot = path.join(otherHome, '.agents', 'skills');
+  for (const skill of OFFICIAL_SKILLS) {
+    fs.mkdirSync(path.join(skillsRoot, skill), { recursive: true });
+    fs.writeFileSync(path.join(skillsRoot, skill, 'SKILL.md'), `---\nname: ${skill}\n---\n`);
+  }
+  const references = path.join(skillsRoot, 'sdd-agentic-flow-shared', 'references');
+  fs.mkdirSync(references, { recursive: true });
+  fs.writeFileSync(path.join(references, 'tlc-baseline.md'), '# TLC\n');
+  fs.writeFileSync(path.join(references, 'tdd-baseline.md'), '# TDD\n');
+  // HOME stays the empty isolated home: only the option points at the installed skills.
+  const byName = new Map(
+    doctorChecks(cwd, { homeDir: otherHome }).map((check) => [check.name, check]),
+  );
+  assert.equal(byName.get('shared_layer')?.status, 'PASS');
+  assert.equal(byName.get('tdd-baseline')?.status, 'PASS');
+});
+
 test('the package root has no failing harness checks', () => {
   // `.specs/` is Git-ignored, so a fresh checkout (CI) legitimately warns that the configured
   // specs root is missing; every other harness check must pass from tracked files alone.

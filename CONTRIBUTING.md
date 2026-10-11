@@ -109,6 +109,20 @@ through `npx file:<tarball>`. Both commands write timestamped evidence under
 `FAIL`, and `NOT CERTIFIED` return non-zero. `release:check` runs both certification profiles and
 rejects every non-`PASS` result.
 
+## Changing skill behavior
+
+Structural checks prove that skills, sidecars, and the corpus are well formed, not that a host
+follows them. Before claiming that a skill change improves behavior, follow
+[skill behavior evaluation](docs/skill-behavior-evaluation.md): attribute the observed failure,
+keep the patch small, and compare baseline and candidate records on reserved cases.
+
+- `npm run saf:sandbox-campaign` runs the fixtures. The default dry-run and `--stub` make no model
+  call; `--real` needs `--wall-time-minutes` and an isolated host profile.
+- `npm run saf:skill-behavior:compare -- --baseline <a.jsonl> --candidate <b.jsonl>` compares
+  records offline and refuses incomparable data.
+- `test/skill-behavior.test.ts` proves that every fixture oracle accepts compliant behavior and
+  flags the scripted violation; add the same pair for every new case.
+
 ## Diagrams
 
 Diagrams use Mermaid as their textual, versionable source — always as inline ` ```mermaid `

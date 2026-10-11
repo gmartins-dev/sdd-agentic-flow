@@ -159,6 +159,39 @@ Fowler harness engineering, Thoughtworks feedback sensors, Mathews & Nagappan, a
 are listed with role tags under [Curated sources by role](#curated-sources-by-role) rather
 than duplicated here.
 
+## Skill behavior evaluation sources
+
+Consulted for the v8.3.0 [skill behavior evaluation](skill-behavior-evaluation.md) protocol. Each
+item shaped a maintainer question or a fixture class; none is a runtime component, dependency, or
+benchmark claim of this toolkit. Code was not copied from any of them.
+
+- [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt) — skills changed by small edits,
+  compared on held-out cases before adoption. SAF keeps the protocol (failure, hypothesis, small
+  diff, paired comparison, reserved confirmation, human review), not the optimizer.
+- [earendil-works/pi](https://github.com/earendil-works/pi) — progressive skill loading and
+  compaction; motivates separating natural discovery, explicit invocation, and resume.
+- [tech-leads-club/harness-toolkit](https://github.com/tech-leads-club/harness-toolkit) — explicit
+  capability descriptors and degraded decisions; motivates recording which control level was
+  actually exercised. Ideas only: its declared license is not assumed compatible with MIT.
+- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) — closeout clarity with its own
+  failed gate; fixtures must permit the evaluated action, and concision must not erase
+  uncertainty.
+- [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) — documented
+  defensive patterns (timeouts with exit 0, receipts before completion, effects of uncertain
+  operations) that became fixture classes.
+- *Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents*
+  ([arXiv:2609.00006](https://arxiv.org/abs/2609.00006)) — subsystem map used to attribute a
+  failure to the SAF instruction, loading, host tool, or fixture before editing a skill.
+- HERMES ([arXiv:2610.07832](https://arxiv.org/abs/2610.07832)) — localizing revisions to the
+  component the evidence implicates. Its benchmark gains are not SAF measurements.
+- Google, [*The anatomy of harness engineering*](https://developers.googleblog.com/the-anatomy-of-harness-engineering-how-to-evaluate-iterate-and-guard-ai-coding-agents/),
+  and LangChain, [*The anatomy of an agent harness*](https://www.langchain.com/blog/the-anatomy-of-an-agent-harness)
+  — behavioral evaluation of actions and outcomes in batches; a map of harness responsibilities.
+- [jsamitt/proof-claude-plugin](https://github.com/jsamitt/proof-claude-plugin) — a stop hook
+  may allow exit without executed checks; allowed exit is not verification.
+- [SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent) — runtime exit status
+  recorded separately from task completion.
+
 ## Interoperability references
 
 - Agent Skills Standard ([agentskills/agentskills](https://github.com/agentskills/agentskills),
@@ -168,10 +201,12 @@ than duplicated here.
   its 12 skills already matches its core shape by construction: `name` equal to the skill
   directory, kebab-case, and a `description` following a "what it does. Use when..." pattern.
   Listed here as a compatibility reference, not a claim of formal compliance. No external
-  validator has been run against this toolkit's skills. Fields such as `autonomy_profile`,
-  alongside `extends`/`requires`/`produces`/`depends_on`/`conflicts`,
-  stay plain YAML frontmatter, read by no vendor-specific API. The same posture is re-audited
-  each time the frontmatter grows rather than assumed to still hold.
+  validator has been run against this toolkit's skills. `SKILL.md` frontmatter carries only
+  portable identity and compatibility fields. SAF-specific fields such as `autonomy_profile`,
+  alongside `extends`/`requires`/`produces`/`depends_on`/`conflicts`, live in the
+  `saf-contract.yml` sidecar (`saf-skill-contract/v1`, see [architecture](architecture.md#capability-contracts))
+  and are read by no vendor-specific API. The same posture is re-audited each time either file
+  grows rather than assumed to still hold.
 
 ## No endorsement
 

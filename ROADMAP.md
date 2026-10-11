@@ -1,6 +1,6 @@
 # Roadmap
 
-Current release: v8.2.0
+Current release: v8.3.0
 
 This file records direction and one-paragraph release summaries. Detailed release notes live
 in [CHANGELOG.md](CHANGELOG.md).
@@ -26,25 +26,29 @@ this section. That fuller sketch is preserved, unchanged, as a maintainer-local 
 published) for whenever v2.0 is eventually picked up — it is historical/reference material now, not a committed plan, and should be
 re-audited against the codebase at that time rather than trusted as still accurate.
 
-**Directions being watched, not committed to any version:** a longer-range pre-planning
-discussion surfaced several themes that may eventually justify real work — none of them do
-today, and none is scheduled. Recorded here so they have a home without inflating any specific
-version's scope:
+**Current direction (since v8.3.0): behavioral evidence for skill evolution.** Structural checks
+show that skills and contracts are well formed; they do not show that a host follows them. The
+next skill changes start from an observed failure, a small patch in the owning reference, and a
+paired baseline/candidate comparison confirmed on reserved cases (see
+[skill behavior evaluation](docs/skill-behavior-evaluation.md)). Without that evidence, a release
+describes skill edits as contract clarifications, not behavior improvements.
 
-- A no-progress/repeated-failure signal for `loop-state.md` (an `Attempt:`/`Progress:` field,
-  self-evaluated by the invoking agent the same way guardrails 1–6 already are) — raised and
-  explicitly deferred during v1.9.0's planning; becomes real scope only if a genuine stuck-loop
-  incident is actually observed, not before.
-- An evidence graph linking requirement → spec → task → code → test → validation → PR, exposed
-  via `doctor --evidence-graph` rather than a new top-level command — extending the existing
-  optional `REQ-{id}` traceability convention in `artifact-contracts.md`, not inventing a new ID
-  scheme.
+**Delivered since this section was first written (recorded 2026-08-10, re-dated 2026-10-11):**
+
+- The no-progress/repeated-failure signal became the `PROGRESS-001` and `ITERATION-001` system
+  invariants with `bounded-execution.md` in v4.0.0.
+- The requirement → task → evidence graph shipped as `doctor --evidence-graph` in v4.0.0 and was
+  replaced by the Markdown-native v1 evidence contract in v8.0.0.
+
+**Directions still being watched, not committed to any version:**
+
 - `.sdd-agentic-flow/` as portable, cross-agent context — evolving what already exists (`config.yml`,
   `context/`, `reports/`, `snapshots/`, `autonomy/loop-state.md`) rather than a parallel
   structure.
 - Cross-agent portability as a documented extension of the existing adapter pattern
   (`local-files`, `docs/adapters.md`), which stays at the edge, carrying no
-  methodological logic of its own.
+  methodological logic of its own. Hosts that read the generic `.agents/skills` target get a
+  compatibility row only after a real campaign exercises discovery, loading, and references.
 
 **Out of scope, holds regardless of how many versions come before v2.0:** an agent
 runtime/scheduler, a hosted MCP platform, a model-provider abstraction/router, a heavy
@@ -58,6 +62,13 @@ without a reproducible benchmark backing them (see the token economics note in
 promises.
 
 ## Release history
+
+- **v8.3.0:** Behavioral evidence instrument for skill evolution. Adds oracle-based fixtures,
+  an offline baseline/candidate comparator, and a campaign runner whose verdicts come from
+  external observation rather than exit codes; documents the evaluation protocol; fixes `doctor`
+  ignoring its `homeDir` option. A first real campaign on Claude Code and Codex passed all 24
+  runs and verified skill loading; with one trial and no no-SAF control it makes no behavior
+  improvement claim. No new command, runtime dependency, telemetry, or remote mutation.
 
 - **v8.2.0:** Release integrity and state durability. Closes a fork-reachable release-workflow
   trust gap and hardens the release supply chain; makes state writes atomic, clean upgrade

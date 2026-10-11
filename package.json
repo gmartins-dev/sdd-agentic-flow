@@ -66,6 +66,7 @@
     "consumer-closure:dist": "tsx scripts/consumer-closure-certification.ts --profile=dist",
     "consumer-closure:packed": "tsx scripts/consumer-closure-certification.ts --profile=packed",
     "saf:sandbox-campaign": "tsx scripts/sandbox-campaign.ts",
+    "saf:skill-behavior:compare": "tsx scripts/skill-behavior/compare.ts",
     "cli:brand-motion:dist": "tsx scripts/cli-brand-motion-certification.ts --profile=dist",
     "cli:brand-motion:packed": "tsx scripts/cli-brand-motion-certification.ts --profile=packed",
     "cli:packed-smoke": "tsx scripts/cli-sandbox.ts --clean doctor --json",

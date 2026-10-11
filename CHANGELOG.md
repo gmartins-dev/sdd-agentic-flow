@@ -20,9 +20,16 @@
   rewind and rollback are host capabilities.
 - Fix `doctor` ignoring its `homeDir` option when resolving user skill directories, installation
   intent, contracts, and autonomy checks.
-- No model campaign ran for this release: no skill instruction changed, and no behavior
-  improvement, host certification, or cost claim is made. No new command, flag, runtime
-  dependency, telemetry, or public schema.
+- Run the first real skill-behavior campaign (12 cases × Claude Code 2.1.287 and codex-cli 0.162.1
+  × 1 trial on the 8.3.0 bundle): 24/24 PASS. Pilots first exposed and fixed instrument defects:
+  a Codex `--sandbox`/`--approve-for-me` conflict, closeout status parsing, Claude Code bundle
+  placement (`.claude/skills`), and headless approval denials, now recorded as a missing
+  capability. Claude Code runs Bash inside its own sandbox; positive claims on a real host need a
+  sensor command in the harness-captured transcript, so a forged sensor stamp fails.
+- Mark skill loading as manually verified for those host versions. One trial and no no-SAF control
+  measure neither variance nor SAF's effect, and no skill instruction changed, so no behavior
+  improvement or cost claim is made. No new command, flag, runtime dependency, telemetry, or
+  public schema.
 
 ## 8.2.0
 

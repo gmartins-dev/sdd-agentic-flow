@@ -87,6 +87,12 @@ and copies the installed skills into a fresh fixture for every run. Each host ru
 home that receives only its credential file; no sandbox-bypass flag is used. A stub or dry-run
 validates the instrument and never certifies a host.
 
+## Recorded campaigns
+
+| Date | Bundle | Hosts | Runs | Result | What it does and does not show |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-11 | 8.3.0 candidate | Claude Code 2.1.287, codex-cli 0.162.1 | 12 cases × 2 hosts × 1 trial | 24 PASS | Current skills held every first-cycle obligation on both hosts. With one trial and no no-SAF control, it measures neither variance nor the effect of SAF; Claude Code did not load a skill in the three resume prompts, so those passes reflect the model. Three pilots first exposed instrument defects (a Codex flag conflict, status parsing, headless approval denials), fixed before measurement. |
+
 ## Comparison and adoption
 
 Compare only inside one cell: the same host, model, and host configuration, fixture, and loading

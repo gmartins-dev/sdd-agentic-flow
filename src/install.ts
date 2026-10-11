@@ -10,6 +10,7 @@ import { readConfig } from './config-domain';
 import { type ConfigureIntentResult, configureIntent } from './configure';
 import { projectLocale, setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import { resolveGitContext } from './git-context';
+import { HandledError } from './handled-error';
 import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
   classifyInstallIntent,
@@ -716,9 +717,15 @@ async function runConfigInstallation(args: string[], cwd: string): Promise<void>
       plan,
     });
   } catch (error) {
-    // Missing Git metadata or adoption are expected user conditions, not internal errors.
+    // Missing Git metadata, adoption, or a supported intent are expected user conditions;
+    // anything else stays an unexpected internal error (exit 2) for the entrypoint to report.
+    if (!(error instanceof HandledError)) throw error;
     failCommand(errorMessage(error), {
-      reason: 'Project installation intent belongs to a Git workspace with an adoption mode.',
+      ...(effectiveScope === 'project'
+        ? {
+            reason: 'Project installation intent belongs to a Git workspace with an adoption mode.',
+          }
+        : {}),
       try: [
         renderCliCommand('config', 'installation', '--plan', '--scope', 'user'),
         renderCliCommand('init'),
@@ -737,7 +744,7 @@ async function runConfigInstallation(args: string[], cwd: string): Promise<void>
             : '') +
         `\n${t(projectLocale(cwd), 'configure.reconciliationPreview')}\n`,
     );
-  } else log('PASS', `saved ${scope} installation intent`);
+  } else log('PASS', `saved ${effectiveScope} installation intent`);
   const reconcilePlan = planForInstallProfile({
     cwd,
     homeDir: os.homedir(),

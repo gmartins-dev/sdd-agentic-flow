@@ -1,5 +1,6 @@
 import { type AdoptionMode, applyAdoption } from './adoption';
 import { resolveGitContext } from './git-context';
+import { HandledError } from './handled-error';
 import {
   DEFAULT_USER_TARGETS,
   defaultInstallConfig,
@@ -56,7 +57,7 @@ function configureIntent({
   // installed in the user scope. A plain user installation omits it and is
   // therefore valid outside Git.
   const git = adoptionMode || scope === 'project' ? resolveGitContext(cwd) : null;
-  if (git && !git.ok) throw new Error(git.error);
+  if (git && !git.ok) throw new HandledError(git.error);
   const config = readInstallConfig(homeDir) || defaultInstallConfig();
   const resolved = resolveProfile(config, scope, cwd);
   const before = resolved.profile ? structuredClone(resolved.profile) : null;
@@ -84,7 +85,7 @@ function configureIntent({
     return { before, after, scope, ...(adoptionMode ? { adoptionMode } : {}), wrote: !plan };
   }
   const mode = adoptionMode || resolved.profile?.adoption_mode;
-  if (!mode) throw new Error('project installation intent requires adoption_mode');
+  if (!mode) throw new HandledError('project installation intent requires adoption_mode');
   const after: InstallProjectProfile = {
     git_common_dir: git?.ok ? git.context.gitCommonDir : resolved.profile?.git_common_dir || '',
     project_relative_path: git?.ok

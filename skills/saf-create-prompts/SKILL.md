@@ -8,11 +8,17 @@ compatibility: Requires Git and a compatible Agent Skills host.
 
 ## When to use
 
-Use after an SDD specification package is ready and the user needs bounded implementation prompts for one or more tasks. Read [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): resolve one package; load this skill's existing Inputs only.
+Use after an SDD specification package is ready and the user needs bounded implementation prompts
+for one or more tasks. Read [spec
+lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md): resolve one package; load this
+skill's existing Inputs only.
 
 ## When not to use
 
-Do not use to create a specification from scratch, execute implementation, make repository changes outside prompt artifacts, or guess missing requirements. Reject a discovery-only workspace: it is not a spec package and cannot produce implementation prompts. Use `saf-create-spec` first when the specification is incomplete.
+Do not use to create a specification from scratch, execute implementation, make repository changes
+outside prompt artifacts, or guess missing requirements. Reject a discovery-only workspace: it is
+not a spec package and cannot produce implementation prompts. Use `saf-create-spec` first when the
+specification is incomplete.
 
 ## Inputs
 
@@ -23,32 +29,68 @@ Do not use to create a specification from scratch, execute implementation, make 
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when present to apply path overrides; otherwise use canonical effective defaults. Resolve **one** package; load this skill's existing Inputs/Workflow list only. Related slugs only if named or requested (one hop). Do not glob sibling `spec.md`.
-2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and validation expectations.
-3. Read `../sdd-agentic-flow-shared/references/prompt-authoring-standard.md`, `../sdd-agentic-flow-shared/references/tdd-baseline.md`, `../sdd-agentic-flow-shared/references/task-slicing.md`, `../sdd-agentic-flow-shared/references/workflow-safety.md`, and `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts. Use discovery artifacts only to recover relevant resolved context; `spec.md` remains the requirement authority.
-4. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist.
-5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
-6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and any justified horizontal slice or expand-contract strategy.
-7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy, Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations. Copy **Requirement anchors** from `tasks.md` into each task prompt; never conflate anchors with task-order Dependencies.
-8. Write a minimum-sufficient execution contract: objective, requirement anchors, acceptance criteria, repository context, known constraints, review boundary, expected touchpoints, public seam, non-goals, authority boundary, verification, completion criteria, and a compact handoff only when another workflow step needs it. Expected touchpoints guide inspection; they neither authorize scope expansion nor prohibit necessary re-grounding. Copy spec-derived expected outcomes into each prompt. When work intent is **bugfix**, also copy **unchanged behavior** and the regression / reproduction sensors from the spec. Do not invite the implementer to derive expected from the implementation. Require the implementer to inspect current patterns, prefer the smallest solution that satisfies the task, and keep the complexity budget. Do not prescribe provider tools, hidden reasoning, status cadence, subagents, or an implementation recipe unless the specification requires it. Do not dump `engineering-principles.md` into every prompt. In autonomous mode, refresh affected prompts after an authorized intent-preserving canonical reconciliation without a new confirmation.
-9. Verify every prompt references local paths, contains no private context or secrets, and collectively covers the requested criteria without overlapping ownership.
-   Apply the read conditions in `prompt-authoring-standard.md`: binding inputs remain MUST READ; conditional details stay READ WHEN RELEVANT. Preserve named coverage members and candidate-sensor limitations rather than replacing them with "run all tests".
+1. Read `.sdd-agentic-flow/config.yml` when present to apply path overrides; otherwise use canonical
+   effective defaults. Resolve **one** package; load this skill's existing Inputs/Workflow list
+   only. Related slugs only if named or requested (one hop). Do not glob sibling `spec.md`.
+2. Read `../sdd-agentic-flow-shared/references/tlc-baseline.md` to preserve lifecycle gates and
+   validation expectations.
+3. Read `../sdd-agentic-flow-shared/references/prompt-authoring-standard.md`,
+   `../sdd-agentic-flow-shared/references/tdd-baseline.md`,
+   `../sdd-agentic-flow-shared/references/task-slicing.md`,
+   `../sdd-agentic-flow-shared/references/workflow-safety.md`, and
+   `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts. Use
+   discovery artifacts only to recover relevant resolved context; `spec.md` remains the requirement
+   authority.
+4. Read `.sdd-agentic-flow/context/project-context.md` and
+   `.sdd-agentic-flow/context/domain-glossary.md` when they exist.
+5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance
+   criteria, and save prompts to the configured location or `.sdd-agentic-flow/prompts`.
+6. Prefer independently verifiable vertical slices. Record explicit dependencies, public seams, and
+   any justified horizontal slice or expand-contract strategy.
+7. For code tasks, require behavior, contractual seam (field label: `Public seam`), test strategy,
+   Expected RED command (diagnostic; `n/a — not used as proof` is valid; do not fabricate), Expected
+   GREEN command (passing-sensor command(s)), refactor scope, and TDD limitations. Copy
+   **Requirement anchors** from `tasks.md` into each task prompt; never conflate anchors with
+   task-order Dependencies.
+8. Write a minimum-sufficient execution contract: objective, requirement anchors, acceptance
+   criteria, repository context, known constraints, review boundary, expected touchpoints, public
+   seam, non-goals, authority boundary, verification, completion criteria, and a compact handoff
+   only when another workflow step needs it. Expected touchpoints guide inspection; they neither
+   authorize scope expansion nor prohibit necessary re-grounding. Copy spec-derived expected
+   outcomes into each prompt. When work intent is **bugfix**, also copy **unchanged behavior** and
+   the regression / reproduction sensors from the spec. Do not invite the implementer to derive
+   expected from the implementation. Require the implementer to inspect current patterns, prefer the
+   smallest solution that satisfies the task, and keep the complexity budget. Do not prescribe
+   provider tools, hidden reasoning, status cadence, subagents, or an implementation recipe unless
+   the specification requires it. Do not dump `engineering-principles.md` into every prompt. In
+   autonomous mode, refresh affected prompts after an authorized intent-preserving canonical
+   reconciliation without a new confirmation.
+9. Verify every prompt references local paths, contains no private context or secrets, and
+   collectively covers the requested criteria without overlapping ownership.
+   Apply the read conditions in `prompt-authoring-standard.md`: binding inputs remain MUST READ;
+   conditional details stay READ WHEN RELEVANT. Preserve named coverage members and candidate-sensor
+   limitations rather than replacing them with "run all tests".
 
 ## Safety
 
-- Generate text artifacts only; do not execute prompts, install dependencies, use the network, or change repository/global defaults.
+- Generate text artifacts only; do not execute prompts, install dependencies, use the network, or
+  change repository/global defaults.
 - Do not include secrets, personal data, private conversation context, or unsupported claims.
-- Keep instructions repository-local and flag any step requiring elevated access, external coordination, or destructive action for the user.
+- Keep instructions repository-local and flag any step requiring elevated access, external
+  coordination, or destructive action for the user.
 - Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` for safety boundaries.
 - Do not invite the implementer to derive expected outcomes from the code.
 
 ## Output
 
-Return the prompt artifact paths plus a compact mapping of prompt to requirements, expected touchpoints, dependencies, and validation expected from the implementer. Include `Status`, `Next recommended skill`, and `Reason`.
+Return the prompt artifact paths plus a compact mapping of prompt to requirements, expected
+touchpoints, dependencies, and validation expected from the implementer. Include `Status`, `Next
+recommended skill`, and `Reason`.
 
 ### Autonomy
 
 Supports `manual`, `supervised`, and `autonomous` autonomy levels. In `autonomous` mode, advancing
 to `saf-implement` or `saf-implement-multi` requires `prompts.md` with a paste-ready prompt for
 every task and no ambiguous task boundary. A prompt refresh after an authorized reconciliation is
-an on-path repair, not a new human gate. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+an on-path repair, not a new human gate. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

@@ -11,7 +11,7 @@ import path from 'node:path';
 import { type BrandStream, type DisplayMode, formatBrandArt, writeBrandArt } from './brand-art';
 import type { DoctorCheck } from './doctor-view';
 import { type ColorDepth, colorEnabled, detectColorDepth } from './terminal-color';
-import { SAF_ASCII_GLYPHS, SAF_GLYPHS, SAF_THEME, safGlyph, symbol } from './terminal-theme';
+import { SAF_GLYPHS, SAF_THEME, safGlyph, symbol } from './terminal-theme';
 
 const STATUS_COLORS = {
   PASS: '32',
@@ -248,27 +248,6 @@ function renderKeyValue(key: string, value: string, mode: DisplayMode = 'human-r
   return lines;
 }
 
-function renderStep(
-  current: number,
-  total: number,
-  label: string,
-  mode: DisplayMode = 'human-rich',
-  stepLabel = 'Step',
-): string[] {
-  if (mode === 'machine') return [`step=${current}/${total} label=${label}`];
-  return [`${stepLabel} ${current}/${total}  ${label}`];
-}
-
-function renderWarning(message: string, mode: DisplayMode = 'human-rich'): string {
-  if (mode === 'machine') return `WARN ${message}`;
-  return `${symbol('warn', mode)} ${message}`;
-}
-
-function renderSuccess(message: string, mode: DisplayMode = 'human-rich'): string {
-  if (mode === 'machine') return `PASS ${message}`;
-  return `${symbol('success', mode)} ${message}`;
-}
-
 function shortenPath(
   value: string | undefined,
   { homeDir, cwd }: ShortenPathOptions = {},
@@ -349,11 +328,7 @@ export {
   outputMode,
   renderKeyValue,
   renderSection,
-  renderStep,
-  renderSuccess,
-  renderWarning,
   resolvePresentationContext,
-  SAF_ASCII_GLYPHS,
   SAF_GLYPHS,
   SAF_THEME,
   safGlyph,
@@ -363,8 +338,6 @@ export {
   symbol,
   terminalBreakpoint,
   terminalCapabilities,
-  terminalColumns,
-  terminalRows,
   writeBrand,
 };
 

@@ -1,8 +1,8 @@
 # Publishing
 
 Run `npm run release:check` first. It chains `npm run check`, `npm run pack:dry`,
-`npx sdd-agentic-flow doctor --smoke`, and a version-consistency check across `package.json`, every
-`skills/*/SKILL.md`, every `saf-contract.yml`, and package-lock root metadata, stopping at the first failure. It replaces the
+`npx sdd-agentic-flow doctor --smoke`, and a version-consistency check across `package.json`, the
+package-lock root metadata, and the CLI source version contract, stopping at the first failure. It replaces the
 manual command list this section used to carry, so this doc never needs an edit on a routine
 version bump again.
 
@@ -46,6 +46,22 @@ as an accidental release.
 The human decision point is the push of the version-bump commit to `main`. Once that commit is pushed and CI is green, tag,
 release, and both registry publishes follow without a second manual step.
 
+### Release trust boundary
+
+CI also runs for pull requests, including pull requests from forks whose branch can be named
+`main`. The privileged release job therefore runs only when the triggering CI run was caused by a
+`push` and its head repository is this repository; a fork's commit is never checked out with
+write or OIDC permissions. The job also:
+
+- installs dependencies with `npm ci --ignore-scripts`, so no development-dependency lifecycle
+  script runs while publish credentials are available;
+- passes step outputs to shell code through `env:` instead of inline `${{ }}` expressions;
+- pins every GitHub Action to a full commit SHA (Dependabot proposes updates) and installs an
+  exact npm CLI version for Trusted Publishing;
+- serializes runs with a `release` concurrency group that never cancels an in-flight publish.
+
+`test/workflow-policy.test.ts` enforces these properties in `npm run check`.
+
 ## `npm publish`: automatic via npm Trusted Publishing (OIDC)
 
 `.github/workflows/release.yml` publishes to npm itself, in the same job, right after it creates
@@ -59,8 +75,8 @@ stored in this repository.** npm only accepts that exchange from the one provide
 workflow filename) registered as this package's Trusted Publisher. npmjs.com allows exactly one
 per package, so only `release.yml` is registered; see "One-time setup" below.
 
-Before publishing, `release.yml` uses the cached dependency installation from the start of the
-job and re-runs `npm run pack:dry` as a final sanity check of the package contents.
+Before publishing, `release.yml` uses the script-free dependency installation from the start of
+the job and re-runs `npm run pack:dry` as a final sanity check of the package contents.
 
 ## GitHub Packages mirror: automatic (scoped)
 

@@ -222,7 +222,6 @@ export {
   SAF_GLYPHS,
   SAF_THEME,
   SPACING,
-  SYMBOLS,
   safGlyph,
   symbol,
   TERMINAL_GLYPHS,

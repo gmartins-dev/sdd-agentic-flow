@@ -2,8 +2,9 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { writeFileAtomic } from './atomic-write';
 import { configValue } from './config-domain';
-import { resolveGitContext } from './git-context';
+import { GIT_TIMEOUT_MS, resolveGitContext } from './git-context';
 import { readInstallConfig, repositoryKey } from './install-domain';
 import { gitInfoExcludePath, gitMetadataDir } from './paths';
 import { HISTORICAL_SKILLS, OFFICIAL_SKILLS } from './skill-identity';
@@ -201,6 +202,7 @@ function trackedFilesUnder(cwd: string, relativeRoot: string): string[] {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: GIT_TIMEOUT_MS,
     })
       .split(/\r?\n/)
       .map((entry) => entry.trim())
@@ -378,8 +380,7 @@ function applyAdoption(
   ].filter(Boolean);
   const next = [...(preserved ? [preserved] : []), ...blocks].join('\n\n');
   if (next !== current.trimEnd()) {
-    fs.mkdirSync(path.dirname(excludePath), { recursive: true });
-    if (next) fs.writeFileSync(excludePath, `${next}\n`, 'utf8');
+    if (next) writeFileAtomic(excludePath, `${next}\n`);
     else fs.rmSync(excludePath, { force: true });
   }
   const refreshed = inspectAdoption(cwd, homeDir);
@@ -408,10 +409,6 @@ function applyAdoption(
   };
 }
 
-function adoptionProfileFor(mode: AdoptionMode, scope: 'user' | 'project') {
-  return { adoption_mode: mode, scope };
-}
-
 function adoptionModeForScope(mode: AdoptionMode): 'user' | 'project' {
   return mode === 'team' ? 'project' : 'user';
 }
@@ -429,7 +426,7 @@ function hasManagedExcludeBlocks(filePath: string): boolean {
 function removeManagedExcludeBlocksFromFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
   const next = removeManagedBlocks(fs.readFileSync(filePath, 'utf8')).trimEnd();
-  if (next) fs.writeFileSync(filePath, `${next}\n`, 'utf8');
+  if (next) writeFileAtomic(filePath, `${next}\n`);
   else fs.rmSync(filePath, { force: true });
 }
 
@@ -446,6 +443,7 @@ function removeUntrackedProjectAssets(cwd: string): string[] {
       execFileSync('git', ['ls-files', '--error-unmatch', '--', path.relative(cwd, target)], {
         cwd,
         stdio: ['ignore', 'ignore', 'ignore'],
+        timeout: GIT_TIMEOUT_MS,
       });
     } catch {
       fs.rmSync(target, { recursive: true, force: true });
@@ -459,15 +457,12 @@ export type { AdoptionInspection, AdoptionMode, AdoptionResult, AdoptionState, S
 export {
   ADOPTION_MODES,
   adoptionModeForScope,
-  adoptionProfileFor,
   applyAdoption,
   expectedExcludes,
   hasManagedExcludeBlocks,
   inspectAdoption,
   isAdoptionMode,
   normalizeSpecsRoot,
-  projectAdoptionMode,
   removeManagedExcludeBlocksFromFile,
   removeUntrackedProjectAssets,
-  repositoryRoot,
 };

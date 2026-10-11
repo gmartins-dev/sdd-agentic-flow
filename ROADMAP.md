@@ -1,6 +1,69 @@
 # Roadmap
 
-Current release: v8.1.2
+Current release: v8.2.0
+
+This file records direction and one-paragraph release summaries. Detailed release notes live
+in [CHANGELOG.md](CHANGELOG.md).
+
+## Direction (v2.0 undefined)
+
+**v2.0 is deliberately undefined.** It is not the next release, has no scope, no acceptance
+criteria, and no schedule. By explicit maintainer decision (2026-08-10), the project evolves
+through several more incremental, audit-first minor/patch versions first — each one scoped the
+same way v1.5 through v1.9.1 already were: a real gap found by reading the code, not a
+pre-assigned roadmap slot. There is no fixed number or sequence of versions between here and
+v2.0; the next one is whatever the next real audit finds, decided when that work actually
+starts, not now.
+
+At this point, the strongest lever is not adding another mechanism — skills, contracts,
+evidence, handoff, routing, autonomy, guardrails, and `loop-state.md` already exist. It's making
+the mechanisms that already exist work together as one coherent system rather than growing the
+list further; a watched direction below only earns a real version when an audit finds a gap none
+of the existing pieces already cover.
+
+This replaces the earlier "v2.0 — Agentic SDD Platform (candidate)" outline that used to live in
+this section. That fuller sketch is preserved, unchanged, as a maintainer-local plan (not
+published) for whenever v2.0 is eventually picked up — it is historical/reference material now, not a committed plan, and should be
+re-audited against the codebase at that time rather than trusted as still accurate.
+
+**Directions being watched, not committed to any version:** a longer-range pre-planning
+discussion surfaced several themes that may eventually justify real work — none of them do
+today, and none is scheduled. Recorded here so they have a home without inflating any specific
+version's scope:
+
+- A no-progress/repeated-failure signal for `loop-state.md` (an `Attempt:`/`Progress:` field,
+  self-evaluated by the invoking agent the same way guardrails 1–6 already are) — raised and
+  explicitly deferred during v1.9.0's planning; becomes real scope only if a genuine stuck-loop
+  incident is actually observed, not before.
+- An evidence graph linking requirement → spec → task → code → test → validation → PR, exposed
+  via `doctor --evidence-graph` rather than a new top-level command — extending the existing
+  optional `REQ-{id}` traceability convention in `artifact-contracts.md`, not inventing a new ID
+  scheme.
+- `.sdd-agentic-flow/` as portable, cross-agent context — evolving what already exists (`config.yml`,
+  `context/`, `reports/`, `snapshots/`, `autonomy/loop-state.md`) rather than a parallel
+  structure.
+- Cross-agent portability as a documented extension of the existing adapter pattern
+  (`local-files`, `docs/adapters.md`), which stays at the edge, carrying no
+  methodological logic of its own.
+
+**Out of scope, holds regardless of how many versions come before v2.0:** an agent
+runtime/scheduler, a hosted MCP platform, a model-provider abstraction/router, a heavy
+workflow-DAG engine, a proprietary skill format, a skill marketplace ahead of validated need,
+mandatory telemetry, any `while (...)`-shaped orchestration loop inside this CLI, unbounded or
+unattended-forever autonomous execution (autonomous stays guarded, bounded, and interruptible —
+see [autonomy guardrails](docs/autonomy-guardrails.md)), and quantitative token/speed/cost claims
+without a reproducible benchmark backing them (see the token economics note in
+[README.md](README.md)). Matches
+`docs/design-principles.md`: concrete claims over broad compatibility, security, or autonomy
+promises.
+
+## Release history
+
+- **v8.2.0:** Release integrity and state durability. Closes a fork-reachable release-workflow
+  trust gap and hardens the release supply chain; makes state writes atomic, clean upgrade
+  cross-device safe, and subprocesses bounded; aligns handled failures with exit `1`; thins the
+  CLI entrypoint; adds coverage floors, wider contract guards, a complete architecture layout,
+  and synced Portuguese guides. No new command, runtime dependency, telemetry, or remote mutation.
 
 - **v8.1.2:** Fixes duplicate `Checks` labels in human-readable doctor output and expands black-box
   coverage for read-only, offline, non-interactive, and failure paths in the CLI update flow.
@@ -333,7 +396,7 @@ Current release: v8.1.2
   proving static autonomy CLI contracts, cross-agent parity docs. Evidence graph (`doctor
   --evidence-graph`) and per-agent guide parity remain future candidates (v1.9.3/v1.9.4 audits).
 - **v1.9.2 (2026-08-10):** Flow-phase and completion-semantics cross-references. Docs-only patch,
-  audited against `.local/gmm/sdd-agentic-flow/v1.9.2-flow-state-implementation-plan.md`'s 3-item
+  audited against a maintainer-local plan's 3-item
   candidate skeleton — 2 of 3 items closed a real, narrow gap; the third stayed out, its own
   precondition still unmet. `shared/references/autonomy-guardrails.md` and its public mirror
   `docs/autonomy-guardrails.md` now point a `loop-state.md` reader at `docs/sdd-methodology.md`'s
@@ -361,7 +424,7 @@ Current release: v8.1.2
   that consume it (`check-skills.sh`, `release-checklist.sh`) now also check `bin/`'s `VERSION`;
   a new `OFFICIAL_SKILLS`-vs-`skills/` parity check was added directly to `check-skills.sh`. Both
   fixes were proven against the actual v1.9.0 bug shape (temporarily reintroducing it locally)
-  before being kept — see `.local/gmm/sdd-agentic-flow/v1.9.1-implementation-report.md`.
+  before being kept (recorded in the maintainer-local implementation report).
   Zero breaking changes.
 
 - **v1.9.0 (2026-08-10):** Method & Reliability. Deepens v1.8.0's autonomy foundation instead of
@@ -378,7 +441,7 @@ Current release: v8.1.2
   `worktree-orchestration.md`. Zero breaking changes, same as every release since v1.0.
 
   **Corrections vs. the v1.9 candidate draft below and its
-  `.local/gmm/sdd-agentic-flow/v1.9.0-implementation-plan.md` skeleton:** progressive disclosure
+  maintainer-local implementation-plan skeleton:** progressive disclosure
   was audited and found not needed — all 13 pre-existing skills measured 55–70 lines at audit
   time (before this release's own content additions nudged `sdd-brainstorm` to 71), far under
   the ~500-line guidance even after v1.8.0's `## Autonomy` section addition; no refactor
@@ -387,7 +450,7 @@ Current release: v8.1.2
   `project-context-lifecycle` and `version-migration` have no on-disk fixture files by design
   and are already proved by dedicated `test/cli.test.js` tests; `invoice-approval` is a
   deliberately smaller, non-golden-flow fixture per
-  `.local/gmm/sdd-agentic-flow/ai-context-report.md`, not an untested golden flow — there was
+  a maintainer-local context report, not an untested golden flow — there was
   nothing to wire. A formal no-progress/repeated-failure signal for `loop-state.md` (raised in a
   separate pre-planning discussion, not in the original v1.9 candidate) was evaluated and
   explicitly deferred: no real stuck-loop incident has been observed, and building the
@@ -536,58 +599,7 @@ Current release: v8.1.2
   include adapters beyond `local-files`/`github` (Jira, Linear, Azure DevOps, Notion, Slack) and
   maturity-model documentation. Nothing in this line is committed or scheduled.
 
-## Future direction (post-1.9.1, v2.0 undefined)
-
-**v2.0 is deliberately undefined.** It is not the next release, has no scope, no acceptance
-criteria, and no schedule. By explicit maintainer decision (2026-08-10), the project evolves
-through several more incremental, audit-first minor/patch versions first — each one scoped the
-same way v1.5 through v1.9.1 already were: a real gap found by reading the code, not a
-pre-assigned roadmap slot. There is no fixed number or sequence of versions between here and
-v2.0; the next one is whatever the next real audit finds, decided when that work actually
-starts, not now.
-
-At this point, the strongest lever is not adding another mechanism — skills, contracts,
-evidence, handoff, routing, autonomy, guardrails, and `loop-state.md` already exist. It's making
-the mechanisms that already exist work together as one coherent system rather than growing the
-list further; a watched direction below only earns a real version when an audit finds a gap none
-of the existing pieces already cover.
-
-This replaces the earlier "v2.0 — Agentic SDD Platform (candidate)" outline that used to live in
-this section. That fuller sketch is preserved, unchanged, in
-`.local/gmm/sdd-agentic-flow/v2.0.0-implementation-plan.md` for whenever v2.0 is eventually
-picked up — it is historical/reference material now, not a committed plan, and should be
-re-audited against the codebase at that time rather than trusted as still accurate.
-
-**Directions being watched, not committed to any version:** a longer-range pre-planning
-discussion surfaced several themes that may eventually justify real work — none of them do
-today, and none is scheduled. Recorded here so they have a home without inflating any specific
-version's scope:
-
-- A no-progress/repeated-failure signal for `loop-state.md` (an `Attempt:`/`Progress:` field,
-  self-evaluated by the invoking agent the same way guardrails 1–6 already are) — raised and
-  explicitly deferred during v1.9.0's planning; becomes real scope only if a genuine stuck-loop
-  incident is actually observed, not before.
-- An evidence graph linking requirement → spec → task → code → test → validation → PR, exposed
-  via `doctor --evidence-graph` rather than a new top-level command — extending the existing
-  optional `REQ-{id}` traceability convention in `artifact-contracts.md`, not inventing a new ID
-  scheme.
-- `.sdd-agentic-flow/` as portable, cross-agent context — evolving what already exists (`config.yml`,
-  `context/`, `reports/`, `snapshots/`, `autonomy/loop-state.md`) rather than a parallel
-  structure.
-- Cross-agent portability as a documented extension of the existing adapter pattern
-  (`local-files`/`github`, `docs/adapters.md`), which stays at the edge, carrying no
-  methodological logic of its own.
-
-**Out of scope, holds regardless of how many versions come before v2.0:** an agent
-runtime/scheduler, a hosted MCP platform, a model-provider abstraction/router, a heavy
-workflow-DAG engine, a proprietary skill format, a skill marketplace ahead of validated need,
-mandatory telemetry, any `while (...)`-shaped orchestration loop inside this CLI, unbounded or
-unattended-forever autonomous execution (autonomous stays guarded, bounded, and interruptible —
-see [autonomy guardrails](docs/autonomy-guardrails.md)), and quantitative token/speed/cost claims
-without a reproducible benchmark backing them (see the token economics note in
-[README.md](README.md)). Matches
-`docs/design-principles.md`: concrete claims over broad compatibility, security, or autonomy
-promises.
+### Before v1.0
 
 - **v0.1:** local-first core and full public skill pack.
 - **v0.2:** Adoption & Trust Release: interactive setup, local validation, rollback, agent docs, and public examples.

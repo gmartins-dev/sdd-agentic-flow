@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { inspectAdoption } from './adoption';
+import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
 import {
   AUTONOMY_LEVELS,
@@ -188,6 +189,11 @@ function languageReport(cwd: string) {
         ? 'language profile is valid'
         : 'language profile is configured but not installed',
   };
+}
+
+// The human output locale for a workspace: an explicit choice, else its configured profile.
+function projectLocale(cwd: string, explicit?: string): string {
+  return resolveLocale({ explicit, configured: languageReport(cwd).profile });
 }
 
 function installationStatus(target: string): boolean {
@@ -1257,7 +1263,7 @@ function evidenceGraphDoctor(
     const html = renderEvidenceGraphHtml(result);
     if (options.output) {
       const output = path.resolve(cwd, options.output);
-      fs.writeFileSync(output, html);
+      writeFileAtomic(output, html);
       process.stdout.write(`${output}\n`);
     } else process.stdout.write(html);
   } else if (options.json) {
@@ -1280,6 +1286,7 @@ export {
   languageReport,
   officialSkillsPresence,
   officialSkillsPresenceForTargets,
+  projectLocale,
   resolveConfiguredAgent,
   resolveSkillsRoot,
   setDoctorInstallPlanResolver,

@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
-import path from 'node:path';
 import { type AdoptionMode, adoptionModeForScope, inspectAdoption } from './adoption';
+import { writeFileAtomic } from './atomic-write';
 import { renderCliCommand } from './cli-command';
+import { asString, errorMessage, fail, logStatus, renderNextStep, resolveMode } from './cli-output';
 import {
   AUTONOMY_LEVELS,
   applyPolicyMutation,
@@ -14,7 +15,7 @@ import {
   setupPolicyFromPair,
   setupPolicyFromPreset,
 } from './config-domain';
-import { doctor, languageReport } from './doctor';
+import { doctor, projectLocale } from './doctor';
 import { resolveGitContext } from './git-context';
 import { inferInitDefaults } from './init-defaults';
 import {
@@ -24,13 +25,7 @@ import {
   repositoryKey,
 } from './install-domain';
 import { resolveLocale, t, translateText } from './messages';
-import {
-  autonomyComboValid,
-  LANGUAGE_PROFILES,
-  SDD_PATHS,
-  sddJoin,
-  USAGE_GUIDE_URL,
-} from './paths';
+import { autonomyComboValid, LANGUAGE_PROFILES, sddJoin } from './paths';
 import { planRecovery } from './recovery';
 import { select } from './selector';
 import {
@@ -44,7 +39,7 @@ import {
 } from './setup-plan';
 import { inspectSetupState, inspectUserInstallation, type SetupStateSnapshot } from './setup-state';
 import { renderWelcomeText } from './terminal-components';
-import { terminalLog, terminalNext, terminalNote, terminalWelcome } from './terminal-ui';
+import { terminalLog, terminalNote, terminalWelcome } from './terminal-ui';
 import {
   clearViewport,
   type DisplayMode,
@@ -52,7 +47,6 @@ import {
   outputMode,
   resolvePresentationContext,
   SAF_GLYPHS,
-  styleStatus,
   symbol,
 } from './ui';
 import {
@@ -142,29 +136,10 @@ function requireCommandDeps(): SetupCommandDeps {
   return commandDeps;
 }
 
-function localeFor(cwd: string, explicit?: string) {
-  return resolveLocale({ explicit, configured: languageReport(cwd).profile });
-}
-
-function resolveMode(flags: SetupCommandOptions = {}) {
-  return outputMode({ stdout: process.stdout, stdin: process.stdin }, process.env, {
-    ascii:
-      Boolean(flags.ascii) || process.argv.includes('--ascii') || process.env.SDD_ASCII === '1',
-    quiet: Boolean(flags.quiet),
-    json: Boolean(flags.json),
-  });
-}
+const localeFor = projectLocale;
 
 function log(status: string, message: string, explicitLocale?: string) {
-  const locale = explicitLocale || localeFor(process.cwd());
-  terminalLog(status, translateText(locale, message), { mode: resolveMode() });
-}
-
-function fail(message: string, codeOrOptions: number | { code?: number } = 1) {
-  const code = typeof codeOrOptions === 'number' ? codeOrOptions : (codeOrOptions.code ?? 1);
-  process.stderr.write(`${styleStatus('FAIL', process.stderr)} ${message}\n`);
-  process.exitCode = code;
-  return false;
+  logStatus(status, message, localeFor(process.cwd(), explicitLocale));
 }
 
 function logPassLine(message: string, options: SetupCommandOptions = {}) {
@@ -177,21 +152,7 @@ function logPassLine(message: string, options: SetupCommandOptions = {}) {
 }
 
 function nextStep(line: string | string[], options: NextStepOptions = {}) {
-  if (options.quiet) return;
-  const mode = options.mode ?? resolveMode(options);
-  if (mode === 'machine') return;
-  const list = (Array.isArray(line) ? line : [line]).filter(Boolean);
-  if (!list.length) return;
-  const locale = localeFor(process.cwd());
-  terminalNext(list, { mode, title: t(locale, 'init.next') });
-}
-
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  renderNextStep(line, options, localeFor(process.cwd()));
 }
 
 function configFor(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
@@ -254,20 +215,6 @@ safety:
 `;
 }
 
-function printUsageGuidePointer(cwd: string, locale = 'en-US') {
-  const resolvedLocale = resolveLocale({ configured: locale });
-  const localGuide = resolvedLocale === 'pt-BR' ? SDD_PATHS.usageGuidePtBr : SDD_PATHS.usageGuideEn;
-  const localExists = fs.existsSync(path.join(cwd, SDD_PATHS.usage));
-  if (localExists) {
-    return (
-      `Skills usage guide (local stub, regenerable):\n  ${SDD_PATHS.usage}\n` +
-      `Full guide (local copy):\n  ${localGuide}\n` +
-      `Canonical guide (GitHub):\n  ${USAGE_GUIDE_URL}\n`
-    );
-  }
-  return `Skills usage guide:\n  ${USAGE_GUIDE_URL}\n`;
-}
-
 function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   const mode = resolveMode({ quiet: options.quiet, ascii: Boolean(options.ascii) });
   const homeDir = asString(options.homeDir, os.homedir());
@@ -280,22 +227,11 @@ function init(cwd: string, options: InitOptions & SetupCommandOptions = {}) {
   return true;
 }
 
-function onboardingStateFor(cwd: string) {
-  const state = inspectSetupState(cwd).state;
-  return state === 'Fresh'
-    ? 'FIRST_USE'
-    : state === 'Ready'
-      ? 'READY'
-      : state === 'Attention'
-        ? 'NEEDS_ATTENTION'
-        : state === 'Blocked'
-          ? 'NEEDS_ATTENTION'
-          : 'PARTIAL';
-}
-
 function savedSetupProfile(cwd: string, homeDir = os.homedir()): Record<string, unknown> | null {
   const saved = readInstallConfig(homeDir) || defaultInstallConfig();
-  const project = saved.projects[repositoryKey(cwd)];
+  // Outside Git there is no project key; only the user profile can apply.
+  const git = resolveGitContext(cwd);
+  const project = git.ok ? saved.projects[git.context.adoptionKey] : undefined;
   if (project?.adoption_mode === 'team')
     return { scope: 'project', profile: project as Record<string, unknown> };
   if (project?.adoption_mode)
@@ -352,13 +288,6 @@ function policyReviewTitle(draft: SetupPolicyDraft, locale: string): string {
     : policyDisplayTitle(draft);
 }
 
-function printPolicyLines(draft: SetupPolicyDraft, locale: string, indent = '  ') {
-  process.stdout.write(
-    `${indent}${t(locale, 'setup.policy')}        ${policyReviewTitle(draft, locale)}\n`,
-  );
-  process.stdout.write(`${indent}                ${policyReviewTitle(draft, locale)}\n`);
-}
-
 function policyFromConfig(
   config: ReturnType<typeof readConfig>,
   _locale: string,
@@ -382,15 +311,13 @@ function persistWorkspaceSetupConfig(
 ): { ok: boolean; error?: string } {
   const configPath = sddJoin(cwd, 'config.yml');
   if (!fs.existsSync(configPath)) {
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(
+    writeFileAtomic(
       configPath,
       configFor(cwd, {
         profile: locale,
         executionMode: policy.executionMode,
         autonomyLevel: policy.autonomyLevel,
       }),
-      'utf8',
     );
     return { ok: true };
   }
@@ -1498,35 +1425,17 @@ async function guidedInit(cwd: string, options: SetupCommandOptions = {}) {
   }
 }
 
-async function initInteractive(
-  cwd: string,
-  _languageDefault = 'en-US',
-  _featureProfileDefault = 'medium_feature',
-  quiet = false,
-  _executionModeDefault = 'guided',
-  _autonomyLevelDefault = 'manual',
-  localGitExclude = false,
-) {
-  return guidedInit(cwd, { quiet, localGitExclude });
-}
-
 export type { InitOptions, SetupCommandOptions };
 export {
   applySetup,
   chooseSessionLocale,
-  collectSetupIntent,
   guidedInit,
   init,
-  initInteractive,
   needsSessionLanguageSelection,
-  onboardingStateFor,
   persistedSetupIntent,
   policyFromConfig,
   policyReviewTitle,
   preflightSetup,
-  printCurrentSetup,
-  printPolicyLines,
-  printUsageGuidePointer,
   renderInvocationWelcome,
   renderOperationResult,
   resolvePolicyFromCommandOptions,

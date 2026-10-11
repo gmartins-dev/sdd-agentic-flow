@@ -12,6 +12,10 @@ export type GitContext = {
   excludePath: string;
 };
 
+// Bounds every local git query so a hung credential helper or network filesystem cannot block
+// the CLI indefinitely; a timeout surfaces as the same handled failure as any other git error.
+export const GIT_TIMEOUT_MS = 10_000;
+
 export type GitContextResult = { ok: true; context: GitContext } | { ok: false; error: string };
 
 function git(cwd: string, ...args: string[]): string {
@@ -19,6 +23,7 @@ function git(cwd: string, ...args: string[]): string {
     cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
+    timeout: GIT_TIMEOUT_MS,
   }).trim();
 }
 

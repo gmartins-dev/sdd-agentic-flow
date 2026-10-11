@@ -16,10 +16,11 @@ chaves de configuração, modos, statuses e identificadores permanecem iguais.
 
 ## Selecione um perfil
 
-O perfil padrão é `en-US`. O `init` não cria nem sobrescreve a configuração do
-projeto. Adicione um override explícito de `language.profile` em
-`.sdd-agentic-flow/config.yml` somente quando o projeto precisar de outro idioma
-para saídas humanas.
+O perfil padrão é `en-US`. O `init` direto não cria nem sobrescreve a configuração do projeto. O
+setup interativo do workspace persiste o perfil escolhido somente quando você aplica o plano
+revisado do workspace Git; ele grava valores coerentes de `language.profile` e
+`language.human_outputs`. O setup apenas de usuário mantém a escolha na sessão e não cria
+configuração de projeto nem preferência global de idioma.
 
 Override de configuração explícito:
 

@@ -347,5 +347,4 @@ export {
   isPlanEmpty,
   skillDirPartial,
   targetLabelFor,
-  USER_TARGET_LABELS,
 };

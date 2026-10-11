@@ -10,6 +10,11 @@ Network access has **three explicit entry points** (never silent/background):
 
 Machine / pipe / CI / `--quiet` / human-plain bare welcome never prompt and never call the registry unless you pass an explicit flag or command above. Offline is never reported as “up to date”. See `src/update-check.ts` and `src/upgrade.ts`.
 
+The update check always queries the public npm registry; no environment variable redirects it.
+Maintainer black-box tests use environment seams prefixed `SDD_AGENTIC_FLOW_TEST_` to simulate a
+registry answer, an npm install outcome, or the execution mode without network access (for
+example, `SDD_AGENTIC_FLOW_TEST_LATEST_VERSION=offline`); they are not a supported interface.
+
 Installation and configuration are explicit local writes. By default (`install`'s `user`
 scope), skills are written only to per-agent global directories outside the project. See
 [installation scope](installation-scope.md) for the two scopes and their ownership boundary.

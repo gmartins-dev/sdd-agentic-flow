@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { writeFileAtomic } from './atomic-write';
 import { resolveGitContext } from './git-context';
+import { HandledError } from './handled-error';
 import { compareVersions } from './version-compat';
 
 const USER_TARGETS = Object.freeze({
@@ -151,7 +153,7 @@ function classifyInstallationState({
 
 function repositoryKey(root: string): string {
   const resolved = resolveGitContext(root);
-  if (!resolved.ok) throw new Error(resolved.error);
+  if (!resolved.ok) throw new HandledError(resolved.error);
   return resolved.context.adoptionKey;
 }
 
@@ -186,7 +188,7 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
   const schemaLine = lines[0];
   const schema = schemaLine?.replace(/^schema:\s*/, '').trim();
   if (schema !== 'saf-install-intent/v3' && schema !== 'saf-install-intent/v4')
-    throw new Error('unsupported installation intent; clean reinstall required');
+    throw new HandledError('unsupported installation intent; clean reinstall required');
   const config: InstallConfig = {
     schema: schema as InstallConfig['schema'],
     user: { targets: [] },
@@ -233,11 +235,7 @@ function readInstallConfig(homeDir: string): InstallConfig | null {
 }
 
 function writeInstallConfig(config: InstallConfig, homeDir: string): void {
-  const file = installConfigPath(homeDir);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.tmp`;
-  fs.writeFileSync(temporary, serializeInstallConfig(config), 'utf8');
-  fs.renameSync(temporary, file);
+  writeFileAtomic(installConfigPath(homeDir), serializeInstallConfig(config));
 }
 
 function shouldUseInteractiveInstall({

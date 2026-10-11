@@ -9,8 +9,16 @@ const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-config-cli-'));
 after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
+const home = path.join(temporary, 'home');
+fs.mkdirSync(home);
+
+// An isolated home keeps the maintainer's real installation intent out of these assertions.
 function run(args: string[], cwd = temporary): SpawnSyncReturns<string> {
-  return spawnSync(process.execPath, [cli, ...args], { cwd, encoding: 'utf8' });
+  return spawnSync(process.execPath, [cli, ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home, USERPROFILE: home },
+  });
 }
 
 function initConfig(cwd: string): void {

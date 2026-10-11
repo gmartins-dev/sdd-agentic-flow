@@ -8,34 +8,99 @@ compatibility: Requires Git and a compatible Agent Skills host.
 
 ## When to use
 
-Use after implementing one task and before commit or PR handoff. The check report is the verifier's evidence output; it may be returned in the response and persisted only at the configured report destination. Disposable test artifacts remain allowed when the configured Safety contract permits them. The verifier never edits product code, requirements, specs, or tests to obtain PASS. Read [the TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [artifact contracts](../sdd-agentic-flow-shared/references/artifact-contracts.md), [engineering principles](../sdd-agentic-flow-shared/references/engineering-principles.md), [spec lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
+Use after implementing one task and before commit or PR handoff. The check report is the verifier's
+evidence output; it may be returned in the response and persisted only at the configured report
+destination. Disposable test artifacts remain allowed when the configured Safety contract permits
+them. The verifier never edits product code, requirements, specs, or tests to obtain PASS. Read [the
+TLC baseline](../sdd-agentic-flow-shared/references/tlc-baseline.md), [the TDD
+baseline](../sdd-agentic-flow-shared/references/tdd-baseline.md), [change-impact
+validation](../sdd-agentic-flow-shared/references/change-impact-validation.md), [task
+slicing](../sdd-agentic-flow-shared/references/task-slicing.md), [artifact
+contracts](../sdd-agentic-flow-shared/references/artifact-contracts.md), [engineering
+principles](../sdd-agentic-flow-shared/references/engineering-principles.md), [spec
+lifecycle](../sdd-agentic-flow-shared/references/spec-lifecycle.md), and [safety
+rules](../sdd-agentic-flow-shared/references/workflow-safety.md).
 
 ## When not to use
 
-Do not use to implement fixes, review an entire feature, approve a PR, or infer an ambiguous task identity. Reject a discovery-only workspace because it is not a spec package with implementation-ready task evidence. To validate a whole feature already integrated, use `saf-validate` instead of repeating this process task by task.
+Do not use to implement fixes, review an entire feature, approve a PR, or infer an ambiguous task
+identity. Reject a discovery-only workspace because it is not a spec package with
+implementation-ready task evidence. To validate a whole feature already integrated, use
+`saf-validate` instead of repeating this process task by task.
 
 ## Inputs
 
 - One canonical task reference.
-- Optional `.sdd-agentic-flow/config.yml` overrides, the task's SDD artifacts, current diff, and validation commands.
+- Optional `.sdd-agentic-flow/config.yml` overrides, the task's SDD artifacts, current diff, and
+  validation commands.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults. Resolve exactly one package and exactly one task. Load this skill's existing Inputs/Workflow list only.
-2. Follow this **fresh-eyes** order (state-checking, not narrative-judging): re-read spec + repo contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor commands (environment state) → requirement coverage matrix (`requirement → sensor → current result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh independent verifier context when the host provides one; otherwise explicitly re-ground the oracle from canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Inspect changed files for scope drift and pre-existing changes.
-3. Derive task-scoped validation obligations from the required behaviors, current diff, affected seams, repository contracts, and risk, following `change-impact-validation.md`. Select the smallest adequate sensor set and name any omitted higher-level sensor with a requirement-based reason. Confirm each sensor observes a contractual seam and that its oracle is grounded in spec, repo contracts, or configured gates — not inferred solely from the implementation. Flag tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid. For each required behavior, assess the non-shallow litmus by considering a plausible wrong implementation that would survive the selected sensors. A surviving counterexample is a sensor gap; inability to identify one is recorded as a limitation and does not prove adequacy or inadequacy. If the selected sensors cannot discriminate the required behavior, record **Shallow sensor** or an evidence gap — not PASS.
-4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies are explicitly justified. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still **ambiguous**, do not PASS an implementation of one interpretation. On spec drift, write `needs changes` with a reconciliation note — do not rewrite the spec to match the code.
-5. Run only configured, safe, task-relevant checks, applying `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as evidence-contract v1 records: top-line `Feature: <feature-slug>`, v1 envelope, evidence index (`| Requirement anchor | Sensor | Record IDs | Result | Freshness |`), and detailed `EV-*` records. A summary-only row cannot establish adequacy. Distinguish current, historical, stale, not-run, and inconclusive evidence. Record missing or inadequate sensors as explicit gaps. Never turn missing evidence into a pass. A passing sensor is evidence, not a correctness verdict. Self-report is not evidence. This skill must not inherit author narrative. Re-ground goal, completion criteria, and oracle from canonical artifacts per [task-context-package.md](../sdd-agentic-flow-shared/references/task-context-package.md) and [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). If the effective contract changed, re-evaluate affected evidence freshness before classifying the task; a pending proposal is not an effective contract.
-6. Independently judge **engineering fit** against `../sdd-agentic-flow-shared/references/engineering-principles.md` (project conventions, extra abstraction, unnecessary files). Keep that judgment separate from spec/correctness. Engineering-fit issues are findings; they do not flip PASS unless they hit an AC, a safety rule, or an explicit human bar. `PASS` stays owned by evidence-standard and the false-positive catalog.
-7. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps. In autonomous mode, an attributable `needs changes` result identifies the owning `saf-implement` repair transition; it does not authorize this Skill to mutate code. Classify `blocked` and `inconclusive` by cause before routing. Never write `Status: pass` on a false-positive catalog hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed implementation as the correctness oracle, or rewrite the test suite as a second implementation.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults.
+   Resolve exactly one package and exactly one task. Load this skill's existing Inputs/Workflow list
+   only.
+2. Follow this **fresh-eyes** order (state-checking, not narrative-judging): re-read spec + repo
+   contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor
+   commands (environment state) → requirement coverage matrix (`requirement → sensor → current
+   result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh independent
+   verifier context when the host provides one; otherwise explicitly re-ground the oracle from
+   canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and
+   `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Inspect changed files for scope
+   drift and pre-existing changes.
+3. Derive task-scoped validation obligations from the required behaviors, current diff, affected
+   seams, repository contracts, and risk, following `change-impact-validation.md`. Select the
+   smallest adequate sensor set and name any omitted higher-level sensor with a requirement-based
+   reason. Confirm each sensor observes a contractual seam and that its oracle is grounded in spec,
+   repo contracts, or configured gates — not inferred solely from the implementation. Flag
+   tautology. Missing RED is not an automatic fail; `n/a — not used as proof` is valid. For each
+   required behavior, assess the non-shallow litmus by considering a plausible wrong implementation
+   that would survive the selected sensors. A surviving counterexample is a sensor gap; inability to
+   identify one is recorded as a limitation and does not prove adequacy or inadequacy. If the
+   selected sensors cannot discriminate the required behavior, record **Shallow sensor** or an
+   evidence gap — not PASS.
+4. Confirm the declared slice is independently verifiable, or that horizontal work and dependencies
+   are explicitly justified. An unmapped AC cannot silently PASS. Include **unchanged** ACs in the
+   coverage matrix; do not skip unchanged-behavior sensors on bugfix. If the spec is still
+   **ambiguous**, do not PASS an implementation of one interpretation. On spec drift, write `needs
+   changes` with a reconciliation note — do not rewrite the spec to match the code.
+5. Run only configured, safe, task-relevant checks, applying
+   `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands and results as
+   evidence-contract v1 records: top-line `Feature: <feature-slug>`, v1 envelope, evidence index (`|
+   Requirement anchor | Sensor | Record IDs | Result | Freshness |`), and detailed `EV-*` records. A
+   summary-only row cannot establish adequacy. Distinguish current, historical, stale, not-run, and
+   inconclusive evidence. Record missing or inadequate sensors as explicit gaps. Never turn missing
+   evidence into a pass. A passing sensor is evidence, not a correctness verdict. Self-report is not
+   evidence. This skill must not inherit author narrative. Re-ground goal, completion criteria, and
+   oracle from canonical artifacts per
+   [task-context-package.md](../sdd-agentic-flow-shared/references/task-context-package.md) and
+   [bounded-execution.md](../sdd-agentic-flow-shared/references/bounded-execution.md). If the
+   effective contract changed, re-evaluate affected evidence freshness before classifying the task;
+   a pending proposal is not an effective contract.
+6. Independently judge **engineering fit** against
+   `../sdd-agentic-flow-shared/references/engineering-principles.md` (project conventions, extra
+   abstraction, unnecessary files). Keep that judgment separate from spec/correctness.
+   Engineering-fit issues are findings; they do not flip PASS unless they hit an AC, a safety rule,
+   or an explicit human bar. `PASS` stays owned by evidence-standard and the false-positive catalog.
+7. Classify the task as `pass`, `needs changes`, `blocked`, or `inconclusive`, with actionable gaps.
+   In autonomous mode, an attributable `needs changes` result identifies the owning `saf-implement`
+   repair transition; it does not authorize this Skill to mutate code. Classify `blocked` and
+   `inconclusive` by cause before routing. Never write `Status: pass` on a false-positive catalog
+   hit. Do not implement fixes, edit tests to force PASS, LGTM from prose, use the changed
+   implementation as the correctness oracle, or rewrite the test suite as a second implementation.
 
 ## Safety
 
-This is read-only except for disposable test artifacts permitted by configuration. Do not change code, specs, Git, trackers, PRs, remote services, or default configuration. Self-report is not evidence. This skill must not inherit author narrative.
+This is read-only except for disposable test artifacts permitted by configuration. Do not change
+code, specs, Git, trackers, PRs, remote services, or default configuration. Self-report is not
+evidence. This skill must not inherit author narrative.
 
 ## Output
 
-Return task identity, validation scope (impact, obligations, selected and omitted sensors), criterion-to-evidence summary, executed checks, scope findings, final classification, and next step. Include `Status`, `Next recommended skill`, and `Reason`. When the classification is `needs changes`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary, write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
+Return task identity, validation scope (impact, obligations, selected and omitted sensors),
+criterion-to-evidence summary, executed checks, scope findings, final classification, and next step.
+Include `Status`, `Next recommended skill`, and `Reason`. When the classification is `needs
+changes`, `blocked`, or `inconclusive` and resolution is likely to span a session or agent boundary,
+write or update `handoff.md` per `../sdd-agentic-flow-shared/references/handoff-standard.md`.
 
 ### Autonomy
 

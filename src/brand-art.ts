@@ -13,8 +13,6 @@ import { centerDisplayLine } from './terminal-geometry';
 import { ansiColor, COLORS } from './terminal-theme';
 
 const DEFAULT_BRAND_ANIMATE_MS = 590;
-const COMPACT_ART_WIDTH = 54;
-const MAX_ART_WIDTH = CANONICAL_BRAND_WIDTH;
 const INLINE_GAP = '  ';
 const ONE_LINE_RICH = ['›', '››', '›››'] as const;
 const ONE_LINE_PLAIN = '>  >>  >>>';
@@ -179,17 +177,9 @@ function formatBrandArt(
   );
   return `${rendered.join('\n')}\n`;
 }
-function brandArtLineCount(mode: DisplayMode = 'human-rich', stream?: BrandStream): number {
-  if (mode === 'machine') return 0;
-  const variant = brandArtVariant(mode, stream);
-  return variant === 'minimal' ? 1 : BRAND_VARIANTS[generatedVariantName(stream, variant)].height;
-}
 function brandArtWidth(mode: DisplayMode = 'human-rich', stream?: BrandStream): number {
   const variant = brandArtVariant(mode, stream);
   return variant === 'minimal' ? 0 : BRAND_VARIANTS[generatedVariantName(stream, variant)].width;
-}
-function brandArtFitsTerminal(mode: DisplayMode, stream?: BrandStream): boolean {
-  return brandArtVariant(mode, stream) !== 'minimal';
 }
 function shouldAnimateBrandArt(
   mode: DisplayMode,
@@ -246,18 +236,13 @@ async function writeBrandArt(
 
 export type { BrandArtOptions, BrandArtVariant, BrandStream, DisplayMode };
 export {
-  brandArtFitsTerminal,
-  brandArtLineCount,
   brandArtVariant,
   brandArtWidth,
   CANONICAL_BRAND_HEIGHT as CANONICAL_WIDE_HEIGHT,
   CANONICAL_BRAND_WIDTH as CANONICAL_WIDE_WIDTH,
   CANONICAL_MASK,
-  COMPACT_ART_WIDTH,
-  DEFAULT_BRAND_ANIMATE_MS,
   formatBrandArt,
   formatOneLineBrand,
-  MAX_ART_WIDTH,
   shouldAnimateBrandArt,
   writeBrandArt,
 };

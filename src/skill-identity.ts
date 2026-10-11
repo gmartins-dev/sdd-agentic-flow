@@ -13,7 +13,6 @@ const OFFICIAL_SKILLS = Object.freeze([
   'saf-validate',
 ] as const);
 
-const SKILL_NAMESPACE = 'saf-';
 const LEGACY_SKILL_PREFIXES = Object.freeze(['sdd-', 'setup-sdd-'] as const);
 const HISTORICAL_SKILLS = Object.freeze(['saf-setup'] as const);
 
@@ -40,8 +39,6 @@ export {
   HISTORICAL_SKILLS,
   isLegacySkillName,
   isOfficialSkill,
-  LEGACY_SKILL_PREFIXES,
   listManagedSkillDirNames,
   OFFICIAL_SKILLS,
-  SKILL_NAMESPACE,
 };

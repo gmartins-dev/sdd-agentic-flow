@@ -13,6 +13,7 @@ import {
   detectExecutionMode,
   formatCheckReport,
   managedHashesForPairs,
+  NPM_COMMAND_TIMEOUT_MS,
   readInstallProvenance,
   runNpmGlobalInstall,
   runNpmSkillsUpgrade,
@@ -114,13 +115,17 @@ test('managed impact separates package changes from local-only edits', () => {
 });
 
 test('npm upgrade commands pin the checked version and preserve the supplied environment', () => {
-  const calls: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv }> = [];
+  const calls: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv; timeout?: number }> = [];
   const execFileSyncImpl = ((
     _file: string,
     args: readonly string[],
-    options: { env?: NodeJS.ProcessEnv },
+    options: { env?: NodeJS.ProcessEnv; timeout?: number },
   ) => {
-    calls.push({ args, env: options.env ?? {} });
+    calls.push({
+      args,
+      env: options.env ?? {},
+      ...(options.timeout ? { timeout: options.timeout } : {}),
+    });
     return Buffer.from('');
   }) as typeof import('node:child_process').execFileSync;
   const env = { PATH: '/test/bin', SDD_AGENTIC_FLOW_TEST_NPM_INSTALL: 'run' };
@@ -137,6 +142,8 @@ test('npm upgrade commands pin the checked version and preserve the supplied env
   );
   assert.equal(calls[0]?.env, env);
   assert.equal(calls[1]?.env, env);
+  assert.ok(NPM_COMMAND_TIMEOUT_MS >= 60_000);
+  for (const call of calls) assert.equal(call.timeout, NPM_COMMAND_TIMEOUT_MS);
   assert.throws(
     () => runNpmSkillsUpgrade({ version: 'latest', execFileSyncImpl, env }),
     /invalid package version/,

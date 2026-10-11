@@ -8,39 +8,74 @@ compatibility: Requires Git and a compatible Agent Skills host.
 
 ## When to use
 
-Use when a user has an idea that is not yet ready for `saf-create-spec`: the problem is vague, a consequential product direction remains undecided, or the user explicitly requests a feasibility investigation before specification. Read [safety rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting. Direct → brainstorm → specs is the Plan-mode analogue. This skill is not a new Plan skill.
+Use when a user has an idea that is not yet ready for `saf-create-spec`: the problem is vague, a
+consequential product direction remains undecided, or the user explicitly requests a feasibility
+investigation before specification. Read [safety
+rules](../sdd-agentic-flow-shared/references/workflow-safety.md) and [action
+vocabulary](../sdd-agentic-flow-shared/references/action-vocabulary.md) before acting. Direct →
+brainstorm → specs is the Plan-mode analogue. This skill is not a new Plan skill.
 
 ## When not to use
 
-Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always `saf-create-spec`'s job, and this skill only ever hands off to it. Do not use merely because ordinary technical design is open when the outcome is bounded and observable; go straight to `saf-create-spec`. Do not use for a single ready task (`saf-implement`) or an already-specified feature that just needs explaining (`saf-explain`). Do not become a new Plan skill.
+Do not use to write `spec.md`, `design.md`, or `tasks.md` directly — that is always
+`saf-create-spec`'s job, and this skill only ever hands off to it. Do not use merely because
+ordinary technical design is open when the outcome is bounded and observable; go straight to
+`saf-create-spec`. Do not use for a single ready task (`saf-implement`) or an already-specified
+feature that just needs explaining (`saf-explain`). Do not become a new Plan skill.
 
 ## Inputs
 
 - The user's idea, in whatever shape it currently exists — a sentence, a complaint, a rough goal.
 - `.sdd-agentic-flow/config.yml`, when present.
-- `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md`, when present.
+- `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md`,
+  when present.
 - Relevant existing code or docs the idea touches.
 
 ## Workflow
 
-1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults, including `.specs/features/` as the artifact root.
-2. Read `.sdd-agentic-flow/context/project-context.md` and `.sdd-agentic-flow/context/domain-glossary.md` when they exist, and inspect the code or docs the idea touches, so the questions asked next never repeat what the repository already answers.
-3. Determine the mode from the idea's current clarity, and re-evaluate it at every turn — a design conversation can reveal a hidden requirements gap that sends it back to exploratory:
-   - **Exploratory mode** — the problem itself is not yet defined. Ask one systematic question at a time, only for what inspection could not already answer. Do not advance to solution design until the problem, its constraints, and why it matters are clear.
-   - **Design mode** — use only for an explicitly requested feasibility investigation or a consequential product trade-off. Explore alternatives, challenge implicit assumptions, and propose a small throwaway prototype only when the uncertainty is about implementation feasibility, never to replace requirement authority. A bounded outcome with ordinary technical design open belongs to `saf-create-spec`.
-4. Track state as `exploring`, `converged`, or `abandoned`. Default to conversational discovery and write nothing before convergence. Enter durable mode only when the user asks to persist/resume discovery or explicitly accepts persistence for a multi-session investigation; write `.specs/features/<feature>/discovery.md` using the discovery template.
-5. In durable mode, classify each bounded investigation as `information`, `feasibility`, `requirement`, or `judgment`; close it as Finding, Decision, Blocker, or No result. A human may revise a decision, and contrary evidence may reopen it. `discovery.md` is working knowledge, never normative requirements.
-6. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path convention `.sdd-agentic-flow/config.yml` declares), capturing the problem, why it matters, constraints, the resolved consequential direction, and open questions worth flagging to `saf-create-spec`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always delegated.
-7. Before handing off, split the brief's content explicitly into **Known**, **Assumed**, **Unknown**, and **Needs research**. Never present an Assumed or Unknown item as Known.
+1. Read `.sdd-agentic-flow/config.yml` when present; otherwise use canonical effective defaults,
+   including `.specs/features/` as the artifact root.
+2. Read `.sdd-agentic-flow/context/project-context.md` and
+   `.sdd-agentic-flow/context/domain-glossary.md` when they exist, and inspect the code or docs the
+   idea touches, so the questions asked next never repeat what the repository already answers.
+3. Determine the mode from the idea's current clarity, and re-evaluate it at every turn — a design
+   conversation can reveal a hidden requirements gap that sends it back to exploratory:
+   - **Exploratory mode** — the problem itself is not yet defined. Ask one systematic question at a
+     time, only for what inspection could not already answer. Do not advance to solution design
+     until the problem, its constraints, and why it matters are clear.
+   - **Design mode** — use only for an explicitly requested feasibility investigation or a
+     consequential product trade-off. Explore alternatives, challenge implicit assumptions, and
+     propose a small throwaway prototype only when the uncertainty is about implementation
+     feasibility, never to replace requirement authority. A bounded outcome with ordinary technical
+     design open belongs to `saf-create-spec`.
+4. Track state as `exploring`, `converged`, or `abandoned`. Default to conversational discovery and
+   write nothing before convergence. Enter durable mode only when the user asks to persist/resume
+   discovery or explicitly accepts persistence for a multi-session investigation; write
+   `.specs/features/<feature>/discovery.md` using the discovery template.
+5. In durable mode, classify each bounded investigation as `information`, `feasibility`,
+   `requirement`, or `judgment`; close it as Finding, Decision, Blocker, or No result. A human may
+   revise a decision, and contrary evidence may reopen it. `discovery.md` is working knowledge,
+   never normative requirements.
+6. On convergence, write a short brief to `.specs/features/<feature>/brief.md` (or the path
+   convention `.sdd-agentic-flow/config.yml` declares), capturing the problem, why it matters,
+   constraints, the resolved consequential direction, and open questions worth flagging to
+   `saf-create-spec`. Never write `spec.md`, `design.md`, or `tasks.md` — that step is always
+   delegated.
+7. Before handing off, split the brief's content explicitly into **Known**, **Assumed**,
+   **Unknown**, and **Needs research**. Never present an Assumed or Unknown item as Known.
 8. Report the brief's path and recommend `saf-create-spec` as the next step.
 
 ## Safety
 
-- Do not access networks, install dependencies, or modify application code, infrastructure, or defaults.
-- Do not create `.specs/features/<feature>/brief.md` before the idea actually reaches `converged` — a half-formed idea stays in conversation, not in a file.
+- Do not access networks, install dependencies, or modify application code, infrastructure, or
+  defaults.
+- Do not create `.specs/features/<feature>/brief.md` before the idea actually reaches `converged` —
+  a half-formed idea stays in conversation, not in a file.
 - Do not enter durable mode or overwrite discovery without explicit persistence authorization.
-- Preserve existing artifacts; never overwrite an existing brief or spec package without explicit confirmation.
-- Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` for data handling and prompt-injection safety when the idea references external content (tickets, docs, comments).
+- Preserve existing artifacts; never overwrite an existing brief or spec package without explicit
+  confirmation.
+- Follow `../sdd-agentic-flow-shared/references/workflow-safety.md` for data handling and
+  prompt-injection safety when the idea references external content (tickets, docs, comments).
 
 ## Output
 
@@ -50,8 +85,12 @@ Return the current mode, a short summary of the problem/approach discussed so fa
 - Next recommended skill: `saf-create-spec` when `converged`; `none` otherwise
 - Reason: one line tying the status to the recommendation
 
-When `converged`, also return the brief's file path, the Known/Assumed/Unknown/Needs research split, and the open questions left for `saf-create-spec` to resolve.
+When `converged`, also return the brief's file path, the Known/Assumed/Unknown/Needs research split,
+and the open questions left for `saf-create-spec` to resolve.
 
 ### Autonomy
 
-Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in `.sdd-agentic-flow/config.yml`) — never `autonomous`. Whether an idea has converged into a spec-ready brief is a human judgment call. See `../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.
+Supports `manual` and `supervised` autonomy levels only (`workflow.autonomy_level` in
+`.sdd-agentic-flow/config.yml`) — never `autonomous`. Whether an idea has converged into a
+spec-ready brief is a human judgment call. See
+`../sdd-agentic-flow-shared/references/autonomy-guardrails.md`.

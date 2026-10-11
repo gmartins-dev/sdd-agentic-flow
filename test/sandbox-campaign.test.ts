@@ -8,7 +8,7 @@ import {
   fixtureTruthTable,
   redact,
   runCampaign,
-} from '../scripts/v7.12-sandbox-campaign.js';
+} from '../scripts/sandbox-campaign.js';
 
 test('fixture truth table contains the four finite outcomes', () => {
   assert.deepEqual(fixtureTruthTable(), [

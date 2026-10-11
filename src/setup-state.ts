@@ -313,10 +313,4 @@ export type {
   SetupTargetEvidence,
   UserInstallationSnapshot,
 };
-export {
-  classifySetupState,
-  collectSetupFacts,
-  evaluateSetupReadiness,
-  inspectSetupState,
-  inspectUserInstallation,
-};
+export { classifySetupState, collectSetupFacts, inspectSetupState, inspectUserInstallation };

@@ -1,6 +1,6 @@
 {
   "name": "sdd-agentic-flow",
-  "version": "8.1.2",
+  "version": "8.2.0",
   "description": "A local-first, zero-dependency Spec-Driven Agentic Workflow Harness for coding agents.",
   "type": "commonjs",
   "engines": {
@@ -25,10 +25,7 @@
     "NOTICE",
     "LICENSING.md",
     "LICENSES",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "CHANGELOG.md",
-    "ROADMAP.md"
+    "SECURITY.md"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit",
@@ -36,10 +33,11 @@
     "lint:biome": "biome check .",
     "lint:biome:fix": "biome check . --write",
     "lint": "npm run typecheck && npm run lint:biome",
-    "test": "npm run build && tsx --test --experimental-test-coverage test/**/*.test.ts",
+    "test": "npm run build && npm run test:unit",
+    "test:unit": "tsx --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-lines=77 --test-coverage-branches=73 --test-coverage-functions=76 test/**/*.test.ts",
     "skills:lint": "bash ./scripts/check-skills.sh",
     "licenses:check": "tsx scripts/check-bundled-licenses.ts",
-    "check": "npm run typecheck && npm run build && npm run licenses:check && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && npm run brand:check && npm run presentation:boundary && bash ./scripts/check-sdd-paths.sh && npm test",
+    "check": "npm run typecheck && npm run build && npm run licenses:check && npm run lint:biome && npm run lint:yaml:check && npm run docs:check && npm run skills:lint && npm run brand:check && npm run presentation:boundary && bash ./scripts/check-sdd-paths.sh && npm run test:unit",
     "lint:check": "npm run lint:biome",
     "lint:fix": "npm run lint:biome:fix",
     "lint:yaml:check": "prettier --check \".github/workflows/**/*.{yml,yaml}\"",
@@ -67,7 +65,7 @@
     "cli:certify:packed": "tsx scripts/cli-certification.ts --profile packed",
     "consumer-closure:dist": "tsx scripts/consumer-closure-certification.ts --profile=dist",
     "consumer-closure:packed": "tsx scripts/consumer-closure-certification.ts --profile=packed",
-    "saf:v7.12:sandbox": "tsx scripts/v7.12-sandbox-campaign.ts",
+    "saf:sandbox-campaign": "tsx scripts/sandbox-campaign.ts",
     "cli:brand-motion:dist": "tsx scripts/cli-brand-motion-certification.ts --profile=dist",
     "cli:brand-motion:packed": "tsx scripts/cli-brand-motion-certification.ts --profile=packed",
     "cli:packed-smoke": "tsx scripts/cli-sandbox.ts --clean doctor --json",

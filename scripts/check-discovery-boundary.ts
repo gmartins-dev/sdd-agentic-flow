@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(__dirname, '..');
-const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
+// Prose may wrap anywhere, so phrase checks run on whitespace-normalized text.
+const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\s+/g, ' ');
 const failures: string[] = [];
 
 if (!/discovery-only[\s\S]*not a spec package/i.test(read('shared/references/spec-lifecycle.md')))

@@ -4,10 +4,13 @@ import path from 'node:path';
 import { type AdoptionMode, adoptionModeForScope, applyAdoption, isAdoptionMode } from './adoption';
 import { inspectCleanUpgrade, prepareCleanUpgrade } from './clean-upgrade';
 import { renderCliCommand } from './cli-command';
+import { USAGE, writeCommandHelp } from './cli-help';
+import { asString, errorMessage, fail as failCommand, logStatus, resolveMode } from './cli-output';
 import { readConfig } from './config-domain';
 import { type ConfigureIntentResult, configureIntent } from './configure';
-import { setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
+import { projectLocale, setDoctorInstallPlanResolver, setDoctorSmokeDeps } from './doctor';
 import { resolveGitContext } from './git-context';
+import { HandledError } from './handled-error';
 import type { InstallConfig, InstallProjectProfile } from './install-domain';
 import {
   classifyInstallIntent,
@@ -15,6 +18,8 @@ import {
   defaultInstallConfig,
   readInstallConfig,
   repositoryKey,
+  shouldUseInteractiveInstall,
+  USER_TARGETS,
   writeInstallConfig,
 } from './install-domain';
 import {
@@ -67,9 +72,11 @@ type SmokeInit = (
 ) => boolean | undefined;
 
 function fail(message: string, locale = 'en-US'): false {
-  process.stderr.write(`FAIL ${translateText(locale, message)}\n`);
-  process.exitCode = 1;
-  return false;
+  return failCommand(translateText(locale, message));
+}
+
+function log(status: string, message: string) {
+  logStatus(status, message, projectLocale(process.cwd()));
 }
 
 function isConfigureCancelled(result: ConfigureInteractiveResult): result is { cancelled: true } {
@@ -609,6 +616,155 @@ async function changeInstallationInteractive(cwd: string, homeDir = os.homedir()
   return applied ? { ...configured, wrote: true } : { error: 'installation apply failed' };
 }
 
+// `config installation`: preview or save installation intent, then show the reconciliation plan
+// that `install` would apply. It never installs skills itself.
+async function runConfigInstallation(args: string[], cwd: string): Promise<void> {
+  if (args.includes('--help')) {
+    writeCommandHelp('config');
+    return;
+  }
+  let scope: string | null = null;
+  let adoptionMode: AdoptionMode | null = null;
+  let plan = false;
+  let yes = false;
+  let interactive = false;
+  const targets: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--plan') plan = true;
+    else if (arg === '--yes') yes = true;
+    else if (arg === '--interactive') interactive = true;
+    else if (arg === '--scope' && ['user', 'project'].includes(asString(args[index + 1])))
+      scope = asString(args[++index]);
+    else if (arg === '--pack') {
+      failCommand('usage error: --pack was removed; v7 installs one official bundle');
+      return;
+    } else if (arg === '--target' && Object.hasOwn(USER_TARGETS, asString(args[index + 1])))
+      targets.push(asString(args[++index]));
+    else if (arg === '--adoption-mode' && isAdoptionMode(args[index + 1]))
+      adoptionMode = args[++index] as AdoptionMode;
+    else {
+      failCommand(USAGE.config);
+      return;
+    }
+  }
+  if (scope && adoptionMode && adoptionModeForScope(adoptionMode) !== scope) {
+    failCommand(
+      `adoption mode ${adoptionMode} requires --scope ${adoptionModeForScope(adoptionMode)}`,
+    );
+    return;
+  }
+  const effectiveScope = adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user';
+  if (targets.length && effectiveScope === 'project') {
+    failCommand(`${USAGE.config} — --target requires --scope user or no explicit scope`, {
+      reason: 'Project installation has one project skill root; user-only targets are invalid.',
+    });
+    return;
+  }
+  if (interactive && plan) {
+    failCommand('config installation --interactive cannot combine with --plan');
+    return;
+  }
+  const canInteract = shouldUseInteractiveInstall({
+    stdinIsTTY: process.stdin.isTTY,
+    stdoutIsTTY: process.stdout.isTTY,
+    ci: Boolean(process.env.CI),
+    plan,
+    quiet: false,
+    nonInteractive: false,
+    machine: false,
+  });
+  if (interactive && !canInteract) {
+    failCommand('config installation --interactive requires a real TTY and unset CI');
+    return;
+  }
+  if (!plan && !interactive && !yes) {
+    failCommand('config installation outside a TTY requires --yes or --plan');
+    return;
+  }
+  if (interactive || (args.length === 0 && canInteract)) {
+    const result = await configureInteractive(cwd, os.homedir());
+    if (isConfigureCancelled(result))
+      return log('INFO', t(projectLocale(cwd), 'configure.cancelled'));
+    if (isConfigureError(result)) {
+      failCommand(result.error, {
+        reason: 'Use valid scope, adoption, and target IDs.',
+        try: [renderCliCommand('config', 'installation', '--interactive')],
+      });
+      return;
+    }
+    log('PASS', 'saved installation intent');
+    const reconcilePlan = planForInstallProfile({
+      cwd,
+      homeDir: os.homedir(),
+      scope: isProjectInstallProfile(result.after) ? 'project' : 'user',
+      profile: result.after,
+    });
+    log(
+      'INFO',
+      `${t(projectLocale(cwd), 'configure.savedOnly')} Run \`${installApplyCommand(reconcilePlan)}\`.`,
+    );
+    return;
+  }
+  let result: ReturnType<typeof configureIntent>;
+  try {
+    result = configureIntent({
+      homeDir: os.homedir(),
+      cwd,
+      scope: effectiveScope as 'user' | 'project',
+      ...(targets.length ? { targets } : {}),
+      ...(adoptionMode ? { adoptionMode } : {}),
+      plan,
+    });
+  } catch (error) {
+    // Missing Git metadata, adoption, or a supported intent are expected user conditions;
+    // anything else stays an unexpected internal error (exit 2) for the entrypoint to report.
+    if (!(error instanceof HandledError)) throw error;
+    failCommand(errorMessage(error), {
+      ...(effectiveScope === 'project'
+        ? {
+            reason: 'Project installation intent belongs to a Git workspace with an adoption mode.',
+          }
+        : {}),
+      try: [
+        renderCliCommand('config', 'installation', '--plan', '--scope', 'user'),
+        renderCliCommand('init'),
+      ],
+    });
+    return;
+  }
+  if (plan) {
+    const effectiveScope = adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user';
+    process.stdout.write(
+      `${t(projectLocale(cwd), 'configure.intentPreview')}\n  Scope       ${effectiveScope}\n` +
+        (effectiveScope === 'user' && isUserInstallProfile(result.after)
+          ? `  Targets     ${(result.after.targets || DEFAULT_USER_TARGETS).join(', ')}\n`
+          : isProjectInstallProfile(result.after)
+            ? `  Adoption    ${result.after.adoption_mode || 'unclassified'}\n`
+            : '') +
+        `\n${t(projectLocale(cwd), 'configure.reconciliationPreview')}\n`,
+    );
+  } else log('PASS', `saved ${effectiveScope} installation intent`);
+  const reconcilePlan = planForInstallProfile({
+    cwd,
+    homeDir: os.homedir(),
+    scope: adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user',
+    profile: result.after,
+  });
+  printInstallPlanReport(reconcilePlan, resolveMode({}), cwd, {
+    applyCommand: installApplyCommand(reconcilePlan),
+  });
+  if (plan)
+    process.stdout.write(
+      `${t(projectLocale(cwd), 'configure.saveIntent')}: ${configureCommand(adoptionMode ? adoptionModeForScope(adoptionMode) : scope || 'user', result.after)}\n${t(projectLocale(cwd), 'configure.reconcile')}:   ${installApplyCommand(reconcilePlan)}\n`,
+    );
+  else
+    log(
+      'INFO',
+      `${t(projectLocale(cwd), 'configure.savedOnly')} Run \`${installApplyCommand(reconcilePlan)}\`.`,
+    );
+}
+
 function wireDoctorInstallSmokeDeps(initFn: SmokeInit): void {
   setDoctorInstallPlanResolver(planForInstallProfile);
   setDoctorSmokeDeps({ init: initFn, install });
@@ -617,16 +773,8 @@ function wireDoctorInstallSmokeDeps(initFn: SmokeInit): void {
 export type { ConfigureInteractiveResult, InstallCommandOptions, PlanForInstallProfileInput };
 export {
   changeInstallationInteractive,
-  configureCommand,
-  configureInteractive,
   install,
-  installApplyCommand,
   installInteractive,
-  isConfigureCancelled,
-  isConfigureError,
-  isProjectInstallProfile,
-  isUserInstallProfile,
-  planForInstallProfile,
-  printInstallPlanReport,
+  runConfigInstallation,
   wireDoctorInstallSmokeDeps,
 };

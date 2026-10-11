@@ -9,6 +9,8 @@ import { type ExecFileSyncOptionsWithStringEncoding, execFileSync } from 'node:c
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeFileAtomic } from './atomic-write';
+import { HandledError } from './handled-error';
 import { checkForUpdate, type UpdateCheckResult } from './update-check';
 import { parseVersion } from './version-compat';
 
@@ -92,6 +94,7 @@ function detectExecutionMode(
     const globalRoot = execFileSync('npm', ['root', '-g'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: NPM_QUERY_TIMEOUT_MS,
     } as ExecFileSyncOptionsWithStringEncoding).trim();
     if (globalRoot && normalized.startsWith(`${path.resolve(globalRoot)}${path.sep}`))
       return 'global';
@@ -113,7 +116,7 @@ function assertManagedDestination(root: string, relative: string): void {
     path.win32.isAbsolute(relative) ||
     relative.split(/[\\/]/).some((part) => !part || part === '.' || part === '..')
   )
-    throw new Error('unsafe installation provenance path');
+    throw new HandledError('unsafe installation provenance path');
   // Include the host directory for the conventional <home>/<host>/skills layout.
   const boundary = path.basename(root) === 'skills' ? path.dirname(path.dirname(root)) : root;
   const destination = path.resolve(root, relative);
@@ -127,7 +130,7 @@ function assertManagedDestination(root: string, relative: string): void {
       } catch {
         // Keep the safety failure actionable even when the link target cannot be read.
       }
-      throw new Error(
+      throw new HandledError(
         `managed destination crosses a symbolic link: ${current} -> ${target}. ` +
           'SAF will not write through symbolic links; remove or replace the link manually, ' +
           'choose another target, or use project scope.',
@@ -140,7 +143,6 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
   const dest = provenancePath(skillsRoot);
   assertManagedDestination(skillsRoot, PROVENANCE_REL);
   assertManagedDestination(skillsRoot, `${PROVENANCE_REL}.tmp`);
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
   const value = typeof provenance === 'string' ? { packageVersion: provenance } : provenance;
   const lines = [
     'package: sdd-agentic-flow',
@@ -160,9 +162,7 @@ function writeInstallProvenance(skillsRoot: string, provenance: ProvenanceInput)
       .map(([managedPath, hash]) => `  ${managedPath}: ${hash}`),
     '',
   ];
-  const temporary = `${dest}.tmp`;
-  fs.writeFileSync(temporary, lines.join('\n'), 'utf8');
-  fs.renameSync(temporary, dest);
+  writeFileAtomic(dest, lines.join('\n'));
 }
 
 function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
@@ -235,7 +235,9 @@ function readInstallProvenance(skillsRoot: string): InstallProvenance | null {
         );
       })
     )
-      throw new Error('unsafe installation provenance paths; preserve and repair the metadata');
+      throw new HandledError(
+        'unsafe installation provenance paths; preserve and repair the metadata',
+      );
     if (managedSkills.length) provenance.managedSkills = managedSkills;
     if (managedPaths.length) provenance.managedPaths = managedPaths;
     if (Object.keys(managedHashes).length) provenance.managedHashes = managedHashes;
@@ -259,7 +261,7 @@ function managedRemovalPaths(
   )
     return [];
   if (provenance.applyState === 'applying')
-    throw new Error('installation cleanup blocked by interrupted apply');
+    throw new HandledError('installation cleanup blocked by interrupted apply');
   const managed = provenance.managedPaths?.length
     ? provenance.managedPaths
     : [...(provenance.managedSkills || []), 'sdd-agentic-flow-shared'];
@@ -411,6 +413,10 @@ function applyManagedPairs(
   return summary;
 }
 
+// npm queries are local and quick; installs may download, so they get a generous but finite bound.
+const NPM_QUERY_TIMEOUT_MS = 10_000;
+const NPM_COMMAND_TIMEOUT_MS = 10 * 60_000;
+
 function packageSpec(version: string): string {
   if (!parseVersion(version)) throw new Error(`invalid package version: ${version}`);
   return `sdd-agentic-flow@${version}`;
@@ -430,6 +436,7 @@ function runNpmGlobalInstall({
   execFileSyncImpl('npm', ['install', '-g', packageSpec(version)], {
     stdio: 'inherit',
     env,
+    timeout: NPM_COMMAND_TIMEOUT_MS,
   });
   return { simulated: false };
 }
@@ -448,7 +455,7 @@ function runNpmSkillsUpgrade({
   execFileSyncImpl(
     'npm',
     ['exec', '--yes', packageSpec(version), '--', 'upgrade', '--skills-only'],
-    { stdio: 'inherit', env },
+    { stdio: 'inherit', env, timeout: NPM_COMMAND_TIMEOUT_MS },
   );
   return { simulated: false };
 }
@@ -480,14 +487,12 @@ export {
   checkForUpdate,
   classifyManagedImpact,
   classifyManagedPairs,
-  classifyPair,
   collectManagedPairs,
   detectExecutionMode,
   formatCheckReport,
   managedHashesForPairs,
   managedRemovalPaths,
-  PROVENANCE_REL,
-  provenancePath,
+  NPM_COMMAND_TIMEOUT_MS,
   readInstallProvenance,
   removeManagedTargetContent,
   runNpmGlobalInstall,

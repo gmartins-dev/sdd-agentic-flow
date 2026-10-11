@@ -56,10 +56,6 @@ function centerDisplayLine(value: string, terminalWidth: number): string {
   return `${' '.repeat(padding)}${value}`;
 }
 
-function centerDisplayBlock(lines: readonly string[], terminalWidth: number): string[] {
-  return lines.map((line) => centerDisplayLine(line, terminalWidth));
-}
-
 function truncateDisplayWidth(value: string, maxWidth: number, suffix = '…'): string {
   if (maxWidth <= 0) return '';
   if (displayWidth(value) <= maxWidth) return value;
@@ -121,7 +117,6 @@ function wrapCopyable(value: string, maxWidth: number): string[] {
 }
 
 export {
-  centerDisplayBlock,
   centerDisplayLine,
   displayWidth,
   physicalRows,

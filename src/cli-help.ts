@@ -1,5 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { renderCliCommand } from './cli-command';
-import { CANONICAL_COMMANDS } from './command-registry';
+import { didYouMeanTry, fail } from './cli-output';
+import { CANONICAL_COMMANDS, isRemovedCommand } from './command-registry';
+import { t } from './messages';
+import { PACKAGE_ROOT, USAGE_GUIDE_URL, VERSION } from './paths';
 
 export const USAGE = {
   init: 'usage: init [--plan] [--json] [--quiet] [--yes]',
@@ -39,4 +45,75 @@ export const COMMAND_HELP: Record<string, string> = {
 
 export function writeCommandHelp(key: string): void {
   process.stdout.write(COMMAND_HELP[key] ?? '');
+}
+
+export function learnSdd(locale: string): void {
+  const docPath = path.join(PACKAGE_ROOT, 'docs', 'what-is-sdd.md');
+  const relative = fs.existsSync(docPath) ? 'docs/what-is-sdd.md' : null;
+  process.stdout.write(
+    `${t(locale, 'learn.body')}\n\n` +
+      `${t(locale, 'learn.controlPlane')}\n\n` +
+      (relative
+        ? `${t(locale, 'learn.readMore')}: ${relative}\n`
+        : `${t(locale, 'learn.readMore')}: docs/what-is-sdd.md\n`) +
+      `\n${t(locale, 'learn.workflowGuide')}: ${USAGE_GUIDE_URL}\n`,
+  );
+}
+
+export function help(command?: string): boolean | undefined {
+  if (command) {
+    if (isRemovedCommand(command)) {
+      fail(`unknown command: ${command}.`, {
+        reason: 'This command is not part of the current canonical interface.',
+        try: [renderCliCommand('help')],
+      });
+      return false;
+    }
+    const topic = COMMAND_HELP[command];
+    if (!topic) {
+      const hint = didYouMeanTry(command, KNOWN_COMMANDS);
+      fail(`unknown command: ${command}.`, {
+        reason: 'That name is not a CLI command topic.',
+        try: [renderCliCommand('help'), ...(hint ? [hint] : [])],
+      });
+      return false;
+    }
+    process.stdout.write(topic);
+    return true;
+  }
+  process.stdout.write(
+    `sdd-agentic-flow ${VERSION}
+
+Spec-Driven Agentic Workflow Harness for coding agents.
+
+QUICK START
+  npx sdd-agentic-flow
+  Starts the guided human interface.
+
+START
+  init [--plan] [--json] [--quiet] [--yes]  Initialize the current workspace
+  install [--scope user|project] [--target agents|cursor|claude|copilot] [--plan] [--quiet]  Install the official bundle
+  doctor [--json] [--harness] [--smoke] [--contracts] [--autonomy] [--verbose] [--check-updates]  Validate package or project setup
+
+OPERATE
+  config [show|policy|installation]       Inspect policy or saved installation intent
+  context [status|refresh|autonomy-state]  Show or refresh project context provenance, or autonomy loop state
+  upgrade [--check|--plan|--skills-only] Check for / apply CLI and skills updates (confirm-gated)
+  autonomous-resume [--force] [--override-guard=N --reason=...]  Resume an autonomous workflow paused at a guardrail
+
+INSPECT / LEARN
+  learn-sdd                              One-screen SDD summary
+  help [command]                         Show this reference, or detailed help for one command
+  version                                Show CLI version
+  completion bash|zsh|fish               Print deterministic shell completion
+
+REMOVE
+  uninstall --plan | --yes [--purge] [--scope user|project|all] [--target agents|cursor|claude|copilot] [--quiet]  Remove managed assets
+
+MORE HELP
+  npx sdd-agentic-flow help <command>
+  npx sdd-agentic-flow <command> --help
+`,
+  );
+  return undefined;
 }

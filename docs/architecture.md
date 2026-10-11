@@ -27,17 +27,31 @@ host owns agent execution, concurrency, branches, and worktrees.
 
 ## Maintainer source layout
 
-| Module                                                    | Responsibility                                                                           |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `sdd-agentic-flow.ts`                                     | CLI dispatch and presentation bootstrap                                                  |
+Every module in `src/` appears below; `npm run docs:check` fails when a module is missing.
+
+| Module | Responsibility |
+| --- | --- |
+| `sdd-agentic-flow.ts` | Thin router: global argument preflight and one handler per canonical command |
+| `command-registry.ts`, `cli-command.ts`, `cli-help.ts` | Canonical command grammar, completion, command rendering, usage, and help text |
+| `cli-output.ts`, `handled-error.ts` | Shared human output helpers and the handled-failure (exit 1) error type |
+| `welcome.ts`, `menu.ts`, `onboarding.ts` | Read-only bare-command status screen, interactive-menu gating, and onboarding state |
+| `setup.ts`, `setup-plan.ts`, `setup-state.ts`, `recovery.ts` | Guided setup flow, setup planning, observed setup state, and pure remediation planning |
+| `install.ts`, `install-domain.ts`, `install-preflight.ts` | Official bundle plan/apply, installation intent, `config installation`, and preflight |
+| `upgrade-command.ts`, `upgrade.ts`, `update-check.ts`, `version-compat.ts` | Upgrade command, managed-file provenance and reconciliation, registry check, and version comparison |
+| `clean-upgrade.ts`, `uninstall.ts` | Bounded legacy reset and provenance-owned removal |
+| `workspace.ts`, `git-context.ts`, `adoption.ts` | Git-aware workspace plan/apply, repository identity, and adoption visibility |
+| `config.ts`, `config-domain.ts`, `configure.ts`, `init-defaults.ts` | Effective defaults, explicit policy overrides, installation intent, and init defaults |
+| `project-context.ts` | Project context provenance, refresh, and autonomy loop-state resume |
+| `doctor.ts`, `doctor-view.ts`, `harness-readiness.ts` | Installation, Workspace, and Policy readiness checks and their presentation |
+| `evidence-contract.ts`, `evidence-graph.ts`, `evidence-graph-html.ts` | Evidence report contract, evidence graph, and its HTML projection |
+| `skill-contract.ts`, `contract-graph.ts`, `contract-kinds.ts`, `skill-identity.ts` | Sidecar parsing, contract validation, contract kinds, and the official Skill roster |
+| `paths.ts`, `atomic-write.ts`, `messages.ts` | Package and workspace paths, durable file writes, and localized messages |
 | `ui.ts`, `terminal-color.ts`, `selector.ts`, `terminal-ui.ts` | Terminal capabilities, centralized color detection, SAF-owned input semantics, and rich/plain presentation primitives |
-| `install.ts`, `install-domain.ts`, `install-preflight.ts` | Official bundle plan/apply, user installation, and v4 state                              |
-| `workspace.ts`, `git-context.ts`                          | Git-aware workspace plan/apply and identity; never a prerequisite for user install       |
-| `config.ts`, `config-domain.ts`, `configure.ts`           | Effective defaults and explicit overrides                                                |
-| `clean-upgrade.ts`, `uninstall.ts`                        | Bounded reset and removal                                                                |
-| `recovery.ts`                                             | Pure remediation planning from observed facts                                            |
-| `doctor.ts`                                               | Installation, Workspace, and Policy readiness                                            |
-| `skill-contract.ts`, `contract-graph.ts`                  | Sidecar parsing and contract validation                                                  |
+| `terminal-components.ts`, `terminal-geometry.ts`, `terminal-safety.ts`, `terminal-theme.ts` | Presentation components, display geometry, terminal-safe text, and the theme |
+| `brand-art.ts`, `brand-motion.ts`, `brand-animation.generated.ts` | Responsive brand art and motion; the animation module is generated |
+
+`git-context.ts` is optional for user-scope installation: a plain user install works outside Git,
+while project scope, adoption, and workspace initialization require Git metadata.
 
 ## Capability contracts
 

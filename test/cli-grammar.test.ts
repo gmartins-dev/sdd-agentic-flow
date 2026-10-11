@@ -6,7 +6,13 @@ import path from 'node:path';
 import test from 'node:test';
 
 const cli = path.resolve(__dirname, '../dist/sdd-agentic-flow.js');
-const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-v5-cli-home-'));
+const testHome = mkdtempSync(path.join(os.tmpdir(), 'saf-cli-grammar-home-'));
+// A registry answer newer than the running package, derived so a version bump cannot break it.
+const packageVersion: string = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'),
+).version;
+const newerVersion = `${Number(packageVersion.split('.')[0]) + 1}.0.0`;
+const newerPattern = newerVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function run(args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cli, ...args], {
@@ -82,12 +88,15 @@ test('upgrade plan pins the checked version and remains read-only', () => {
     env: {
       ...process.env,
       HOME: testHome,
-      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0',
+      SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion,
     },
   });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Latest CLI: 8\.2\.0/);
-  assert.match(result.stdout, /npm exec --yes sdd-agentic-flow@8\.2\.0 -- upgrade --skills-only/);
+  assert.match(result.stdout, new RegExp(`Latest CLI: ${newerPattern}`));
+  assert.match(
+    result.stdout,
+    new RegExp(`npm exec --yes sdd-agentic-flow@${newerPattern} -- upgrade --skills-only`),
+  );
   assert.match(result.stdout, /No changes were made\./);
 });
 
@@ -99,9 +108,11 @@ test('doctor renders the checks label only once', () => {
 });
 
 test('upgrade check is read-only and reports the checked version', () => {
-  const result = run(['upgrade', '--check'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  const result = run(['upgrade', '--check'], {
+    SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion,
+  });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Latest version: 8\.2\.0/);
+  assert.match(result.stdout, new RegExp(`Latest version: ${newerPattern}`));
   assert.match(result.stdout, /Update available: yes/);
   assert.doesNotMatch(result.stdout, /npm install|npm exec/);
 });
@@ -116,7 +127,7 @@ test('skills-only plan skips the registry and remains read-only', () => {
 });
 
 test('non-interactive upgrade never mutates after finding an update', () => {
-  const result = run(['upgrade'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: '8.2.0' });
+  const result = run(['upgrade'], { SDD_AGENTIC_FLOW_TEST_LATEST_VERSION: newerVersion });
   assert.equal(result.status, 0);
   assert.match(result.stdout, /This invocation is non-interactive; no mutations were performed/);
   assert.doesNotMatch(result.stdout, /Updating the global SAF installation/);
@@ -289,4 +300,69 @@ test('init JSON is one final document after apply', () => {
   assert.equal(report.data.applied, true);
   assert.equal(result.stdout.trim().split('\n').length, 1);
   assert.ok(fs.existsSync(path.join(cwd, '.sdd-agentic-flow/workspace.yml')));
+});
+
+test('project installation intent outside Git is a handled failure, not an internal error', () => {
+  const outsideGit = mkdtempSync(path.join(os.tmpdir(), 'saf-non-git-'));
+  for (const args of [
+    ['config', 'installation', '--plan', '--scope', 'project'],
+    ['config', 'installation', '--yes', '--scope', 'project'],
+  ]) {
+    const result = spawnSync(process.execPath, [cli, ...args], {
+      cwd: outsideGit,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        HOME: testHome,
+        USERPROFILE: testHome,
+        CI: '1',
+        GIT_CEILING_DIRECTORIES: os.tmpdir(),
+      },
+    });
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /Git repository metadata is required/);
+  }
+  fs.rmSync(outsideGit, { recursive: true, force: true });
+});
+
+test('fail-closed installation state refusals exit 1 with an actionable message', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'saf-state-refusal-'));
+  const home = path.join(root, 'home');
+  const project = path.join(root, 'project');
+  fs.mkdirSync(project, { recursive: true });
+  spawnSync('git', ['init', '-q'], { cwd: project });
+  const provenance = path.join(home, '.agents', 'skills', 'sdd-agentic-flow-shared');
+  fs.mkdirSync(provenance, { recursive: true });
+  const write = (applyState: string, skill: string) =>
+    fs.writeFileSync(
+      path.join(provenance, 'install-provenance.yml'),
+      [
+        'package: sdd-agentic-flow',
+        'package_version: 8.1.2',
+        'schema: saf-install-provenance/v3',
+        `apply_state: ${applyState}`,
+        'scope: user',
+        'target: agents',
+        'managed_skills:',
+        `  - ${skill}`,
+        '',
+      ].join('\n'),
+    );
+  const runIn = (args: string[]) =>
+    spawnSync(process.execPath, [cli, ...args], {
+      cwd: project,
+      encoding: 'utf8',
+      env: { ...process.env, HOME: home, USERPROFILE: home, CI: '1' },
+    });
+  write('applying', 'saf-route');
+  const interrupted = runIn(['uninstall', '--plan']);
+  assert.equal(interrupted.status, 1);
+  assert.match(interrupted.stderr, /interrupted apply/);
+  write('complete', '../../outside');
+  for (const args of [['uninstall', '--plan'], ['install', '--plan'], ['doctor']]) {
+    const unsafe = runIn(args);
+    assert.equal(unsafe.status, 1, args.join(' '));
+    assert.match(`${unsafe.stdout}${unsafe.stderr}`, /unsafe installation provenance/);
+  }
+  fs.rmSync(root, { recursive: true, force: true });
 });

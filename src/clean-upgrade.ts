@@ -10,6 +10,7 @@ const LEGACY_PROVENANCE_SCHEMAS = new Set([
   'saf-install-provenance/v1',
   'saf-install-provenance/v2',
 ]);
+const STAGING_PREFIX = '.saf-clean-upgrade-';
 const HISTORICAL_SKILL_NAMES = new Set<string>([...OFFICIAL_SKILLS, ...HISTORICAL_SKILLS]);
 
 type LegacyTarget = { root: string; managedSkills: string[]; shared: boolean };
@@ -159,44 +160,66 @@ export function inspectCleanUpgrade({
   };
 }
 
-export function prepareCleanUpgrade(inspection: CleanUpgradeInspection): CleanUpgradeSession {
+type Rename = (source: string, destination: string) => void;
+
+// Rename when possible; when source and destination are on different devices, copy and then
+// remove so staging and rollback still work.
+function moveEntry(source: string, destination: string, rename: Rename): void {
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  try {
+    rename(source, destination);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException | null)?.code !== 'EXDEV') throw error;
+    fs.cpSync(source, destination, { recursive: true, errorOnExist: true, verbatimSymlinks: true });
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+}
+
+// Each original is staged in a hidden sibling directory: same device as the original (so a
+// rename is atomic) and durable storage instead of the volatile system temporary directory.
+export function prepareCleanUpgrade(
+  inspection: CleanUpgradeInspection,
+  { rename = fs.renameSync }: { rename?: Rename } = {},
+): CleanUpgradeSession {
   if (inspection.state !== 'legacy') return { ...inspection, commit: () => {}, rollback: () => {} };
-  const backupRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-clean-upgrade-'));
+  const stagingRoots = new Map<string, string>();
+  const stagingRootFor = (parent: string) => {
+    let root = stagingRoots.get(parent);
+    if (!root) {
+      fs.mkdirSync(parent, { recursive: true });
+      root = fs.mkdtempSync(path.join(parent, STAGING_PREFIX));
+      stagingRoots.set(parent, root);
+    }
+    return root;
+  };
+  const removeStaging = () => {
+    for (const root of stagingRoots.values()) fs.rmSync(root, { recursive: true, force: true });
+  };
   const backups: Backup[] = [];
-  const move = (original: string, label: string) => {
+  const move = (original: string) => {
     if (!fs.existsSync(original)) return;
-    const staged = path.join(backupRoot, label);
-    fs.mkdirSync(path.dirname(staged), { recursive: true });
-    fs.renameSync(original, staged);
+    const staged = path.join(stagingRootFor(path.dirname(original)), path.basename(original));
+    moveEntry(original, staged, rename);
     backups.push({ original, staged });
+  };
+  const restore = () => {
+    for (const backup of [...backups].reverse()) {
+      if (!fs.existsSync(backup.staged)) continue;
+      if (fs.existsSync(backup.original))
+        fs.rmSync(backup.original, { recursive: true, force: true });
+      moveEntry(backup.staged, backup.original, rename);
+    }
   };
   try {
     for (const target of inspection.legacyTargets) {
-      for (const skill of target.managedSkills)
-        move(
-          path.join(target.root, skill),
-          path.join('targets', encodeURIComponent(target.root), skill),
-        );
-      if (target.shared)
-        move(
-          path.join(target.root, 'sdd-agentic-flow-shared'),
-          path.join('targets', encodeURIComponent(target.root), 'sdd-agentic-flow-shared'),
-        );
+      for (const skill of target.managedSkills) move(path.join(target.root, skill));
+      if (target.shared) move(path.join(target.root, 'sdd-agentic-flow-shared'));
     }
-    if (inspection.legacyIntent && inspection.intentPath)
-      move(inspection.intentPath, 'install-intent.yml');
-    for (const file of inspection.projectFiles) {
-      const relative = path.relative(inspection.cwd, file);
-      move(file, path.join('project', encodeURIComponent(relative)));
-    }
+    if (inspection.legacyIntent && inspection.intentPath) move(inspection.intentPath);
+    for (const file of inspection.projectFiles) move(file);
   } catch (error) {
-    for (const backup of [...backups].reverse()) {
-      if (fs.existsSync(backup.staged)) {
-        fs.mkdirSync(path.dirname(backup.original), { recursive: true });
-        fs.renameSync(backup.staged, backup.original);
-      }
-    }
-    fs.rmSync(backupRoot, { recursive: true, force: true });
+    restore();
+    removeStaging();
     throw error;
   }
   let finished = false;
@@ -205,19 +228,12 @@ export function prepareCleanUpgrade(inspection: CleanUpgradeInspection): CleanUp
     commit: () => {
       if (finished) return;
       finished = true;
-      fs.rmSync(backupRoot, { recursive: true, force: true });
+      removeStaging();
     },
     rollback: () => {
       if (finished) return;
-      for (const backup of [...backups].reverse()) {
-        if (fs.existsSync(backup.original))
-          fs.rmSync(backup.original, { recursive: true, force: true });
-        if (fs.existsSync(backup.staged)) {
-          fs.mkdirSync(path.dirname(backup.original), { recursive: true });
-          fs.renameSync(backup.staged, backup.original);
-        }
-      }
-      fs.rmSync(backupRoot, { recursive: true, force: true });
+      restore();
+      removeStaging();
       finished = true;
     },
   };

@@ -91,4 +91,4 @@ function formatEvidenceGraph(result: EvidenceGraphResult): string {
 }
 
 export type { CheckStatus, DoctorCheck, DoctorView, DoctorViewOptions };
-export { buildDoctorView, formatEvidenceGraph, primaryRemediation, summarizeChecks };
+export { buildDoctorView, formatEvidenceGraph, primaryRemediation };

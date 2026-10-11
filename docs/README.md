@@ -28,13 +28,11 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [workflow.md](workflow.md) | Short workflow summary and pointers |
 | [invocation-model.md](invocation-model.md) | How skills are invoked and routed |
 | [skills-catalog.md](skills-catalog.md) | Full skill reference (purpose, inputs, and outputs) |
-| [skills.md](skills.md) | Skills layer overview |
 | [prompt-recipes.md](prompt-recipes.md) | Copy-paste prompt patterns |
 | [tdd-baseline.md](tdd-baseline.md) | TDD baseline overview (detail in shared reference) |
 | [engineering-principles.md](engineering-principles.md) | How agents change code (shared contract, not a skill) |
 | [spec-lifecycle.md](spec-lifecycle.md) | Resolve one package; load only what the active operation requires |
 | [baselines.md](baselines.md) | What this package ships vs external TLC/TDD skills |
-| [tlc-integration.md](tlc-integration.md) | How the TLC baseline fits the local workflow |
 
 ## Guides
 
@@ -99,6 +97,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | Doc | When to read |
 | --- | --- |
 | [publishing.md](publishing.md) | Release and npm publish process for this repository |
+| [audit-2026-10-10.md](audit-2026-10-10.md) | v8.1.2 audit and the v8.2.0 remediation |
 | [audit-2026-09-07.md](audit-2026-09-07.md) | Repository-grounded audit and remediation handoff |
 
 ## Help

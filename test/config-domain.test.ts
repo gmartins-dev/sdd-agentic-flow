@@ -280,3 +280,18 @@ test('resolvePolicyFromPreset maps manual', () => {
     presetName: 'manual',
   });
 });
+
+test('documented preset aliases resolve to their canonical presets', () => {
+  for (const [alias, canonical] of [
+    ['man', 'manual'],
+    ['assist', 'supervised'],
+    ['assisted', 'supervised'],
+    ['auto', 'autonomous'],
+  ] as const) {
+    const resolved = resolvePolicyFromPreset(alias);
+    assert.equal(resolved?.presetName, canonical, alias);
+    assert.deepEqual(resolved, resolvePolicyFromPreset(canonical));
+  }
+  assert.equal(resolvePolicyFromPreset('automatic'), null);
+  assert.equal(resolvePolicyFromPreset('toString'), null);
+});

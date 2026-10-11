@@ -45,7 +45,14 @@ export type BehaviorRecord = {
   termination: Termination;
   exit_code: number | null;
   duration_ms: number | null;
-  facts: { accepted: Fact; completed: Fact; effects_persisted: Fact; cleanup: Fact };
+  facts: {
+    accepted: Fact;
+    completed: Fact;
+    effects_persisted: Fact;
+    cleanup: Fact;
+    // Whether the host transcript shows the skill being loaded; absent for stub and dry runs.
+    skill_loaded?: Fact;
+  };
   checks_not_run: Array<{ name: string; reason: string }>;
   oracle: OracleResult | null;
   verdict: Verdict;
@@ -141,6 +148,10 @@ export function validateRecord(value: unknown, label = 'record'): string[] {
         FACTS.has(String(facts?.[key])),
       ),
     'facts must record accepted, completed, effects_persisted, and cleanup',
+  );
+  need(
+    facts?.skill_loaded === undefined || FACTS.has(String(facts.skill_loaded)),
+    'facts.skill_loaded is invalid',
   );
   need(
     Array.isArray(record.checks_not_run) &&

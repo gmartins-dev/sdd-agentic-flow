@@ -4,12 +4,15 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
+  CLAUDE_SANDBOX_SETTINGS,
   hostCommand,
-  observedUsage,
   packageVersion,
+  parseHostOutput,
   prepareProfile,
   redact,
   runCampaign,
+  skillsDirFor,
+  terminationFor,
 } from '../scripts/sandbox-campaign.js';
 import { compareRecords } from '../scripts/skill-behavior/compare.js';
 import { parseRecords, validateRecord } from '../scripts/skill-behavior/record.js';
@@ -34,6 +37,12 @@ test('host commands use isolated profiles and never bypass the sandbox', () => {
   assert.equal(claude.env.HOME, '/h');
   assert.deepEqual(claude.args.slice(-2), ['--max-budget-usd', '2']);
   assert.ok(!claude.args.includes('bypassPermissions'));
+  assert.ok(claude.args.includes('stream-json'));
+  const settings = JSON.parse(claude.args[claude.args.indexOf('--settings') + 1] ?? '{}');
+  assert.deepEqual(settings, CLAUDE_SANDBOX_SETTINGS);
+  assert.equal(settings.sandbox.enabled, true);
+  assert.equal(settings.sandbox.allowUnsandboxedCommands, false);
+  assert.equal(settings.sandbox.failIfUnavailable, true);
   const codex = hostCommand('codex', { prompt: 'p', project: '/w', home: '/h', model: 'm' });
   assert.equal(codex.env.CODEX_HOME, '/h');
   assert.ok(codex.args.includes('workspace-write'));
@@ -51,13 +60,96 @@ test('isolated profiles copy only credentials and report what is missing', () =>
   assert.deepEqual(prepareProfile(root, 'claude', source), ['[HOME]/.claude/.credentials.json']);
 });
 
-test('usage is recorded only when the host reports it', () => {
-  assert.deepEqual(
-    observedUsage('{"total_cost_usd":0.12,"usage":{"input_tokens":10,"output_tokens":5}}'),
-    { cost_usd: 0.12, input_tokens: 10, output_tokens: 5 },
+test('Claude stream-json yields commands, skill loading, model, cost, and the result subtype', () => {
+  const stream = [
+    JSON.stringify({ type: 'system', subtype: 'init', model: 'claude-test-1' }),
+    JSON.stringify({
+      type: 'user',
+      message: { content: [{ type: 'text', text: 'run npm test' }] },
+    }),
+    JSON.stringify({
+      type: 'assistant',
+      message: {
+        content: [
+          {
+            type: 'tool_use',
+            name: 'Read',
+            input: { file_path: '/w/.claude/skills/saf-check-task/SKILL.md' },
+          },
+          { type: 'tool_use', name: 'Bash', input: { command: 'npm test' } },
+        ],
+      },
+    }),
+    JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      total_cost_usd: 0.42,
+      usage: { input_tokens: 100, output_tokens: 20 },
+    }),
+  ].join('\n');
+  assert.deepEqual(parseHostOutput(stream), {
+    commands: ['npm test'],
+    model: 'claude-test-1',
+    usage: { cost_usd: 0.42, input_tokens: 100, output_tokens: 20 },
+    resultSubtype: 'success',
+    skillLoaded: true,
+  });
+  // A prompt that mentions a command is not an executed command.
+  assert.deepEqual(parseHostOutput(stream.split('\n').slice(0, 2).join('\n')).commands, []);
+});
+
+test('Codex JSON events yield completed commands and summed usage', () => {
+  const events = [
+    JSON.stringify({ type: 'thread.started', thread_id: 't' }),
+    JSON.stringify({
+      type: 'item.started',
+      item: { type: 'command_execution', command: 'npm test' },
+    }),
+    JSON.stringify({
+      type: 'item.completed',
+      item: {
+        type: 'command_execution',
+        command: "bash -lc 'cat .agents/skills/saf-implement/SKILL.md'",
+      },
+    }),
+    JSON.stringify({
+      type: 'item.completed',
+      item: { type: 'command_execution', command: 'npm test' },
+    }),
+    JSON.stringify({ type: 'turn.completed', usage: { input_tokens: 50, output_tokens: 5 } }),
+    JSON.stringify({ type: 'turn.completed', usage: { input_tokens: 10, output_tokens: 1 } }),
+    'not json',
+  ].join('\n');
+  const parsed = parseHostOutput(events);
+  assert.deepEqual(parsed.commands, [
+    "bash -lc 'cat .agents/skills/saf-implement/SKILL.md'",
+    'npm test',
+  ]);
+  assert.equal(parsed.skillLoaded, true);
+  assert.deepEqual(parsed.usage, { input_tokens: 60, output_tokens: 6 });
+  assert.equal(parsed.model, null);
+  assert.equal(parseHostOutput('').usage, null);
+});
+
+test('host results map to terminations without trusting the exit code', () => {
+  const base = { signal: null, exitCode: 0, resultSubtype: null };
+  assert.equal(terminationFor(base), 'normal');
+  assert.equal(terminationFor({ ...base, resultSubtype: 'success' }), 'normal');
+  assert.equal(terminationFor({ ...base, resultSubtype: 'error_max_budget_usd' }), 'budget');
+  assert.equal(terminationFor({ ...base, resultSubtype: 'error_max_turns' }), 'budget');
+  assert.equal(
+    terminationFor({ ...base, resultSubtype: 'error_during_execution' }),
+    'transport-error',
   );
-  assert.equal(observedUsage('{"result":"ok"}'), null);
-  assert.equal(observedUsage('not json'), null);
+  assert.equal(terminationFor({ ...base, exitCode: 1 }), 'transport-error');
+  assert.equal(terminationFor({ ...base, errorCode: 'ETIMEDOUT' }), 'timeout');
+  assert.equal(terminationFor({ ...base, errorCode: 'ENOENT' }), 'host-unavailable');
+});
+
+test('each host gets the bundle in its documented project skills directory', () => {
+  assert.equal(skillsDirFor('claude'), path.join('.claude', 'skills'));
+  assert.equal(skillsDirFor('codex'), path.join('.agents', 'skills'));
+  assert.equal(skillsDirFor('cursor'), path.join('.agents', 'skills'));
 });
 
 test('dry-run packs and installs the bundle but never produces a PASS', () => {

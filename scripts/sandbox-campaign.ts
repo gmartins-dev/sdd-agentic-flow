@@ -161,6 +161,22 @@ export function prepareProfile(root: string, host: HostId, sourceHome = os.homed
   return missing;
 }
 
+// Bash runs inside Claude Code's own sandbox (writes confined to the workspace), is auto-approved
+// there, and may not escape it; a session fails instead of silently running unsandboxed.
+export const CLAUDE_SANDBOX_SETTINGS = {
+  sandbox: {
+    enabled: true,
+    autoAllowBashIfSandboxed: true,
+    allowUnsandboxedCommands: false,
+    failIfUnavailable: true,
+  },
+};
+
+// Each host discovers project skills in its own documented directory.
+export function skillsDirFor(host: HostId): string {
+  return host === 'claude' ? path.join('.claude', 'skills') : path.join('.agents', 'skills');
+}
+
 export function hostCommand(
   host: Exclude<HostId, 'stub'>,
   input: { prompt: string; project: string; home: string; model?: string; maxBudgetUsd?: number },
@@ -176,9 +192,12 @@ export function hostCommand(
         '-p',
         input.prompt,
         '--output-format',
-        'json',
+        'stream-json',
+        '--verbose',
         '--permission-mode',
         'acceptEdits',
+        '--settings',
+        JSON.stringify(CLAUDE_SANDBOX_SETTINGS),
         ...model,
         ...budget,
       ],
@@ -220,27 +239,96 @@ export function hostCommand(
   };
 }
 
-// Usage is recorded only when the host reports it in machine output; absent stays unknown.
-export function observedUsage(stdout: string): BehaviorRecord['usage'] {
-  try {
-    const value = JSON.parse(stdout) as {
-      total_cost_usd?: unknown;
-      usage?: { input_tokens?: unknown; output_tokens?: unknown };
-    };
-    const usage: NonNullable<BehaviorRecord['usage']> = {};
-    if (typeof value.total_cost_usd === 'number') usage.cost_usd = value.total_cost_usd;
-    if (typeof value.usage?.input_tokens === 'number')
-      usage.input_tokens = value.usage.input_tokens;
-    if (typeof value.usage?.output_tokens === 'number')
-      usage.output_tokens = value.usage.output_tokens;
-    return Object.keys(usage).length ? usage : null;
-  } catch {
-    return null;
+export type HostOutput = {
+  commands: string[];
+  model: string | null;
+  usage: BehaviorRecord['usage'];
+  resultSubtype: string | null;
+  skillLoaded: boolean;
+};
+
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+
+// Read the host's machine event stream (Claude stream-json, Codex --json). Commands, model, and
+// usage come only from what the host reported; anything absent stays unknown.
+export function parseHostOutput(stdout: string): HostOutput {
+  const output: HostOutput = {
+    commands: [],
+    model: null,
+    usage: null,
+    resultSubtype: null,
+    skillLoaded: false,
+  };
+  const usage: NonNullable<BehaviorRecord['usage']> = {};
+  const addTokens = (key: 'input_tokens' | 'output_tokens', value: unknown) => {
+    if (typeof value === 'number') usage[key] = (usage[key] ?? 0) + value;
+  };
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim().startsWith('{')) continue;
+    let event: Record<string, unknown>;
+    try {
+      event = record(JSON.parse(line));
+    } catch {
+      continue;
+    }
+    if (typeof event.model === 'string') output.model = event.model;
+    const message = record(event.message);
+    if (typeof message.model === 'string') output.model = message.model;
+    for (const part of Array.isArray(message.content) ? message.content : []) {
+      const item = record(part);
+      if (item.type !== 'tool_use') continue;
+      const input = record(item.input);
+      if (item.name === 'Bash' && typeof input.command === 'string')
+        output.commands.push(input.command);
+      if (item.name === 'Skill') output.skillLoaded = true;
+      if (typeof input.file_path === 'string' && /SKILL\.md$/.test(input.file_path))
+        output.skillLoaded = true;
+    }
+    const codexItem = record(event.item);
+    if (codexItem.type === 'command_execution' && event.type === 'item.completed') {
+      const command = Array.isArray(codexItem.command)
+        ? codexItem.command.join(' ')
+        : codexItem.command;
+      if (typeof command === 'string') output.commands.push(command);
+    }
+    if (event.type === 'result') {
+      output.resultSubtype = typeof event.subtype === 'string' ? event.subtype : null;
+      if (typeof event.total_cost_usd === 'number') usage.cost_usd = event.total_cost_usd;
+      const reported = record(event.usage);
+      addTokens('input_tokens', reported.input_tokens);
+      addTokens('output_tokens', reported.output_tokens);
+    }
+    if (event.type === 'turn.completed') {
+      const reported = record(event.usage);
+      addTokens('input_tokens', reported.input_tokens);
+      addTokens('output_tokens', reported.output_tokens);
+    }
   }
+  if (output.commands.some((command) => /SKILL\.md/.test(command))) output.skillLoaded = true;
+  output.usage = Object.keys(usage).length ? usage : null;
+  return output;
+}
+
+// Map the host's own result to a termination; the verdict still comes from the oracle.
+export function terminationFor(input: {
+  errorCode?: string | undefined;
+  signal: string | null;
+  exitCode: number | null;
+  resultSubtype: string | null;
+}): Termination {
+  if (input.errorCode === 'ENOENT') return 'host-unavailable';
+  if (input.errorCode === 'ETIMEDOUT' || input.signal === 'SIGTERM') return 'timeout';
+  if (input.errorCode) return 'transport-error';
+  if (input.resultSubtype && /budget|max_turns/i.test(input.resultSubtype)) return 'budget';
+  if (input.resultSubtype && input.resultSubtype !== 'success') return 'transport-error';
+  if (input.exitCode !== 0 && input.resultSubtype === null) return 'transport-error';
+  return 'normal';
 }
 
 type Session = {
   termination: Termination;
+  host?: HostOutput;
   exitCode: number | null;
   durationMs: number | null;
   stdout: string;
@@ -300,27 +388,31 @@ function runHost(
     env: invocation.env,
     encoding: 'utf8',
     timeout: timeoutMs,
+    // Event streams of long sessions exceed the 1 MiB default.
+    maxBuffer: 64 * 1024 * 1024,
   });
   const error = result.error as NodeJS.ErrnoException | undefined;
-  const stdout = redact(result.stdout ?? '');
-  const termination: Termination =
-    error?.code === 'ENOENT'
-      ? 'host-unavailable'
-      : error?.code === 'ETIMEDOUT' || result.signal === 'SIGTERM'
-        ? 'timeout'
-        : error
-          ? 'transport-error'
-          : /max[_ -]?budget/i.test(stdout)
-            ? 'budget'
-            : 'normal';
+  const parsed = parseHostOutput(result.stdout ?? '');
   return {
-    termination,
+    termination: terminationFor({
+      errorCode: error?.code,
+      signal: result.signal,
+      exitCode: result.status,
+      resultSubtype: parsed.resultSubtype,
+    }),
+    host: parsed,
     exitCode: result.status,
     durationMs: Date.now() - started,
-    stdout,
+    stdout: redact(result.stdout ?? ''),
     stderr: redact(result.stderr ?? ''),
     checksNotRun: [],
   };
+}
+
+function hostVersion(host: HostId): string | null {
+  const command = host === 'claude' ? 'claude' : host === 'codex' ? 'codex' : 'agent';
+  const result = spawnSync(command, ['--version'], { encoding: 'utf8', timeout: 30_000 });
+  return result.status === 0 ? result.stdout.trim().split(/\r?\n/)[0] || null : null;
 }
 
 function excludeFromGit(project: string, entries: string[]): void {
@@ -345,7 +437,7 @@ export function runCampaign(input: CampaignOptions = {}): {
     condition: input.condition ?? 'candidate',
     trials: input.trials ?? 1,
     stubBehavior: input.stubBehavior ?? 'compliant',
-    sessionTimeoutMinutes: input.sessionTimeoutMinutes ?? 30,
+    sessionTimeoutMinutes: input.sessionTimeoutMinutes ?? 15,
     wallTimeMinutes: input.wallTimeMinutes ?? 0,
     maxBudgetUsd: input.maxBudgetUsd ?? 0,
     install: input.install ?? true,
@@ -412,126 +504,149 @@ export function runCampaign(input: CampaignOptions = {}): {
     });
 
   const homes = new Map<HostId, string>();
+  const versions = new Map<HostId, string | null>();
   if (mode === 'real' && !fatal)
     for (const host of options.hosts) {
       if (host === 'stub') continue;
       const missing = prepareProfile(root, host);
       if (missing.length) blocked.push(`${host} credentials unavailable: ${missing.join(', ')}`);
-      else homes.set(host, path.join(root, `${host}-home`));
+      else {
+        homes.set(host, path.join(root, `${host}-home`));
+        versions.set(host, hostVersion(host));
+      }
     }
 
-  const deadline = Date.now() + options.wallTimeMinutes * 60_000;
-  const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${options.condition}`;
-  if (!blocked.some((reason) => !reason.startsWith('dry-run') && !reason.includes('credentials')))
-    for (const host of options.hosts)
-      for (const item of selected)
-        for (let trial = 1; trial <= options.trials; trial += 1) {
-          const project = path.join(root, 'runs', `${host}-${item.id}-${trial}`);
-          fs.mkdirSync(project, { recursive: true });
-          item.prepare(project);
-          if (template) {
-            fs.cpSync(path.join(template, '.agents'), path.join(project, '.agents'), {
-              recursive: true,
+  try {
+    const deadline = Date.now() + options.wallTimeMinutes * 60_000;
+    const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${options.condition}`;
+    if (!blocked.some((reason) => !reason.startsWith('dry-run') && !reason.includes('credentials')))
+      for (const host of options.hosts)
+        for (const item of selected)
+          for (let trial = 1; trial <= options.trials; trial += 1) {
+            const project = path.join(root, 'runs', `${host}-${item.id}-${trial}`);
+            fs.mkdirSync(project, { recursive: true });
+            item.prepare(project);
+            if (template) {
+              // Place the installed bundle where this host discovers project skills.
+              const target = skillsDirFor(host);
+              fs.cpSync(path.join(template, '.agents', 'skills'), path.join(project, target), {
+                recursive: true,
+              });
+              excludeFromGit(project, [`${target.split(path.sep)[0]}/`]);
+            }
+            const before = snapshot(project);
+            const outOfTime = mode === 'real' && Date.now() > deadline;
+            const session: Session = outOfTime
+              ? {
+                  termination: 'not-run',
+                  exitCode: null,
+                  durationMs: null,
+                  stdout: '',
+                  stderr: '',
+                  checksNotRun: [{ name: 'host session', reason: 'wall-time ceiling reached' }],
+                }
+              : runHost(
+                  host,
+                  item,
+                  project,
+                  options,
+                  homes,
+                  // The wall-time ceiling bounds the session too, not only whether it starts.
+                  mode === 'real'
+                    ? Math.max(
+                        1,
+                        Math.min(options.sessionTimeoutMinutes * 60_000, deadline - Date.now()),
+                      )
+                    : options.sessionTimeoutMinutes * 60_000,
+                );
+            if (
+              item.capabilities.includes('background-process') &&
+              session.termination !== 'not-run'
+            )
+              settleBackground();
+            const after = snapshot(project);
+            const exercised =
+              session.termination !== 'not-run' && session.termination !== 'host-unavailable';
+            const observed = session.host ? { commands: session.host.commands } : undefined;
+            const oracle = exercised ? item.oracle(project, before, after, observed) : null;
+            const verdict = deriveVerdict({
+              termination: session.termination,
+              capabilitiesMissing: [],
+              oracle,
             });
-            excludeFromGit(project, ['.agents/']);
-          }
-          const before = snapshot(project);
-          const outOfTime = mode === 'real' && Date.now() > deadline;
-          const session: Session = outOfTime
-            ? {
-                termination: 'not-run',
-                exitCode: null,
-                durationMs: null,
-                stdout: '',
-                stderr: '',
-                checksNotRun: [{ name: 'host session', reason: 'wall-time ceiling reached' }],
-              }
-            : runHost(
-                host,
-                item,
-                project,
-                options,
-                homes,
-                // The wall-time ceiling bounds the session too, not only whether it starts.
-                mode === 'real'
-                  ? Math.max(
-                      1,
-                      Math.min(options.sessionTimeoutMinutes * 60_000, deadline - Date.now()),
-                    )
-                  : options.sessionTimeoutMinutes * 60_000,
+            const changed = changedPaths(before, after);
+            const transcript = path.join(evidence, `${host}-${item.id}-${trial}.json`);
+            if (exercised) {
+              fs.mkdirSync(evidence, { recursive: true });
+              fs.writeFileSync(
+                transcript,
+                JSON.stringify(
+                  {
+                    exit_code: session.exitCode,
+                    stdout: session.stdout,
+                    stderr: session.stderr,
+                    changed,
+                  },
+                  null,
+                  2,
+                ),
               );
-          if (item.capabilities.includes('background-process') && session.termination !== 'not-run')
-            settleBackground();
-          const after = snapshot(project);
-          const exercised =
-            session.termination !== 'not-run' && session.termination !== 'host-unavailable';
-          const oracle = exercised ? item.oracle(project, before, after) : null;
-          const verdict = deriveVerdict({
-            termination: session.termination,
-            capabilitiesMissing: [],
-            oracle,
-          });
-          const changed = changedPaths(before, after);
-          const transcript = path.join(evidence, `${host}-${item.id}-${trial}.json`);
-          if (exercised) {
-            fs.mkdirSync(evidence, { recursive: true });
-            fs.writeFileSync(
-              transcript,
-              JSON.stringify(
-                {
-                  exit_code: session.exitCode,
-                  stdout: session.stdout,
-                  stderr: session.stderr,
-                  changed,
-                },
-                null,
-                2,
-              ),
-            );
+            }
+            records.push({
+              schema: RECORD_SCHEMA,
+              run_id: runId,
+              case_id: item.id,
+              family: item.family,
+              split: item.split,
+              condition: options.condition,
+              trial,
+              host,
+              host_version: versions.get(host) ?? null,
+              model: options.model ?? session.host?.model ?? null,
+              config: host === 'stub' ? `stub-${options.stubBehavior}` : `${host}-default`,
+              loading: item.loading,
+              saf_revision: options.condition === 'candidate' ? packageVersion : baselineVersion,
+              bundle_sha256: bundleSha,
+              fixture_sha256: snapshotDigest(before),
+              capabilities_required: [...item.capabilities],
+              capabilities_missing: [],
+              termination: session.termination,
+              exit_code: session.exitCode,
+              duration_ms: session.durationMs,
+              facts: {
+                accepted: exercised ? 'observed' : 'unknown',
+                completed:
+                  oracle?.passed === true
+                    ? 'observed'
+                    : oracle?.passed === false
+                      ? 'absent'
+                      : 'unknown',
+                effects_persisted: !exercised ? 'unknown' : changed.length ? 'observed' : 'absent',
+                cleanup: 'unknown',
+                ...(session.host
+                  ? {
+                      skill_loaded: session.host.skillLoaded
+                        ? ('observed' as const)
+                        : ('absent' as const),
+                    }
+                  : {}),
+              },
+              checks_not_run: session.checksNotRun,
+              oracle,
+              verdict,
+              owner_refs: [...item.owners],
+              attribution:
+                verdict === 'FAIL'
+                  ? { layer: 'unassigned', confidence: 'inconclusive' }
+                  : { layer: 'none', confidence: 'n/a' },
+              usage: session.host?.usage ?? null,
+            });
           }
-          records.push({
-            schema: RECORD_SCHEMA,
-            run_id: runId,
-            case_id: item.id,
-            family: item.family,
-            split: item.split,
-            condition: options.condition,
-            trial,
-            host,
-            host_version: null,
-            model: options.model ?? null,
-            config: host === 'stub' ? `stub-${options.stubBehavior}` : `${host}-default`,
-            loading: item.loading,
-            saf_revision: options.condition === 'candidate' ? packageVersion : baselineVersion,
-            bundle_sha256: bundleSha,
-            fixture_sha256: snapshotDigest(before),
-            capabilities_required: [...item.capabilities],
-            capabilities_missing: [],
-            termination: session.termination,
-            exit_code: session.exitCode,
-            duration_ms: session.durationMs,
-            facts: {
-              accepted: exercised ? 'observed' : 'unknown',
-              completed:
-                oracle?.passed === true
-                  ? 'observed'
-                  : oracle?.passed === false
-                    ? 'absent'
-                    : 'unknown',
-              effects_persisted: !exercised ? 'unknown' : changed.length ? 'observed' : 'absent',
-              cleanup: 'unknown',
-            },
-            checks_not_run: session.checksNotRun,
-            oracle,
-            verdict,
-            owner_refs: [...item.owners],
-            attribution:
-              verdict === 'FAIL'
-                ? { layer: 'unassigned', confidence: 'inconclusive' }
-                : { layer: 'none', confidence: 'n/a' },
-            usage: exercised ? observedUsage(session.stdout) : null,
-          });
-        }
+  } finally {
+    // Credential copies never outlive the campaign, even when workspaces are kept or a run throws.
+    for (const host of homes.keys())
+      fs.rmSync(path.join(root, `${host}-home`), { recursive: true, force: true });
+  }
 
   fs.mkdirSync(path.dirname(options.output), { recursive: true });
   // Never let the records path collide with the report when the output has no .md extension.

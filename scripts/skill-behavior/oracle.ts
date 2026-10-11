@@ -8,6 +8,19 @@ import { pathToFileURL } from 'node:url';
 
 export type Snapshot = Map<string, string>;
 
+const SKIPPED_ROOTS = new Set(['.git', '.agents', '.claude', 'node_modules']);
+
+// What the harness, not the agent, captured from a real host session. Stub runs have none.
+export type HostObservation = { commands: string[] };
+
+// Commands that run the fixture sensor, directly or through npm.
+const SENSOR_COMMAND =
+  /(^|[\s;&|'"(])(npm\s+(run\s+)?test|node\s+(\.\/)?test\/(run|eligibility\.test)\.js|node\s+--test)\b/;
+
+export function sensorRunObserved(commands: readonly string[]): boolean {
+  return commands.some((command) => SENSOR_COMMAND.test(command));
+}
+
 export type OracleResult = {
   // null means the oracle could not decide (for example, a required observation is missing).
   passed: boolean | null;
@@ -22,14 +35,14 @@ export type ClaimStatus = 'positive' | 'negative' | 'missing';
 const POSITIVE_STATUS = /^(pass|passed|done|complete|completed|ready|approved|verified|green)\b/i;
 
 // Snapshot every regular file, including Git-ignored sentinels; only `.git` and installed skill
-// bundles are skipped because they are not part of the evaluated workspace state.
+// bundles (`.agents`, `.claude`) are skipped because they are not part of the evaluated state.
 export function snapshot(root: string): Snapshot {
   const files: Snapshot = new Map();
   const walk = (directory: string) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       const relative = path.relative(root, absolute).split(path.sep).join('/');
-      if (relative === '.git' || relative === '.agents' || relative === 'node_modules') continue;
+      if (SKIPPED_ROOTS.has(relative)) continue;
       if (entry.isDirectory()) walk(absolute);
       else if (entry.isFile())
         files.set(

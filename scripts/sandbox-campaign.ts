@@ -214,7 +214,6 @@ export function hostCommand(
         input.project,
         '--sandbox',
         'workspace-write',
-        '--approve-for-me',
         '--json',
         ...model,
         input.prompt,
@@ -614,7 +613,12 @@ export function runCampaign(input: CampaignOptions = {}): {
               exit_code: session.exitCode,
               duration_ms: session.durationMs,
               facts: {
-                accepted: exercised ? 'observed' : 'unknown',
+                // A host that exits before emitting any event never accepted the task.
+                accepted: !exercised
+                  ? 'unknown'
+                  : session.termination === 'normal' || (session.host?.commands.length ?? 0) > 0
+                    ? 'observed'
+                    : 'absent',
                 completed:
                   oracle?.passed === true
                     ? 'observed'

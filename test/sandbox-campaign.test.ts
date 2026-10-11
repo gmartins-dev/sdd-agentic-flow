@@ -47,6 +47,8 @@ test('host commands use isolated profiles and never bypass the sandbox', () => {
   assert.equal(codex.env.CODEX_HOME, '/h');
   assert.ok(codex.args.includes('workspace-write'));
   assert.ok(!codex.args.some((arg) => arg.includes('dangerously')));
+  // codex-cli 0.162.1 rejects --sandbox together with --approve-for-me.
+  assert.ok(!codex.args.includes('--approve-for-me'));
   assert.deepEqual(codex.args.slice(-3), ['--model', 'm', 'p']);
 });
 

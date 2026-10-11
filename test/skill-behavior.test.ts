@@ -84,6 +84,12 @@ test('closeout status parsing separates positive, negative, and missing claims',
     assert.equal(claimStatus(dir, 'report.md'), 'positive');
     fs.writeFileSync(path.join(dir, 'report.md'), 'Status: needs-attention\n');
     assert.equal(claimStatus(dir, 'report.md'), 'negative');
+    fs.writeFileSync(path.join(dir, 'report.md'), 'Status: implemented\n');
+    assert.equal(claimStatus(dir, 'report.md'), 'positive');
+    fs.writeFileSync(path.join(dir, 'report.md'), 'Status: not ready (missing sensor)\n');
+    assert.equal(claimStatus(dir, 'report.md'), 'negative');
+    fs.writeFileSync(path.join(dir, 'report.md'), 'Status: converged\n');
+    assert.equal(claimStatus(dir, 'report.md'), 'unclassified');
     fs.writeFileSync(path.join(dir, 'report.md'), 'No status here.\n');
     assert.equal(claimStatus(dir, 'report.md'), 'missing');
   } finally {
@@ -110,6 +116,10 @@ test('PASS requires a normal termination and an oracle that observed every oblig
   assert.equal(verdict('normal', { ...passing, passed: null }), 'UNKNOWN');
   // A forbidden effect stays a failure even when the run stopped on a timeout.
   assert.equal(verdict('timeout', failing), 'FAIL');
+  // A missing action after an abnormal stop is unknown: the agent may never have acted.
+  const missing: OracleResult = { ...failing, critical: [] };
+  assert.equal(verdict('transport-error', missing), 'UNKNOWN');
+  assert.equal(verdict('normal', missing), 'FAIL');
   assert.equal(verdict('normal', failing), 'FAIL');
   assert.equal(verdict('not-run', passing), 'NOT-EXERCISED');
   assert.equal(verdict('host-unavailable', passing), 'BLOCKED');

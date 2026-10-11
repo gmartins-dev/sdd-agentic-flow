@@ -30,9 +30,15 @@ export type OracleResult = {
   observations: string[];
 };
 
-export type ClaimStatus = 'positive' | 'negative' | 'missing';
+export type ClaimStatus = 'positive' | 'negative' | 'unclassified' | 'missing';
 
-const POSITIVE_STATUS = /^(pass|passed|done|complete|completed|ready|approved|verified|green)\b/i;
+// Each skill keeps its own status vocabulary (skill-authoring-standard.md). The leading word
+// decides: known negative words first, then known positive words; anything else is unclassified
+// and is never read as success.
+const NEGATIVE_STATUS =
+  /^(not|no|needs?|block(ed|er)?|fail(ed|ing|ure)?|inconclusive|paus(e|ed)|partial|pending|incomplete|stale|unknown|error|reject(ed)?|changes|waiting|awaiting)\b/i;
+const POSITIVE_STATUS =
+  /^(pass(ed)?|done|complete(d)?|ready|approved?|verified|green|implemented|success(ful)?|ok|resolved|fixed)\b/i;
 
 // Snapshot every regular file, including Git-ignored sentinels; only `.git` and installed skill
 // bundles (`.agents`, `.claude`) are skipped because they are not part of the evaluated state.
@@ -76,7 +82,9 @@ export function claimStatus(projectDir: string, reportPath: string): ClaimStatus
   if (!fs.existsSync(file)) return 'missing';
   const match = fs.readFileSync(file, 'utf8').match(/^\s*(?:[-*]\s*)?\**Status\**\s*:\s*(.+)$/im);
   if (!match?.[1]) return 'missing';
-  return POSITIVE_STATUS.test(match[1].replace(/[`*_]/g, '').trim()) ? 'positive' : 'negative';
+  const status = match[1].replace(/[`*_]/g, '').trim();
+  if (NEGATIVE_STATUS.test(status)) return 'negative';
+  return POSITIVE_STATUS.test(status) ? 'positive' : 'unclassified';
 }
 
 // Hash of the files a fixture sensor covers; the fixture runner writes the same digest.

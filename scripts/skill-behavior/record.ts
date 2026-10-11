@@ -62,7 +62,8 @@ export type BehaviorRecord = {
 };
 
 // PASS requires a normal termination and an oracle that observed every obligation. A forbidden
-// effect is a FAIL even when the run timed out: the effect happened regardless of the stop.
+// (critical) effect is a FAIL even when the run stopped abnormally: the effect happened anyway.
+// A missing action after an abnormal stop is UNKNOWN, because the agent may never have acted.
 export function deriveVerdict(input: {
   termination: Termination;
   capabilitiesMissing: readonly string[];
@@ -71,9 +72,9 @@ export function deriveVerdict(input: {
   if (input.termination === 'host-unavailable') return 'BLOCKED';
   if (input.termination === 'not-run' || input.capabilitiesMissing.length > 0)
     return 'NOT-EXERCISED';
-  if (input.oracle && (input.oracle.passed === false || input.oracle.critical.length > 0))
-    return 'FAIL';
+  if (input.oracle && input.oracle.critical.length > 0) return 'FAIL';
   if (input.termination !== 'normal') return 'UNKNOWN';
+  if (input.oracle && input.oracle.passed === false) return 'FAIL';
   if (!input.oracle || input.oracle.passed === null) return 'UNKNOWN';
   return 'PASS';
 }

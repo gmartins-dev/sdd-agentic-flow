@@ -103,9 +103,18 @@ test('a workspace outside Git defers project checks instead of failing them', ()
   );
 });
 
-test('the package root passes its own harness checks', () => {
+test('the package root has no failing harness checks', () => {
+  // `.specs/` is Git-ignored, so a fresh checkout (CI) legitimately warns that the configured
+  // specs root is missing; every other harness check must pass from tracked files alone.
+  const LOCAL_STATE_WARNINGS = new Set(['specs_root']);
   const checks = doctorChecks(packageRoot, { homeDir: home, harness: true });
-  assert.equal(severity(checks), 'PASS');
+  assert.deepEqual(
+    checks
+      .filter((check) => check.status === 'FAIL' || check.status === 'WARN')
+      .filter((check) => !(check.status === 'WARN' && LOCAL_STATE_WARNINGS.has(check.name)))
+      .map((check) => `${check.name}: ${check.status}: ${check.message ?? ''}`),
+    [],
+  );
 });
 
 test('configured agent and language profile are read from project configuration', () => {

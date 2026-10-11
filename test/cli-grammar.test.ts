@@ -12,7 +12,7 @@ const packageVersion: string = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'),
 ).version;
 const newerVersion = `${Number(packageVersion.split('.')[0]) + 1}.0.0`;
-const newerPattern = newerVersion.replace(/\./g, '\\.');
+const newerPattern = newerVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function run(args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cli, ...args], {

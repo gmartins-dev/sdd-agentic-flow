@@ -311,7 +311,13 @@ test('project installation intent outside Git is a handled failure, not an inter
     const result = spawnSync(process.execPath, [cli, ...args], {
       cwd: outsideGit,
       encoding: 'utf8',
-      env: { ...process.env, HOME: testHome, CI: '1', GIT_CEILING_DIRECTORIES: os.tmpdir() },
+      env: {
+        ...process.env,
+        HOME: testHome,
+        USERPROFILE: testHome,
+        CI: '1',
+        GIT_CEILING_DIRECTORIES: os.tmpdir(),
+      },
     });
     assert.equal(result.status, 1, args.join(' '));
     assert.match(result.stderr, /Git repository metadata is required/);
@@ -346,7 +352,7 @@ test('fail-closed installation state refusals exit 1 with an actionable message'
     spawnSync(process.execPath, [cli, ...args], {
       cwd: project,
       encoding: 'utf8',
-      env: { ...process.env, HOME: home, CI: '1' },
+      env: { ...process.env, HOME: home, USERPROFILE: home, CI: '1' },
     });
   write('applying', 'saf-route');
   const interrupted = runIn(['uninstall', '--plan']);

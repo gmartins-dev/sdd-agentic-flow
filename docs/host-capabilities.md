@@ -27,3 +27,10 @@ means SAF cannot rely on it. Portable syntax does not imply portable semantics.
 For example, SAF can require no push without authorization in a contract; only
 the host can enforce a sandbox or approval mechanism. This does not make SAF a
 host runtime.
+
+Rewind, checkpoints, and rollback are host capabilities too: reverting a
+conversation does not undo a file or an external effect a process already
+produced. Evidence that a host follows SAF is a third responsibility, separate
+from both: the maintainer [skill behavior evaluation](skill-behavior-evaluation.md)
+observes host runs from outside, and a row above moves to `manually verified`
+only when such a run exercised it.

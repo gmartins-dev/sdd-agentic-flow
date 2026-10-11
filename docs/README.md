@@ -97,6 +97,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | Doc | When to read |
 | --- | --- |
 | [publishing.md](publishing.md) | Release and npm publish process for this repository |
+| [skill-behavior-evaluation.md](skill-behavior-evaluation.md) | Comparing skill behavior across bundles before changing a skill |
 | [audit-2026-10-10.md](audit-2026-10-10.md) | v8.1.2 audit and the v8.2.0 remediation |
 | [audit-2026-09-07.md](audit-2026-09-07.md) | Repository-grounded audit and remediation handoff |
 

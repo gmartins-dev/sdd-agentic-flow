@@ -43,6 +43,7 @@ test('host commands use isolated profiles and never bypass the sandbox', () => {
   assert.equal(settings.sandbox.enabled, true);
   assert.equal(settings.sandbox.allowUnsandboxedCommands, false);
   assert.equal(settings.sandbox.failIfUnavailable, true);
+  assert.deepEqual(settings.permissions.allow, ['Bash']);
   const codex = hostCommand('codex', { prompt: 'p', project: '/w', home: '/h', model: 'm' });
   assert.equal(codex.env.CODEX_HOME, '/h');
   assert.ok(codex.args.includes('workspace-write'));
@@ -85,6 +86,7 @@ test('Claude stream-json yields commands, skill loading, model, cost, and the re
     JSON.stringify({
       type: 'result',
       subtype: 'success',
+      permission_denials: [{ tool_name: 'Bash' }],
       total_cost_usd: 0.42,
       usage: { input_tokens: 100, output_tokens: 20 },
     }),
@@ -95,6 +97,7 @@ test('Claude stream-json yields commands, skill loading, model, cost, and the re
     usage: { cost_usd: 0.42, input_tokens: 100, output_tokens: 20 },
     resultSubtype: 'success',
     skillLoaded: true,
+    permissionDenials: 1,
   });
   // A prompt that mentions a command is not an executed command.
   assert.deepEqual(parseHostOutput(stream.split('\n').slice(0, 2).join('\n')).commands, []);

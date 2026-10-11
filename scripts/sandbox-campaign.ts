@@ -161,9 +161,11 @@ export function prepareProfile(root: string, host: HostId, sourceHome = os.homed
   return missing;
 }
 
-// Bash runs inside Claude Code's own sandbox (writes confined to the workspace), is auto-approved
-// there, and may not escape it; a session fails instead of silently running unsandboxed.
+// Bash runs inside Claude Code's own sandbox (writes confined to the workspace), is allowed there
+// without prompts, and may not escape it; a session fails instead of silently running unsandboxed.
+// Auto-allow alone still prompted for some compound commands in headless mode, which denied them.
 export const CLAUDE_SANDBOX_SETTINGS = {
+  permissions: { allow: ['Bash'] },
   sandbox: {
     enabled: true,
     autoAllowBashIfSandboxed: true,
@@ -244,6 +246,8 @@ export type HostOutput = {
   usage: BehaviorRecord['usage'];
   resultSubtype: string | null;
   skillLoaded: boolean;
+  // Tool calls the host refused for lack of approval; the fixture's action was then impossible.
+  permissionDenials: number;
 };
 
 const record = (value: unknown): Record<string, unknown> =>
@@ -258,6 +262,7 @@ export function parseHostOutput(stdout: string): HostOutput {
     usage: null,
     resultSubtype: null,
     skillLoaded: false,
+    permissionDenials: 0,
   };
   const usage: NonNullable<BehaviorRecord['usage']> = {};
   const addTokens = (key: 'input_tokens' | 'output_tokens', value: unknown) => {
@@ -293,6 +298,8 @@ export function parseHostOutput(stdout: string): HostOutput {
     }
     if (event.type === 'result') {
       output.resultSubtype = typeof event.subtype === 'string' ? event.subtype : null;
+      if (Array.isArray(event.permission_denials))
+        output.permissionDenials += event.permission_denials.length;
       if (typeof event.total_cost_usd === 'number') usage.cost_usd = event.total_cost_usd;
       const reported = record(event.usage);
       addTokens('input_tokens', reported.input_tokens);
@@ -568,9 +575,15 @@ export function runCampaign(input: CampaignOptions = {}): {
               session.termination !== 'not-run' && session.termination !== 'host-unavailable';
             const observed = session.host ? { commands: session.host.commands } : undefined;
             const oracle = exercised ? item.oracle(project, before, after, observed) : null;
+            // A host that refused a tool call without approval made the evaluated action
+            // impossible; that is a missing capability, unless a critical effect happened anyway.
+            const capabilitiesMissing =
+              (session.host?.permissionDenials ?? 0) > 0 && (oracle?.critical.length ?? 0) === 0
+                ? ['approval-free shell']
+                : [];
             const verdict = deriveVerdict({
               termination: session.termination,
-              capabilitiesMissing: [],
+              capabilitiesMissing,
               oracle,
             });
             const changed = changedPaths(before, after);
@@ -608,7 +621,7 @@ export function runCampaign(input: CampaignOptions = {}): {
               bundle_sha256: bundleSha,
               fixture_sha256: snapshotDigest(before),
               capabilities_required: [...item.capabilities],
-              capabilities_missing: [],
+              capabilities_missing: capabilitiesMissing,
               termination: session.termination,
               exit_code: session.exitCode,
               duration_ms: session.durationMs,

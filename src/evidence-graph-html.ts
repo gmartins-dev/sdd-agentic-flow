@@ -1,4 +1,4 @@
-import type { EvidenceGraphResult } from './evidence-graph';
+import type { AcceptanceCriterionNode, EvidenceGraphResult } from './evidence-graph';
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
@@ -13,6 +13,15 @@ function escapeHtml(value: string): string {
   });
 }
 
+function criterionRows(criteria: AcceptanceCriterionNode[]): string {
+  return criteria
+    .map(
+      (node) =>
+        `<tr><th>&nbsp;&nbsp;${escapeHtml(node.acId)}</th><td>${escapeHtml(node.status)}</td><td>${escapeHtml(node.taskIds.join(', ') || '—')}</td><td>${escapeHtml(node.checkReports.join(', ') || '—')}</td></tr>`,
+    )
+    .join('');
+}
+
 function renderEvidenceGraphHtml(result: EvidenceGraphResult): string {
   const errors = [...result.errors]
     .sort()
@@ -22,9 +31,14 @@ function renderEvidenceGraphHtml(result: EvidenceGraphResult): string {
     .sort((left, right) => left.reqId.localeCompare(right.reqId))
     .map(
       (node) =>
-        `<tr><th>${escapeHtml(node.reqId)}</th><td>${escapeHtml(node.status)}</td><td>${escapeHtml(node.taskIds.join(', ') || '—')}</td><td>${escapeHtml(node.checkReports.join(', ') || '—')}</td></tr>`,
+        `<tr><th>${escapeHtml(node.reqId)}</th><td>${escapeHtml(node.status)}</td><td>${escapeHtml(node.taskIds.join(', ') || '—')}</td><td>${escapeHtml(node.checkReports.join(', ') || '—')}</td></tr>${criterionRows(result.acceptanceCriteria?.filter((ac) => ac.reqId === node.reqId) ?? [])}`,
     )
     .join('');
+  const orphans = criterionRows(
+    (result.acceptanceCriteria ?? []).filter(
+      (ac) => !result.requirements.some((node) => node.reqId === ac.reqId),
+    ),
+  );
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -39,7 +53,7 @@ function renderEvidenceGraphHtml(result: EvidenceGraphResult): string {
 <p>Evidence contract: ${escapeHtml(result.evidenceContract)}</p>
 <p>Contract compatible: ${result.contractCompatible ? 'yes' : 'no'}</p>
 ${errors ? `<section class="errors"><h2>Errors</h2><ul>${errors}</ul></section>` : ''}
-<table><thead><tr><th>Requirement</th><th>Status</th><th>Tasks</th><th>Checks</th></tr></thead><tbody>${requirements}</tbody></table>
+<table><thead><tr><th>Requirement</th><th>Status</th><th>Tasks</th><th>Checks</th></tr></thead><tbody>${requirements}${orphans}</tbody></table>
 </main>
 </body>
 </html>

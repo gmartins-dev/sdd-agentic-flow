@@ -1246,6 +1246,8 @@ function evidenceGraphExitCode(result: EvidenceGraphResult): number {
   if (result.errors.some((error) => error.startsWith('feature not found'))) return 2;
   if (!result.contractCompatible) return 1;
   if (result.requirements.some((node) => node.status !== 'current')) return 1;
+  if (result.acceptanceCriteria?.some((node) => node.status !== 'current')) return 1;
+  if (result.errors.some((error) => error.startsWith('malformed AC line'))) return 1;
   return 0;
 }
 
@@ -1269,7 +1271,7 @@ function evidenceGraphDoctor(
     } else process.stdout.write(html);
   } else if (options.json) {
     process.stdout.write(
-      `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'doctor --evidence-graph', ok: exitCode === 0, data: { feature_slug: result.featureSlug, evidence_contract: result.evidenceContract, contract_compatible: result.contractCompatible, requirements: result.requirements, reports: result.reports, errors: result.errors, exitCode } })}\n`,
+      `${JSON.stringify({ schema_version: 2, cli_version: VERSION, command: 'doctor --evidence-graph', ok: exitCode === 0, data: { feature_slug: result.featureSlug, evidence_contract: result.evidenceContract, contract_compatible: result.contractCompatible, requirements: result.requirements, ...(result.acceptanceCriteria ? { acceptance_criteria: result.acceptanceCriteria } : {}), reports: result.reports, errors: result.errors, exitCode } })}\n`,
     );
   } else {
     process.stdout.write(`${formatEvidenceGraph(result)}\n`);
@@ -1282,6 +1284,7 @@ export type { InternalDoctorCheck };
 export {
   doctor,
   doctorChecks,
+  evidenceGraphExitCode,
   hasOfficialSkillsAt,
   installationStatus,
   languageReport,

@@ -89,7 +89,7 @@ const status = (result: EvidenceGraphResult, acId: string) =>
 
 test('parseAcceptanceCriteria reads the documented form and reports lookalikes', () => {
   const parsed = parseAcceptanceCriteria(
-    '- AC-1 (REQ-1): ok\n- AC-2: no parent\n  - AC-3 (REQ-1): indented\n- plain bullet\n',
+    '## Acceptance criteria\n- AC-1 (REQ-1): ok\n- AC-2: no parent\n  - AC-3 (REQ-1): indented\n- plain bullet\n',
   );
   assert.deepEqual(parsed.criteria, [{ acId: 'AC-1', reqId: 'REQ-1' }]);
   assert.equal(parsed.malformed.length, 2);
@@ -196,8 +196,44 @@ test('the idea-to-spec golden uses AC IDs while task-management stays REQ-only',
 
 test('AC-looking lines inside code fences are documentation, not criteria', () => {
   const parsed = parseAcceptanceCriteria(
-    '```md\n- AC-1 (REQ-1): shown as an example\n- AC-2: bad\n```\n- AC-3 (REQ-1): real\n',
+    '## Acceptance criteria\n```md\n- AC-1 (REQ-1): shown as an example\n- AC-2: bad\n```\n- AC-3 (REQ-1): real\n',
   );
   assert.deepEqual(parsed.criteria, [{ acId: 'AC-3', reqId: 'REQ-1' }]);
   assert.deepEqual(parsed.malformed, []);
+});
+
+test('AC lookalikes with other list markers are diagnosed and mismatched fences stay open', () => {
+  const variants = parseAcceptanceCriteria(
+    '## Acceptance criteria\n+ AC-1 (REQ-1): plus\n1. AC-2 (REQ-1): ordered\n- **AC-3** (REQ-1): bold\n-  AC-4 (REQ-1): gap\n',
+  );
+  assert.deepEqual(variants.criteria, []);
+  assert.equal(variants.malformed.length, 4);
+  const nested = parseAcceptanceCriteria(
+    '## Acceptance criteria\n```md\n~~~\n- AC-1 (REQ-1): still an example\n~~~\n```\n- AC-2 (REQ-1): real\n',
+  );
+  assert.deepEqual(nested.criteria, [{ acId: 'AC-2', reqId: 'REQ-1' }]);
+  assert.deepEqual(nested.malformed, []);
+});
+
+test('only the Acceptance criteria section holds criteria', () => {
+  const parsed = parseAcceptanceCriteria(
+    [
+      '## Requirement REQ-1 — Complete a task',
+      '- AC-9: see the notes below',
+      '## Acceptance criteria',
+      '- AC-1 (REQ-1): real',
+      '### Examples',
+      '- AC-2 (REQ-1): still inside, under a subheading',
+      '## Notes',
+      '- AC-3 refers back to a retired criterion',
+      '- AC-4 (REQ-1): misplaced criterion',
+    ].join('\n'),
+  );
+  assert.deepEqual(
+    parsed.criteria.map((criterion) => criterion.acId),
+    ['AC-1', 'AC-2'],
+  );
+  assert.deepEqual(parsed.malformed, [
+    '- AC-4 (REQ-1): misplaced criterion (outside Acceptance criteria)',
+  ]);
 });

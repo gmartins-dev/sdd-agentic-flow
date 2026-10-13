@@ -77,7 +77,11 @@ type ParsedReport = {
 
 const REQ_HEADING = /^(?:## Requirement |### )(REQ-[A-Za-z0-9-]+)/gm;
 const AC_LINE = /^- (AC-[A-Za-z0-9-]+) \((REQ-[A-Za-z0-9-]+)\):/;
-const AC_LIKE_LINE = /^\s*[-*] AC-/;
+// Any list item whose text opens with an AC ID, so marker or emphasis variants are diagnosed.
+const AC_LIKE_LINE = /^\s*(?:[-*+]|\d+[.)])\s+[*_`]*AC-/;
+const FENCE = /^\s*(`{3,}|~{3,})/;
+const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
+const AC_SECTION_TITLE = /^acceptance criteria$/i;
 const TASK_ID = /^(T\d+[A-Za-z0-9-]*)/;
 const REQUIREMENT_ANCHORS = /^Requirement anchors:\s*(.+)$/m;
 const TASK_DEPENDENCIES = /^Dependencies:\s*(.*)$/m;
@@ -101,22 +105,42 @@ export function parseRequirementIds(specContent: string): string[] {
 
 export type AcceptanceCriterion = { acId: string; reqId: string };
 
-// Only the documented `- AC-ID (REQ-ID):` form counts; lookalikes are reported, never covered.
+// Only the documented `- AC-ID (REQ-ID):` form under an `Acceptance criteria` heading counts;
+// lookalikes there are reported, never covered.
 export function parseAcceptanceCriteria(specContent: string): {
   criteria: AcceptanceCriterion[];
   malformed: string[];
 } {
   const criteria: AcceptanceCriterion[] = [];
   const malformed: string[] = [];
-  let fenced = false;
+  let fence: string | null = null;
+  // Heading level of the open `Acceptance criteria` section; a heading at that level or above
+  // closes it.
+  let sectionLevel: number | null = null;
   for (const line of specContent.replace(/\r\n?/g, '\n').split('\n')) {
-    // A fenced block documents the format; its lines are never criteria.
-    if (/^\s*(```|~~~)/.test(line)) {
-      fenced = !fenced;
+    // A fenced block documents the format; its lines are never criteria. Only a fence of the
+    // same character and at least the opening length closes it.
+    const marker = line.match(FENCE)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
       continue;
     }
-    if (fenced || !AC_LIKE_LINE.test(line)) continue;
+    if (fence) continue;
+    const heading = line.match(HEADING);
+    if (heading?.[1]) {
+      const level = heading[1].length;
+      if (AC_SECTION_TITLE.test(heading[2] ?? '')) sectionLevel = level;
+      else if (sectionLevel !== null && level <= sectionLevel) sectionLevel = null;
+      continue;
+    }
+    if (!AC_LIKE_LINE.test(line)) continue;
     const match = line.match(AC_LINE);
+    if (sectionLevel === null) {
+      // Prose elsewhere may mention ACs; a full criterion there is misplaced, not silently dropped.
+      if (match) malformed.push(`${line.trim().slice(0, 80)} (outside Acceptance criteria)`);
+      continue;
+    }
     if (match?.[1] && match[2]) criteria.push({ acId: match[1], reqId: match[2] });
     else malformed.push(line.trim().slice(0, 80));
   }
@@ -454,7 +478,7 @@ export function collectEvidenceGraph(
         checkReports: [],
       })),
       reports: [],
-      errors: [`duplicate REQ-* IDs: ${duplicates.join(', ')}`],
+      errors: [...errors, `duplicate REQ-* IDs: ${duplicates.join(', ')}`],
     };
   const taskAnchors = parseTaskRequirementAnchors(tasks);
   const parsed = listMarkdownFiles(reportsRoot)

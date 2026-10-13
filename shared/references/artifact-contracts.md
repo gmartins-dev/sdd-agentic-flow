@@ -72,8 +72,11 @@ A criterion MAY carry a stable `AC-*` ID bound to exactly one parent requirement
   - Given 3 pending tasks, When the user completes one, Then the counter shows 2.
 ```
 
-- The form is `- AC-<id> (REQ-<id>): <observable outcome>`. A line that starts like an AC but
-  does not match is a diagnostic, never coverage.
+- The form is `- AC-<id> (REQ-<id>): <observable outcome>`, under an `Acceptance criteria`
+  heading; the section ends at the next heading of the same or a higher level. Inside it, a line
+  that starts like an AC but does not match is a diagnostic, never coverage. Outside it, a line
+  in the full form is a misplaced-criterion diagnostic and other AC mentions are prose. Fenced
+  code is never read.
 - Identity follows the `REQ-*` rules: unique within the feature, never reused for unrelated
   semantics, and preserved when the wording is refined. Changing the expected outcome is a
   `contract correction` ([evidence-standard.md](evidence-standard.md#sensor-change-classes)),

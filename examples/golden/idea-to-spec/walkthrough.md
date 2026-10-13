@@ -41,5 +41,8 @@ sdd-agentic-flow doctor --json
   quiet-hours-notifications`, `## Requirement REQ-1`, `## Acceptance criteria`; `# Design —
   quiet-hours-notifications`, `## Decision`, `## Path ownership`; `# Tasks —
   quiet-hours-notifications`, `## T1`/`T2`, each with a nested `## TDD baseline`).
+- The spec uses optional `AC-*` IDs with one parent REQ each, an `Examples:` block, and a
+  forbidden-outcome example; tasks anchor on those IDs. The `task-management` golden keeps
+  REQ-only criteria on purpose, as the compatibility case.
 - `doctor --json`'s `artifact-contracts` and `evidence-first` checks are `PASS`.
 - Overall `doctor` status is not `FAIL`.

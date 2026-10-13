@@ -12,7 +12,12 @@ delivers immediately, unchanged from today.
 
 ## Acceptance criteria
 
-- A user can set a quiet-hours window; it is off by default.
-- A notification generated inside the window is recorded immediately, never discarded.
-- A notification generated inside the window delivers only after the window ends.
-- A notification generated outside the window delivers immediately.
+- AC-1 (REQ-1): a user can set a quiet-hours window; it is off by default.
+- AC-2 (REQ-2): a notification generated inside the window is recorded immediately, never
+  discarded.
+  Examples:
+  - Given quiet hours 22:00-07:00, When a notification arrives at 23:30, Then it is recorded at
+    23:30 and not delivered.
+  - Forbidden: a notification generated inside the window is never dropped.
+- AC-3 (REQ-2): a notification generated inside the window delivers only after the window ends.
+- AC-4 (REQ-2): a notification generated outside the window delivers immediately.

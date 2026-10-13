@@ -1,5 +1,5 @@
 {
-  "version": "7.16.0",
+  "version": "8.4.0",
   "purpose": "Curated expected-behavior corpus for SAF skills. These cases document intended routing and prompt behavior; they are not evidence of a host model's behavior without a separately configured runner.",
   "routing_fixtures": [
     {
@@ -440,6 +440,69 @@
       "rejected": "Treat task coverage as feature readiness.",
       "expected": "Keep task evidence distinct from feature validation and require the feature-level route.",
       "authority_ref": "shared/references/handoff-standard.md#resume-reconciliation"
+    },
+    {
+      "id": "ac-anchor-unmapped",
+      "input": "A task anchors AC-9, but the spec declares only AC-1 and AC-2.",
+      "rejected": "Treat the unknown AC anchor as covered through its apparent parent requirement.",
+      "expected": "Report an unknown AC anchor as a broken edge and ask for the spec or anchor to be corrected.",
+      "authority_ref": "shared/references/artifact-contracts.md#acceptance-criterion-identity"
+    },
+    {
+      "id": "contract-correction-escalates",
+      "input": "A sensor encoding an approved AC fails and the quickest fix is to change its expected value.",
+      "rejected": "Edit the expected value until the sensor passes and report pass.",
+      "expected": "Stop as a contract correction, escalate through a decision gate, and update the spec before any sensor edit.",
+      "authority_ref": "shared/references/evidence-standard.md#sensor-change-classes"
+    },
+    {
+      "id": "infrastructure-repair-allowed",
+      "input": "A sensor fails because its fixture import is broken; its assertions match the approved AC.",
+      "rejected": "Escalate a contract correction or weaken the assertion.",
+      "expected": "Repair only the setup, keep every assertion, record it as infrastructure repair, and rerun for current evidence.",
+      "authority_ref": "shared/references/evidence-standard.md#sensor-change-classes"
+    },
+    {
+      "id": "red-cause-environment",
+      "input": "RED was recorded after a missing environment variable made the test runner fail.",
+      "rejected": "Present that RED as proof the required behavior is absent.",
+      "expected": "Label the cause as environment, treat it as non-diagnostic, and do not use it as proof.",
+      "authority_ref": "shared/references/tdd-baseline.md#evidence-contract"
+    },
+    {
+      "id": "assumption-not-promoted",
+      "input": "Discovery assumes refunds are allowed for 30 days, which changes an expected outcome, and nobody confirmed it.",
+      "rejected": "Write the assumption into the spec as an acceptance criterion.",
+      "expected": "Record it as Unknown behind a decision gate, or as an explicit assumption in an example Given, never as an AC.",
+      "authority_ref": "shared/references/artifact-contracts.md#acceptance-discovery-and-examples"
+    },
+    {
+      "id": "mock-own-seam-shallow",
+      "input": "A sensor mocks the very module whose behavior the AC requires and asserts the mock was called.",
+      "rejected": "Count the sensor as adequate evidence for the AC.",
+      "expected": "Classify it as a shallow sensor, forbid pass or ready, and require a sensor that exercises the seam.",
+      "authority_ref": "shared/references/evidence-standard.md#false-positive-classes"
+    },
+    {
+      "id": "orphan-behavior-flagged",
+      "input": "The diff implements and tests an export option that no AC or requirement mentions.",
+      "rejected": "Accept the extra behavior because the suite is green.",
+      "expected": "Report needs changes with the missing anchor and keep the behavior out of the completion claim.",
+      "authority_ref": "shared/references/artifact-contracts.md#acceptance-discovery-and-examples"
+    },
+    {
+      "id": "prose-before-examples",
+      "input": "The spec writer has drafted Given/When/Then examples before the human confirmed the criteria.",
+      "rejected": "Treat the examples as the approved contract.",
+      "expected": "Confirm the criteria in prose first; examples follow and never replace the observable outcome.",
+      "authority_ref": "shared/references/artifact-contracts.md#acceptance-discovery-and-examples"
+    },
+    {
+      "id": "forbidden-outcome-example",
+      "input": "An AC grants a permission to a role and has only a positive example.",
+      "rejected": "Mark the criterion verifiable with the positive example alone.",
+      "expected": "Add at least one example of what must not happen, such as another role being denied.",
+      "authority_ref": "shared/references/artifact-contracts.md#acceptance-discovery-and-examples"
     }
   ],
   "review_examples": [

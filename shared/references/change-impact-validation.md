@@ -12,6 +12,9 @@ Derive validation obligations from all of these signals:
 - repository contracts, architecture, and configured gates;
 - work intent, feature profile, and behavioral risk.
 
+- acceptance criteria encoded by sensors: a changed sensor is classified under
+  [sensor change classes](evidence-standard.md#sensor-change-classes) before its result counts.
+
 The specification remains the oracle. The diff is an impact signal, never the
 oracle by itself.
 

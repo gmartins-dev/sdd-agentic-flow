@@ -1,6 +1,6 @@
 # Roadmap
 
-Current release: v8.3.0
+Current release: v8.4.0
 
 This file records direction and one-paragraph release summaries. Detailed release notes live
 in [CHANGELOG.md](CHANGELOG.md).
@@ -62,6 +62,17 @@ without a reproducible benchmark backing them (see the token economics note in
 promises.
 
 ## Release history
+
+- **v8.4.0:** Acceptance contract. Adds optional `AC-*` criterion IDs bound to one requirement,
+  per-criterion coverage and four new broken edges in `doctor --evidence-graph`, sensor change
+  classes that separate repair from contract change, a RED cause label, a guard for the stable
+  class tokens, and a Level A fixture family. Decided 2026-10-13 from an ATDD/BDD/TDD research
+  batch after reading the repository: traceability stopped at REQ and the completion catalog had no
+  enforcement. Rejected again: a mandatory RED ritual, mutation engine, verifier model, new
+  `Status`, Gherkin or a runner, BRD/PRD/TRD templates, and a `verify` command. Under observation,
+  admitted only on a failure seen in a campaign: a deterministic test-diff weakening detector with
+  verified RED, test-impact analysis, and an `@AC-*` Gherkin convention. No real-host campaign, so
+  no behavior claim.
 
 - **v8.3.0:** Behavioral evidence instrument for skill evolution. Adds oracle-based fixtures,
   an offline baseline/candidate comparator, and a campaign runner whose verdicts come from

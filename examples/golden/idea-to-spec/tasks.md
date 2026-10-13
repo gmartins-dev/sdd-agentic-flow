@@ -17,7 +17,7 @@ Independently verifiable: yes
 
 Public seam: `setQuietHours(userId, window)`
 
-Requirement anchors: REQ-1
+Requirement anchors: AC-1
 
 Dependencies: none
 
@@ -54,7 +54,7 @@ Independently verifiable: yes
 
 Public seam: `recordNotification(userId, notification, now)`
 
-Requirement anchors: REQ-2
+Requirement anchors: AC-2, AC-3, AC-4
 
 Dependencies: T1
 

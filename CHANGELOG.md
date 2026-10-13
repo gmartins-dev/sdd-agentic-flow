@@ -1,5 +1,33 @@
 # Changelog
 
+## 8.4.0
+
+- Add optional acceptance-criterion IDs. A criterion may be written `- AC-01 (REQ-01): ...` with
+  one parent requirement; tasks, prompts, and `EV-*` records cite it in the existing `Requirement
+  anchors` field, and an `AC-*` anchor implies its parent requirement. Optional `Examples:` use
+  Given/When/Then only as notation. Features without `AC-*` behave exactly as in 8.3.0.
+- Show per-criterion coverage in `doctor --evidence-graph` (text, `--json` `acceptance_criteria`,
+  and `--html`) when a feature uses `AC-*`. New broken edges, each exiting `1`: `duplicate-ac-id`,
+  `ac-unknown-requirement`, `unknown-ac-anchor`, and `no-ac-evidence`. A line that resembles a
+  criterion but does not match is reported as `malformed AC line` and never counts as coverage.
+- Clarify contracts (no new Status value, `EV-*` field, contract kind, or dependency): sensor
+  change classes `infrastructure repair`, `automation repair`, `contract correction`, and
+  `contract weakening` in `evidence-standard.md`; a mock of the seam under test is a shallow
+  sensor; check and review flag orphan behavior; a recorded RED states its cause
+  (`missing-behavior`, `test-defect`, `environment`, `unrelated-failure`); acceptance discovery
+  separates `blocker` from `assumption`, confirms prose before examples, and asks for a
+  forbidden-outcome example on security, permission, or data criteria. Skills only cite these
+  rules. The `tdd` baseline version is unchanged.
+- Fix a gap in the 1.15.0 note: no script protected the stable false-positive class names. The
+  contract check now fails when any of the ten false-positive classes or four sensor change
+  classes leaves its reference section.
+- Add nine behavior cases to the corpus and a seventh Level A fixture family, acceptance contract
+  (F7), whose oracle compares a test's assertion lines so setup repair passes and an edited
+  expectation is critical. No real-host campaign ran, so no behavior improvement or cost claim is
+  made.
+- Add `docs/acceptance-driven-development.md` and its pt-BR counterpart, and update the idea-to-spec
+  golden to `AC-*` IDs while task-management stays REQ-only.
+
 ## 8.3.0
 
 - Add a maintainer skill-behavior instrument: 12 fixtures in six families (evidence before

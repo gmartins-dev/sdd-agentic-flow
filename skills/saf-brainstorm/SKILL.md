@@ -63,6 +63,8 @@ feature that just needs explaining (`saf-explain`). Do not become a new Plan ski
    delegated.
 7. Before handing off, split the brief's content explicitly into **Known**, **Assumed**,
    **Unknown**, and **Needs research**. Never present an Assumed or Unknown item as Known.
+   Classify each open question as `blocker` or `assumption` and keep discovery proportionate, per
+   `../sdd-agentic-flow-shared/references/artifact-contracts.md#acceptance-discovery-and-examples`.
 8. Report the brief's path and recommend `saf-create-spec` as the next step.
 
 ## Safety

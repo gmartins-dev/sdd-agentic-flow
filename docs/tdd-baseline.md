@@ -26,6 +26,8 @@ Tests and other sensors remain required as behavioral evidence. Test-first and T
 
 A passing sensor is evidence, not a correctness verdict. The human remains the gate. See [evidence-standard.md](../shared/references/evidence-standard.md), including the false-positive catalog and evidence strength ladder. Self-report is not evidence.
 
+When RED is recorded, its value starts with a cause: `missing-behavior`, `test-defect`, `environment`, or `unrelated-failure`. Only `missing-behavior` is diagnostic, and none is proof. Changes to a sensor that encodes an acceptance criterion are classified; see [acceptance-driven development](acceptance-driven-development.md).
+
 `quality.require_tdd: true` keeps its name. It means this evidence contract, not “RED → GREEN is mandatory.”
 
 ## Related docs

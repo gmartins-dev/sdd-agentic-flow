@@ -14,6 +14,10 @@ export type BrokenEdge =
   | 'no-task-check'
   | 'no-current-evidence'
   | 'duplicate-req-id'
+  | 'duplicate-ac-id'
+  | 'ac-unknown-requirement'
+  | 'unknown-ac-anchor'
+  | 'no-ac-evidence'
   | 'legacy-report'
   | 'invalid-report'
   | 'ambiguous-report'
@@ -22,6 +26,14 @@ export type BrokenEdge =
 export type RequirementGraphNode = {
   reqId: string;
   status: 'current' | 'stale' | BrokenEdge;
+  taskIds: string[];
+  checkReports: string[];
+};
+
+export type AcceptanceCriterionNode = {
+  acId: string;
+  reqId: string | null;
+  status: RequirementGraphNode['status'];
   taskIds: string[];
   checkReports: string[];
 };
@@ -40,6 +52,8 @@ export type EvidenceGraphResult = {
   evidenceContract: 'saf-evidence/v1';
   contractCompatible: boolean;
   requirements: RequirementGraphNode[];
+  // Present only when the feature declares or anchors AC-* IDs; REQ-only features omit it.
+  acceptanceCriteria?: AcceptanceCriterionNode[];
   reports: EvidenceGraphReport[];
   errors: string[];
 };
@@ -62,6 +76,12 @@ type ParsedReport = {
 };
 
 const REQ_HEADING = /^(?:## Requirement |### )(REQ-[A-Za-z0-9-]+)/gm;
+const AC_LINE = /^- (AC-[A-Za-z0-9-]+) \((REQ-[A-Za-z0-9-]+)\):/;
+// Any list item whose text opens with an AC ID, so marker or emphasis variants are diagnosed.
+const AC_LIKE_LINE = /^\s*(?:[-*+]|\d+[.)])\s+[*_`]*AC-/;
+const FENCE = /^\s*(`{3,}|~{3,})/;
+const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
+const AC_SECTION_TITLE = /^acceptance criteria$/i;
 const TASK_ID = /^(T\d+[A-Za-z0-9-]*)/;
 const REQUIREMENT_ANCHORS = /^Requirement anchors:\s*(.+)$/m;
 const TASK_DEPENDENCIES = /^Dependencies:\s*(.*)$/m;
@@ -81,6 +101,50 @@ export function parseRequirementIds(specContent: string): string[] {
     if (id) ids.push(id);
   }
   return ids;
+}
+
+export type AcceptanceCriterion = { acId: string; reqId: string };
+
+// Only the documented `- AC-ID (REQ-ID):` form under an `Acceptance criteria` heading counts;
+// lookalikes there are reported, never covered.
+export function parseAcceptanceCriteria(specContent: string): {
+  criteria: AcceptanceCriterion[];
+  malformed: string[];
+} {
+  const criteria: AcceptanceCriterion[] = [];
+  const malformed: string[] = [];
+  let fence: string | null = null;
+  // Heading level of the open `Acceptance criteria` section; a heading at that level or above
+  // closes it.
+  let sectionLevel: number | null = null;
+  for (const line of specContent.replace(/\r\n?/g, '\n').split('\n')) {
+    // A fenced block documents the format; its lines are never criteria. Only a fence of the
+    // same character and at least the opening length closes it.
+    const marker = line.match(FENCE)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    if (fence) continue;
+    const heading = line.match(HEADING);
+    if (heading?.[1]) {
+      const level = heading[1].length;
+      if (AC_SECTION_TITLE.test(heading[2] ?? '')) sectionLevel = level;
+      else if (sectionLevel !== null && level <= sectionLevel) sectionLevel = null;
+      continue;
+    }
+    if (!AC_LIKE_LINE.test(line)) continue;
+    const match = line.match(AC_LINE);
+    if (sectionLevel === null) {
+      // Prose elsewhere may mention ACs; a full criterion there is misplaced, not silently dropped.
+      if (match) malformed.push(`${line.trim().slice(0, 80)} (outside Acceptance criteria)`);
+      continue;
+    }
+    if (match?.[1] && match[2]) criteria.push({ acId: match[1], reqId: match[2] });
+    else malformed.push(line.trim().slice(0, 80));
+  }
+  return { criteria, malformed };
 }
 
 export function findDuplicateReqIds(reqIds: string[]): string[] {
@@ -105,7 +169,7 @@ export function parseTaskRequirementAnchors(tasksContent: string): Map<string, s
       raw
         .split(',')
         .map((value) => value.trim())
-        .filter((value) => /^REQ-/.test(value)),
+        .filter((value) => /^(?:REQ|AC)-/.test(value)),
     );
   }
   return map;
@@ -383,6 +447,25 @@ export function collectEvidenceGraph(
   const reqIds = parseRequirementIds(spec);
   const duplicates = findDuplicateReqIds(reqIds);
   if (!reqIds.length) return empty('feature package has no requirements');
+  const { criteria, malformed } = parseAcceptanceCriteria(spec);
+  for (const line of malformed) errors.push(`malformed AC line: ${line}`);
+  const duplicateAcIds = findDuplicateReqIds(criteria.map((criterion) => criterion.acId));
+  if (duplicateAcIds.length)
+    return {
+      featureSlug,
+      evidenceContract: 'saf-evidence/v1',
+      contractCompatible: false,
+      requirements: [],
+      acceptanceCriteria: duplicateAcIds.map((acId) => ({
+        acId,
+        reqId: null,
+        status: 'duplicate-ac-id' as const,
+        taskIds: [],
+        checkReports: [],
+      })),
+      reports: [],
+      errors: [...errors, `duplicate AC-* IDs: ${duplicateAcIds.join(', ')}`],
+    };
   if (duplicates.length)
     return {
       featureSlug,
@@ -395,7 +478,7 @@ export function collectEvidenceGraph(
         checkReports: [],
       })),
       reports: [],
-      errors: [`duplicate REQ-* IDs: ${duplicates.join(', ')}`],
+      errors: [...errors, `duplicate REQ-* IDs: ${duplicates.join(', ')}`],
     };
   const taskAnchors = parseTaskRequirementAnchors(tasks);
   const parsed = listMarkdownFiles(reportsRoot)
@@ -435,12 +518,7 @@ export function collectEvidenceGraph(
       reason: null,
     };
   });
-  const requirements = reqIds.map((reqId) => {
-    const taskIds = [...taskAnchors.entries()]
-      .filter(([, anchors]) => anchors.includes(reqId))
-      .map(([taskId]) => taskId);
-    if (!taskIds.length)
-      return { reqId, status: 'no-task-anchor' as const, taskIds, checkReports: [] };
+  const evaluate = (anchor: string, taskIds: string[]) => {
     const checkReports: string[] = [];
     let status: RequirementGraphNode['status'] = 'current';
     for (const taskId of taskIds) {
@@ -456,9 +534,56 @@ export function collectEvidenceGraph(
         continue;
       }
       checkReports.push(match.active.path);
-      const coverage = taskCoverage(cwd, match.active, reqId);
+      const coverage = taskCoverage(cwd, match.active, anchor);
       if (coverage !== 'current') status = coverage;
     }
+    return { status, checkReports };
+  };
+  const anchoredTasks = (anchor: string) =>
+    [...taskAnchors.entries()]
+      .filter(([, anchors]) => anchors.includes(anchor))
+      .map(([taskId]) => taskId);
+  const acNodes: AcceptanceCriterionNode[] = criteria.map(({ acId, reqId }) => {
+    if (!reqIds.includes(reqId))
+      return { acId, reqId, status: 'ac-unknown-requirement', taskIds: [], checkReports: [] };
+    const taskIds = anchoredTasks(acId);
+    if (!taskIds.length)
+      return { acId, reqId, status: 'no-task-anchor', taskIds, checkReports: [] };
+    const { status, checkReports } = evaluate(acId, taskIds);
+    return {
+      acId,
+      reqId,
+      status: status === 'no-current-evidence' ? 'no-ac-evidence' : status,
+      taskIds,
+      checkReports,
+    };
+  });
+  const declaredAcIds = new Set(criteria.map((criterion) => criterion.acId));
+  const unknownAnchors = [...new Set([...taskAnchors.values()].flat())].filter(
+    (anchor) => anchor.startsWith('AC-') && !declaredAcIds.has(anchor),
+  );
+  for (const acId of unknownAnchors)
+    acNodes.push({
+      acId,
+      reqId: null,
+      status: 'unknown-ac-anchor',
+      taskIds: anchoredTasks(acId),
+      checkReports: [],
+    });
+  const requirements = reqIds.map((reqId): RequirementGraphNode => {
+    const children = acNodes.filter((node) => node.reqId === reqId);
+    if (children.length) {
+      // With AC IDs a REQ is covered only when every one of its ACs is.
+      return {
+        reqId,
+        status: children.find((node) => node.status !== 'current')?.status ?? 'current',
+        taskIds: [...new Set(children.flatMap((node) => node.taskIds))],
+        checkReports: [...new Set(children.flatMap((node) => node.checkReports))],
+      };
+    }
+    const taskIds = anchoredTasks(reqId);
+    if (!taskIds.length) return { reqId, status: 'no-task-anchor', taskIds, checkReports: [] };
+    const { status, checkReports } = evaluate(reqId, taskIds);
     return { reqId, status, taskIds, checkReports };
   });
   const contractCompatible = reportViews.every(
@@ -469,6 +594,7 @@ export function collectEvidenceGraph(
     evidenceContract: 'saf-evidence/v1',
     contractCompatible,
     requirements,
+    ...(acNodes.length ? { acceptanceCriteria: acNodes } : {}),
     reports: reportViews,
     errors,
   };

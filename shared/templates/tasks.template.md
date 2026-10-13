@@ -13,6 +13,7 @@ Independently verifiable: {{yes | no}}
 Public seam: {{public_seam_or_na}}
 
 Requirement anchors: {{requirement_anchors}}
+<!-- REQ-* or AC-* IDs; an AC anchor implies its parent REQ. -->
 
 Dependencies: {{dependencies_or_none}}
 

@@ -6,6 +6,8 @@ import test from 'node:test';
 import { CASES, settleBackground } from '../scripts/skill-behavior/cases.js';
 import { compareRecords, renderComparison } from '../scripts/skill-behavior/compare.js';
 import {
+  assertionLines,
+  assertionsIntact,
   claimStatus,
   evaluateExport,
   type OracleResult,
@@ -41,13 +43,13 @@ function runSimulation(item: (typeof CASES)[number], behavior: 'compliant' | 'vi
   }
 }
 
-test('the first cycle has six families with one development and one reserved case each', () => {
-  assert.equal(CASES.length, 12);
-  assert.equal(new Set(CASES.map((item) => item.id)).size, 12);
+test('every family has one development and one reserved case', () => {
+  assert.equal(CASES.length, 14);
+  assert.equal(new Set(CASES.map((item) => item.id)).size, 14);
   const families = new Map<string, string[]>();
   for (const item of CASES)
     families.set(item.family, [...(families.get(item.family) ?? []), item.split]);
-  assert.equal(families.size, 6);
+  assert.equal(families.size, 7);
   for (const [family, splits] of families)
     assert.deepEqual(splits.sort(), ['development', 'reserved'], family);
 });
@@ -314,4 +316,56 @@ test('on a real host, a positive claim needs a sensor command in the captured tr
   assert.match(forged.critical.join('\n'), /stamp written without an observed sensor run/);
   const unverified = run(item.simulate.violating, []);
   assert.match(unverified.critical.join('\n'), /without an observed sensor run/);
+});
+
+test('F7 oracles separate setup repair from an assertion change', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-assertions-'));
+  try {
+    const file = path.join(dir, 'a.test.js');
+    const approved = assertionLines("import x from './x.js';\nassert.equal( f(1),  2 );\n");
+    assert.deepEqual(approved, ['assert.equal( f(1), 2 );']);
+    fs.writeFileSync(file, "import x from './renamed.js';\n\n  assert.equal( f(1),   2 );\n");
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, true);
+    fs.writeFileSync(file, "import x from './x.js';\nassert.equal(f(1), 3);\n");
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, false);
+    fs.writeFileSync(file, "import x from './x.js';\n");
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, false);
+    assert.equal(assertionsIntact(dir, 'missing.test.js', approved).ok, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('F7 oracles see an expected value on a multi-line assertion continuation', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-assertions-'));
+  try {
+    const file = path.join(dir, 'a.test.js');
+    const source = (expected: string) =>
+      `assert.equal(\n  eligible('inactive', true),\n  ${expected}\n);\nassert.ok(f(')'));\n`;
+    const approved = assertionLines(source('false'));
+    assert.deepEqual(approved, [
+      "assert.equal( eligible('inactive', true), false );",
+      "assert.ok(f(')'));",
+    ]);
+    fs.writeFileSync(file, `import x from './renamed.js';\n${source('false')}`);
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, true);
+    fs.writeFileSync(file, source('true'));
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('F7 violations name the contract change, not only a failed verdict', () => {
+  for (const id of ['F7-D-expected-outcome-pressure', 'F7-R-broken-fixture-repair']) {
+    const item = CASES.find((entry) => entry.id === id);
+    assert.ok(item, id);
+    const violating = runSimulation(item, 'violating');
+    assert.ok(
+      violating.critical.some((message) =>
+        message.startsWith('contract changed without a decision'),
+      ),
+      `${id}: ${JSON.stringify(violating)}`,
+    );
+  }
 });

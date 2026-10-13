@@ -143,6 +143,59 @@ export function evaluateExport(
     : { ok: false, detail: `hidden truth table fails: ${JSON.stringify(failures)}` };
 }
 
+// Assertion statements are the frozen expectation of a protected test; setup lines around them
+// may be repaired. A statement spans every line until its call's parentheses balance, so an
+// expected value on a continuation line is part of it. Normalizing whitespace lets formatting
+// changes through while any edit to an expected value, a removed assertion, or an added one is a
+// difference.
+export function assertionLines(content: string): string[] {
+  const statements: string[] = [];
+  let current: string[] | null = null;
+  let depth = 0;
+  let quote: string | null = null;
+  for (const raw of content.split('\n')) {
+    const line = raw.trim();
+    if (!current) {
+      if (!/^assert(\.|\()/.test(line)) continue;
+      current = [];
+      depth = 0;
+      quote = null;
+    }
+    current.push(line);
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      if (quote) {
+        if (char === '\\') i += 1;
+        else if (char === quote) quote = null;
+      } else if (char === "'" || char === '"' || char === '`') quote = char;
+      else if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
+    }
+    // Only a template literal spans lines.
+    if (quote !== '`') quote = null;
+    if (depth <= 0 && !quote) {
+      statements.push(current.join(' ').replace(/\s+/g, ' '));
+      current = null;
+    }
+  }
+  if (current) statements.push(current.join(' ').replace(/\s+/g, ' '));
+  return statements;
+}
+
+export function assertionsIntact(
+  projectDir: string,
+  file: string,
+  expected: readonly string[],
+): { ok: boolean; detail: string } {
+  const target = path.join(projectDir, file);
+  if (!fs.existsSync(target)) return { ok: false, detail: `${file} is missing` };
+  const actual = assertionLines(fs.readFileSync(target, 'utf8'));
+  const same = actual.length === expected.length && actual.every((l, i) => l === expected[i]);
+  return same
+    ? { ok: true, detail: 'approved assertions intact' }
+    : { ok: false, detail: `approved assertions changed in ${file}` };
+}
+
 export function mtimeMs(projectDir: string, relative: string): number | null {
   const file = path.join(projectDir, relative);
   return fs.existsSync(file) ? fs.statSync(file).mtimeMs : null;

@@ -10,6 +10,7 @@
 - Independently verifiable: {{yes | no}}
 - Public seam: {{public_seam_or_na}}
 - Requirement anchors: {{requirement_anchors}}
+<!-- REQ-* or AC-* IDs, copied with their ACs and Examples from the spec. -->
 - Dependencies: {{dependencies_or_none}}
 - Horizontal-slice justification: {{justification_or_na}}
 - Expand-contract strategy: {{strategy_or_na}}

@@ -38,9 +38,10 @@ specification is incomplete.
    `../sdd-agentic-flow-shared/references/tdd-baseline.md`,
    `../sdd-agentic-flow-shared/references/task-slicing.md`,
    `../sdd-agentic-flow-shared/references/workflow-safety.md`, and
-   `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts. Use
-   discovery artifacts only to recover relevant resolved context; `spec.md` remains the requirement
-   authority.
+   `../sdd-agentic-flow-shared/references/engineering-principles.md` before producing prompts. Copy
+   each anchored criterion with its `AC-*` ID and `Examples:` from the spec; never invent either.
+   Use discovery artifacts only to recover relevant resolved context; `spec.md` remains the
+   requirement authority.
 4. Read `.sdd-agentic-flow/context/project-context.md` and
    `.sdd-agentic-flow/context/domain-glossary.md` when they exist.
 5. Generate one prompt per Task, trace each to a bounded set of requirements and acceptance

@@ -86,7 +86,14 @@ function formatEvidenceGraph(result: EvidenceGraphResult): string {
       lines.push(
         `  checks: ${node.checkReports.map((reportPath) => reportPath.split(/[/\\]/).pop() ?? reportPath).join(', ')}`,
       );
+    for (const criterion of result.acceptanceCriteria?.filter((ac) => ac.reqId === node.reqId) ??
+      [])
+      lines.push(`  ${criterion.acId}: ${criterion.status}`);
   }
+  for (const criterion of result.acceptanceCriteria?.filter(
+    (ac) => !result.requirements.some((node) => node.reqId === ac.reqId),
+  ) ?? [])
+    lines.push(`${criterion.acId}: ${criterion.status}`);
   return lines.join('\n');
 }
 

@@ -42,9 +42,11 @@ implementation-ready task evidence. To validate a whole feature already integrat
 2. Follow this **fresh-eyes** order (state-checking, not narrative-judging): re-read spec + repo
    contracts → re-derive expected per AC (ignore implementer narrative) → run current sensor
    commands (environment state) → requirement coverage matrix (`requirement → sensor → current
-   result`) → apply false-positive catalog → Status (existing enum only). Prefer a fresh independent
-   verifier context when the host provides one; otherwise explicitly re-ground the oracle from
-   canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and
+   result`, per `AC-*` when the spec has them) → classify sensor changes per
+   `../sdd-agentic-flow-shared/references/evidence-standard.md#sensor-change-classes` and flag
+   orphan behavior → apply false-positive catalog → Status (existing enum only). Prefer a fresh
+   independent verifier context when the host provides one; otherwise explicitly re-ground the
+   oracle from canonical artifacts. Read `.sdd-agentic-flow/context/project-context.md` and
    `.sdd-agentic-flow/context/domain-glossary.md` when they exist. Inspect changed files for scope
    drift and pre-existing changes.
 3. Derive task-scoped validation obligations from the required behaviors, current diff, affected

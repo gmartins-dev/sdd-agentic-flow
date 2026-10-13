@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-import { validateEvalCorpus, validateStableTokens } from '../scripts/check-skill-contracts';
+import {
+  STABLE_TOKEN_GUARDS,
+  validateEvalCorpus,
+  validateStableTokens,
+} from '../scripts/check-skill-contracts';
 
 const corpus = JSON.parse(fs.readFileSync('shared/evals/evals.json', 'utf8')) as Record<
   string,
@@ -236,4 +240,14 @@ test('stable token guard fails when a class name leaves its section', () => {
   assert.ok(failures.some((failure) => failure.includes("lost 'Renamed class'")));
   assert.ok(failures.some((failure) => failure.includes('missing heading')));
   assert.ok(failures.some((failure) => failure.includes('is missing')));
+});
+
+test('stable token guard covers the sensor change classes', () => {
+  const guard = STABLE_TOKEN_GUARDS.find((item) => item.heading === '## Sensor change classes');
+  assert.deepEqual(guard?.tokens, [
+    'infrastructure repair',
+    'automation repair',
+    'contract correction',
+    'contract weakening',
+  ]);
 });

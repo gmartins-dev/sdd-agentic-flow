@@ -41,7 +41,9 @@ scope cannot be resolved.
    `../sdd-agentic-flow-shared/references/evidence-standard.md`. The review-findings artifact is
    local review evidence only; do not infer a persisted product report or handoff file unless the
    task contract explicitly requires it. Separate blocking defects from non-blocking observations;
-   do not invent CI results; do not invent done.
+   do not invent CI results; do not invent done. Classify each changed sensor that encodes an AC per
+   `../sdd-agentic-flow-shared/references/evidence-standard.md#sensor-change-classes` and report
+   orphan behavior as a finding with the missing anchor.
 4. Produce the Markdown-first findings ledger and resolution table under `reviewability.md`,
    preserving IDs across rounds and distinguishing unsupported claims from confirmed defects. In
    autonomous mode, verified actionable findings authorize `saf-fix-pr` and re-review without a new

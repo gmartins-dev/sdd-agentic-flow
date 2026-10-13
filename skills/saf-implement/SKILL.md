@@ -82,7 +82,9 @@ not a spec package and must first pass through `saf-create-spec`.
    harness proof. Do not fabricate RED. Do not weaken required behavioral coverage because the
    ritual is optional. Do not complete on self-assessment. Do not achieve green by suite weakening
    (deleting, skipping, or narrowing tests that encoded the AC). The oracle stays the spec-derived
-   expected outcomes.
+   expected outcomes. Classify every change to a sensor that encodes an AC per
+   `../sdd-agentic-flow-shared/references/evidence-standard.md#sensor-change-classes` and stop
+   for a human decision before any `contract correction`.
 8. Apply `../sdd-agentic-flow-shared/references/evidence-standard.md`. Record commands, results,
    limitations, and untested risks. A passing sensor is evidence, not a correctness verdict. Do not
    claim done because the conversation feels finished.

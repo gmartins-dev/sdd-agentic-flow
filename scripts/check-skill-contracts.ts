@@ -187,11 +187,23 @@ const FALSE_POSITIVE_CLASS_TOKENS = [
   'Completion theater',
 ] as const;
 
+const SENSOR_CHANGE_CLASS_TOKENS = [
+  'infrastructure repair',
+  'automation repair',
+  'contract correction',
+  'contract weakening',
+] as const;
+
 const STABLE_TOKEN_GUARDS = [
   {
     file: 'shared/references/evidence-standard.md',
     heading: '## False-positive classes',
     tokens: FALSE_POSITIVE_CLASS_TOKENS,
+  },
+  {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Sensor change classes',
+    tokens: SENSOR_CHANGE_CLASS_TOKENS,
   },
 ] as const;
 

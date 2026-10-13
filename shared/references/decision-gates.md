@@ -42,3 +42,7 @@ work remains blocked unless it can safely proceed against that contract.
 After an accepted change, affected evidence must be re-evaluated under the existing freshness
 rules before downstream work advances. Do not create a second admission ledger or proposal
 artifact for this flow.
+
+A `contract correction` ([sensor change classes](evidence-standard.md#sensor-change-classes))
+is a contract-change proposal: implementation stops before editing the approved expected
+outcome of a sensor, and the spec is updated through its canonical authoring path first.

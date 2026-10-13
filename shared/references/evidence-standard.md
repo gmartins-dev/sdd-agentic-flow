@@ -235,6 +235,10 @@ Record the mapping inside existing `## Evidence`. No new artifact. An uncovered 
 an evidence gap. A green suite with an unmapped acceptance criterion is **not** fully verified
 (`silent gap` and/or `green-but-wrong`) and must not silently PASS.
 
+When the spec gives criteria `AC-*` IDs, map each `AC-*` to its sensor and result; a requirement
+is covered only when all of its criteria are. An `AC-*` anchor implies its parent `REQ-*`.
+Without `AC-*` IDs, coverage stays per requirement.
+
 Where implementation tasks exist, retain their requirement anchors in the mapping:
 requirement → task → sensor → current result. If a requirement enumerates states, boundaries,
 or consumers, account for each named member in the existing evidence summary. A single sensor
@@ -245,6 +249,9 @@ does not establish the join. Record uncovered members and sensor limitations exp
 
 RED is an observable event, not proof the test discriminates the right failure.
 `n/a — not used as proof` is valid. Do not fake RED to fill a ledger.
+
+When RED is recorded, the value states its cause (see
+[tdd-baseline.md](tdd-baseline.md#evidence-contract)); only a missing-behavior RED is diagnostic.
 
 A passing sensor result is evidence, not a correctness verdict. This includes test GREEN,
 typecheck, lint, build, schema validation, command exit status, integration checks. The conclusion
@@ -270,7 +277,7 @@ behind **Error propagation**.
 2. **Error propagation** — tests/assertions written from the same misread as the code.
 3. **Green-but-wrong** — sensors pass; a spec AC is unmet or unasserted.
 4. **Shallow sensor** — would still pass if the required behavior were inverted (mock-called,
-   HTTP 200 only, “function exists”).
+   HTTP 200 only, “function exists”, or a mock of the very seam under test).
 5. **Stale evidence** — prior run presented as current (named class of the
    [Freshness](#freshness) rule).
 6. **Silent gap** — missing/inadequate sensor treated as PASS or quiet N/A.
@@ -285,6 +292,28 @@ behind **Error propagation**.
 
 Minimum current-evidence record for PASS: command, exit status, observed result, requirement
 mapping. Skepticism without a command result is still self-report.
+
+## Sensor change classes
+
+A sensor that encodes an acceptance criterion is the frozen expectation. When work changes such
+a sensor, classify the change before relying on its result. The class names are stable tokens.
+
+| Class | What changed | Rule |
+| --- | --- | --- |
+| `infrastructure repair` | setup, fixture, environment, selector, or timing | Allowed; the asserted outcome is unchanged |
+| `automation repair` | how the approved behavior is exercised | Allowed; the asserted outcome is unchanged |
+| `contract correction` | the approved expected outcome | Needs a human decision gate and a spec update first |
+| `contract weakening` | an assertion removed or relaxed without justification | Is **Suite weakening**; forbids `pass`/`ready` |
+
+- Stop and escalate before a `contract correction`; do not make the sensor pass by editing the
+  expectation. Admission follows [decision-gates.md](decision-gates.md#contract-change-proposals-and-admission),
+  and evidence from before the change is stale under [Freshness](#freshness).
+- Record the class of every change to a sensor that encodes an acceptance criterion in the
+  existing evidence prose. A change that cannot be classified is treated as `contract
+  weakening` until justified.
+- Check and review also flag **orphan behavior**: implemented or tested behavior with no
+  acceptance criterion. Report it as `needs changes` with the missing anchor, using the
+  existing vocabulary.
 
 ## Local vocabulary per skill
 

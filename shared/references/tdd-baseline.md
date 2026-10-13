@@ -110,11 +110,19 @@ Implementation reports record:
 - behavior tested;
 - public seam (meaning: contractual seam);
 - test / sensor command;
-- RED evidence, when produced (`n/a` valid; must not be fabricated);
+- RED evidence, when produced (`n/a` valid; must not be fabricated), with its cause as the
+  first word of the value: `missing-behavior`, `test-defect`, `environment`, or
+  `unrelated-failure`;
 - GREEN evidence (passing-sensor command(s) for this slice);
 - REFACTOR evidence, when applicable;
 - broader checks;
 - limitations and untested risks.
+
+Only `missing-behavior` is a diagnostic RED: the sensor failed because the specified behavior
+is absent. It remains a diagnostic event, never proof. A `test-defect`, `environment`, or
+`unrelated-failure` RED says nothing about the behavior. Repairing a test or fixture is
+classified under [sensor change classes](evidence-standard.md#sensor-change-classes), and a
+change to the approved expected outcome stops for a human decision.
 
 Optional extra bullets when they help: Spec anchor, Anti-tautology, Independent
 of authoring assumptions.

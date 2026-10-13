@@ -19,5 +19,6 @@ Both upstream version references are tracked in `shared/baselines/registry.yml`
 changes — see docs/baselines.md.
 
 The human-rich CLI bundle includes build-time copies of `@clack/prompts`, `@clack/core`,
-`picocolors`, and `sisteransi`. Their licenses are reproduced in
+`picocolors`, `sisteransi`, `fast-string-truncated-width`, `fast-string-width`, and
+`fast-wrap-ansi`. Their licenses are reproduced in
 `LICENSES/CLI-UI-BUNDLED.txt`.

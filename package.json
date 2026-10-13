@@ -93,7 +93,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@clack/prompts": "^1.0.1",
+    "@clack/prompts": "^1.8.1",
     "@mermaid-js/mermaid-cli": "^11.16.0",
     "@types/node": "^26.4.1",
     "markdown-link-check": "^3.15.0",

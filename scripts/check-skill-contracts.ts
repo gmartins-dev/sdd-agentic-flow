@@ -312,6 +312,26 @@ const AUTHORITY_ALLOWLIST = {
     file: 'shared/references/workflow-routing.md',
     heading: '## Precedence and gates',
   },
+  'shared/references/evidence-standard.md#sensor-change-classes': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## Sensor change classes',
+  },
+  'shared/references/artifact-contracts.md#acceptance-criterion-identity': {
+    file: 'shared/references/artifact-contracts.md',
+    heading: '## Acceptance criterion identity',
+  },
+  'shared/references/artifact-contracts.md#acceptance-discovery-and-examples': {
+    file: 'shared/references/artifact-contracts.md',
+    heading: '## Acceptance discovery and examples',
+  },
+  'shared/references/tdd-baseline.md#evidence-contract': {
+    file: 'shared/references/tdd-baseline.md',
+    heading: '## Evidence contract',
+  },
+  'shared/references/evidence-standard.md#false-positive-classes': {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## False-positive classes',
+  },
 } as const;
 
 const REQUIRED_ROUTING_IDS = [
@@ -350,6 +370,15 @@ const REQUIRED_BEHAVIOR_IDS = [
   'handoff-v8-cli-unavailable',
   'handoff-v8-human-gate',
   'handoff-v8-task-feature-boundary',
+  'ac-anchor-unmapped',
+  'contract-correction-escalates',
+  'infrastructure-repair-allowed',
+  'red-cause-environment',
+  'assumption-not-promoted',
+  'mock-own-seam-shallow',
+  'orphan-behavior-flagged',
+  'prose-before-examples',
+  'forbidden-outcome-example',
 ] as const;
 
 // Declared neighboring operations in workflow-routing.md; both directions need an example.

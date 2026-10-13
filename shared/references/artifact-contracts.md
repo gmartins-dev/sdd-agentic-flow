@@ -24,14 +24,14 @@ format. This is a presence check, not full-schema validation. It does not verify
   `## Decisions`, `## Deferred uncertainty`, `## Out of scope`. It is not a spec package.
 
 - `spec.md`: required `# Specification — {feature_slug}`, one `## Requirement REQ-{id}` per
-  requirement (stable `REQ-*` identifiers), `## Acceptance criteria`. Produced by
+  requirement (stable `REQ-*` identifiers), `## Acceptance criteria` (criteria MAY carry `AC-*` IDs). Produced by
   `saf-create-spec`.
 - `design.md`: required when the artifact exists (optional for `small_fix`; see
   `feature-profiles.md`): `# Design — {feature_slug}`, `## Decision`, `## Path ownership`.
   Produced by `saf-create-spec`.
 - `tasks.md`: required `# Tasks — {feature_slug}`, one `## {task_id}` per task (each with
   Acceptance criteria, Review boundary, Slice type, Independently verifiable, Public seam,
-  **Requirement anchors** (REQ-* fulfilled by the task), Dependencies (task-order only —
+  **Requirement anchors** (`REQ-*` or `AC-*` fulfilled by the task), Dependencies (task-order only —
   never requirement fulfillment), Horizontal-slice justification, and Expand-contract strategy),
   plus nested `## TDD baseline` for code tasks. Produced by `saf-create-spec`.
 - task-prompt: required `# Task prompt — {task_id}`, `## Task slice` including **Requirement
@@ -61,11 +61,36 @@ format. This is a presence check, not full-schema validation. It does not verify
 - Requirement anchors in tasks/prompts reference fulfillment; task-order `Dependencies` never
   substitute for requirement fulfillment.
 
+## Acceptance criterion identity
+
+A criterion MAY carry a stable `AC-*` ID bound to exactly one parent requirement:
+
+```markdown
+## Acceptance criteria
+- AC-01 (REQ-01): the pending counter drops by one when a pending task is completed.
+  Examples:
+  - Given 3 pending tasks, When the user completes one, Then the counter shows 2.
+```
+
+- The form is `- AC-<id> (REQ-<id>): <observable outcome>`. A line that starts like an AC but
+  does not match is a diagnostic, never coverage.
+- Identity follows the `REQ-*` rules: unique within the feature, never reused for unrelated
+  semantics, and preserved when the wording is refined. Changing the expected outcome is a
+  `contract correction` ([evidence-standard.md](evidence-standard.md#sensor-change-classes)),
+  not a rewording.
+- `Examples:` is optional. Given/When/Then is an optional notation; the observable outcome is
+  the requirement. Confirm criteria in prose before writing examples.
+- `Requirement anchors` in tasks, prompts, and `EV-*` records accept `AC-*` alongside `REQ-*`;
+  an AC anchor implies its parent REQ. No new `EV-*` field exists.
+- A feature without `AC-*` IDs is evaluated per requirement, exactly as before. With `AC-*`, a
+  requirement is covered only when every one of its criteria has current evidence.
+
 ## Traceability matrix
 
 | Contract | Canonical producer | Consumers |
 | --- | --- | --- |
 | `REQ-*` identity | `saf-create-spec` | prompts, implement, check, validate, graph |
+| `AC-*` identity (optional) | `saf-create-spec` | prompts, implement, check, validate, graph |
 | Requirement anchors | `saf-create-spec` / `saf-create-prompts` | implement, multi, check, graph |
 | Evidence index row + freshness | check/validation reports | multi, graph, handoff |
 | `Feature:` task-check identity | `saf-check-task` | multi, validate, graph |

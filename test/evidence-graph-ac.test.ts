@@ -179,3 +179,17 @@ test('AC rows in the HTML view are escaped', () => {
   first.acId = '<img src=x>';
   assert.doesNotMatch(renderEvidenceGraphHtml(result), /<img\b/);
 });
+
+test('the idea-to-spec golden uses AC IDs while task-management stays REQ-only', () => {
+  const golden = (name: string, file: string) =>
+    fs.readFileSync(path.join(__dirname, '../examples/golden', name, file), 'utf8');
+  const withIds = parseAcceptanceCriteria(golden('idea-to-spec', 'spec.md'));
+  assert.deepEqual(
+    withIds.criteria.map((criterion) => criterion.acId),
+    ['AC-1', 'AC-2', 'AC-3', 'AC-4'],
+  );
+  assert.deepEqual(withIds.malformed, []);
+  const anchors = parseTaskRequirementAnchors(golden('idea-to-spec', 'tasks.md'));
+  assert.deepEqual(anchors.get('T2'), ['AC-2', 'AC-3', 'AC-4']);
+  assert.deepEqual(parseAcceptanceCriteria(golden('task-management', 'spec.md')).criteria, []);
+});

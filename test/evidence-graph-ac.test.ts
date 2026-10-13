@@ -193,3 +193,11 @@ test('the idea-to-spec golden uses AC IDs while task-management stays REQ-only',
   assert.deepEqual(anchors.get('T2'), ['AC-2', 'AC-3', 'AC-4']);
   assert.deepEqual(parseAcceptanceCriteria(golden('task-management', 'spec.md')).criteria, []);
 });
+
+test('AC-looking lines inside code fences are documentation, not criteria', () => {
+  const parsed = parseAcceptanceCriteria(
+    '```md\n- AC-1 (REQ-1): shown as an example\n- AC-2: bad\n```\n- AC-3 (REQ-1): real\n',
+  );
+  assert.deepEqual(parsed.criteria, [{ acId: 'AC-3', reqId: 'REQ-1' }]);
+  assert.deepEqual(parsed.malformed, []);
+});

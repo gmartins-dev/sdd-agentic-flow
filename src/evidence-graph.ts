@@ -108,8 +108,14 @@ export function parseAcceptanceCriteria(specContent: string): {
 } {
   const criteria: AcceptanceCriterion[] = [];
   const malformed: string[] = [];
+  let fenced = false;
   for (const line of specContent.replace(/\r\n?/g, '\n').split('\n')) {
-    if (!AC_LIKE_LINE.test(line)) continue;
+    // A fenced block documents the format; its lines are never criteria.
+    if (/^\s*(```|~~~)/.test(line)) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced || !AC_LIKE_LINE.test(line)) continue;
     const match = line.match(AC_LINE);
     if (match?.[1] && match[2]) criteria.push({ acId: match[1], reqId: match[2] });
     else malformed.push(line.trim().slice(0, 80));
@@ -418,6 +424,7 @@ export function collectEvidenceGraph(
   const duplicates = findDuplicateReqIds(reqIds);
   if (!reqIds.length) return empty('feature package has no requirements');
   const { criteria, malformed } = parseAcceptanceCriteria(spec);
+  for (const line of malformed) errors.push(`malformed AC line: ${line}`);
   const duplicateAcIds = findDuplicateReqIds(criteria.map((criterion) => criterion.acId));
   if (duplicateAcIds.length)
     return {
@@ -433,9 +440,8 @@ export function collectEvidenceGraph(
         checkReports: [],
       })),
       reports: [],
-      errors: [`duplicate AC-* IDs: ${duplicateAcIds.join(', ')}`],
+      errors: [...errors, `duplicate AC-* IDs: ${duplicateAcIds.join(', ')}`],
     };
-  for (const line of malformed) errors.push(`malformed AC line: ${line}`);
   if (duplicates.length)
     return {
       featureSlug,

@@ -225,7 +225,7 @@ function validateStableTokens(
       errors.push(`stable tokens: ${guard.file} is missing`);
       continue;
     }
-    const text = fs.readFileSync(file, 'utf8');
+    const text = fs.readFileSync(file, 'utf8').replace(/\r\n?/g, '\n');
     const start = text.indexOf(`${guard.heading}\n`);
     if (start < 0) {
       errors.push(`stable tokens: ${guard.file} is missing heading ${guard.heading}`);

@@ -7,7 +7,7 @@
 | `shared/references/tlc-baseline.md`                                          | CC-BY-4.0        | Adapted methodology with attribution in `NOTICE`. Upstream `tlc-spec-driven` pinned at `metadata.version: 3.3.0`.                                                          |
 | `shared/references/tdd-baseline.md`                                          | Attribution only | Inspired by `mattpocock/skills`; no separate source license claim is made. Upstream `tdd` skill carries no version of its own — pinned at repository release tag `v1.2.3`. |
 | Skills referring to the baseline                                             | MIT              | Original workflow instructions; they preserve the baseline attribution.                                                                                                    |
-| Bundled CLI UI (`@clack/prompts`, `@clack/core`, `picocolors`, `sisteransi`) | MIT/ISC          | Build-time dependencies bundled into the self-contained CLI; full notices in `LICENSES/CLI-UI-BUNDLED.txt`.                                                                |
+| Bundled CLI UI (`@clack/prompts`, `@clack/core`, `picocolors`, `sisteransi`, `fast-string-truncated-width`, `fast-string-width`, `fast-wrap-ansi`) | MIT/ISC          | Build-time dependencies bundled into the self-contained CLI; full notices in `LICENSES/CLI-UI-BUNDLED.txt`.                                                                |
 
 The package metadata uses MIT for original code. Reusers of adapted baseline material
 must preserve its CC-BY-4.0 attribution and license notice.

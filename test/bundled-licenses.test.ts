@@ -16,7 +16,15 @@ test('distribution gate detects runtime dependency and bundle mutations', () => 
       path.join(repo, 'LICENSES/CLI-UI-BUNDLED.txt'),
       path.join(root, 'dist/third-party-notices.txt'),
     );
-    for (const name of ['@clack/prompts', '@clack/core', 'picocolors', 'sisteransi']) {
+    for (const name of [
+      '@clack/prompts',
+      '@clack/core',
+      'picocolors',
+      'sisteransi',
+      'fast-string-truncated-width',
+      'fast-string-width',
+      'fast-wrap-ansi',
+    ]) {
       const target = path.join(root, 'node_modules', name, 'package.json');
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(path.join(repo, 'node_modules', name, 'package.json'), target);

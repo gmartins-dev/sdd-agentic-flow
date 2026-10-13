@@ -89,7 +89,10 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
    - **Source-item mode:** create exactly `context.md`, `spec.md`, `design.md`, and `tasks.md`;
      never create `validation.md`. Keep requirements traceable to evidence, give each acceptance
      criterion an **observable expected outcome** (status, code, persisted state, or invariant), and
-     slice code tasks vertically where practical. Optional invariant sentences live **inside**
+     slice code tasks vertically where practical. Criteria may carry `AC-*` IDs and `Examples:`
+     (prose first; assumption ≠ criterion; forbidden-outcome example) per
+     `../sdd-agentic-flow-shared/references/artifact-contracts.md#acceptance-criterion-identity`
+     and `#acceptance-discovery-and-examples`. Optional invariant sentences live **inside**
      existing requirement/AC text (`INV-…` allowed). Do not add a required `## Invariants` header.
      When work intent is **bugfix** (any `feature_profile`, not only `small_fix`), include current
      broken behavior, a **reproduction sensor** that fails on current code, expected fixed behavior,
@@ -119,8 +122,9 @@ Do not use for direct implementation, a casual explanation, or an unscoped brain
    identifiable contractual seams/sensors; reconciled applicable invariants; no material
    spec/design/tasks contradiction; intentional optional-artifact omissions; task completion
    criteria evidence-backed or deterministically derivable; known consequential human-judgment
-   boundaries explicit. Structural facts (headers, REQ-* IDs, resolvable dependencies, acyclic task
-   graph, requirement anchors) may be checked deterministically; semantic sufficiency remains an
+   boundaries explicit. Structural facts (headers, REQ-* IDs, unique `AC-*` IDs with a valid
+   parent `REQ-*`, resolvable dependencies, acyclic task graph, requirement anchors) may be checked
+   deterministically; semantic sufficiency remains an
    explicit skill/human decision.
 10. Check internal links, paths, and consistency with existing artifacts. In source-item mode,
     summarize unresolved decisions. In existing-code mode, summarize Observed behavior, Inferred

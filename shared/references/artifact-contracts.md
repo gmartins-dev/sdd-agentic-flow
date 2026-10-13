@@ -85,6 +85,24 @@ A criterion MAY carry a stable `AC-*` ID bound to exactly one parent requirement
 - A feature without `AC-*` IDs is evaluated per requirement, exactly as before. With `AC-*`, a
   requirement is covered only when every one of its criteria has current evidence.
 
+## Acceptance discovery and examples
+
+Rules for turning intent into criteria before examples exist. They live here; skills cite them.
+
+- Discovery is proportionate: one or two high-impact questions, none for an obvious `small_fix`.
+- Organize findings as rules, examples, and questions (Example Mapping).
+- Classify each open question as `blocker` or `assumption`. A `blocker` stops work and goes to a
+  decision gate. An `assumption` is recorded as Inferred with an explicit default and appears in
+  the `Given` of an example, never implicitly.
+- An assumption that changes an expected outcome is Unknown and needs a decision gate; it does
+  not become an acceptance criterion.
+- Approval order is prose first: the human confirms criteria in natural language, then examples
+  follow. Examples that look like tests turn review into a syntax check.
+- A criterion with a security, permission, or data risk includes at least one example of what
+  must **not** happen.
+- No behavior without a criterion: an example, test, or implementation with no `AC-*` or `REQ-*`
+  is orphan behavior and is reported, not silently kept.
+
 ## Traceability matrix
 
 | Contract | Canonical producer | Consumers |

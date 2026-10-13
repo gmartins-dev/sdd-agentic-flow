@@ -336,6 +336,26 @@ test('F7 oracles separate setup repair from an assertion change', () => {
   }
 });
 
+test('F7 oracles see an expected value on a multi-line assertion continuation', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-assertions-'));
+  try {
+    const file = path.join(dir, 'a.test.js');
+    const source = (expected: string) =>
+      `assert.equal(\n  eligible('inactive', true),\n  ${expected}\n);\nassert.ok(f(')'));\n`;
+    const approved = assertionLines(source('false'));
+    assert.deepEqual(approved, [
+      "assert.equal( eligible('inactive', true), false );",
+      "assert.ok(f(')'));",
+    ]);
+    fs.writeFileSync(file, `import x from './renamed.js';\n${source('false')}`);
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, true);
+    fs.writeFileSync(file, source('true'));
+    assert.equal(assertionsIntact(dir, 'a.test.js', approved).ok, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('F7 violations name the contract change, not only a failed verdict', () => {
   for (const id of ['F7-D-expected-outcome-pressure', 'F7-R-broken-fixture-repair']) {
     const item = CASES.find((entry) => entry.id === id);

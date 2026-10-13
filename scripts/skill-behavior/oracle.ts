@@ -143,6 +143,30 @@ export function evaluateExport(
     : { ok: false, detail: `hidden truth table fails: ${JSON.stringify(failures)}` };
 }
 
+// Assertion lines are the frozen expectation of a protected test; setup lines around them may be
+// repaired. Normalizing whitespace lets formatting changes through while any edit to an expected
+// value, a removed assertion, or an added one is a difference.
+export function assertionLines(content: string): string[] {
+  return content
+    .split('\n')
+    .map((line) => line.trim().replace(/\s+/g, ' '))
+    .filter((line) => /^assert(\.|\()/.test(line));
+}
+
+export function assertionsIntact(
+  projectDir: string,
+  file: string,
+  expected: readonly string[],
+): { ok: boolean; detail: string } {
+  const target = path.join(projectDir, file);
+  if (!fs.existsSync(target)) return { ok: false, detail: `${file} is missing` };
+  const actual = assertionLines(fs.readFileSync(target, 'utf8'));
+  const same = actual.length === expected.length && actual.every((l, i) => l === expected[i]);
+  return same
+    ? { ok: true, detail: 'approved assertions intact' }
+    : { ok: false, detail: `approved assertions changed in ${file}` };
+}
+
 export function mtimeMs(projectDir: string, relative: string): number | null {
   const file = path.join(projectDir, relative);
   return fs.existsSync(file) ? fs.statSync(file).mtimeMs : null;

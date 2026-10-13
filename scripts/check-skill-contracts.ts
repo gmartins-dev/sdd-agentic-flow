@@ -173,6 +173,62 @@ for (const file of Object.keys(INDIRECT_REFERENCES))
   if (!referenceFiles.includes(file))
     failures.push(`shared/references/${file}: declared indirect but missing`);
 
+// Skills and docs cite these class names verbatim; a silent rename would orphan every citation.
+const FALSE_POSITIVE_CLASS_TOKENS = [
+  'Tautological oracle',
+  'Error propagation',
+  'Green-but-wrong',
+  'Shallow sensor',
+  'Stale evidence',
+  'Silent gap',
+  'False success / self-assessment',
+  'Inherited author narrative',
+  'Suite weakening',
+  'Completion theater',
+] as const;
+
+const STABLE_TOKEN_GUARDS = [
+  {
+    file: 'shared/references/evidence-standard.md',
+    heading: '## False-positive classes',
+    tokens: FALSE_POSITIVE_CLASS_TOKENS,
+  },
+] as const;
+
+type StableTokenGuard = {
+  file: string;
+  heading: string;
+  tokens: readonly string[];
+};
+
+// A token only counts inside its own section, so moving it elsewhere is still a regression.
+function validateStableTokens(
+  guards: readonly StableTokenGuard[] = STABLE_TOKEN_GUARDS,
+  repositoryRoot = root,
+): string[] {
+  const errors: string[] = [];
+  for (const guard of guards) {
+    const file = path.join(repositoryRoot, guard.file);
+    if (!fs.existsSync(file)) {
+      errors.push(`stable tokens: ${guard.file} is missing`);
+      continue;
+    }
+    const text = fs.readFileSync(file, 'utf8');
+    const start = text.indexOf(`${guard.heading}\n`);
+    if (start < 0) {
+      errors.push(`stable tokens: ${guard.file} is missing heading ${guard.heading}`);
+      continue;
+    }
+    const rest = text.slice(start + guard.heading.length);
+    const end = rest.search(/^## /m);
+    const section = (end < 0 ? rest : rest.slice(0, end)).replace(/\s+/g, ' ');
+    for (const token of guard.tokens)
+      if (!section.includes(token))
+        errors.push(`stable tokens: ${guard.file} ${guard.heading} lost '${token}'`);
+  }
+  return errors;
+}
+
 type EvalRecord = Record<string, unknown>;
 
 const AUTHORITY_ALLOWLIST = {
@@ -533,6 +589,7 @@ const evalCorpus = JSON.parse(
   fs.readFileSync(path.join(root, 'shared', 'evals', 'evals.json'), 'utf8'),
 ) as EvalRecord;
 failures.push(...validateEvalCorpus(evalCorpus));
+failures.push(...validateStableTokens());
 
 if (failures.length) {
   for (const failure of failures) console.error(failure);
@@ -547,5 +604,7 @@ export {
   REQUIRED_BEHAVIOR_IDS,
   REQUIRED_FIXTURE_IDS,
   REQUIRED_ROUTING_IDS,
+  STABLE_TOKEN_GUARDS,
   validateEvalCorpus,
+  validateStableTokens,
 };

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-import { validateEvalCorpus } from '../scripts/check-skill-contracts';
+import { validateEvalCorpus, validateStableTokens } from '../scripts/check-skill-contracts';
 
 const corpus = JSON.parse(fs.readFileSync('shared/evals/evals.json', 'utf8')) as Record<
   string,
@@ -211,4 +211,29 @@ test('review IDs allocate sequentially across rounds without requiring row order
       validateEvalCorpus(invalid).some((error) => error.includes('nonsequential finding_id')),
     );
   }
+});
+
+test('stable token guard accepts the canonical references', () => {
+  assert.deepEqual(validateStableTokens(), []);
+});
+
+test('stable token guard fails when a class name leaves its section', () => {
+  const guards = [
+    {
+      file: 'shared/references/evidence-standard.md',
+      heading: '## False-positive classes',
+      tokens: ['Tautological oracle', 'Renamed class'],
+    },
+    {
+      file: 'shared/references/evidence-standard.md',
+      heading: '## Missing heading',
+      tokens: ['Anything'],
+    },
+    { file: 'shared/references/absent.md', heading: '## X', tokens: ['Y'] },
+  ];
+  const failures = validateStableTokens(guards);
+  assert.equal(failures.length, 3);
+  assert.ok(failures.some((failure) => failure.includes("lost 'Renamed class'")));
+  assert.ok(failures.some((failure) => failure.includes('missing heading')));
+  assert.ok(failures.some((failure) => failure.includes('is missing')));
 });

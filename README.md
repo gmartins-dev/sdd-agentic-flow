@@ -179,6 +179,7 @@ The generic [task-management example](examples/golden/task-management/) shows on
 | Engineering model and product identity | [docs/engineering-model.md](docs/engineering-model.md) |
 | Illustrative developer journey | [docs/developer-journey.md](docs/developer-journey.md) |
 | SDD methodology | [docs/sdd-methodology.md](docs/sdd-methodology.md) |
+| Acceptance criteria and examples | [docs/acceptance-driven-development.md](docs/acceptance-driven-development.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | All 12 skills | [docs/skills-catalog.md](docs/skills-catalog.md) |
 | Agent setup | [Codex](docs/using-with-codex.md), [Cursor](docs/using-with-cursor.md), [Claude Code](docs/using-with-claude-code.md), [VS Code + Copilot](docs/using-with-vscode-copilot.md) |

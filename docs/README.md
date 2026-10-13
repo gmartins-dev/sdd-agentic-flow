@@ -82,6 +82,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [domain-vocabulary.md](domain-vocabulary.md) | Domain glossary and language profiles |
 | [handoff-standard.md](../shared/references/handoff-standard.md) | When skills write `handoff.md` across session boundaries |
 | [evidence-standard.md](../shared/references/evidence-standard.md) | Sensor → evidence → verification → decision; `Status:` field |
+| [acceptance-driven-development.md](acceptance-driven-development.md) | `AC-*` IDs, examples, per-criterion coverage, sensor change classes |
 
 ## Language and i18n
 
@@ -91,6 +92,7 @@ Task-oriented map for `sdd-agentic-flow`. Commands, paths, and skill names stay 
 | [language-profiles.md](language-profiles.md) | `en-US` and `pt-BR` profile contract |
 | [language-profiles.pt-BR.md](language-profiles.pt-BR.md) | Same contract in Brazilian Portuguese |
 | [saf-skills-usage-guide.pt-BR.md](saf-skills-usage-guide.pt-BR.md) | Usage guide in Brazilian Portuguese |
+| [acceptance-driven-development.pt-BR.md](acceptance-driven-development.pt-BR.md) | Acceptance-driven development in Brazilian Portuguese |
 
 ## Maintainer
 

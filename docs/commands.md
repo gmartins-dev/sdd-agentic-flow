@@ -12,6 +12,7 @@
 | `config installation` | Save scope, targets, and project adoption intent |
 | `doctor` | Report Installation, Workspace, and Policy readiness |
 | `doctor --json` | Emit machine schema 2 |
+| `doctor --evidence-graph <feature> [--json\|--html]` | Show requirement and `AC-*` evidence coverage |
 | `context status\|refresh\|autonomy-state` | Inspect project context or autonomy state |
 | `upgrade --skills-only` | Reconcile current managed assets from the local package |
 | `upgrade --check\|--plan` | Check for updates without applying them |
